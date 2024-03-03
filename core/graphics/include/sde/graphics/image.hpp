@@ -1,0 +1,216 @@
+/**
+ * @copyright 2024-present Brian Cairl
+ *
+ * @file image.hpp
+ */
+#pragma once
+
+// C++ Standard Library
+#include <cstdint>
+#include <iosfwd>
+
+// SDE
+#include "sde/expected.hpp"
+#include "sde/resources.hpp"
+
+namespace sde::graphics
+{
+
+/**
+ * @brief Image channel specifier
+ */
+enum class ImageChannels : std::uint8_t
+{
+  kDefault,
+  kGrey,
+  kGreyA,
+  kRGB,
+  kRGBA
+};
+
+std::ostream& operator<<(std::ostream& os, ImageChannels channels);
+
+/**
+ * @brief Returns number of channels associated with a particular channel layout
+ */
+inline std::size_t to_channel_count(ImageChannels channels)
+{
+  switch (channels)
+  {
+  case ImageChannels::kDefault:
+    break;
+  case ImageChannels::kGrey:
+    return 1;
+  case ImageChannels::kGreyA:
+    return 2;
+  case ImageChannels::kRGB:
+    return 3;
+  case ImageChannels::kRGBA:
+    return 4;
+  }
+  return 0;
+}
+
+/**
+ * @brief Returns  channel layout associated with a channel count
+ */
+inline ImageChannels from_channel_count(std::size_t count)
+{
+  switch (count)
+  {
+  case 1:
+    return ImageChannels::kGrey;
+  case 2:
+    return ImageChannels::kGreyA;
+  case 3:
+    return ImageChannels::kRGB;
+  case 4:
+    return ImageChannels::kRGBA;
+  }
+  return ImageChannels::kDefault;
+}
+
+/**
+ * @brief Image pixel coordinate depth
+ */
+enum class ImageBitDepth : std::uint8_t
+{
+  kU8,
+  kU16,
+};
+
+/**
+ * @brief Returns number of bytes associated with given bit depth
+ */
+inline std::size_t to_byte_count(ImageBitDepth depth)
+{
+  switch (depth)
+  {
+  case ImageBitDepth::kU8:
+    return 1;
+  case ImageBitDepth::kU16:
+    return 2;
+  }
+  return 0;
+}
+
+std::ostream& operator<<(std::ostream& os, ImageBitDepth bit_depth);
+
+/**
+ * @brief Image loading options
+ */
+struct ImageLoadFlags
+{
+  std::uint8_t flip_vertically : 1;
+};
+
+std::ostream& operator<<(std::ostream& os, ImageLoadFlags flags);
+
+/**
+ * @brief Image load options
+ */
+struct ImageOptions
+{
+  /// Image channel loading options
+  ImageChannels channels = ImageChannels::kDefault;
+
+  /// Image channel loading options
+  ImageBitDepth bit_depth = ImageBitDepth::kU8;
+
+  /// On-load option flags
+  ImageLoadFlags flags = {0};
+};
+
+std::ostream& operator<<(std::ostream& os, const ImageOptions& error);
+
+/**
+ * @brief Image dimensions
+ */
+struct ImageShape
+{
+  /// Number of rows
+  std::size_t height;
+  /// Number of cols
+  std::size_t width;
+};
+
+std::ostream& operator<<(std::ostream& os, const ImageShape& error);
+
+/**
+ * @brief Error codes pertaining to Image loading
+ */
+enum class ImageLoadError
+{
+  kResourceNotFound,
+  kResourceInvalid,
+};
+
+std::ostream& operator<<(std::ostream& os, ImageLoadError error);
+
+/**
+ * @brief In-memory image data
+ */
+class Image
+{
+public:
+  ~Image();
+
+  Image(const Image&) = delete;
+  Image(Image&& other);
+
+  /**
+   * @brief Loads an Image from disk, or returns an ImageLoadError
+   */
+  static expected<Image, ImageLoadError> load(const resource::path& image_path, const ImageOptions& options = {});
+
+  /**
+   * @brief Returns true if held resource is valid
+   */
+  constexpr bool valid() const { return data_ != nullptr; }
+
+  /**
+   * @copydoc valid
+   */
+  constexpr operator bool() const { return valid(); }
+
+  /**
+   * @brief Returns image dimensions
+   */
+  constexpr const ImageShape& shape() const { return shape_; }
+
+  /**
+   * @brief Returns image pixel depth
+   */
+  constexpr ImageBitDepth depth() const { return bit_depth_; }
+
+  /**
+   * @brief Returns size of single pixel, in bytes
+   */
+  constexpr std::size_t pixel_size_in_bytes() const { return to_channel_count(channels_) * to_byte_count(bit_depth_); }
+
+  /**
+   * @brief Returns total size of image in bytes
+   */
+  constexpr std::size_t total_size_in_bytes() const { return shape_.height * shape_.width * pixel_size_in_bytes(); }
+
+  /**
+   * @brief Returns pointer to image data
+   */
+  constexpr void* data() const { return data_; }
+
+private:
+  Image(const ImageShape& shape, ImageChannels channels, ImageBitDepth bit_depth, void* data);
+
+  /// Image size
+  ImageShape shape_;
+  /// Image channel layout
+  ImageChannels channels_;
+  /// Image pixel depth
+  ImageBitDepth bit_depth_;
+  /// Image data buffer pointer
+  void* data_;
+};
+
+std::ostream& operator<<(std::ostream& os, const Image& error);
+
+} // namespace sde::graphics

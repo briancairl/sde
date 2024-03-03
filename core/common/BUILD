@@ -1,0 +1,15 @@
+cc_library(
+  name="expected",
+  hdrs=["include/sde/expected.hpp"],
+  strip_include_prefix="include",
+  deps=["@tl_expected//:tl_expected"],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
+  name="resources",
+  hdrs=["include/sde/resources.hpp"],
+  strip_include_prefix="include",
+  deps=["@tl_expected//:tl_expected"],
+  visibility=["//visibility:public"]
+)
