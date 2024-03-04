@@ -19,8 +19,7 @@ namespace sde::graphics
 class Renderer2D
 {
 public:
-
 private:
 };
 
-} // namespace sde::graphics
+}  // namespace sde::graphics

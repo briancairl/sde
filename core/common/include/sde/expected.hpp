@@ -30,8 +30,7 @@ template <class E> decltype(auto) make_unexpected(E&& e)
   return SDE_CORE_COMMON_EXPECTED_NAMESPACE::make_unexpected(std::forward<E>(e));
 }
 
-template<typename T, typename E>
-std::ostream& operator<<(std::ostream& os, const expected<T, E>& value_or_error)
+template <typename T, typename E> std::ostream& operator<<(std::ostream& os, const expected<T, E>& value_or_error)
 {
   if (value_or_error.has_value())
   {

@@ -10,4 +10,4 @@ namespace sde::graphics
 struct ImageOptions;
 struct ImageShape;
 class Image;
-} // namespace sde::graphics
+}  // namespace sde::graphics
