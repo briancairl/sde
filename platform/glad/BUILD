@@ -43,6 +43,6 @@ cc_library(
     name = "glad",
     srcs = [":gen_glad_srcs"],
     hdrs = [":gen_glad_hdrs"],
-    strip_include_prefix = "",
+    strip_include_prefix = "/platform",
     visibility = ["//visibility:public"],
 )

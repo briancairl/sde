@@ -13,6 +13,9 @@
 #include "sde/expected.hpp"
 #include "sde/resources.hpp"
 
+// SDE
+#include "sde/graphics/typecode.hpp"
+
 namespace sde::graphics
 {
 
@@ -71,32 +74,6 @@ inline ImageChannels from_channel_count(std::size_t count)
 }
 
 /**
- * @brief Image pixel coordinate depth
- */
-enum class ImageBitDepth : std::uint8_t
-{
-  kU8,
-  kU16,
-};
-
-/**
- * @brief Returns number of bytes associated with given bit depth
- */
-inline std::size_t to_byte_count(ImageBitDepth depth)
-{
-  switch (depth)
-  {
-  case ImageBitDepth::kU8:
-    return 1;
-  case ImageBitDepth::kU16:
-    return 2;
-  }
-  return 0;
-}
-
-std::ostream& operator<<(std::ostream& os, ImageBitDepth bit_depth);
-
-/**
  * @brief Image loading options
  */
 struct ImageLoadFlags
@@ -115,7 +92,7 @@ struct ImageOptions
   ImageChannels channels = ImageChannels::kDefault;
 
   /// Image channel loading options
-  ImageBitDepth bit_depth = ImageBitDepth::kU8;
+  TypeCode bit_depth = TypeCode::kUInt8;
 
   /// On-load option flags
   ImageLoadFlags flags = {0};
@@ -143,6 +120,7 @@ enum class ImageLoadError
 {
   kResourceNotFound,
   kResourceInvalid,
+  kUnsupportedBitDepth,
 };
 
 std::ostream& operator<<(std::ostream& os, ImageLoadError error);
@@ -181,12 +159,12 @@ public:
   /**
    * @brief Returns image pixel depth
    */
-  constexpr ImageBitDepth depth() const { return bit_depth_; }
+  constexpr TypeCode depth() const { return bit_depth_; }
 
   /**
    * @brief Returns size of single pixel, in bytes
    */
-  constexpr std::size_t pixel_size_in_bytes() const { return to_channel_count(channels_) * to_byte_count(bit_depth_); }
+  constexpr std::size_t pixel_size_in_bytes() const { return to_channel_count(channels_) * byte_count(bit_depth_); }
 
   /**
    * @brief Returns total size of image in bytes
@@ -199,18 +177,18 @@ public:
   constexpr void* data() const { return data_; }
 
 private:
-  Image(const ImageShape& shape, ImageChannels channels, ImageBitDepth bit_depth, void* data);
+  Image(const ImageShape& shape, ImageChannels channels, TypeCode bit_depth, void* data);
 
   /// Image size
   ImageShape shape_;
   /// Image channel layout
   ImageChannels channels_;
   /// Image pixel depth
-  ImageBitDepth bit_depth_;
+  TypeCode bit_depth_;
   /// Image data buffer pointer
   void* data_;
 };
 
 std::ostream& operator<<(std::ostream& os, const Image& error);
 
-} // namespace sde::graphics
+}  // namespace sde::graphics

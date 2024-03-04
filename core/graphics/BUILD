@@ -1,4 +1,28 @@
 cc_library(
+  name="graphics_impl__opengl",
+  hdrs=["src/opengl.inl"],
+  strip_include_prefix="src",
+  deps=["//platform/glad:glad", "@glfw//:glfw"],
+  visibility=["//visibility:private"]
+)
+
+
+
+cc_library(
+  name="graphics_impl__common",
+  hdrs=[
+    "include/sde/graphics/typecode.hpp",
+    "include/sde/graphics/typedef.hpp",
+  ],
+  srcs=[],
+  strip_include_prefix="include",
+  deps=[],
+  visibility=["//visibility:private"]
+)
+
+
+
+cc_library(
   name="graphics_impl__image__stb",
   hdrs=[
     "include/sde/graphics/image.hpp",
@@ -9,6 +33,7 @@ cc_library(
   ],
   strip_include_prefix="include",
   deps=[
+    ":graphics_impl__common",
     "//core/common:expected",
     "//core/common:resources",
     "@stb//:stb",
@@ -22,11 +47,13 @@ cc_library(
 cc_library(
   name="graphics_impl__renderer__hdrs",
   hdrs=[
-    "include/sde/graphics/renderer_2D.hpp"
+    "include/sde/graphics/renderer_2D.hpp",
+    "include/sde/graphics/texture_2D.hpp"
   ],
   strip_include_prefix="include",
   deps=[
     "//core/common:expected",
+    ":graphics_impl__common",
     ":graphics_impl__image__stb"
   ],
   visibility=["//visibility:private"]
@@ -60,8 +87,13 @@ cc_library(
   name="graphics_impl__renderer__opengl",
   srcs=[
     "src/renderer_2D.cpp",
+    "src/texture_2D.cpp",
   ] + graphics_impl__renderer__opengl_debug_selector,
-  deps=[":graphics_impl__renderer__opengl_internal", ":graphics_impl__renderer__hdrs"],
+  deps=[
+    ":graphics_impl__renderer__opengl_internal",
+    ":graphics_impl__renderer__hdrs",
+    ":graphics_impl__common",
+    ":graphics_impl__opengl",],
   visibility=["//visibility:private"]
 )
 

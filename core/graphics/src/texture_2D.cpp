@@ -1,177 +1,66 @@
 // C++ Standard Library
-#include <ostream>
 #include <iomanip>
+#include <ostream>
 
-// STB
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#pragma GCC diagnostic pop
-#pragma GCC diagnostic pop
+// Backend
+#include "opengl.inl"
 
 // SDE
-#include "sde/graphics/image.hpp"
+#include "sde/graphics/texture_2D.hpp"
 
 namespace sde::graphics
 {
 namespace  // anonymous
-{
+{}  // namespace anonymous
 
-int to_stbi_enum(ImageChannels mode)
+std::ostream& operator<<(std::ostream& os, Texture2DHandle handle) { return os << "{ id: " << handle.id << " }"; }
+
+std::ostream& operator<<(std::ostream& os, const Texture2DShape& shape)
 {
-  switch (mode)
-  {
-  case ImageChannels::kDefault:
-    return STBI_default;
-  case ImageChannels::kGrey:
-    return STBI_grey;
-  case ImageChannels::kGreyA:
-    return STBI_grey_alpha;
-  case ImageChannels::kRGB:
-    return STBI_rgb;
-  case ImageChannels::kRGBA:
-    return STBI_rgb_alpha;
-  }
-  return STBI_default;
+  return os << "{ height: " << shape.height << ", width: " << shape.height << " }";
 }
 
-}  // namespace anonymous
-
-std::ostream& operator<<(std::ostream& os, ImageChannels channels)
+std::ostream& operator<<(std::ostream& os, const Texture2DInfo& info)
 {
-  switch (channels)
+  return os << "{ shape: " << info.shape << ", layout: " << info.layout << " }";
+}
+
+std::ostream& operator<<(std::ostream& os, Texture2DWrapping wrapping)
+{
+  switch (wrapping)
   {
-  case ImageChannels::kDefault:
-    return os << "Default";
-  case ImageChannels::kGrey:
-    return os << "Grey";
-  case ImageChannels::kGreyA:
-    return os << "GreyA";
-  case ImageChannels::kRGB:
-    return os << "RGB";
-  case ImageChannels::kRGBA:
-    return os << "RGBA";
+  case Texture2DWrapping::kClampToBorder:
+    return os << "ClampToBorder";
+  case Texture2DWrapping::kRepeat:
+    return os << "Repeat";
   }
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, ImageBitDepth bit_depth)
+std::ostream& operator<<(std::ostream& os, Texture2DSampling sampling)
 {
-  switch (bit_depth)
+  switch (sampling)
   {
-  case ImageBitDepth::kU8:
-    return os << "U8";
-  case ImageBitDepth::kU16:
-    return os << "U16";
+  case Texture2DSampling::kLinear:
+    return os << "Linear";
+  case Texture2DSampling::kNearest:
+    return os << "Nearest";
   }
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, ImageLoadFlags flags)
+std::ostream& operator<<(std::ostream& os, Texture2DFlags flags)
 {
-  return os << std::boolalpha << "{ flip_vertically: " << static_cast<bool>(flags.flip_vertically) << " }";
+  return os << std::boolalpha << "{ " << static_cast<bool>(flags.unpack_alignment) << " }";
 }
 
-std::ostream& operator<<(std::ostream& os, const ImageShape& shape)
+std::ostream& operator<<(std::ostream& os, const Texture2DOptions& options)
 {
-  return os << "{ height: " << shape.height << ", width: " << shape.width << " }";
+  return os << "{ u_wrapping: " << options.u_wrapping << ", v_wrapping: " << options.v_wrapping
+            << ", min_sampling: " << options.min_sampling << ", mag_sampling: " << options.mag_sampling
+            << ", flags: " << options.flags << " }";
 }
 
-std::ostream& operator<<(std::ostream& os, ImageLoadError error)
-{
-  switch (error)
-  {
-  case ImageLoadError::kResourceNotFound:
-    return os << "ResourceNotFound";
-  case ImageLoadError::kResourceInvalid:
-    return os << "ResourceInvalid";
-  }
-  return os;
-}
+Texture2DHandle Texture2DCache::create(const Image& image, const Texture2DOptions& options) {}
 
-Image::Image(const ImageShape& shape, ImageChannels channels, ImageBitDepth bit_depth, void* data)
-  : shape_{shape}
-  , channels_{channels}
-  , bit_depth_{bit_depth}
-  , data_{data}
-{}
-
-Image::Image(Image&& other)
-  : shape_{other.shape_}
-  , channels_{other.channels_}
-  , bit_depth_{other.bit_depth_}
-  , data_{other.data_}
-{
-  other.data_ = nullptr;
-}
-
-Image::~Image()
-{
-  if (data_ == nullptr)
-  {
-    return;
-  }
-  stbi_image_free(data_);
-}
-
-expected<Image, ImageLoadError> Image::load(const resource::path& image_path, const ImageOptions& options)
-{
-  // Check if image point is valid
-  if (!resource::exists(image_path))
-  {
-    return make_unexpected(ImageLoadError::kResourceNotFound);
-  }
-
-  // Set flag determining whether image should be flipped on load
-  stbi_set_flip_vertically_on_load(options.flags.flip_vertically);
-
-  // Get STBI channel code
-  const int channel_count_forced = to_stbi_enum(options.channels);
-
-  // Load image data and sizing
-  int height_on_load = 0;
-  int width_on_load = 0;
-  int channel_count_on_load = 0;
-  void* image_data_ptr = nullptr;
-  switch(options.bit_depth)
-  {
-    case ImageBitDepth::kU8:
-    {
-      image_data_ptr = reinterpret_cast<void*>(stbi_load(image_path.string().c_str(), &height_on_load, &width_on_load, &channel_count_on_load, channel_count_forced));
-      break;
-    }
-    case ImageBitDepth::kU16:
-    {
-      image_data_ptr = reinterpret_cast<void*>(stbi_load_16(image_path.string().c_str(), &height_on_load, &width_on_load, &channel_count_on_load, channel_count_forced));
-      break;
-    }
-  }
-
-  // Check if image point is valid
-  if (image_data_ptr == nullptr)
-  {
-    return make_unexpected(ImageLoadError::kResourceInvalid);
-  }
-
-  return Image
-  {
-    {
-      .height = static_cast<std::size_t>(height_on_load),
-      .width = static_cast<std::size_t>(width_on_load),
-    },
-    ((options.channels == ImageChannels::kDefault) ? from_channel_count(channel_count_on_load) : options.channels),
-    options.bit_depth,
-    image_data_ptr
-  };
-}
-
-
-std::ostream& operator<<(std::ostream& os, const Image& image)
-{
-  return os << "{ shape: " << image.shape() << ", depth: " << image.depth() << " }";
-}
-
-} // namespace sde::graphics
+}  // namespace sde::graphics
