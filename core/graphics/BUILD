@@ -47,8 +47,8 @@ cc_library(
 cc_library(
   name="graphics_impl__renderer__hdrs",
   hdrs=[
-    "include/sde/graphics/renderer_2D.hpp",
-    "include/sde/graphics/texture_2D.hpp"
+    "include/sde/graphics/renderer.hpp",
+    "include/sde/graphics/texture.hpp"
   ],
   strip_include_prefix="include",
   deps=[
@@ -86,8 +86,8 @@ graphics_impl__renderer__opengl_debug_selector = select({
 cc_library(
   name="graphics_impl__renderer__opengl",
   srcs=[
-    "src/renderer_2D.cpp",
-    "src/texture_2D.cpp",
+    "src/renderer.cpp",
+    "src/texture.cpp",
   ] + graphics_impl__renderer__opengl_debug_selector,
   deps=[
     ":graphics_impl__renderer__opengl_internal",

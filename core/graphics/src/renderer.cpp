@@ -1,4 +1,4 @@
-#include "sde/graphics/renderer_2D.hpp"
+#include "sde/graphics/renderer.hpp"
 
 namespace sde::graphics
 {}  // namespace sde::graphics

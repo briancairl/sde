@@ -1,7 +1,7 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file rendered_2D.hpp
+ * @file rendered.hpp
  */
 #pragma once
 
@@ -16,7 +16,7 @@
 namespace sde::graphics
 {
 
-class Renderer2D
+class Renderer
 {
 public:
 private:
