@@ -11,8 +11,12 @@
 #include <unordered_map>
 
 // SDE
+#include "sde/expected.hpp"
+
+// SDE
 #include "sde/graphics/image_fwd.hpp"
-#include "sde/graphics/typecode.hpp"
+#include "sde/graphics/typedef.hpp"
+#include "sde/view.hpp"
 
 namespace sde::graphics
 {
@@ -32,8 +36,13 @@ std::ostream& operator<<(std::ostream& os, TextureLayout layout);
 
 struct TextureHandle
 {
-  texture_id_t id;
+  std::size_t id;
 };
+
+inline bool operator<(TextureHandle lhs, TextureHandle rhs) { return lhs.id < rhs.id; }
+inline bool operator>(TextureHandle lhs, TextureHandle rhs) { return lhs.id > rhs.id; }
+inline bool operator==(TextureHandle lhs, TextureHandle rhs) { return lhs.id == rhs.id; }
+inline bool operator!=(TextureHandle lhs, TextureHandle rhs) { return lhs.id != rhs.id; }
 
 struct TextureHandleHash
 {
@@ -48,6 +57,7 @@ std::ostream& operator<<(std::ostream& os, TextureHandle handle);
 struct TextureFlags
 {
   std::uint8_t unpack_alignment : 1;
+  std::uint8_t generate_mip_map : 1;
 };
 
 std::ostream& operator<<(std::ostream& os, TextureFlags flags);
@@ -96,41 +106,98 @@ struct TextureInfo
 {
   TextureLayout layout;
   TextureShape shape;
+  TextureOptions options;
+  native_texture_id_t native_id;
 };
 
 std::ostream& operator<<(std::ostream& os, const TextureInfo& info);
 
+enum class TextureError
+{
+  kInvalidHandle,
+  kInvalidDimensions,
+  kInvalidDataValue,
+  kInvalidDataLength,
+  kBackendCreationFailure,
+  kBackendTransferFailure,
+  kBackendMipMapGenerationFailure
+};
+
+std::ostream& operator<<(std::ostream& os, TextureError error);
+
 class TextureCache
 {
 public:
-  using Textures = std::unordered_map<TextureHandle, TextureInfo, TextureHandleHash>;
-
   TextureCache() = default;
   ~TextureCache();
 
-  void remove(const TextureHandle& index);
+  bool remove(const TextureHandle& index);
 
-  TextureHandle create(const Image& image, const TextureOptions& options = {});
+  expected<void, TextureError> create(TextureHandle, const Image& image, const TextureOptions& options = {});
 
-  TextureHandle
-  create(std::uint8_t* const data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
-
-  TextureHandle create(
-    std::uint16_t* const data,
+  expected<void, TextureError> create(
+    TextureHandle texture,
+    ContinuousView<std::uint8_t> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
-  TextureHandle create(
-    std::uint32_t* const data,
+  expected<void, TextureError> create(
+    TextureHandle texture,
+    ContinuousView<std::uint16_t> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
-  const Textures& get() const { return textures_; }
+  expected<void, TextureError> create(
+    TextureHandle texture,
+    ContinuousView<std::uint32_t> data,
+    const TextureShape& shape,
+    TextureLayout layout,
+    const TextureOptions& options = {});
+
+  expected<void, TextureError> create(
+    TextureHandle texture,
+    ContinuousView<float> data,
+    const TextureShape& shape,
+    TextureLayout layout,
+    const TextureOptions& options = {});
+
+  expected<TextureHandle, TextureError> create(const Image& image, const TextureOptions& options = {})
+  {
+    auto texture = new_texture_handle();
+    if (auto ok_or_error = create(texture, image, options); !ok_or_error.has_value())
+    {
+      return make_unexpected(ok_or_error.error());
+    }
+    return texture;
+  }
+
+  template <typename DataT>
+  expected<TextureHandle, TextureError> create(
+    ContinuousView<DataT> data,
+    const TextureShape& shape,
+    TextureLayout layout,
+    const TextureOptions& options = {})
+  {
+    auto texture = new_texture_handle();
+    if (auto ok_or_error = create(texture, data, shape, options); !ok_or_error.has_value())
+    {
+      return make_unexpected(ok_or_error.error());
+    }
+    return texture;
+  }
+
+  const TextureInfo* get(TextureHandle texture) const;
 
 private:
-  Textures textures_;
+  using TextureCacheMap = std::unordered_map<TextureHandle, TextureInfo, TextureHandleHash>;
+
+  TextureHandle last_texture_handle_ = {1UL};
+
+  TextureCacheMap textures_;
+
+  TextureHandle new_texture_handle() { return TextureHandle{last_texture_handle_.id + 1UL}; }
 };
 
 }  // namespace sde::graphics

@@ -10,7 +10,7 @@
 #include "glad/glad.h"
 
 // GL
-#include <GL/gl.h>
+#include "GL/gl.h"
 
 // clang-format on
 
@@ -19,13 +19,13 @@
 #include <type_traits>
 
 // SDE
-#include <sde/graphics/typecode.hpp>
-#include <sde/graphics/typedef.hpp>
+#include "sde/graphics/typecode.hpp"
+#include "sde/graphics/typedef.hpp"
 
-namespace sde::graphics
+namespace sde::graphics::opengl
 {
 
-static inline GLenum to_gl_typecode(TypeCode code)
+static inline GLenum to_native_typecode(TypeCode code)
 {
   switch (code)
   {
@@ -49,10 +49,13 @@ static inline GLenum to_gl_typecode(TypeCode code)
   return GL_FLOAT;
 }
 
-static constexpr GLboolean to_gl_bool(const bool value) { return value ? GL_TRUE : GL_FALSE; }
+template<typename T>
+static inline GLenum to_native_typecode()
+{
+  return to_native_typecode(typecode<T>());
+}
 
-
-static inline TypeCode from_gl_typecode(const GLenum code)
+static inline TypeCode from_native_typecode(const GLenum code)
 {
   switch (code)
   {
@@ -78,19 +81,19 @@ static inline TypeCode from_gl_typecode(const GLenum code)
   return TypeCode::kSInt8;
 }
 
-static constexpr bool from_gl_bool(const GLboolean value) { return value == GL_TRUE; }
+constexpr GLboolean to_native_bool(const bool value) { return value ? GL_TRUE : GL_FALSE; }
 
-
+constexpr bool from_bool(const GLboolean value) { return value == GL_TRUE; }
 
 static_assert(std::is_same<GLint, int>());
 
 static_assert(std::is_same<GLenum, enum_t>());
 
-static_assert(std::is_same<GLuint, shader_id_t>());
+static_assert(std::is_same<GLuint, native_shader_id_t>());
 
-static_assert(std::is_same<GLuint, texture_id_t>());
+static_assert(std::is_same<GLuint, native_texture_id_t>());
 
-static_assert(std::is_same<GLuint, vertex_buffer_id_t>());
+static_assert(std::is_same<GLuint, native_vertex_buffer_id_t>());
 
 static_assert(sizeof(std::uint8_t) == byte_count<TypeCode::kSInt8>());
 static_assert(sizeof(std::uint8_t) == byte_count<TypeCode::kUInt8>());
@@ -101,4 +104,9 @@ static_assert(sizeof(double) == byte_count<TypeCode::kFloat64>());
 static_assert(sizeof(int) == byte_count<TypeCode::kSInt32>());
 static_assert(sizeof(unsigned) == byte_count<TypeCode::kUInt32>());
 
-}  // sde::graphics
+inline bool has_active_error()
+{
+  return glGetError() != GL_NO_ERROR;
+}
+
+}  // sde::graphics::opengl

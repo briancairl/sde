@@ -52,6 +52,7 @@ cc_library(
   ],
   strip_include_prefix="include",
   deps=[
+    "//core/common:core",
     "//core/common:expected",
     ":graphics_impl__common",
     ":graphics_impl__image__stb"

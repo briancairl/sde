@@ -1,4 +1,15 @@
 cc_library(
+  name="core",
+  hdrs=[
+    "include/sde/crtp.hpp",
+    "include/sde/view.hpp"
+  ],
+  strip_include_prefix="include",
+  deps=[],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
   name="expected",
   hdrs=["include/sde/expected.hpp"],
   strip_include_prefix="include",
