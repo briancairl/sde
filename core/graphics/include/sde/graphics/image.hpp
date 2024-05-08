@@ -162,6 +162,11 @@ public:
   constexpr TypeCode depth() const { return bit_depth_; }
 
   /**
+   * @brief Returns image channel count
+   */
+  constexpr std::size_t channel_count() const { return to_channel_count(channels_); }
+
+  /**
    * @brief Returns size of single pixel, in bytes
    */
   constexpr std::size_t pixel_size_in_bytes() const { return to_channel_count(channels_) * byte_count(bit_depth_); }

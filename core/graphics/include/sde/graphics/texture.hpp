@@ -137,28 +137,28 @@ public:
 
   expected<void, TextureError> create(
     TextureHandle texture,
-    ContinuousView<std::uint8_t> data,
+    ContinuousView<const std::uint8_t> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
   expected<void, TextureError> create(
     TextureHandle texture,
-    ContinuousView<std::uint16_t> data,
+    ContinuousView<const std::uint16_t> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
   expected<void, TextureError> create(
     TextureHandle texture,
-    ContinuousView<std::uint32_t> data,
+    ContinuousView<const std::uint32_t> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
   expected<void, TextureError> create(
     TextureHandle texture,
-    ContinuousView<float> data,
+    ContinuousView<const float> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
@@ -175,7 +175,7 @@ public:
 
   template <typename DataT>
   expected<TextureHandle, TextureError> create(
-    ContinuousView<DataT> data,
+    ContinuousView<const DataT> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {})

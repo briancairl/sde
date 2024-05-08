@@ -26,7 +26,7 @@ public:
   constexpr const auto* end() const { return this->derived().data().size(); }
 
 private:
-  BasicView() = delete;
+  // BasicView() = delete;
 };
 
 template <typename T, std::size_t Len = 0UL> class ContinuousView : public BasicView<ContinuousView<T, Len>>
@@ -55,5 +55,15 @@ private:
   T* data_;
   std::size_t size_;
 };
+
+template <typename T> [[nodiscard]] ContinuousView<T, 0UL> make_view(T* data, std::size_t len)
+{
+  return ContinuousView<T, 0UL>{data, len};
+}
+
+template <std::size_t Len, typename T> [[nodiscard]] ContinuousView<T, Len> make_view(T* data)
+{
+  return ContinuousView<T, Len>{data};
+}
 
 }  // namespace sde

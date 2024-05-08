@@ -6,6 +6,7 @@
 #include "opengl.inl"
 
 // SDE
+#include "sde/graphics/image.hpp"
 #include "sde/graphics/texture.hpp"
 
 namespace sde::graphics
@@ -180,6 +181,22 @@ std::size_t to_channel_count(const TextureLayout channels)
   return 0;
 }
 
+TextureLayout layout_from_channel_count(std::size_t channel_count)
+{
+  switch (channel_count)
+  {
+  case 1:
+    return TextureLayout::kR;
+  case 2:
+    return TextureLayout::kRG;
+  case 3:
+    return TextureLayout::kRGB;
+  case 4:
+    return TextureLayout::kRGBA;
+  }
+  return TextureLayout::kR;
+}
+
 template <typename T>
 expected<TextureInfo, TextureError> create_texture_impl(
   ContinuousView<T> data,
@@ -201,7 +218,7 @@ expected<TextureInfo, TextureError> create_texture_impl(
     return make_unexpected(TextureError::kInvalidDataLength);
   }
   else if (const auto texture_or_error = opengl::create_texture_2D(
-             reinterpret_cast<const void*>(data.data()), shape, layout, options, opengl::to_native_typecode<T>());
+             reinterpret_cast<const void*>(data.data()), shape, layout, options, typecode<T>());
            !texture_or_error.has_value())
   {
     return make_unexpected(texture_or_error.error());
@@ -266,11 +283,18 @@ std::ostream& operator<<(std::ostream& os, const TextureOptions& options)
 
 expected<void, TextureError>
 TextureCache::create(TextureHandle texture, const Image& image, const TextureOptions& options)
-{}
+{
+  return TextureCache::create(
+    texture,
+    make_view(reinterpret_cast<const std::uint8_t*>(image.data()), image.total_size_in_bytes()),
+    TextureShape{image.shape().width, image.shape().height},
+    layout_from_channel_count(image.channel_count()),
+    options);
+}
 
 expected<void, TextureError> TextureCache::create(
   TextureHandle texture,
-  ContinuousView<std::uint8_t> data,
+  ContinuousView<const std::uint8_t> data,
   const TextureShape& shape,
   TextureLayout layout,
   const TextureOptions& options)
@@ -280,6 +304,7 @@ expected<void, TextureError> TextureCache::create(
   {
     return make_unexpected(texture_info_or_error.error());
   }
+  return expected<void, TextureError>{};
 }
 
 }  // namespace sde::graphics
