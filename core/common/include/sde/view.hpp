@@ -29,10 +29,10 @@ private:
   // BasicView() = delete;
 };
 
-template <typename T, std::size_t Len = 0UL> class ContinuousView : public BasicView<ContinuousView<T, Len>>
+template <typename T, std::size_t Len = 0UL> class View : public BasicView<View<T, Len>>
 {
 public:
-  explicit ContinuousView(T* data) : data_{data} {};
+  explicit View(T* data) : data_{data} {};
 
   constexpr T* data() { return data_; }
   constexpr const T* data() const { return data_; }
@@ -42,10 +42,10 @@ private:
   T* data_;
 };
 
-template <typename T> class ContinuousView<T, 0> : public BasicView<ContinuousView<T, 0>>
+template <typename T> class View<T, 0> : public BasicView<View<T, 0>>
 {
 public:
-  ContinuousView(T* data, std::size_t size) : data_{data}, size_{size} {};
+  View(T* data, std::size_t size) : data_{data}, size_{size} {};
 
   constexpr T* data() { return data_; }
   constexpr const T* data() const { return data_; }
@@ -56,14 +56,8 @@ private:
   std::size_t size_;
 };
 
-template <typename T> [[nodiscard]] ContinuousView<T, 0UL> make_view(T* data, std::size_t len)
-{
-  return ContinuousView<T, 0UL>{data, len};
-}
+template <typename T> [[nodiscard]] View<T, 0UL> make_view(T* data, std::size_t len) { return View<T, 0UL>{data, len}; }
 
-template <std::size_t Len, typename T> [[nodiscard]] ContinuousView<T, Len> make_view(T* data)
-{
-  return ContinuousView<T, Len>{data};
-}
+template <std::size_t Len, typename T> [[nodiscard]] View<T, Len> make_view(T* data) { return View<T, Len>{data}; }
 
 }  // namespace sde

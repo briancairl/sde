@@ -198,11 +198,8 @@ TextureLayout layout_from_channel_count(std::size_t channel_count)
 }
 
 template <typename T>
-expected<TextureInfo, TextureError> create_texture_impl(
-  ContinuousView<T> data,
-  const TextureShape& shape,
-  TextureLayout layout,
-  const TextureOptions& options)
+expected<TextureInfo, TextureError>
+create_texture_impl(View<T> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
 {
   if (!data)
   {
@@ -282,9 +279,9 @@ std::ostream& operator<<(std::ostream& os, const TextureOptions& options)
 }
 
 expected<void, TextureError>
-TextureCache::create(TextureHandle texture, const Image& image, const TextureOptions& options)
+TextureCache::to_texture(TextureHandle texture, const Image& image, const TextureOptions& options)
 {
-  return TextureCache::create(
+  return TextureCache::to_texture(
     texture,
     make_view(reinterpret_cast<const std::uint8_t*>(image.data()), image.total_size_in_bytes()),
     TextureShape{image.shape().width, image.shape().height},
@@ -292,9 +289,56 @@ TextureCache::create(TextureHandle texture, const Image& image, const TextureOpt
     options);
 }
 
-expected<void, TextureError> TextureCache::create(
+expected<void, TextureError> TextureCache::to_texture(
   TextureHandle texture,
-  ContinuousView<const std::uint8_t> data,
+  View<const std::uint8_t> data,
+  const TextureShape& shape,
+  TextureLayout layout,
+  const TextureOptions& options)
+{
+  if (auto texture_info_or_error = create_texture_impl(data, shape, layout, options);
+      !texture_info_or_error.has_value())
+  {
+    return make_unexpected(texture_info_or_error.error());
+  }
+  return expected<void, TextureError>{};
+}
+
+expected<void, TextureError> TextureCache::to_texture(
+  TextureHandle texture,
+  View<const std::uint16_t> data,
+  const TextureShape& shape,
+  TextureLayout layout,
+  const TextureOptions& options)
+{
+  if (auto texture_info_or_error = create_texture_impl(data, shape, layout, options);
+      !texture_info_or_error.has_value())
+  {
+    return make_unexpected(texture_info_or_error.error());
+  }
+  return expected<void, TextureError>{};
+}
+
+
+expected<void, TextureError> TextureCache::to_texture(
+  TextureHandle texture,
+  View<const std::uint32_t> data,
+  const TextureShape& shape,
+  TextureLayout layout,
+  const TextureOptions& options)
+{
+  if (auto texture_info_or_error = create_texture_impl(data, shape, layout, options);
+      !texture_info_or_error.has_value())
+  {
+    return make_unexpected(texture_info_or_error.error());
+  }
+  return expected<void, TextureError>{};
+}
+
+
+expected<void, TextureError> TextureCache::to_texture(
+  TextureHandle texture,
+  View<const float> data,
   const TextureShape& shape,
   TextureLayout layout,
   const TextureOptions& options)

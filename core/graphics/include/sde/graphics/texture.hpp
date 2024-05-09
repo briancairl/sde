@@ -36,7 +36,7 @@ std::ostream& operator<<(std::ostream& os, TextureLayout layout);
 
 struct TextureHandle
 {
-  std::size_t id;
+  std::size_t id = 0;
 };
 
 inline bool operator<(TextureHandle lhs, TextureHandle rhs) { return lhs.id < rhs.id; }
@@ -133,59 +133,37 @@ public:
 
   bool remove(const TextureHandle& index);
 
-  expected<void, TextureError> create(TextureHandle, const Image& image, const TextureOptions& options = {});
-
-  expected<void, TextureError> create(
-    TextureHandle texture,
-    ContinuousView<const std::uint8_t> data,
-    const TextureShape& shape,
-    TextureLayout layout,
-    const TextureOptions& options = {});
-
-  expected<void, TextureError> create(
-    TextureHandle texture,
-    ContinuousView<const std::uint16_t> data,
-    const TextureShape& shape,
-    TextureLayout layout,
-    const TextureOptions& options = {});
-
-  expected<void, TextureError> create(
-    TextureHandle texture,
-    ContinuousView<const std::uint32_t> data,
-    const TextureShape& shape,
-    TextureLayout layout,
-    const TextureOptions& options = {});
-
-  expected<void, TextureError> create(
-    TextureHandle texture,
-    ContinuousView<const float> data,
-    const TextureShape& shape,
-    TextureLayout layout,
-    const TextureOptions& options = {});
-
-  expected<TextureHandle, TextureError> create(const Image& image, const TextureOptions& options = {})
+  expected<TextureHandle, TextureError> to_texture(const Image& image, const TextureOptions& options = {})
   {
-    auto texture = new_texture_handle();
-    if (auto ok_or_error = create(texture, image, options); !ok_or_error.has_value())
+    const auto texture = new_texture_handle();
+    if (auto ok_or_error = to_texture(texture, image, options); !ok_or_error.has_value())
+    {
+      last_texture_handle_ = texture;
+      return texture;
+    }
+    else
     {
       return make_unexpected(ok_or_error.error());
     }
-    return texture;
   }
 
   template <typename DataT>
-  expected<TextureHandle, TextureError> create(
-    ContinuousView<const DataT> data,
+  expected<TextureHandle, TextureError> to_texture(
+    View<const DataT> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {})
   {
-    auto texture = new_texture_handle();
-    if (auto ok_or_error = create(texture, data, shape, options); !ok_or_error.has_value())
+    const auto texture = new_texture_handle();
+    if (auto ok_or_error = to_texture(texture, data, shape, options); ok_or_error.has_value())
+    {
+      last_texture_handle_ = texture;
+      return texture;
+    }
+    else
     {
       return make_unexpected(ok_or_error.error());
     }
-    return texture;
   }
 
   const TextureInfo* get(TextureHandle texture) const;
@@ -193,7 +171,37 @@ public:
 private:
   using TextureCacheMap = std::unordered_map<TextureHandle, TextureInfo, TextureHandleHash>;
 
-  TextureHandle last_texture_handle_ = {1UL};
+  expected<void, TextureError> to_texture(TextureHandle, const Image& image, const TextureOptions& options = {});
+
+  expected<void, TextureError> to_texture(
+    TextureHandle texture,
+    View<const std::uint8_t> data,
+    const TextureShape& shape,
+    TextureLayout layout,
+    const TextureOptions& options = {});
+
+  expected<void, TextureError> to_texture(
+    TextureHandle texture,
+    View<const std::uint16_t> data,
+    const TextureShape& shape,
+    TextureLayout layout,
+    const TextureOptions& options = {});
+
+  expected<void, TextureError> to_texture(
+    TextureHandle texture,
+    View<const std::uint32_t> data,
+    const TextureShape& shape,
+    TextureLayout layout,
+    const TextureOptions& options = {});
+
+  expected<void, TextureError> to_texture(
+    TextureHandle texture,
+    View<const float> data,
+    const TextureShape& shape,
+    TextureLayout layout,
+    const TextureOptions& options = {});
+
+  TextureHandle last_texture_handle_ = {0UL};
 
   TextureCacheMap textures_;
 
