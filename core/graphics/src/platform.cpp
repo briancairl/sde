@@ -31,11 +31,11 @@ WindowHandle glfw_try_init(const WindowOptions& options)
 
 #if defined(SDE_GLFW_DEBUG) && SDE_GLFW_DEBUG
   glfwSetErrorCallback(glfw_error_callback);
-  SDE_LOG(LogSeverity::kInfo, "Initialized GLFW error callback");
+  SDE_LOG_INFO("Initialized GLFW error callback");
 #endif  // SDE_GLFW_DEBUG
 
   SDE_ASSERT(glfwInit(), "Failed to initialize GLFW ");
-  SDE_LOG(LogSeverity::kInfo, "Initialized GLFW");
+  SDE_LOG_INFO("Initialized GLFW");
 
   // Decide GL+GLSL versions
 #if __APPLE__
@@ -51,18 +51,18 @@ WindowHandle glfw_try_init(const WindowOptions& options)
   // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
   // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
-  SDE_LOG(LogSeverity::kInfo, "Set window hints");
+  SDE_LOG_INFO("Set window hints");
 
   // Create window with graphics context
   GLFWwindow* window = glfwCreateWindow(options.initial_width, options.initial_height, options.title, NULL, NULL);
 
   SDE_ASSERT((window != nullptr), "Failed to create GLFW window");
-  SDE_LOG(LogSeverity::kInfo, "Created GLFW window");
+  SDE_LOG_INFO("Created GLFW window");
 
   glfwMakeContextCurrent(window);
 
   SDE_ASSERT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to load OpenGL (via glad)");
-  SDE_LOG(LogSeverity::kInfo, "Loaded OpenGL (via glad)");
+  SDE_LOG_INFO("Loaded OpenGL (via glad)");
 
   return WindowHandle{reinterpret_cast<void*>(window)};
 }

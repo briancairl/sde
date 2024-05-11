@@ -1,7 +1,7 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file assert.hpp
+ * @file logging.hpp
  */
 #ifdef SDE_COMMON_LOG
 #error("Detected double include of assert.hpp")
@@ -32,9 +32,20 @@ enum class LogSeverity
 #include <cstdlib>
 
 #define SDE_LOG(severity, text)                                                                                        \
-  std::fprintf((severity == LogSeverity::kError) ? stderr : stdout, "[SDE LOG] (%s:%d) %s\n", __FILE__, __LINE__, text)
+  std::fprintf(                                                                                                        \
+    (severity == ::sde::LogSeverity::kError) ? stderr : stdout, "[SDE LOG] (%s:%d) %s\n", __FILE__, __LINE__, text)
 
 #endif  // SDE_LOGGING_DISABLED
+
+#define SDE_LOG_DEBUG(text) SDE_LOG(::sde::LogSeverity::kDebug, text)
+#define SDE_LOG_INFO(text) SDE_LOG(::sde::LogSeverity::kInfo, text)
+#define SDE_LOG_WARN(text) SDE_LOG(::sde::LogSeverity::kWarn, text)
+#define SDE_LOG_ERROR(text) SDE_LOG(::sde::LogSeverity::kError, text)
+#define SDE_LOG_FATAL(text)                                                                                            \
+  SDE_LOG(::sde::LogSeverity::kError, text);                                                                           \
+  {                                                                                                                    \
+    std::abort();                                                                                                      \
+  }
 
 #ifdef NDEBUG
 
