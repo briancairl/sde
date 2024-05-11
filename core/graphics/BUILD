@@ -62,7 +62,6 @@ cc_library(
 
 
 
-
 cc_library(
   name="graphics_impl__renderer__opengl_internal",
   hdrs=[],
@@ -78,6 +77,8 @@ config_setting(
     name = "debug",
     values = {"compilation_mode": "dbg"},
 )
+
+
 
 graphics_impl__renderer__opengl_debug_selector = select({
     ":debug": [], #["src/debug.cpp"],
@@ -98,11 +99,30 @@ cc_library(
   visibility=["//visibility:private"]
 )
 
-
-
-
 alias(
   name="graphics",
   actual=":graphics_impl__renderer__opengl",
+  visibility=["//visibility:public"]
+)
+
+
+
+
+platform_glfw_debug_selector = select({
+    ":debug": ["SDE_GLFW_DEBUG=1"],
+    "//conditions:default": ["SDE_GLFW_DEBUG=0"]
+})
+
+cc_library(
+  name="platform",
+  hdrs=["include/sde/graphics/platform.hpp"],
+  srcs=["src/platform.cpp"],
+  defines=platform_glfw_debug_selector,
+  strip_include_prefix="include",
+  deps=[
+    "//core/common:logging",
+    "//platform/glad:glad",
+    "@glfw//:glfw"
+  ],
   visibility=["//visibility:public"]
 )

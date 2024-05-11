@@ -18,6 +18,14 @@ cc_library(
 )
 
 cc_library(
+  name="logging",
+  hdrs=["include/sde/logging.hpp"],
+  strip_include_prefix="include",
+  deps=[],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
   name="resources",
   hdrs=["include/sde/resources.hpp"],
   strip_include_prefix="include",
