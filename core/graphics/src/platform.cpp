@@ -70,6 +70,14 @@ WindowHandle glfw_try_init(const WindowOptions& options)
 
 WindowHandle initialize(const WindowOptions& options) { return glfw_try_init(options); }
 
-WindowHandle::~WindowHandle() {}
+WindowHandle::WindowHandle(WindowHandle&& other) : p_{other.p_} { other.p_ = nullptr; }
+
+WindowHandle::~WindowHandle()
+{
+  if (p_ != nullptr)
+  {
+    glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(p_));
+  }
+}
 
 }  // namespace sde::graphics
