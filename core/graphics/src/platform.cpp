@@ -51,7 +51,7 @@ WindowHandle glfw_try_init(const WindowOptions& options)
   // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
   // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
-  SDE_LOG_INFO("Set window hints");
+  SDE_LOG_DEBUG("Set window hints");
 
   // Create window with graphics context
   GLFWwindow* window = glfwCreateWindow(options.initial_width, options.initial_height, options.title, NULL, NULL);
@@ -63,6 +63,9 @@ WindowHandle glfw_try_init(const WindowOptions& options)
 
   SDE_ASSERT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to load OpenGL (via glad)");
   SDE_LOG_INFO("Loaded OpenGL (via glad)");
+
+  static constexpr int kBufferSwapInterval_EnableVSync = 1;
+  glfwSwapInterval(kBufferSwapInterval_EnableVSync);
 
   return WindowHandle{reinterpret_cast<void*>(window)};
 }
@@ -77,6 +80,36 @@ WindowHandle::~WindowHandle()
   if (p_ != nullptr)
   {
     glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(p_));
+  }
+}
+
+void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
+{
+  WindowProperties window_properties;
+
+  auto* window = reinterpret_cast<GLFWwindow*>(p_);
+  while (!glfwWindowShouldClose(window))
+  {
+    glfwGetFramebufferSize(window, &window_properties.width, &window_properties.height);
+    glfwGetCursorPos(window, &window_properties.mouse_x, &window_properties.mouse_y);
+    window_properties.mouse_x = (2.0 * window_properties.mouse_x / static_cast<double>(window_properties.width) - 1.0);
+    window_properties.mouse_y = (1.0 - 2.0 * window_properties.mouse_y / static_cast<double>(window_properties.height));
+
+    SDE_LOG_INFO_FMT(
+      "(%e, %e) (%d, %d)",
+      window_properties.mouse_x,
+      window_properties.mouse_y,
+      window_properties.width,
+      window_properties.height);
+
+    glfwPollEvents();
+    on_update(window_properties);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0, 0, 0, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glViewport(0, 0, window_properties.width, window_properties.height);
+    glfwSwapBuffers(window);
   }
 }
 

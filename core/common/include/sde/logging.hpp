@@ -31,11 +31,27 @@ enum class LogSeverity
 #include <cstdio>
 #include <cstdlib>
 
-#define SDE_LOG(severity, text)                                                                                        \
+#define SDE_LOG_FMT(severity, fmt, ...)                                                                                \
   std::fprintf(                                                                                                        \
-    (severity == ::sde::LogSeverity::kError) ? stderr : stdout, "[SDE LOG] (%s:%d) %s\n", __FILE__, __LINE__, text)
+    (severity == ::sde::LogSeverity::kError) ? stderr : stdout,                                                        \
+    "[SDE LOG] (%s:%d) " fmt "\n",                                                                                     \
+    __FILE__,                                                                                                          \
+    __LINE__,                                                                                                          \
+    __VA_ARGS__)
+
+#define SDE_LOG(severity, text) SDE_LOG_FMT(severity, "%s", text)
 
 #endif  // SDE_LOGGING_DISABLED
+
+#define SDE_LOG_DEBUG_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kDebug, fmt, __VA_ARGS__)
+#define SDE_LOG_INFO_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kInfo, fmt, __VA_ARGS__)
+#define SDE_LOG_WARN_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kWarn, fmt, __VA_ARGS__)
+#define SDE_LOG_ERROR_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kError, fmt, __VA_ARGS__)
+#define SDE_LOG_FATAL_FMT(fmt, ...)                                                                                    \
+  SDE_LOG_FMT(::sde::LogSeverity::kError, fmt, __VA_ARGS__);                                                           \
+  {                                                                                                                    \
+    std::abort();                                                                                                      \
+  }
 
 #define SDE_LOG_DEBUG(text) SDE_LOG(::sde::LogSeverity::kDebug, text)
 #define SDE_LOG_INFO(text) SDE_LOG(::sde::LogSeverity::kInfo, text)

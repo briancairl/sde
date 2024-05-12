@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Stnadard Library
+#include <functional>
+
 namespace sde::graphics
 {
 
@@ -14,6 +17,14 @@ struct WindowOptions
   const char* title = "sde";
   int initial_width = 640;
   int initial_height = 480;
+};
+
+struct WindowProperties
+{
+  int width = 640;
+  int height = 480;
+  double mouse_x = 0;
+  double mouse_y = 0;
 };
 
 // TODO() move to window module
@@ -26,6 +37,8 @@ public:
   ~WindowHandle();
 
   WindowHandle(WindowHandle&&);
+
+  void spin(std::function<void(const WindowProperties&)> on_update);
 
 private:
   WindowHandle(const WindowHandle&) = delete;
