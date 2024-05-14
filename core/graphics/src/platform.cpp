@@ -54,7 +54,7 @@ WindowHandle glfw_try_init(const WindowOptions& options)
   SDE_LOG_DEBUG("Set window hints");
 
   // Create window with graphics context
-  GLFWwindow* window = glfwCreateWindow(options.initial_width, options.initial_height, options.title, NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(options.initial_size.x(), options.initial_size.y(), options.title, NULL, NULL);
 
   SDE_ASSERT((window != nullptr), "Failed to create GLFW window");
   SDE_LOG_INFO("Created GLFW window");
@@ -90,17 +90,13 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
   auto* window = reinterpret_cast<GLFWwindow*>(p_);
   while (!glfwWindowShouldClose(window))
   {
-    glfwGetFramebufferSize(window, &window_properties.width, &window_properties.height);
-    glfwGetCursorPos(window, &window_properties.mouse_x, &window_properties.mouse_y);
-    window_properties.mouse_x = (2.0 * window_properties.mouse_x / static_cast<double>(window_properties.width) - 1.0);
-    window_properties.mouse_y = (1.0 - 2.0 * window_properties.mouse_y / static_cast<double>(window_properties.height));
-
-    SDE_LOG_INFO_FMT(
-      "(%e, %e) (%d, %d)",
-      window_properties.mouse_x,
-      window_properties.mouse_y,
-      window_properties.width,
-      window_properties.height);
+    glfwGetFramebufferSize(window, (window_properties.size.data() + 0), (window_properties.size.data() + 1));
+    glfwGetCursorPos(
+      window, (window_properties.mouse_position_px.data() + 0), (window_properties.mouse_position_px.data() + 1));
+    window_properties.mouse_position_vp.x() = static_cast<float>(
+      2.0 * window_properties.mouse_position_px.x() / static_cast<double>(window_properties.size.x()) - 1.0);
+    window_properties.mouse_position_vp.y() = static_cast<float>(
+      1.0 - 2.0 * window_properties.mouse_position_px.y() / static_cast<double>(window_properties.size.y()));
 
     glfwPollEvents();
     on_update(window_properties);
@@ -108,7 +104,7 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glViewport(0, 0, window_properties.width, window_properties.height);
+    glViewport(0, 0, window_properties.size.x(), window_properties.size.y());
     glfwSwapBuffers(window);
   }
 }

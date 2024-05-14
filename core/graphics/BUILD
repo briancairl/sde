@@ -35,6 +35,7 @@ cc_library(
   deps=[
     ":graphics_impl__common",
     "//core/common:expected",
+    "//core/common:geometry",
     "//core/common:resources",
     "@stb//:stb",
   ],
@@ -48,12 +49,15 @@ cc_library(
   name="graphics_impl__renderer__hdrs",
   hdrs=[
     "include/sde/graphics/renderer.hpp",
-    "include/sde/graphics/texture.hpp"
+    "include/sde/graphics/texture.hpp",
+    "include/sde/graphics/texture_handle.hpp"
   ],
   strip_include_prefix="include",
   deps=[
     "//core/common:core",
     "//core/common:expected",
+    "//core/common:geometry",
+    "//core/common:logging",
     ":graphics_impl__common",
     ":graphics_impl__image__stb"
   ],
@@ -121,6 +125,7 @@ cc_library(
   strip_include_prefix="include",
   deps=[
     "//core/common:logging",
+    "//core/common:geometry",
     "//platform/glad:glad",
     "@glfw//:glfw"
   ],

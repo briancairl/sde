@@ -14,7 +14,9 @@
 #include "sde/expected.hpp"
 
 // SDE
+#include "sde/geometry_types.hpp"
 #include "sde/graphics/image_fwd.hpp"
+#include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/view.hpp"
 
@@ -33,23 +35,6 @@ enum class TextureLayout : std::uint8_t
 };
 
 std::ostream& operator<<(std::ostream& os, TextureLayout layout);
-
-struct TextureHandle
-{
-  std::size_t id = 0;
-};
-
-inline bool operator<(TextureHandle lhs, TextureHandle rhs) { return lhs.id < rhs.id; }
-inline bool operator>(TextureHandle lhs, TextureHandle rhs) { return lhs.id > rhs.id; }
-inline bool operator==(TextureHandle lhs, TextureHandle rhs) { return lhs.id == rhs.id; }
-inline bool operator!=(TextureHandle lhs, TextureHandle rhs) { return lhs.id != rhs.id; }
-
-struct TextureHandleHash
-{
-  constexpr std::size_t operator()(const TextureHandle& handle) const { return handle.id; }
-};
-
-std::ostream& operator<<(std::ostream& os, TextureHandle handle);
 
 /*
  * @brief Image loading options
@@ -96,8 +81,10 @@ std::ostream& operator<<(std::ostream& os, const TextureOptions& error);
 
 struct TextureShape
 {
-  std::size_t height;
-  std::size_t width;
+  Vec2i value = {};
+  auto width() const { return value.x(); }
+  auto height() const { return value.y(); }
+  auto texels() const { return value.size(); }
 };
 
 std::ostream& operator<<(std::ostream& os, const TextureShape& shape);
@@ -209,13 +196,3 @@ private:
 };
 
 }  // namespace sde::graphics
-
-namespace std
-{
-
-template <> struct hash<sde::graphics::TextureHandle>
-{
-  constexpr std::size_t operator()(const sde::graphics::TextureHandle& handle) const { return handle.id; }
-};
-
-}  // namespace std

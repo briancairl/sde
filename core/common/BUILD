@@ -18,6 +18,14 @@ cc_library(
 )
 
 cc_library(
+  name="geometry",
+  hdrs=["include/sde/geometry_types.hpp"],
+  strip_include_prefix="include",
+  deps=["@eigen//:eigen"],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
   name="logging",
   hdrs=["include/sde/logging.hpp"],
   strip_include_prefix="include",

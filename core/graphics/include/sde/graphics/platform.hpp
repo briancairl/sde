@@ -5,8 +5,11 @@
  */
 #pragma once
 
-// C++ Stnadard Library
+// C++ Standard Library
 #include <functional>
+
+// SDE
+#include "sde/geometry_types.hpp"
 
 namespace sde::graphics
 {
@@ -15,16 +18,14 @@ namespace sde::graphics
 struct WindowOptions
 {
   const char* title = "sde";
-  int initial_width = 640;
-  int initial_height = 480;
+  Vec2i initial_size = {640, 480};
 };
 
 struct WindowProperties
 {
-  int width = 640;
-  int height = 480;
-  double mouse_x = 0;
-  double mouse_y = 0;
+  Vec2i size = {640, 480};
+  Vec2d mouse_position_px = {0.0, 0.0};
+  Vec2f mouse_position_vp = {0.0, 0.0};
 };
 
 // TODO() move to window module

@@ -119,8 +119,8 @@ expected<void, TextureError> upload_texture_2D(
     GL_TEXTURE_2D,
     0,
     to_native_layout_enum(layout),
-    shape.height,
-    shape.width,
+    shape.value.y(),
+    shape.value.x(),
     0,
     to_native_layout_enum(layout),
     to_native_typecode(type),
@@ -205,11 +205,11 @@ create_texture_impl(View<T> data, const TextureShape& shape, TextureLayout layou
   {
     return make_unexpected(TextureError::kInvalidDataValue);
   }
-  else if (shape.height == 0 or shape.width == 0)
+  else if (shape.height() == 0 or shape.width() == 0)
   {
     return make_unexpected(TextureError::kInvalidDimensions);
   }
-  else if (const std::size_t required_size = (shape.height * shape.width * to_channel_count(layout));
+  else if (const std::size_t required_size = (shape.height() * shape.width() * to_channel_count(layout));
            data.size() != required_size)
   {
     return make_unexpected(TextureError::kInvalidDataLength);
@@ -228,11 +228,9 @@ create_texture_impl(View<T> data, const TextureShape& shape, TextureLayout layou
 
 }  // namespace
 
-std::ostream& operator<<(std::ostream& os, TextureHandle handle) { return os << "{ id: " << handle.id << " }"; }
-
 std::ostream& operator<<(std::ostream& os, const TextureShape& shape)
 {
-  return os << "{ height: " << shape.height << ", width: " << shape.height << " }";
+  return os << "{ height: " << shape.value.y() << ", width: " << shape.value.x() << " }";
 }
 
 std::ostream& operator<<(std::ostream& os, const TextureInfo& info)
@@ -284,7 +282,7 @@ TextureCache::to_texture(TextureHandle texture, const Image& image, const Textur
   return TextureCache::to_texture(
     texture,
     make_view(reinterpret_cast<const std::uint8_t*>(image.data()), image.total_size_in_bytes()),
-    TextureShape{image.shape().width, image.shape().height},
+    TextureShape{image.shape().value},
     layout_from_channel_count(image.channel_count()),
     options);
 }

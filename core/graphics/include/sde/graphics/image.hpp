@@ -14,6 +14,7 @@
 #include "sde/resources.hpp"
 
 // SDE
+#include "sde/geometry_types.hpp"
 #include "sde/graphics/typecode.hpp"
 
 namespace sde::graphics
@@ -105,10 +106,10 @@ std::ostream& operator<<(std::ostream& os, const ImageOptions& error);
  */
 struct ImageShape
 {
-  /// Number of rows
-  std::size_t height;
-  /// Number of cols
-  std::size_t width;
+  Vec2i value = {};
+  auto width() const { return value.x(); }
+  auto height() const { return value.y(); }
+  auto pixels() const { return value.size(); }
 };
 
 std::ostream& operator<<(std::ostream& os, const ImageShape& error);
@@ -180,10 +181,7 @@ public:
   /**
    * @brief Returns total size of image in bytes
    */
-  [[nodiscard]] constexpr std::size_t total_size_in_bytes() const
-  {
-    return shape_.height * shape_.width * pixel_size_in_bytes();
-  }
+  [[nodiscard]] constexpr std::size_t total_size_in_bytes() const { return shape_.pixels() * pixel_size_in_bytes(); }
 
   /**
    * @brief Returns pointer to image data

@@ -65,7 +65,7 @@ std::ostream& operator<<(std::ostream& os, ImageLoadFlags flags)
 
 std::ostream& operator<<(std::ostream& os, const ImageShape& shape)
 {
-  return os << "{ height: " << shape.height << ", width: " << shape.width << " }";
+  return os << "{ height: " << shape.value.y() << ", width: " << shape.value.x() << " }";
 }
 
 std::ostream& operator<<(std::ostream& os, ImageLoadError error)
@@ -145,8 +145,7 @@ expected<Image, ImageLoadError> Image::load(const resource::path& image_path, co
 
   return Image{
     {
-      .height = static_cast<std::size_t>(height_on_load),
-      .width = static_cast<std::size_t>(width_on_load),
+      .value = {height_on_load, width_on_load},
     },
     ((options.channels == ImageChannels::kDefault) ? from_channel_count(channel_count_on_load) : options.channels),
     options.bit_depth,
