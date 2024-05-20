@@ -77,7 +77,7 @@ struct TextureOptions
   TextureFlags flags = {0};
 };
 
-std::ostream& operator<<(std::ostream& os, const TextureOptions& error);
+std::ostream& operator<<(std::ostream& os, const TextureOptions& options);
 
 struct TextureShape
 {
@@ -116,14 +116,15 @@ class TextureCache
 {
 public:
   TextureCache() = default;
+
   ~TextureCache();
 
   bool remove(const TextureHandle& index);
 
-  expected<TextureHandle, TextureError> to_texture(const Image& image, const TextureOptions& options = {})
+  expected<TextureHandle, TextureError> toTexture(const Image& image, const TextureOptions& options = {})
   {
-    const auto texture = new_texture_handle();
-    if (auto ok_or_error = to_texture(texture, image, options); !ok_or_error.has_value())
+    const auto texture = getNextTextureHandle();
+    if (auto ok_or_error = toTexture(texture, image, options); !ok_or_error.has_value())
     {
       last_texture_handle_ = texture;
       return texture;
@@ -135,14 +136,11 @@ public:
   }
 
   template <typename DataT>
-  expected<TextureHandle, TextureError> to_texture(
-    View<const DataT> data,
-    const TextureShape& shape,
-    TextureLayout layout,
-    const TextureOptions& options = {})
+  expected<TextureHandle, TextureError>
+  toTexture(View<const DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {})
   {
-    const auto texture = new_texture_handle();
-    if (auto ok_or_error = to_texture(texture, data, shape, options); ok_or_error.has_value())
+    const auto texture = getNextTextureHandle();
+    if (auto ok_or_error = toTexture(texture, data, shape, options); ok_or_error.has_value())
     {
       last_texture_handle_ = texture;
       return texture;
@@ -156,43 +154,43 @@ public:
   const TextureInfo* get(TextureHandle texture) const;
 
 private:
-  using TextureCacheMap = std::unordered_map<TextureHandle, TextureInfo, TextureHandleHash>;
+  using TextureCacheMap = std::unordered_map<TextureHandle, TextureInfo, ResourceHandleHash>;
 
-  expected<void, TextureError> to_texture(TextureHandle, const Image& image, const TextureOptions& options = {});
+  expected<void, TextureError> toTexture(TextureHandle, const Image& image, const TextureOptions& options = {});
 
-  expected<void, TextureError> to_texture(
+  expected<void, TextureError> toTexture(
     TextureHandle texture,
     View<const std::uint8_t> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
-  expected<void, TextureError> to_texture(
+  expected<void, TextureError> toTexture(
     TextureHandle texture,
     View<const std::uint16_t> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
-  expected<void, TextureError> to_texture(
+  expected<void, TextureError> toTexture(
     TextureHandle texture,
     View<const std::uint32_t> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
-  expected<void, TextureError> to_texture(
+  expected<void, TextureError> toTexture(
     TextureHandle texture,
     View<const float> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
-  TextureHandle last_texture_handle_ = {0UL};
+  TextureHandle last_texture_handle_ = TextureHandle::null();
 
   TextureCacheMap textures_;
 
-  TextureHandle new_texture_handle() { return TextureHandle{last_texture_handle_.id + 1UL}; }
+  TextureHandle getNextTextureHandle() const { return TextureHandle{last_texture_handle_.id() + 1UL}; }
 };
 
 }  // namespace sde::graphics

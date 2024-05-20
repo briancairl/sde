@@ -48,8 +48,13 @@ cc_library(
 cc_library(
   name="graphics_impl__renderer__hdrs",
   hdrs=[
+    "include/sde/graphics/resource_handle.hpp",
     "include/sde/graphics/renderer.hpp",
+    "include/sde/graphics/shader.hpp",
+    "include/sde/graphics/shader_fwd.hpp",
+    "include/sde/graphics/shader_handle.hpp",
     "include/sde/graphics/texture.hpp",
+    "include/sde/graphics/texture_fwd.hpp",
     "include/sde/graphics/texture_handle.hpp"
   ],
   strip_include_prefix="include",
@@ -93,6 +98,7 @@ cc_library(
   name="graphics_impl__renderer__opengl",
   srcs=[
     "src/renderer.cpp",
+    "src/shader.cpp",
     "src/texture.cpp",
   ] + graphics_impl__renderer__opengl_debug_selector,
   deps=[

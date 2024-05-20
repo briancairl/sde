@@ -13,6 +13,9 @@
 // SDE
 #include "sde/expected.hpp"
 #include "sde/geometry_types.hpp"
+#include "sde/graphics/shader_fwd.hpp"
+#include "sde/graphics/shader_handle.hpp"
+#include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 
 namespace sde::graphics
@@ -29,15 +32,19 @@ struct Renderer2DOptions
 
 enum class Renderer2DError
 {
+  kNonEnoughMemory,
+  kShaderCompilationFailure,
+  kShaderLinkageFailure,
 };
 
 std::ostream& operator<<(std::ostream& os, Renderer2DError error);
 
 struct Quad
 {
-  Vec2f min;
-  Vec2f max;
-  Vec4f color;
+  static constexpr std::size_t kVertexCount = 4UL;
+  Vec2f min = Vec2f::Zero();
+  Vec2f max = Vec2f::Zero();
+  Vec4f color = Vec4f::Ones();
 };
 
 struct TexturedQuad
@@ -63,9 +70,10 @@ public:
 
   void submit(const TexturedQuad& quad) { this->submit(kDefaultLayer, quad); }
 
-  void update();
+  void update(const TextureCache& texture_cache);
 
-  static expected<Renderer2D, Renderer2DError> create(const Renderer2DOptions& options = {});
+  static expected<Renderer2D, Renderer2DError>
+  create(const ShaderCache& shader_cache, const ShaderHandle& shader, const Renderer2DOptions& options = {});
 
 private:
   struct Layer

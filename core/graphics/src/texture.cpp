@@ -1,5 +1,7 @@
 // C++ Standard Library
+#include <algorithm>
 #include <iomanip>
+#include <iterator>
 #include <ostream>
 
 // Backend
@@ -11,7 +13,7 @@
 
 namespace sde::graphics
 {
-namespace opengl
+namespace
 {
 
 enum_t to_native_layout_enum(const TextureLayout channels)
@@ -138,7 +140,7 @@ expected<void, TextureError> upload_texture_2D(
   return {};
 }
 
-expected<native_texture_id_t, TextureError> create_texture_2D(
+expected<native_texture_id_t, TextureError> create_native_texture_2D(
   const void* const data,
   const TextureShape& shape,
   const TextureLayout layout,
@@ -159,11 +161,6 @@ expected<native_texture_id_t, TextureError> create_texture_2D(
     return std::move(id_or_error).value();
   }
 }
-
-}  // namespace opengl
-
-namespace
-{
 
 std::size_t to_channel_count(const TextureLayout channels)
 {
@@ -214,7 +211,7 @@ create_texture_impl(View<T> data, const TextureShape& shape, TextureLayout layou
   {
     return make_unexpected(TextureError::kInvalidDataLength);
   }
-  else if (const auto texture_or_error = opengl::create_texture_2D(
+  else if (const auto texture_or_error = create_native_texture_2D(
              reinterpret_cast<const void*>(data.data()), shape, layout, options, typecode<T>());
            !texture_or_error.has_value())
   {
@@ -223,6 +220,14 @@ create_texture_impl(View<T> data, const TextureShape& shape, TextureLayout layou
   else
   {
     return TextureInfo{.layout = layout, .shape = shape, .options = options, .native_id = *texture_or_error};
+  }
+}
+
+void delete_texture_impl(const TextureInfo& texture_info)
+{
+  if (texture_info.native_id != 0)
+  {
+    glDeleteTextures(1, &texture_info.native_id);
   }
 }
 
@@ -263,6 +268,22 @@ std::ostream& operator<<(std::ostream& os, TextureSampling sampling)
   return os;
 }
 
+std::ostream& operator<<(std::ostream& os, TextureLayout layout)
+{
+  switch (layout)
+  {
+  case TextureLayout::kR:
+    return os << "R";
+  case TextureLayout::kRG:
+    return os << "RG";
+  case TextureLayout::kRGB:
+    return os << "RGB";
+  case TextureLayout::kRGBA:
+    return os << "RGBA";
+  }
+  return os;
+}
+
 std::ostream& operator<<(std::ostream& os, TextureFlags flags)
 {
   return os << std::boolalpha << "{ unpack_alignment: " << static_cast<bool>(flags.unpack_alignment)
@@ -277,9 +298,9 @@ std::ostream& operator<<(std::ostream& os, const TextureOptions& options)
 }
 
 expected<void, TextureError>
-TextureCache::to_texture(TextureHandle texture, const Image& image, const TextureOptions& options)
+TextureCache::toTexture(TextureHandle texture, const Image& image, const TextureOptions& options)
 {
-  return TextureCache::to_texture(
+  return TextureCache::toTexture(
     texture,
     make_view(reinterpret_cast<const std::uint8_t*>(image.data()), image.total_size_in_bytes()),
     TextureShape{image.shape().value},
@@ -287,7 +308,26 @@ TextureCache::to_texture(TextureHandle texture, const Image& image, const Textur
     options);
 }
 
-expected<void, TextureError> TextureCache::to_texture(
+TextureCache::~TextureCache()
+{
+  std::for_each(std::begin(textures_), std::end(textures_), [](const auto& handle_and_texture) {
+    delete_texture_impl(handle_and_texture.second);
+  });
+  textures_.clear();
+}
+
+bool TextureCache::remove(const TextureHandle& index)
+{
+  if (const auto& texture_itr = textures_.find(index); texture_itr != std::end(textures_))
+  {
+    delete_texture_impl(texture_itr->second);
+    textures_.erase(texture_itr);
+    return true;
+  }
+  return false;
+}
+
+expected<void, TextureError> TextureCache::toTexture(
   TextureHandle texture,
   View<const std::uint8_t> data,
   const TextureShape& shape,
@@ -302,7 +342,7 @@ expected<void, TextureError> TextureCache::to_texture(
   return expected<void, TextureError>{};
 }
 
-expected<void, TextureError> TextureCache::to_texture(
+expected<void, TextureError> TextureCache::toTexture(
   TextureHandle texture,
   View<const std::uint16_t> data,
   const TextureShape& shape,
@@ -318,7 +358,7 @@ expected<void, TextureError> TextureCache::to_texture(
 }
 
 
-expected<void, TextureError> TextureCache::to_texture(
+expected<void, TextureError> TextureCache::toTexture(
   TextureHandle texture,
   View<const std::uint32_t> data,
   const TextureShape& shape,
@@ -334,7 +374,7 @@ expected<void, TextureError> TextureCache::to_texture(
 }
 
 
-expected<void, TextureError> TextureCache::to_texture(
+expected<void, TextureError> TextureCache::toTexture(
   TextureHandle texture,
   View<const float> data,
   const TextureShape& shape,
@@ -347,6 +387,15 @@ expected<void, TextureError> TextureCache::to_texture(
     return make_unexpected(texture_info_or_error.error());
   }
   return expected<void, TextureError>{};
+}
+
+const TextureInfo* TextureCache::get(TextureHandle texture) const
+{
+  if (auto itr = textures_.find(texture); itr != std::end(textures_))
+  {
+    return std::addressof(itr->second);
+  }
+  return nullptr;
 }
 
 }  // namespace sde::graphics

@@ -23,6 +23,7 @@ enum class LogSeverity
 
 #ifdef SDE_LOGGING_DISABLED
 
+#define SDE_LOG_FMT(severity, fmt, ...) (void)0
 #define SDE_LOG(severity, text) (void)0
 
 #else
@@ -30,6 +31,7 @@ enum class LogSeverity
 // C++ Standard Library
 #include <cstdio>
 #include <cstdlib>
+#include <iosfwd>
 
 #define SDE_LOG_FMT(severity, fmt, ...)                                                                                \
   std::fprintf(                                                                                                        \
@@ -43,7 +45,12 @@ enum class LogSeverity
 
 #endif  // SDE_LOGGING_DISABLED
 
+#if defined(NDEBUG) || defined(_NDEBUG)
 #define SDE_LOG_DEBUG_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kDebug, fmt, __VA_ARGS__)
+#else
+#define SDE_LOG_DEBUG_FMT(fmt, ...) (void)0
+#endif
+
 #define SDE_LOG_INFO_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kInfo, fmt, __VA_ARGS__)
 #define SDE_LOG_WARN_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kWarn, fmt, __VA_ARGS__)
 #define SDE_LOG_ERROR_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kError, fmt, __VA_ARGS__)
@@ -53,17 +60,19 @@ enum class LogSeverity
     std::abort();                                                                                                      \
   }
 
+#if defined(NDEBUG) || defined(_NDEBUG)
 #define SDE_LOG_DEBUG(text) SDE_LOG(::sde::LogSeverity::kDebug, text)
+#else
+#define SDE_LOG_DEBUG(text) (void)0
+#endif
+
 #define SDE_LOG_INFO(text) SDE_LOG(::sde::LogSeverity::kInfo, text)
 #define SDE_LOG_WARN(text) SDE_LOG(::sde::LogSeverity::kWarn, text)
 #define SDE_LOG_ERROR(text) SDE_LOG(::sde::LogSeverity::kError, text)
-#define SDE_LOG_FATAL(text)                                                                                            \
-  SDE_LOG(::sde::LogSeverity::kError, text);                                                                           \
-  {                                                                                                                    \
-    std::abort();                                                                                                      \
-  }
+#define SDE_LOG_FATAL(text) SDE_LOG(::sde::LogSeverity::kError, text);
 
-#ifdef NDEBUG
+
+#if defined(NDEBUG) || defined(_NDEBUG)
 
 #define SDE_ASSERT_MSG(fmt, ...) (void)0
 #define SDE_ASSERT_MSG_COND(cond, fmt, ...) (void)0
@@ -95,7 +104,6 @@ enum class LogSeverity
 
 #endif  // NDEBUG
 
-
 #define SDE_ASSERT_NULL_MSG(val_ptr, msg) SDE_ASSERT(val_ptr == nullptr, msg)
 #define SDE_ASSERT_NON_NULL_MSG(val_ptr, msg) SDE_ASSERT(val_ptr != nullptr, msg)
 #define SDE_ASSERT_TRUE_MSG(val_bool, msg) SDE_ASSERT(static_cast<bool>(val_bool), msg)
@@ -121,5 +129,13 @@ enum class LogSeverity
   SDE_ASSERT_GT_MSG(val_lhs, val_rhs, "expected left value to be greater than right value")
 #define SDE_ASSERT_GE(val_lhs, val_rhs)                                                                                \
   SDE_ASSERT_GE_MSG(val_lhs, val_rhs, "expected left value to be greater than or equal to right value")
+
+#define SDE_FAIL(text)                                                                                                 \
+  SDE_LOG_FATAL(text);                                                                                                 \
+  std::abort();
+#define SDE_UNREACHABLE() __builtin_unreachable()
+#define SDE_SHOULD_NEVER_HAPPEN(text)                                                                                  \
+  SDE_FAIL(text);                                                                                                      \
+  SDE_UNREACHABLE();
 
 #endif  // SDE_COMMON_LOG

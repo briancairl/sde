@@ -56,7 +56,7 @@ WindowHandle glfw_try_init(const WindowOptions& options)
   // Create window with graphics context
   GLFWwindow* window = glfwCreateWindow(options.initial_size.x(), options.initial_size.y(), options.title, NULL, NULL);
 
-  SDE_ASSERT((window != nullptr), "Failed to create GLFW window");
+  SDE_ASSERT_NE_MSG(window, nullptr, "Failed to create GLFW window");
   SDE_LOG_INFO("Created GLFW window");
 
   glfwMakeContextCurrent(window);

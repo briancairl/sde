@@ -22,7 +22,7 @@
 #include "sde/graphics/typecode.hpp"
 #include "sde/graphics/typedef.hpp"
 
-namespace sde::graphics::opengl
+namespace sde::graphics
 {
 
 static inline GLenum to_native_typecode(TypeCode code)
@@ -109,4 +109,4 @@ inline bool has_active_error()
   return glGetError() != GL_NO_ERROR;
 }
 
-}  // sde::graphics::opengl
+}  // sde::graphics
