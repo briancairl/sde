@@ -40,13 +40,13 @@ int main(int argc, char** argv)
   out vec4 FragColor;
 
   in vec2 fTexCoord;
-  in vec4 vTintColor;
+  in vec4 fTintColor;
 
   uniform sampler2D fTextureID;
 
   void main()
   {
-    FragColor = texture(fTextureID, fTexCoord);
+    FragColor = fTintColor;
   }
 
 )Shader");
@@ -55,12 +55,13 @@ int main(int argc, char** argv)
 
   TextureCache texture_cache;
 
-  auto renderer = Renderer2D::create(shader_cache, *shader_or_error);
+  auto renderer = Renderer2D::create();
+
+  renderer->set(*shader_or_error);
 
   app.spin([&](const auto& window_properties) {
-    renderer->submit(Quad{.min = {0.1F, 0.1F}, .min = {0.5F, 0.5F}, .color = {0.1F, 0.1F, 0.1F, 0.1F}});
-
-    renderer->update(texture_cache);
+    renderer->submit(Quad{.min = {0.1F, 0.1F}, .max = {0.5F, 0.5F}, .color = {1.0F, 1.0F, 1.0F, 1.0F}});
+    renderer->update(shader_cache, texture_cache);
   });
   return 0;
 }

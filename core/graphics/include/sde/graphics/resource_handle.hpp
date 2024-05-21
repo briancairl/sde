@@ -21,6 +21,12 @@ public:
 
   constexpr id_type id() const { return id_; }
 
+  constexpr bool is_null() const { return id_ == 0UL; }
+
+  constexpr bool is_valid() const { return id_ != 0UL; }
+
+  constexpr operator bool() const { return is_valid(); }
+
   static constexpr T null() { return T{0}; }
 
 private:

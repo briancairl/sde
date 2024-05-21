@@ -99,6 +99,7 @@ std::size_t setAttribute(
   return attribute_offset;
 }
 
+constexpr std::size_t kBufferCount = 2;
 constexpr std::size_t kAttributeCount = 4;
 using PositionAttribute = VertexAttribute<0, float, 2>;
 using TexCoordAttribute = VertexAttribute<1, float, 2>;
@@ -112,8 +113,7 @@ std::ostream& operator<<(std::ostream& os, Renderer2DError error) { return os; }
 class Renderer2D::Backend
 {
 public:
-  Backend(const ShaderInfo& main_render_program, const Renderer2DOptions& options) :
-      main_render_program_{main_render_program.native_id}
+  Backend(const Renderer2DOptions& options)
   {
     glGenVertexArrays(1, &vao_);
     glGenBuffers(2, vab_);
@@ -161,9 +161,10 @@ public:
     glDeleteVertexArrays(1, &vao_);
   }
 
-  void draw(const TextureCache& texture_cache, Layer& layer)
+  void draw(const ShaderInfo& shader, const TextureCache& texture_cache, const Layer& layer)
   {
     static constexpr std::size_t kElementsPerTriangle = 3UL;
+    static constexpr std::size_t kElementsPerQuad = 2 * kElementsPerTriangle;
 
     // Fill vertex attributes
     {
@@ -180,10 +181,7 @@ public:
 
         positions += Quad::kVertexCount;
 
-        colors[0] = quads.color;
-        colors[1] = quads.color;
-        colors[2] = quads.color;
-        colors[3] = quads.color;
+        std::fill(colors, colors + Quad::kVertexCount, quads.color);
 
         colors += Quad::kVertexCount;
       }
@@ -197,21 +195,22 @@ public:
       auto* mapped_element_buffer = map_write_only_element_buffer(getVertexElementsID());
       auto* elements = getVertexElements(mapped_element_buffer);
       for (std::size_t quad_index = 0; quad_index < layer.quads.size();
-           ++quad_index, elements += kElementsPerTriangle, element_count += kElementsPerTriangle)
+           ++quad_index, elements += kElementsPerQuad, element_count += kElementsPerQuad)
       {
         // Lower face
-        elements[0] = (quad_index * kElementsPerTriangle) + 0;
-        elements[1] = (quad_index * kElementsPerTriangle) + 1;
-        elements[2] = (quad_index * kElementsPerTriangle) + 2;
+        elements[0] = (quad_index * kElementsPerQuad) + 0;
+        elements[1] = (quad_index * kElementsPerQuad) + 1;
+        elements[2] = (quad_index * kElementsPerQuad) + 2;
 
         // Upper face
-        elements[3] = (quad_index * kElementsPerTriangle) + 2;
-        elements[4] = (quad_index * kElementsPerTriangle) + 3;
-        elements[5] = (quad_index * kElementsPerTriangle) + 4;
+        elements[3] = (quad_index * kElementsPerQuad) + 2;
+        elements[4] = (quad_index * kElementsPerQuad) + 3;
+        elements[5] = (quad_index * kElementsPerQuad) + 4;
       }
       unmap_buffer<GL_ELEMENT_ARRAY_BUFFER>();
     }
 
+    glUseProgram(shader.native_id);
     draw_triangle_elements(vao_, element_count);
   }
 
@@ -228,9 +227,8 @@ public:
 
   [[nodiscard]] index_t* getVertexElements(void* mapped_buffer) { return reinterpret_cast<index_t*>(mapped_buffer); }
 
-  native_shader_id_t main_render_program_;
   native_vertex_buffer_id_t vao_;
-  native_vertex_buffer_id_t vab_[2];
+  native_vertex_buffer_id_t vab_[kBufferCount];
   std::size_t vab_attribute_byte_offets_[kAttributeCount];
 };
 
@@ -240,11 +238,28 @@ void Renderer2D::Layer::reset()
   textured_quads.clear();
 }
 
+bool Renderer2D::Layer::drawable() const { return shader.is_valid() and !(quads.empty() and textured_quads.empty()); }
+
 Renderer2D::~Renderer2D() = default;
 
 Renderer2D::Renderer2D(std::unique_ptr<Backend> backend, std::vector<Layer> layers) :
     layers_{std::move(layers)}, backend_{std::move(backend)}
 {}
+
+
+void Renderer2D::set(ShaderHandle shader)
+{
+  for (auto& layer : layers_)
+  {
+    layer.shader = shader;
+  }
+}
+
+void Renderer2D::set(std::size_t layer, ShaderHandle shader)
+{
+  SDE_ASSERT_LT(layer, layers_.size());
+  layers_[layer].shader = shader;
+}
 
 void Renderer2D::submit(std::size_t layer, const Quad& quad)
 {
@@ -258,11 +273,20 @@ void Renderer2D::submit(std::size_t layer, const TexturedQuad& quad)
   layers_[layer].textured_quads.push_back(quad);
 }
 
-void Renderer2D::update(const TextureCache& texture_cache)
+void Renderer2D::update(const ShaderCache& shader_cache, const TextureCache& texture_cache)
 {
   for (auto& layer : layers_)
   {
-    backend_->draw(texture_cache, layer);
+    if (layer.drawable())
+    {
+      SDE_ASSERT_TRUE(layer.shader.is_valid());
+      const auto* shader_info = shader_cache.get(layer.shader);
+      SDE_ASSERT_NE(shader_info, nullptr);
+      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vPosition", ShaderVariableType::kVec2, PositionAttribute::kIndex));
+      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexCoord", ShaderVariableType::kVec2, TexCoordAttribute::kIndex));
+      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTintColor", ShaderVariableType::kVec4, TintColorAttribute::kIndex));
+      backend_->draw(*shader_info, texture_cache, layer);
+    }
   }
   for (auto& layer : layers_)
   {
@@ -270,18 +294,11 @@ void Renderer2D::update(const TextureCache& texture_cache)
   }
 }
 
-expected<Renderer2D, Renderer2DError>
-Renderer2D::create(const ShaderCache& shader_cache, const ShaderHandle& shader, const Renderer2DOptions& options)
+expected<Renderer2D, Renderer2DError> Renderer2D::create(const Renderer2DOptions& options)
 {
   std::vector<Layer> layers;
   layers.resize(options.max_layers);
-
-  const auto* shader_info = shader_cache.get(shader);
-  SDE_ASSERT_NE(shader_info, nullptr);
-  SDE_ASSERT_TRUE(hasLayout(*shader_info, "vPosition", ShaderVariableType::kVec2, PositionAttribute::kIndex));
-  SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexCoord", ShaderVariableType::kVec2, TexCoordAttribute::kIndex));
-  SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTintColor", ShaderVariableType::kVec4, TintColorAttribute::kIndex));
-  return Renderer2D{std::make_unique<Backend>(*shader_info, options), std::move(layers)};
+  return Renderer2D{std::make_unique<Backend>(options), std::move(layers)};
 }
 
 std::ostream& operator<<(std::ostream& os, const Renderer2D& renderer) { return os; }

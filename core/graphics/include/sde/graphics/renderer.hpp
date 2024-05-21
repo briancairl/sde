@@ -33,8 +33,6 @@ struct Renderer2DOptions
 enum class Renderer2DError
 {
   kNonEnoughMemory,
-  kShaderCompilationFailure,
-  kShaderLinkageFailure,
 };
 
 std::ostream& operator<<(std::ostream& os, Renderer2DError error);
@@ -50,6 +48,7 @@ struct Quad
 struct TexturedQuad
 {
   Quad quad;
+  Quad texquad;
   TextureHandle texture;
 };
 
@@ -62,26 +61,53 @@ public:
 
   Renderer2D(Renderer2D&& other) = default;
 
+  /**
+   * @brief Set a shader to use for all layers
+   */
+  void set(ShaderHandle shader);
+
+  /**
+   * @brief Set a shader to use for a specific layer
+   */
+  void set(std::size_t layer, ShaderHandle shader);
+
+  /**
+   * @brief Add a quad to a specific layer
+   */
   void submit(std::size_t layer, const Quad& quad);
 
+  /**
+   * @brief Add a textured to a specific layer
+   */
   void submit(std::size_t layer, const TexturedQuad& quad);
 
+  /**
+   * @brief Add quad to the default layer
+   */
   void submit(const Quad& quad) { this->submit(kDefaultLayer, quad); }
 
+  /**
+   * @brief Add textured quad to the default layer
+   */
   void submit(const TexturedQuad& quad) { this->submit(kDefaultLayer, quad); }
 
-  void update(const TextureCache& texture_cache);
+  /**
+   * @brief Draws buffered shapes
+   */
+  void update(const ShaderCache& shader_cache, const TextureCache& texture_cache);
 
-  static expected<Renderer2D, Renderer2DError>
-  create(const ShaderCache& shader_cache, const ShaderHandle& shader, const Renderer2DOptions& options = {});
+  static expected<Renderer2D, Renderer2DError> create(const Renderer2DOptions& options = {});
 
 private:
   struct Layer
   {
     bool y_sorted = false;
+    ShaderHandle shader = ShaderHandle::null();
     std::vector<Quad> quads;
     std::vector<TexturedQuad> textured_quads;
+
     void reset();
+    bool drawable() const;
   };
 
   std::vector<Layer> layers_;
