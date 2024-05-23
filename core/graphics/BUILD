@@ -14,7 +14,9 @@ cc_library(
     "include/sde/graphics/typecode.hpp",
     "include/sde/graphics/typedef.hpp",
   ],
-  srcs=[],
+  srcs=[
+    "src/typecode.cpp"
+  ],
   strip_include_prefix="include",
   deps=[],
   visibility=["//visibility:private"]

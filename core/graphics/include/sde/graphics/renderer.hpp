@@ -37,18 +37,24 @@ enum class Renderer2DError
 
 std::ostream& operator<<(std::ostream& os, Renderer2DError error);
 
+struct Rect
+{
+  Vec2f min = Vec2f::Zero();
+  Vec2f max = Vec2f::Zero();
+};
+
 struct Quad
 {
   static constexpr std::size_t kVertexCount = 4UL;
-  Vec2f min = Vec2f::Zero();
-  Vec2f max = Vec2f::Zero();
+  Rect rect = {};
   Vec4f color = Vec4f::Ones();
 };
 
 struct TexturedQuad
 {
-  Quad quad;
-  Quad texquad;
+  Rect rect;
+  Rect texrect;
+  Vec4f color = Vec4f::Ones();
   TextureHandle texture;
 };
 

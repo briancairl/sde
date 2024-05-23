@@ -101,11 +101,10 @@ std::size_t setAttribute(
 }
 
 constexpr std::size_t kBufferCount = 2;
-constexpr std::size_t kAttributeCount = 4;
+constexpr std::size_t kAttributeCount = 3;
 using PositionAttribute = VertexAttribute<0, float, 2>;
 using TexCoordAttribute = VertexAttribute<1, float, 2>;
 using TintColorAttribute = VertexAttribute<2, float, 4>;
-using TexUnitAttribute = VertexAttribute<3, float, 1>;
 
 }  // namespace
 
@@ -149,9 +148,6 @@ public:
       vab_attribute_byte_offets_[TintColorAttribute::kIndex] = total_bytes;
       total_bytes += setAttribute(total_bytes, TintColorAttribute{3UL * options.max_triangle_count_per_layer});
 
-      vab_attribute_byte_offets_[TexUnitAttribute::kIndex] = total_bytes;
-      total_bytes += setAttribute(total_bytes, TexUnitAttribute{3UL * options.max_triangle_count_per_layer});
-
       glBufferData(GL_ARRAY_BUFFER, total_bytes, nullptr, GL_DYNAMIC_DRAW);
 
       SDE_LOG_DEBUG_FMT("Allocated attribute mem: %lu bytes", total_bytes);
@@ -177,15 +173,16 @@ public:
       auto* positions = getVertexAttributes<Vec2f, PositionAttribute>(mapped_attr_buffer);
       auto* colors = getVertexAttributes<Vec4f, TintColorAttribute>(mapped_attr_buffer);
 
-      for (const auto& quads : layer.quads)
+      for (const auto& q : layer.quads)
       {
-        positions[0] = quads.min;
-        positions[1] = {quads.min.x(), quads.max.y()};
-        positions[2] = quads.max;
-        positions[3] = {quads.max.x(), quads.min.y()};
+        const auto& r = q.rect;
+        positions[0] = r.min;
+        positions[1] = {r.min.x(), r.max.y()};
+        positions[2] = r.max;
+        positions[3] = {r.max.x(), r.min.y()};
         positions += Quad::kVertexCount;
 
-        std::fill(colors, colors + Quad::kVertexCount, quads.color);
+        std::fill(colors, colors + Quad::kVertexCount, q.color);
         colors += Quad::kVertexCount;
       }
 
@@ -288,7 +285,6 @@ void Renderer2D::update(const ShaderCache& shader_cache, const TextureCache& tex
       SDE_ASSERT_TRUE(hasLayout(*shader_info, "vPosition", ShaderVariableType::kVec2, PositionAttribute::kIndex));
       SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexCoord", ShaderVariableType::kVec2, TexCoordAttribute::kIndex));
       SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTintColor", ShaderVariableType::kVec4, TintColorAttribute::kIndex));
-      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexUnit", ShaderVariableType::kFloat, TexUnitAttribute::kIndex));
       backend_->draw(*shader_info, texture_cache, layer);
     }
   }
