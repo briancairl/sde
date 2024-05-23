@@ -201,14 +201,14 @@ public:
            ++quad_index, elements += kElementsPerQuad, element_count += kElementsPerQuad)
       {
         // Lower face
-        elements[0] = (quad_index * kElementsPerQuad) + 0;
-        elements[1] = (quad_index * kElementsPerQuad) + 1;
-        elements[2] = (quad_index * kElementsPerQuad) + 2;
+        elements[0] = (quad_index * Quad::kVertexCount) + 0;
+        elements[1] = (quad_index * Quad::kVertexCount) + 1;
+        elements[2] = (quad_index * Quad::kVertexCount) + 2;
 
         // Upper face
-        elements[3] = (quad_index * kElementsPerQuad) + 2;
-        elements[4] = (quad_index * kElementsPerQuad) + 3;
-        elements[5] = (quad_index * kElementsPerQuad) + 0;
+        elements[3] = (quad_index * Quad::kVertexCount) + 2;
+        elements[4] = (quad_index * Quad::kVertexCount) + 3;
+        elements[5] = (quad_index * Quad::kVertexCount) + 0;
       }
       unmap_element_buffer();
     }
