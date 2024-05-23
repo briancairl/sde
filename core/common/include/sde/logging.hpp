@@ -34,12 +34,7 @@ enum class LogSeverity
 #include <iosfwd>
 
 #define SDE_LOG_FMT(severity, fmt, ...)                                                                                \
-  std::fprintf(                                                                                                        \
-    (severity == ::sde::LogSeverity::kError) ? stderr : stdout,                                                        \
-    "[SDE LOG] (%s:%d) " fmt "\n",                                                                                     \
-    __FILE__,                                                                                                          \
-    __LINE__,                                                                                                          \
-    __VA_ARGS__)
+  std::fprintf(stderr, "[SDE LOG] (%s:%d) " fmt "\n", __FILE__, __LINE__, __VA_ARGS__)
 
 #define SDE_LOG(severity, text) SDE_LOG_FMT(severity, "%s", text)
 

@@ -27,6 +27,8 @@ namespace sde::graphics
  */
 enum class ShaderVariableType
 {
+  kInt,
+  kFloat,
   kVec2,
   kVec3,
   kVec4,

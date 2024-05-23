@@ -32,10 +32,13 @@ auto* map_write_only_vertex_buffer(GLuint id) { return map_write_only_buffer<GL_
 
 auto* map_write_only_element_buffer(GLuint id) { return map_write_only_buffer<GL_ELEMENT_ARRAY_BUFFER>(id); }
 
-
 template <GLenum Target> void unmap_buffer() { glUnmapBuffer(Target); }
 
-void draw_triangle_elements(native_vertex_buffer_id_t vao, std::size_t element_count)
+void unmap_vertex_buffer() { unmap_buffer<GL_ARRAY_BUFFER>(); }
+
+void unmap_element_buffer() { unmap_buffer<GL_ELEMENT_ARRAY_BUFFER>(); }
+
+void draw_triangle_elements(GLuint vao, std::size_t element_count)
 {
   glBindVertexArray(vao);
   glDrawElements(GL_TRIANGLES, element_count, GL_UNSIGNED_INT, 0);
@@ -73,7 +76,7 @@ template <
   std::size_t InstanceDivisor,
   VertexAccessMode AccessMode>
 std::size_t setAttribute(
-  std::size_t& offset_bytes,
+  std::size_t offset_bytes,
   const VertexAttribute<Index, ElementT, ElementCount, InstanceDivisor, AccessMode>& attribute)
 {
   static constexpr std::uint8_t* kOffsetStart = nullptr;
@@ -94,9 +97,7 @@ std::size_t setAttribute(
 
   glVertexAttribDivisor(Index, InstanceDivisor);
 
-  auto attribute_offset = offset_bytes;
-  offset_bytes += total_bytes;
-  return attribute_offset;
+  return total_bytes;
 }
 
 constexpr std::size_t kBufferCount = 2;
@@ -138,14 +139,18 @@ public:
 
       std::size_t total_bytes = 0;
 
-      vab_attribute_byte_offets_[PositionAttribute::kIndex] =
-        setAttribute(total_bytes, PositionAttribute{3UL * options.max_triangle_count_per_layer});
-      vab_attribute_byte_offets_[TexCoordAttribute::kIndex] =
-        setAttribute(total_bytes, TexCoordAttribute{3UL * options.max_triangle_count_per_layer});
-      vab_attribute_byte_offets_[TintColorAttribute::kIndex] =
-        setAttribute(total_bytes, TintColorAttribute{3UL * options.max_triangle_count_per_layer});
-      vab_attribute_byte_offets_[TexUnitAttribute::kIndex] =
-        setAttribute(total_bytes, TexUnitAttribute{3UL * options.max_triangle_count_per_layer});
+      vab_attribute_byte_offets_[PositionAttribute::kIndex] = total_bytes;
+      total_bytes += setAttribute(total_bytes, PositionAttribute{3UL * options.max_triangle_count_per_layer});
+      SDE_LOG_INFO_FMT("%lu", total_bytes);
+
+      vab_attribute_byte_offets_[TexCoordAttribute::kIndex] = total_bytes;
+      total_bytes += setAttribute(total_bytes, TexCoordAttribute{3UL * options.max_triangle_count_per_layer});
+
+      vab_attribute_byte_offets_[TintColorAttribute::kIndex] = total_bytes;
+      total_bytes += setAttribute(total_bytes, TintColorAttribute{3UL * options.max_triangle_count_per_layer});
+
+      vab_attribute_byte_offets_[TexUnitAttribute::kIndex] = total_bytes;
+      total_bytes += setAttribute(total_bytes, TexUnitAttribute{3UL * options.max_triangle_count_per_layer});
 
       glBufferData(GL_ARRAY_BUFFER, total_bytes, nullptr, GL_DYNAMIC_DRAW);
 
@@ -178,15 +183,13 @@ public:
         positions[1] = {quads.min.x(), quads.max.y()};
         positions[2] = quads.max;
         positions[3] = {quads.max.x(), quads.min.y()};
-
         positions += Quad::kVertexCount;
 
         std::fill(colors, colors + Quad::kVertexCount, quads.color);
-
         colors += Quad::kVertexCount;
       }
 
-      unmap_buffer<GL_ARRAY_BUFFER>();
+      unmap_vertex_buffer();
     }
 
     // Fill vertex elements
@@ -205,18 +208,18 @@ public:
         // Upper face
         elements[3] = (quad_index * kElementsPerQuad) + 2;
         elements[4] = (quad_index * kElementsPerQuad) + 3;
-        elements[5] = (quad_index * kElementsPerQuad) + 4;
+        elements[5] = (quad_index * kElementsPerQuad) + 0;
       }
-      unmap_buffer<GL_ELEMENT_ARRAY_BUFFER>();
+      unmap_element_buffer();
     }
 
     glUseProgram(shader.native_id);
     draw_triangle_elements(vao_, element_count);
   }
 
-  native_vertex_buffer_id_t getVertexAttributesID() const { return vab_[0]; }
+  GLuint getVertexAttributesID() const { return vab_[0]; }
 
-  native_vertex_buffer_id_t getVertexElementsID() const { return vab_[1]; }
+  GLuint getVertexElementsID() const { return vab_[1]; }
 
   template <typename R, typename VertexAttributeT> [[nodiscard]] R* getVertexAttributes(void* mapped_buffer)
   {
@@ -225,10 +228,10 @@ public:
       reinterpret_cast<std::uint8_t*>(mapped_buffer) + vab_attribute_byte_offets_[VertexAttributeT::kIndex]);
   }
 
-  [[nodiscard]] index_t* getVertexElements(void* mapped_buffer) { return reinterpret_cast<index_t*>(mapped_buffer); }
+  [[nodiscard]] GLuint* getVertexElements(void* mapped_buffer) { return reinterpret_cast<GLuint*>(mapped_buffer); }
 
-  native_vertex_buffer_id_t vao_;
-  native_vertex_buffer_id_t vab_[kBufferCount];
+  GLuint vao_;
+  GLuint vab_[kBufferCount];
   std::size_t vab_attribute_byte_offets_[kAttributeCount];
 };
 
@@ -285,6 +288,7 @@ void Renderer2D::update(const ShaderCache& shader_cache, const TextureCache& tex
       SDE_ASSERT_TRUE(hasLayout(*shader_info, "vPosition", ShaderVariableType::kVec2, PositionAttribute::kIndex));
       SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexCoord", ShaderVariableType::kVec2, TexCoordAttribute::kIndex));
       SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTintColor", ShaderVariableType::kVec4, TintColorAttribute::kIndex));
+      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexUnit", ShaderVariableType::kFloat, TexUnitAttribute::kIndex));
       backend_->draw(*shader_info, texture_cache, layer);
     }
   }

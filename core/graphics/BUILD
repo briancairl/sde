@@ -48,6 +48,7 @@ cc_library(
 cc_library(
   name="graphics_impl__renderer__hdrs",
   hdrs=[
+    "include/sde/graphics/debug.hpp",
     "include/sde/graphics/resource_handle.hpp",
     "include/sde/graphics/renderer.hpp",
     "include/sde/graphics/shader.hpp",
@@ -90,8 +91,8 @@ config_setting(
 
 
 graphics_impl__renderer__opengl_debug_selector = select({
-    ":debug": [], #["src/debug.cpp"],
-    "//conditions:default": [] #["src/debug_null.cpp"],
+    ":debug": ["src/debug.cpp"],
+    "//conditions:default": ["src/debug_null.cpp"],
 })
 
 cc_library(

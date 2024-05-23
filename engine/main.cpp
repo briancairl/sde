@@ -10,6 +10,8 @@
 
 int main(int argc, char** argv)
 {
+  SDE_LOG_INFO("starting...");
+
   auto app = sde::graphics::initialize({
     .initial_size = {1000, 500},
   });
@@ -24,6 +26,7 @@ int main(int argc, char** argv)
   layout (location = 0) in vec2 vPosition;
   layout (location = 1) in vec2 vTexCoord;
   layout (location = 2) in vec4 vTintColor;
+  layout (location = 3) in float vTexUnit;
 
   out vec2 fTexCoord;
   out vec4 fTintColor;
@@ -60,8 +63,11 @@ int main(int argc, char** argv)
   renderer->set(*shader_or_error);
 
   app.spin([&](const auto& window_properties) {
+    renderer->submit(Quad{.min = {0.7F, 0.7F}, .max = {0.8F, 0.8F}, .color = {1.0F, 0.0F, 1.0F, 1.0F}});
     renderer->submit(Quad{.min = {0.1F, 0.1F}, .max = {0.5F, 0.5F}, .color = {1.0F, 1.0F, 1.0F, 1.0F}});
     renderer->update(shader_cache, texture_cache);
   });
+
+  SDE_LOG_INFO("done.");
   return 0;
 }

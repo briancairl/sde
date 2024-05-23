@@ -27,6 +27,7 @@ void glfw_error_callback(int error, const char* description)
 
 WindowHandle glfw_try_init(const WindowOptions& options)
 {
+  SDE_LOG_INFO("Initializing GLFW...");
   SDE_ASSERT(!glfw_is_initialized.test_and_set(), "Graphics already initialized!");
 
 #if defined(SDE_GLFW_DEBUG) && SDE_GLFW_DEBUG
@@ -88,6 +89,9 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
   WindowProperties window_properties;
 
   auto* window = reinterpret_cast<GLFWwindow*>(p_);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
   while (!glfwWindowShouldClose(window))
   {
     glfwGetFramebufferSize(window, (window_properties.size.data() + 0), (window_properties.size.data() + 1));
@@ -99,10 +103,11 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
       1.0 - 2.0 * window_properties.mouse_position_px.y() / static_cast<double>(window_properties.size.y()));
 
     glfwPollEvents();
-    on_update(window_properties);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    on_update(window_properties);
 
     glViewport(0, 0, window_properties.size.x(), window_properties.size.y());
     glfwSwapBuffers(window);

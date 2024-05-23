@@ -70,6 +70,16 @@ ShaderSourceParts toShaderSourceParts(std::string_view source)
 
 ShaderVariableType toShaderVariableType(std::string_view typestr)
 {
+  if (typestr == "int")
+  {
+    return ShaderVariableType::kInt;
+  }
+
+  if (typestr == "float")
+  {
+    return ShaderVariableType::kFloat;
+  }
+
   if (typestr == "vec2")
   {
     return ShaderVariableType::kVec2;
@@ -338,6 +348,10 @@ std::ostream& operator<<(std::ostream& os, ShaderVariableType value_type)
 {
   switch (value_type)
   {
+  case ShaderVariableType::kInt:
+    return os << "Int";
+  case ShaderVariableType::kFloat:
+    return os << "Float";
   case ShaderVariableType::kVec2:
     return os << "Vec2";
   case ShaderVariableType::kVec3:
