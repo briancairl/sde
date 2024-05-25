@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -17,6 +18,7 @@
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
+#include "sde/graphics/typedef.hpp"
 
 namespace sde::graphics
 {
@@ -52,10 +54,18 @@ struct Quad
 
 struct TexturedQuad
 {
+  static constexpr std::size_t kVertexCount = 4UL;
   Rect rect;
   Rect texrect;
   Vec4f color = Vec4f::Ones();
-  TextureHandle texture;
+  std::size_t texture_unit;
+};
+
+struct LayerSettings
+{
+  static constexpr std::size_t kTextureUnits = 16UL;
+  ShaderHandle shader = ShaderHandle::null();
+  std::array<native_texture_id_t, kTextureUnits> textures;
 };
 
 class Renderer2D
@@ -67,15 +77,7 @@ public:
 
   Renderer2D(Renderer2D&& other) = default;
 
-  /**
-   * @brief Set a shader to use for all layers
-   */
-  void set(ShaderHandle shader);
-
-  /**
-   * @brief Set a shader to use for a specific layer
-   */
-  void set(std::size_t layer, ShaderHandle shader);
+  LayerSettings& layer(std::size_t layer);
 
   /**
    * @brief Add a quad to a specific layer
@@ -107,8 +109,9 @@ public:
 private:
   struct Layer
   {
-    bool y_sorted = false;
-    ShaderHandle shader = ShaderHandle::null();
+    static constexpr std::size_t kTextureUnits = 16UL;
+
+    LayerSettings settings;
     std::vector<Quad> quads;
     std::vector<TexturedQuad> textured_quads;
 

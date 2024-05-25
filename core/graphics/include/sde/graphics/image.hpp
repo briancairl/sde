@@ -11,11 +11,9 @@
 
 // SDE
 #include "sde/expected.hpp"
-#include "sde/resources.hpp"
-
-// SDE
 #include "sde/geometry_types.hpp"
 #include "sde/graphics/typecode.hpp"
+#include "sde/resources.hpp"
 
 namespace sde::graphics
 {
@@ -109,7 +107,7 @@ struct ImageShape
   Vec2i value = {};
   auto width() const { return value.x(); }
   auto height() const { return value.y(); }
-  auto pixels() const { return value.size(); }
+  auto pixels() const { return value.x() * value.y(); }
 };
 
 std::ostream& operator<<(std::ostream& os, const ImageShape& error);

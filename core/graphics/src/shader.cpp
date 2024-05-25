@@ -1,5 +1,6 @@
 // C++ Standard Library
 #include <algorithm>
+#include <charconv>
 #include <iomanip>
 #include <iterator>
 #include <ostream>
@@ -68,59 +69,81 @@ ShaderSourceParts toShaderSourceParts(std::string_view source)
   // clang-format on
 }
 
-ShaderVariableType toShaderVariableType(std::string_view typestr)
+std::pair<std::string_view, std::string_view> splitTypeAndExtent(std::string_view type_str)
 {
-  if (typestr == "int")
+  const auto beg = type_str.find('[');
+  if (beg == std::string_view::npos)
+  {
+    return {type_str, {}};
+  }
+  const auto end = type_str.find(']');
+  return {type_str.substr(0, beg), type_str.substr(beg + 1, end - beg - 1)};
+}
+
+int toInteger(std::string_view intstr)
+{
+  if (intstr.empty())
+  {
+    return 1;
+  }
+  int v = 0;
+  SDE_ASSERT_EQ(std::from_chars(intstr.data(), intstr.data() + intstr.size(), v).ec, std::errc());
+  return v;
+}
+
+ShaderVariableType toShaderVariableType(std::string_view type_str)
+{
+  if (type_str == "int")
   {
     return ShaderVariableType::kInt;
   }
 
-  if (typestr == "float")
+  if (type_str == "float")
   {
     return ShaderVariableType::kFloat;
   }
 
-  if (typestr == "vec2")
+  if (type_str == "vec2")
   {
     return ShaderVariableType::kVec2;
   }
 
-  if (typestr == "vec3")
+  if (type_str == "vec3")
   {
     return ShaderVariableType::kVec3;
   }
 
-  if (typestr == "vec4")
+  if (type_str == "vec4")
   {
     return ShaderVariableType::kVec4;
   }
 
-  if (typestr == "mat2")
+  if (type_str == "mat2")
   {
     return ShaderVariableType::kMat2;
   }
 
-  if (typestr == "mat3")
+  if (type_str == "mat3")
   {
     return ShaderVariableType::kMat3;
   }
 
-  if (typestr == "mat4")
+  if (type_str == "mat4")
   {
     return ShaderVariableType::kMat4;
   }
 
-  if (typestr == "sampler2D")
+  if (type_str == "sampler2D")
   {
     return ShaderVariableType::kSampler2;
   }
 
-  if (typestr == "sampler3D")
+  if (type_str == "sampler3D")
   {
     return ShaderVariableType::kSampler3;
   }
 
-  SDE_SHOULD_NEVER_HAPPEN("Unhandled typestr");
+  SDE_SHOULD_NEVER_HAPPEN("Unhandled type_str");
 }
 
 std::size_t
@@ -165,9 +188,13 @@ parseLayoutVariables(std::vector<ShaderVariable>& variables, std::string_view so
       break;
     }
 
+    const auto key = source.substr(var_name_beg_pos, var_name_end_pos - var_name_beg_pos);
+    const auto [type_part, extent_part] =
+      splitTypeAndExtent(source.substr(var_type_beg_pos, var_type_end_pos - var_type_beg_pos));
     variables.push_back(
-      {.key = std::string{source.substr(var_name_beg_pos, var_name_end_pos - var_name_beg_pos)},
-       .type = toShaderVariableType(source.substr(var_type_beg_pos, var_type_end_pos - var_type_beg_pos))});
+      {.key = std::string{key},
+       .type = toShaderVariableType(type_part),
+       .size = static_cast<std::size_t>(toInteger(extent_part))});
 
     next_start_pos = var_name_end_pos;
   }
@@ -206,9 +233,13 @@ parseUniformVariables(std::vector<ShaderVariable>& variables, std::string_view s
       break;
     }
 
+    const auto key = source.substr(var_name_beg_pos, var_name_end_pos - var_name_beg_pos);
+    const auto [type_part, extent_part] =
+      splitTypeAndExtent(source.substr(var_type_beg_pos, var_type_end_pos - var_type_beg_pos));
     variables.push_back(
-      {.key = std::string{source.substr(var_name_beg_pos, var_name_end_pos - var_name_beg_pos)},
-       .type = toShaderVariableType(source.substr(var_type_beg_pos, var_type_end_pos - var_type_beg_pos))});
+      {.key = std::string{key},
+       .type = toShaderVariableType(type_part),
+       .size = static_cast<std::size_t>(toInteger(extent_part))});
 
     next_start_pos = var_name_end_pos;
   }

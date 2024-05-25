@@ -133,10 +133,11 @@ cc_library(
   defines=platform_glfw_debug_selector,
   strip_include_prefix="include",
   deps=[
+    ":graphics",
     "//core/common:logging",
     "//core/common:geometry",
     "//platform/glad:glad",
-    "@glfw//:glfw"
+    "@glfw//:glfw",
   ],
   visibility=["//visibility:public"]
 )

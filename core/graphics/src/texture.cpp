@@ -10,6 +10,7 @@
 // SDE
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/texture.hpp"
+#include "sde/logging.hpp"
 
 namespace sde::graphics
 {
@@ -121,8 +122,8 @@ expected<void, TextureError> upload_texture_2D(
     GL_TEXTURE_2D,
     0,
     to_native_layout_enum(layout),
-    shape.value.y(),
     shape.value.x(),
+    shape.value.y(),
     0,
     to_native_layout_enum(layout),
     to_native_typecode(type),
@@ -207,8 +208,9 @@ create_texture_impl(View<T> data, const TextureShape& shape, TextureLayout layou
     return make_unexpected(TextureError::kInvalidDimensions);
   }
   else if (const std::size_t required_size = (shape.height() * shape.width() * to_channel_count(layout));
-           data.size() != required_size)
+           (sizeof(T) * data.size()) != required_size)
   {
+    SDE_LOG_FATAL_FMT("Expected texture to have data len %lu but has %lu", required_size, (sizeof(T) * data.size()));
     return make_unexpected(TextureError::kInvalidDataLength);
   }
   else if (const auto texture_or_error = create_native_texture_2D(
@@ -284,6 +286,27 @@ std::ostream& operator<<(std::ostream& os, TextureLayout layout)
   return os;
 }
 
+std::ostream& operator<<(std::ostream& os, TextureError error)
+{
+  switch (error)
+  {
+  case TextureError::kInvalidHandle:
+    return os << "InvalidHandle";
+  case TextureError::kInvalidDimensions:
+    return os << "InvalidDimensions";
+  case TextureError::kInvalidDataValue:
+    return os << "InvalidDataValue";
+  case TextureError::kInvalidDataLength:
+    return os << "InvalidDataLength";
+  case TextureError::kBackendCreationFailure:
+    return os << "BackendCreationFailure";
+  case TextureError::kBackendTransferFailure:
+    return os << "BackendTransferFailure";
+  case TextureError::kBackendMipMapGenerationFailure:
+    return os << "BackendMipMapGenerationFailure";
+  }
+}
+
 std::ostream& operator<<(std::ostream& os, TextureFlags flags)
 {
   return os << std::boolalpha << "{ unpack_alignment: " << static_cast<bool>(flags.unpack_alignment)
@@ -297,16 +320,6 @@ std::ostream& operator<<(std::ostream& os, const TextureOptions& options)
             << ", flags: " << options.flags << " }";
 }
 
-expected<void, TextureError>
-TextureCache::toTexture(TextureHandle texture, const Image& image, const TextureOptions& options)
-{
-  return TextureCache::toTexture(
-    texture,
-    make_view(reinterpret_cast<const std::uint8_t*>(image.data()), image.total_size_in_bytes()),
-    TextureShape{image.shape().value},
-    layout_from_channel_count(image.channel_count()),
-    options);
-}
 
 TextureCache::~TextureCache()
 {
@@ -327,66 +340,61 @@ bool TextureCache::remove(const TextureHandle& index)
   return false;
 }
 
+template <typename T>
 expected<void, TextureError> TextureCache::toTexture(
+  TextureHandle texture,
+  View<const T> data,
+  const TextureShape& shape,
+  TextureLayout layout,
+  const TextureOptions& options)
+{
+  auto texture_info_or_error = create_texture_impl(data, shape, layout, options);
+  if (texture_info_or_error.has_value())
+  {
+    textures_.emplace(texture, std::move(*texture_info_or_error));
+    return expected<void, TextureError>{};
+  }
+  return make_unexpected(texture_info_or_error.error());
+}
+
+template expected<void, TextureError> TextureCache::toTexture(
   TextureHandle texture,
   View<const std::uint8_t> data,
   const TextureShape& shape,
   TextureLayout layout,
-  const TextureOptions& options)
-{
-  if (auto texture_info_or_error = create_texture_impl(data, shape, layout, options);
-      !texture_info_or_error.has_value())
-  {
-    return make_unexpected(texture_info_or_error.error());
-  }
-  return expected<void, TextureError>{};
-}
+  const TextureOptions& options);
 
-expected<void, TextureError> TextureCache::toTexture(
+template expected<void, TextureError> TextureCache::toTexture(
   TextureHandle texture,
   View<const std::uint16_t> data,
   const TextureShape& shape,
   TextureLayout layout,
-  const TextureOptions& options)
-{
-  if (auto texture_info_or_error = create_texture_impl(data, shape, layout, options);
-      !texture_info_or_error.has_value())
-  {
-    return make_unexpected(texture_info_or_error.error());
-  }
-  return expected<void, TextureError>{};
-}
+  const TextureOptions& options);
 
-
-expected<void, TextureError> TextureCache::toTexture(
+template expected<void, TextureError> TextureCache::toTexture(
   TextureHandle texture,
   View<const std::uint32_t> data,
   const TextureShape& shape,
   TextureLayout layout,
-  const TextureOptions& options)
-{
-  if (auto texture_info_or_error = create_texture_impl(data, shape, layout, options);
-      !texture_info_or_error.has_value())
-  {
-    return make_unexpected(texture_info_or_error.error());
-  }
-  return expected<void, TextureError>{};
-}
+  const TextureOptions& options);
 
-
-expected<void, TextureError> TextureCache::toTexture(
+template expected<void, TextureError> TextureCache::toTexture(
   TextureHandle texture,
   View<const float> data,
   const TextureShape& shape,
   TextureLayout layout,
-  const TextureOptions& options)
+  const TextureOptions& options);
+
+
+expected<void, TextureError>
+TextureCache::toTexture(TextureHandle texture, const Image& image, const TextureOptions& options)
 {
-  if (auto texture_info_or_error = create_texture_impl(data, shape, layout, options);
-      !texture_info_or_error.has_value())
-  {
-    return make_unexpected(texture_info_or_error.error());
-  }
-  return expected<void, TextureError>{};
+  return TextureCache::toTexture(
+    texture,
+    make_view(reinterpret_cast<const std::uint8_t*>(image.data()), image.total_size_in_bytes()),
+    TextureShape{image.shape().value},
+    layout_from_channel_count(image.channel_count()),
+    options);
 }
 
 const TextureInfo* TextureCache::get(TextureHandle texture) const

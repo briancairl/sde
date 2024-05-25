@@ -101,10 +101,11 @@ std::size_t setAttribute(
 }
 
 constexpr std::size_t kBufferCount = 2;
-constexpr std::size_t kAttributeCount = 3;
+constexpr std::size_t kAttributeCount = 4;
 using PositionAttribute = VertexAttribute<0, float, 2>;
 using TexCoordAttribute = VertexAttribute<1, float, 2>;
-using TintColorAttribute = VertexAttribute<2, float, 4>;
+using TexUnitAttribute = VertexAttribute<2, float, 1>;
+using TintColorAttribute = VertexAttribute<3, float, 4>;
 
 }  // namespace
 
@@ -145,6 +146,9 @@ public:
       vab_attribute_byte_offets_[TexCoordAttribute::kIndex] = total_bytes;
       total_bytes += setAttribute(total_bytes, TexCoordAttribute{3UL * options.max_triangle_count_per_layer});
 
+      vab_attribute_byte_offets_[TexUnitAttribute::kIndex] = total_bytes;
+      total_bytes += setAttribute(total_bytes, TexUnitAttribute{3UL * options.max_triangle_count_per_layer});
+
       vab_attribute_byte_offets_[TintColorAttribute::kIndex] = total_bytes;
       total_bytes += setAttribute(total_bytes, TintColorAttribute{3UL * options.max_triangle_count_per_layer});
 
@@ -171,16 +175,53 @@ public:
     {
       auto* mapped_attr_buffer = map_write_only_vertex_buffer(getVertexAttributesID());
       auto* positions = getVertexAttributes<Vec2f, PositionAttribute>(mapped_attr_buffer);
+      auto* tex_coord = getVertexAttributes<Vec2f, TexCoordAttribute>(mapped_attr_buffer);
+      auto* tex_unit = getVertexAttributes<float, TexUnitAttribute>(mapped_attr_buffer);
       auto* colors = getVertexAttributes<Vec4f, TintColorAttribute>(mapped_attr_buffer);
 
       for (const auto& q : layer.quads)
       {
-        const auto& r = q.rect;
-        positions[0] = r.min;
-        positions[1] = {r.min.x(), r.max.y()};
-        positions[2] = r.max;
-        positions[3] = {r.max.x(), r.min.y()};
+        {
+          const auto& r = q.rect;
+          positions[0] = r.min;
+          positions[1] = {r.min.x(), r.max.y()};
+          positions[2] = r.max;
+          positions[3] = {r.max.x(), r.min.y()};
+        }
         positions += Quad::kVertexCount;
+
+        std::fill(tex_coord, tex_coord + Quad::kVertexCount, Vec2f::Zero());
+        tex_coord += Quad::kVertexCount;
+
+        std::fill(tex_unit, tex_unit + Quad::kVertexCount, -1);
+        tex_unit += Quad::kVertexCount;
+
+        std::fill(colors, colors + Quad::kVertexCount, q.color);
+        colors += Quad::kVertexCount;
+      }
+
+      for (const auto& q : layer.textured_quads)
+      {
+        {
+          const auto& r = q.rect;
+          positions[0] = r.min;
+          positions[1] = {r.min.x(), r.max.y()};
+          positions[2] = r.max;
+          positions[3] = {r.max.x(), r.min.y()};
+        }
+        positions += Quad::kVertexCount;
+
+        {
+          const auto& r = q.texrect;
+          tex_coord[0] = r.min;
+          tex_coord[1] = {r.min.x(), r.max.y()};
+          tex_coord[2] = r.max;
+          tex_coord[3] = {r.max.x(), r.min.y()};
+        }
+        tex_coord += Quad::kVertexCount;
+
+        std::fill(tex_unit, tex_unit + Quad::kVertexCount, static_cast<float>(q.texture_unit));
+        tex_unit += Quad::kVertexCount;
 
         std::fill(colors, colors + Quad::kVertexCount, q.color);
         colors += Quad::kVertexCount;
@@ -194,7 +235,8 @@ public:
     {
       auto* mapped_element_buffer = map_write_only_element_buffer(getVertexElementsID());
       auto* elements = getVertexElements(mapped_element_buffer);
-      for (std::size_t quad_index = 0; quad_index < layer.quads.size();
+      const auto n_quads = layer.quads.size() + layer.textured_quads.size();
+      for (std::size_t quad_index = 0; quad_index < n_quads;
            ++quad_index, elements += kElementsPerQuad, element_count += kElementsPerQuad)
       {
         // Lower face
@@ -209,8 +251,6 @@ public:
       }
       unmap_element_buffer();
     }
-
-    glUseProgram(shader.native_id);
     draw_triangle_elements(vao_, element_count);
   }
 
@@ -238,27 +278,26 @@ void Renderer2D::Layer::reset()
   textured_quads.clear();
 }
 
-bool Renderer2D::Layer::drawable() const { return shader.is_valid() and !(quads.empty() and textured_quads.empty()); }
+bool Renderer2D::Layer::drawable() const
+{
+  return settings.shader.is_valid() and !(quads.empty() and textured_quads.empty());
+}
 
 Renderer2D::~Renderer2D() = default;
 
 Renderer2D::Renderer2D(std::unique_ptr<Backend> backend, std::vector<Layer> layers) :
     layers_{std::move(layers)}, backend_{std::move(backend)}
-{}
-
-
-void Renderer2D::set(ShaderHandle shader)
 {
-  for (auto& layer : layers_)
-  {
-    layer.shader = shader;
-  }
+  GLint texture_units;
+  glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
+  SDE_ASSERT_GT(texture_units, LayerSettings::kTextureUnits);
 }
 
-void Renderer2D::set(std::size_t layer, ShaderHandle shader)
+
+LayerSettings& Renderer2D::layer(std::size_t layer)
 {
   SDE_ASSERT_LT(layer, layers_.size());
-  layers_[layer].shader = shader;
+  return layers_[layer].settings;
 }
 
 void Renderer2D::submit(std::size_t layer, const Quad& quad)
@@ -275,19 +314,48 @@ void Renderer2D::submit(std::size_t layer, const TexturedQuad& quad)
 
 void Renderer2D::update(const ShaderCache& shader_cache, const TextureCache& texture_cache)
 {
+  native_shader_id_t active_shader_id = 0;
   for (auto& layer : layers_)
   {
-    if (layer.drawable())
+    if (!layer.drawable())
     {
-      SDE_ASSERT_TRUE(layer.shader.is_valid());
-      const auto* shader_info = shader_cache.get(layer.shader);
-      SDE_ASSERT_NE(shader_info, nullptr);
-      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vPosition", ShaderVariableType::kVec2, PositionAttribute::kIndex));
-      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexCoord", ShaderVariableType::kVec2, TexCoordAttribute::kIndex));
-      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTintColor", ShaderVariableType::kVec4, TintColorAttribute::kIndex));
-      backend_->draw(*shader_info, texture_cache, layer);
+      continue;
     }
+
+    // Get shader from cacher
+    SDE_ASSERT_TRUE(layer.settings.shader.is_valid());
+    const auto* shader_info = shader_cache.get(layer.settings.shader);
+    SDE_ASSERT_NE(shader_info, nullptr);
+
+    // Set active shader
+    if (active_shader_id != shader_info->native_id)
+    {
+      // clang-format off
+      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vPosition",  ShaderVariableType::kVec2,  PositionAttribute::kIndex ));
+      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexCoord",  ShaderVariableType::kVec2,  TexCoordAttribute::kIndex ));
+      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexUnit",   ShaderVariableType::kFloat, TexUnitAttribute::kIndex  ));
+      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTintColor", ShaderVariableType::kVec4,  TintColorAttribute::kIndex));
+      // clang-format on
+
+      glUseProgram(shader_info->native_id);
+      active_shader_id = shader_info->native_id;
+    }
+
+    // Set active texture units
+    for (std::size_t unit = 0; unit < layer.settings.textures.size(); ++unit)
+    {
+      if (const native_shader_id_t texture_id = layer.settings.textures[unit]; texture_id > 0)
+      {
+        glActiveTexture(GL_TEXTURE0 + unit);
+        glBindTexture(GL_TEXTURE_2D, texture_id);
+        glUniform1i(glGetUniformLocation(active_shader_id, "fTextureID"), unit);
+      }
+    }
+
+    // Draw
+    backend_->draw(*shader_info, texture_cache, layer);
   }
+
   for (auto& layer : layers_)
   {
     layer.reset();
@@ -298,6 +366,10 @@ expected<Renderer2D, Renderer2DError> Renderer2D::create(const Renderer2DOptions
 {
   std::vector<Layer> layers;
   layers.resize(options.max_layers);
+  for (auto& l : layers)
+  {
+    l.settings.textures.fill(0);
+  }
   return Renderer2D{std::make_unique<Backend>(options), std::move(layers)};
 }
 

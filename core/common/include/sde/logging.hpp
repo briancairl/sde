@@ -89,7 +89,7 @@ enum class LogSeverity
   if (!(cond))                                                                                                         \
   {                                                                                                                    \
     SDE_ASSERT_MSG(                                                                                                    \
-      "\n***RUNTIME ASSERTION FAILED***\n\ncondition : %s\nmessage   : %s\nfile      : %s:%d\\n",                      \
+      "\n***RUNTIME ASSERTION FAILED***\n\ncondition : %s\nmessage   : %s\nfile      : %s:%d\n",                       \
       #cond,                                                                                                           \
       message,                                                                                                         \
       __FILE__,                                                                                                        \

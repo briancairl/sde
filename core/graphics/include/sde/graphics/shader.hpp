@@ -48,6 +48,7 @@ struct ShaderVariable
 {
   std::string key;
   ShaderVariableType type;
+  std::size_t size = 1;
 };
 
 std::ostream& operator<<(std::ostream& os, const ShaderVariable& value);

@@ -12,6 +12,7 @@
 
 // SDE
 #include "sde/graphics/debug.hpp"
+#include "sde/logging.hpp"
 
 #warning "Compiling with graphical device (OpenGL) debugging enabled"
 
@@ -153,18 +154,28 @@ void gl_error_log_callback(
 
 void enable_native_debug_logs()
 {
+  SDE_LOG_WARN("OpenGL debug messages enabled");
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(gl_debug_log_callback, nullptr);
 }
 
-void disable_native_debug_logs() { glDisable(GL_DEBUG_OUTPUT); }
+void disable_native_debug_logs()
+{
+  SDE_LOG_WARN("OpenGL debug messages disabled");
+  glDisable(GL_DEBUG_OUTPUT);
+}
 
 void enable_native_error_logs()
 {
+  SDE_LOG_WARN("OpenGL error messages enabled");
   glEnable(GL_DEBUG_OUTPUT);
   glDebugMessageCallback(gl_error_log_callback, nullptr);
 }
 
-void disable_native_error_logs() { glDisable(GL_DEBUG_OUTPUT); }
+void disable_native_error_logs()
+{
+  SDE_LOG_WARN("OpenGL error messages disabled");
+  glDisable(GL_DEBUG_OUTPUT);
+}
 
 }  // namespace sde::graphics

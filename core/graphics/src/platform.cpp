@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h>
 
 // SDE
+#include "sde/graphics/debug.hpp"
 #include "sde/graphics/platform.hpp"
 #include "sde/logging.hpp"
 
@@ -64,6 +65,9 @@ WindowHandle glfw_try_init(const WindowOptions& options)
 
   SDE_ASSERT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to load OpenGL (via glad)");
   SDE_LOG_INFO("Loaded OpenGL (via glad)");
+
+  enable_native_debug_logs();
+  enable_native_error_logs();
 
   static constexpr int kBufferSwapInterval_EnableVSync = 1;
   glfwSwapInterval(kBufferSwapInterval_EnableVSync);

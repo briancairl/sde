@@ -95,6 +95,8 @@ struct TextureInfo
   TextureShape shape;
   TextureOptions options;
   native_texture_id_t native_id;
+
+  constexpr operator native_texture_id_t() const { return native_id; }
 };
 
 std::ostream& operator<<(std::ostream& os, const TextureInfo& info);
@@ -124,15 +126,13 @@ public:
   expected<TextureHandle, TextureError> toTexture(const Image& image, const TextureOptions& options = {})
   {
     const auto texture = getNextTextureHandle();
-    if (auto ok_or_error = toTexture(texture, image, options); !ok_or_error.has_value())
+    const auto ok_or_error = toTexture(texture, image, options);
+    if (ok_or_error.has_value())
     {
       last_texture_handle_ = texture;
       return texture;
     }
-    else
-    {
-      return make_unexpected(ok_or_error.error());
-    }
+    return make_unexpected(ok_or_error.error());
   }
 
   template <typename DataT>
@@ -140,15 +140,13 @@ public:
   toTexture(View<const DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {})
   {
     const auto texture = getNextTextureHandle();
-    if (auto ok_or_error = toTexture(texture, data, shape, options); ok_or_error.has_value())
+    const auto ok_or_error = toTexture(texture, data, shape, options);
+    if (ok_or_error.has_value())
     {
       last_texture_handle_ = texture;
       return texture;
     }
-    else
-    {
-      return make_unexpected(ok_or_error.error());
-    }
+    return make_unexpected(ok_or_error.error());
   }
 
   const TextureInfo* get(TextureHandle texture) const;
@@ -158,30 +156,10 @@ private:
 
   expected<void, TextureError> toTexture(TextureHandle, const Image& image, const TextureOptions& options = {});
 
+  template <typename T>
   expected<void, TextureError> toTexture(
     TextureHandle texture,
-    View<const std::uint8_t> data,
-    const TextureShape& shape,
-    TextureLayout layout,
-    const TextureOptions& options = {});
-
-  expected<void, TextureError> toTexture(
-    TextureHandle texture,
-    View<const std::uint16_t> data,
-    const TextureShape& shape,
-    TextureLayout layout,
-    const TextureOptions& options = {});
-
-  expected<void, TextureError> toTexture(
-    TextureHandle texture,
-    View<const std::uint32_t> data,
-    const TextureShape& shape,
-    TextureLayout layout,
-    const TextureOptions& options = {});
-
-  expected<void, TextureError> toTexture(
-    TextureHandle texture,
-    View<const float> data,
+    View<const T> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
