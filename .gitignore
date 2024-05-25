@@ -4,6 +4,7 @@ bazel-bin
 bazel-genfiles
 bazel-out
 bazel-tyl
+MODULE*
 
 # Backup Files
 *.cpp~
