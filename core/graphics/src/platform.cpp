@@ -93,7 +93,7 @@ WindowHandle::~WindowHandle()
   }
 }
 
-void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
+void WindowHandle::spin(std::function<WindowDirective(const WindowProperties&)> on_update)
 {
   static constexpr double kLoopRate = 60.0;
 
@@ -106,8 +106,8 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
   const auto t_advance =
     std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(1.0 / kLoopRate));
 
-  const auto t_start = std::chrono::steady_clock::now();
-
+  auto t_start = std::chrono::steady_clock::now();
+  auto t_prev = t_start;
   auto t_next = t_start + t_advance;
 
   while (!glfwWindowShouldClose(window))
@@ -125,7 +125,17 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    on_update(window_properties);
+    switch (on_update(window_properties))
+    {
+    case WindowDirective::kContinue:
+      break;
+    case WindowDirective::kReset:
+      t_start = std::chrono::steady_clock::now();
+      t_prev = t_start;
+      break;
+    case WindowDirective::kClose:
+      return;
+    }
 
     glViewport(0, 0, window_properties.size.x(), window_properties.size.y());
     glfwSwapBuffers(window);
@@ -142,6 +152,8 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
       t_next += t_advance;
     }
     window_properties.time = (t_now - t_start);
+    window_properties.time_delta = (t_now - t_prev);
+    t_prev = t_now;
   }
 }
 

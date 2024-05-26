@@ -20,9 +20,11 @@ static const auto* kShader1 = R"Shader1(
   out vec4 fTintColor;
   out float fTexUnit;
 
+  uniform mat3 uTransform;
+
   void main()
   {
-    gl_Position = vec4(vPosition, 0, 1);
+    gl_Position = vec4(uTransform * vec3(vPosition, 0), 1);
     fTexUnit = vTexUnit;
     fTexCoord = vTexCoord;
     fTintColor = vTintColor;
@@ -57,10 +59,17 @@ static const auto* kShader2 = R"Shader2(
   out vec2 fTexCoord;
   out vec4 fTintColor;
 
+  uniform mat3 uTransform;
+  uniform float uTime;
+  uniform float uTimeDelta;
+
   void main()
   {
-    gl_Position = vec4(vPosition, 0, 1);
-    fTexCoord = vTexCoord;
+    gl_Position = vec4(uTransform * vec3(vPosition, 0), 1);
+
+    float w = (uTimeDelta * 10.0 + 10.0) * uTime;
+
+    fTexCoord = vTexCoord + 1e-1 * vec2(cos(w + vTexCoord[0]), sin(w + vTexCoord[1]));
     fTintColor = vTintColor;
   }
 
@@ -108,38 +117,85 @@ int main(int argc, char** argv)
 
   Renderer2D renderer;
 
-  renderer.layer(0).shader = *shader1_or_error;
-  renderer.layer(0).textures[0] = (*texture_or_error);
-  renderer.layer(0).textures[4] = (*texture_or_error);
+  Layer layer_base;
+  layer_base.resources.shader = *shader1_or_error;
+  layer_base.resources.textures[0] = (*texture_or_error);
+  layer_base.resources.textures[4] = (*texture_or_error);
 
-  renderer.layer(1).shader = *shader2_or_error;
+  Layer layer_lighting;
+  layer_lighting.resources.shader = *shader2_or_error;
 
+  // clang-format off
   app.spin([&](const auto& window_properties) {
-    renderer.submit(0, Quad{.rect = {.min = {0.7F, 0.7F}, .max = {0.8F, 0.8F}}, .color = {1.0F, 0.0F, 1.0F, 1.0F}});
-    renderer.submit(0, Quad{.rect = {.min = {0.1F, 0.1F}, .max = {0.5F, 0.5F}}, .color = {1.0F, 1.0F, 1.0F, 1.0F}});
 
-    renderer.submit(
-      0,
-      TexturedQuad{
-        .rect = {.min = {0.1F, 0.1F}, .max = {0.3F, 0.3F}},
-        .texrect = {.min = {0.0F, 0.0F}, .max = {1.0F, 1.0F}},
-        .color = {1.0F, 1.0F, 1.0F, 1.0F},
-        .texture_unit = 0});
+    layer_base.settings.time = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time).count();
+    layer_base.settings.time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time_delta).count();
+    layer_base.settings.scaling = 1.0F;
+    layer_base.settings.setAspectRatio(window_properties.size);
 
-    renderer.submit(
-      0,
-      TexturedQuad{
-        .rect = {.min = {-0.1F, -0.1F}, .max = {-0.3F, -0.3F}},
-        .texrect = {.min = {0.0F, 0.0F}, .max = {1.0F, 1.0F}},
-        .color = {1.0F, 0.0F, 1.0F, 0.1F},
-        .texture_unit = 4});
+    layer_lighting.settings = layer_base.settings;
 
-    renderer.submit(1, Circle{.center = {0.4F, 0.4F}, .radius = 1.5F, .color = {1.0F, 1.0F, 1.0F, 1.0F}});
+    layer_base.quads.push_back({
+      .rect = {
+        .min = {0.7F, 0.7F},
+        .max = {0.8F, 0.8F}
+      },
+      .color = {1.0F, 0.0F, 1.0F, 1.0F}
+    });
 
-    renderer.submit(1, Circle{.center = {-0.4F, -0.4F}, .radius = 0.4F, .color = {1.0F, 1.0F, 1.0F, 0.5F}});
+    layer_base.quads.push_back({
+      .rect = {
+        .min = {0.1F, 0.1F},
+        .max = {0.5F, 0.5F}
+      },
+      .color = {1.0F, 1.0F, 1.0F, 1.0F}
+    });
 
-    renderer.update(shader_cache, texture_cache);
+    layer_base.textured_quads.push_back({
+      .rect = {
+        .min = {0.1F, 0.1F},
+        .max = {0.3F, 0.3F}
+      },
+      .rect_texture = {
+        .min = {0.0F, 0.0F},
+        .max = {1.0F, 1.0F}
+      },
+      .color = {1.0F, 1.0F, 1.0F, 1.0F},
+      .texture_unit = 0});
+
+    layer_base.textured_quads.push_back({
+      .rect = {
+        .min = {-0.1F, -0.1F},
+        .max = {-0.3F, -0.3F}
+      },
+      .rect_texture = {
+        .min = {0.0F, 0.0F},
+        .max = {1.0F, 1.0F}
+      },
+      .color = {1.0F, 0.0F, 1.0F, 0.1F},
+      .texture_unit = 4
+    });
+
+    layer_lighting.circles.push_back({
+      .center = {0.4F, 0.4F}, 
+      .radius = 1.5F,
+      .color = {1.0F, 1.0F, 1.0F, 1.0F}
+    });
+
+    layer_lighting.circles.push_back({
+      .center = {-0.4F, -0.4F},
+      .radius = 0.4F,
+      .color = {1.0F, 1.0F, 1.0F, 0.5F}
+    });
+
+    renderer.submit(shader_cache, texture_cache, layer_base);
+    renderer.submit(shader_cache, texture_cache, layer_lighting);
+
+    SDE_LOG_DEBUG_FMT("%f : %f", layer_base.settings.time, layer_base.settings.time_delta);
+
+    return WindowDirective::kContinue;
   });
+  // clang-format on
 
   SDE_LOG_INFO("done.");
   return 0;

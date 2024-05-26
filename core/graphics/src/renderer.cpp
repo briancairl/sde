@@ -148,6 +148,20 @@ struct ElementBuffer
   ~ElementBuffer() { unmap_element_buffer(); }
 };
 
+Mat3f inverse_camera_matrix(float scaling, float aspect)
+{
+  const float rxx = scaling * aspect;
+  const float ryy = scaling;
+
+  Mat3f m;
+  // clang-format off
+  m << rxx, 0.f, 0.f,
+       0.f, ryy, 0.f,
+       0.f, 0.f, 1.f;
+  // clang-format on
+  return m;
+}
+
 }  // namespace
 
 class Renderer2D::Backend
@@ -155,6 +169,12 @@ class Renderer2D::Backend
 public:
   Backend(const Renderer2DOptions& options)
   {
+    {
+      GLint texture_units;
+      glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
+      SDE_ASSERT_GT(texture_units, LayerResources::kTextureUnits);
+    }
+
     glGenVertexArrays(1, &vao_);
     glGenBuffers(2, vab_);
 
@@ -273,7 +293,7 @@ private:
     for (const auto& q : layer.textured_quads)
     {
       fillQuadPositions(buffers.position + buffers.vertex_count, q.rect.min, q.rect.max);
-      fillQuadPositions(buffers.texcoord + buffers.vertex_count, q.texrect.min, q.texrect.max);
+      fillQuadPositions(buffers.texcoord + buffers.vertex_count, q.rect_texture.min, q.rect_texture.max);
       std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(q.texture_unit));
       std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
       buffers.vertex_count += kVerticesPerQuad;
@@ -369,101 +389,71 @@ private:
   std::size_t vab_attribute_byte_offets_[kAttributeCount];
 };
 
-LayerSettings::LayerSettings() { textures.fill(TextureHandle::null()); }
+LayerResources::LayerResources() { textures.fill(TextureHandle::null()); }
 
-void Renderer2D::Layer::reset()
+void Layer::reset()
 {
   quads.clear();
   textured_quads.clear();
   circles.clear();
 }
 
-bool Renderer2D::Layer::drawable() const
+bool Layer::drawable() const
 {
-  return settings.shader.is_valid() and !(quads.empty() and textured_quads.empty() and circles.empty());
+  return resources.is_valid() and !(quads.empty() and textured_quads.empty() and circles.empty());
 }
 
 Renderer2D::~Renderer2D() = default;
 
 Renderer2D::Renderer2D(const Renderer2DOptions& options) :
-    layers_{[&options] {
-      std::vector<Layer> layers;
-      layers.resize(options.max_layers);
-      return layers;
-    }()},
-    backend_{std::make_unique<Backend>(options)}
-{
-  GLint texture_units;
-  glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
-  SDE_ASSERT_GT(texture_units, LayerSettings::kTextureUnits);
-}
+    active_resources_{}, backend_{std::make_unique<Backend>(options)}
+{}
 
-LayerSettings& Renderer2D::layer(std::size_t layer)
+void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& texture_cache, Layer& layer)
 {
-  SDE_ASSERT_LT(layer, layers_.size());
-  return layers_[layer].settings;
-}
-
-void Renderer2D::submit(std::size_t layer, const Quad& quad)
-{
-  SDE_ASSERT_LT(layer, layers_.size());
-  layers_[layer].quads.push_back(quad);
-}
-
-void Renderer2D::submit(std::size_t layer, const TexturedQuad& quad)
-{
-  SDE_ASSERT_LT(layer, layers_.size());
-  layers_[layer].textured_quads.push_back(quad);
-}
-
-void Renderer2D::submit(std::size_t layer, const Circle& circle)
-{
-  SDE_ASSERT_LT(layer, layers_.size());
-  layers_[layer].circles.push_back(circle);
-}
-
-void Renderer2D::update(const ShaderCache& shader_cache, const TextureCache& texture_cache)
-{
-  LayerSettings active_settings;
-  native_shader_id_t active_shader_id = 0;
-  for (auto& layer : layers_)
+  if (layer.drawable())
   {
-    if (!layer.drawable())
-    {
-      continue;
-    }
+    const auto* shader = shader_cache.get(layer.resources.shader);
+    SDE_ASSERT_NE(shader, nullptr);
 
     // Set active shader
-    if (layer.settings.shader != active_settings.shader)
+    if (layer.resources.shader != active_resources_.shader)
     {
-      const auto* shader = shader_cache.get(layer.settings.shader);
       SDE_ASSERT_NE(shader, nullptr);
       glUseProgram(shader->native_id);
-      active_settings.textures.fill(TextureHandle::null());
+      active_resources_.textures.fill(TextureHandle::null());
     }
 
     // Set active texture units
-    for (std::size_t unit = 0; unit < layer.settings.textures.size(); ++unit)
+    for (std::size_t unit = 0; unit < layer.resources.textures.size(); ++unit)
     {
-      if (!layer.settings.textures[unit] and layer.settings.textures[unit] != active_settings.textures[unit])
+      if (layer.resources.textures[unit] and layer.resources.textures[unit] != active_resources_.textures[unit])
       {
-        const auto* texture = texture_cache.get(layer.settings.textures[unit]);
+        const auto* texture = texture_cache.get(layer.resources.textures[unit]);
         SDE_ASSERT_NE(texture, nullptr);
 
         glActiveTexture(GL_TEXTURE0 + unit);
         glBindTexture(GL_TEXTURE_2D, texture->native_id);
-        glUniform1i(glGetUniformLocation(active_shader_id, "fTextureID"), unit);
+
+        glUniform1i(glGetUniformLocation(shader->native_id, "fTextureID"), unit);
       }
     }
 
-    // Draw
+    // Apply other variables
+    glUniform1f(glGetUniformLocation(shader->native_id, "vTime"), layer.settings.time);
+    glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), layer.settings.time_delta);
+
+    {
+      const Mat3f transform =
+        (inverse_camera_matrix(layer.settings.scaling, layer.settings.aspect_ratio) * layer.settings.screen_from_world)
+          .inverse();
+      glUniformMatrix3fv(glGetUniformLocation(shader->native_id, "uTransform"), 1, GL_FALSE, transform.data());
+    }
+
+    // Call backend
     backend_->draw(layer);
   }
-
-  for (auto& layer : layers_)
-  {
-    layer.reset();
-  }
+  layer.reset();
 }
 
 }  // namespace sde::graphics

@@ -28,10 +28,18 @@ struct WindowProperties
   using Duration = Clock::duration;
 
   Duration time = Duration::zero();
+  Duration time_delta = Duration::zero();
 
   Vec2i size = {640, 480};
   Vec2d mouse_position_px = {0.0, 0.0};
   Vec2f mouse_position_vp = {0.0, 0.0};
+};
+
+enum class WindowDirective
+{
+  kContinue,
+  kReset,
+  kClose
 };
 
 // TODO() move to window module
@@ -45,7 +53,7 @@ public:
 
   WindowHandle(WindowHandle&&);
 
-  void spin(std::function<void(const WindowProperties&)> on_update);
+  void spin(std::function<WindowDirective(const WindowProperties&)> on_update);
 
 private:
   WindowHandle(const WindowHandle&) = delete;

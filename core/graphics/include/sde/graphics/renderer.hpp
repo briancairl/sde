@@ -22,15 +22,6 @@
 namespace sde::graphics
 {
 
-/**
- * @brief Texture creation options
- */
-struct Renderer2DOptions
-{
-  std::size_t max_layers = 3UL;
-  std::size_t max_triangle_count_per_layer = 10000UL;
-};
-
 struct Rect
 {
   Vec2f min = Vec2f::Zero();
@@ -46,7 +37,7 @@ struct Quad
 struct TexturedQuad
 {
   Rect rect;
-  Rect texrect;
+  Rect rect_texture;
   Vec4f color = Vec4f::Ones();
   std::size_t texture_unit;
 };
@@ -58,13 +49,51 @@ struct Circle
   Vec4f color = Vec4f::Ones();
 };
 
-struct LayerSettings
+struct LayerResources
 {
   static constexpr std::size_t kTextureUnits = 16UL;
   ShaderHandle shader = ShaderHandle::null();
   std::array<TextureHandle, kTextureUnits> textures;
 
-  LayerSettings();
+  bool is_valid() const { return shader.is_valid(); }
+
+  LayerResources();
+};
+
+struct LayerSettings
+{
+  Mat3f screen_from_world = Mat3f::Identity();
+
+  float time = 0.0F;
+  float time_delta = 0.0F;
+
+  float scaling = 1.0F;
+  float aspect_ratio = 1.0F;
+
+  void setAspectRatio(Vec2i frame_buffer_dimensions)
+  {
+    aspect_ratio = static_cast<float>(frame_buffer_dimensions.x()) / static_cast<float>(frame_buffer_dimensions.y());
+  }
+};
+
+struct Layer
+{
+  LayerSettings settings;
+  LayerResources resources;
+  std::vector<Quad> quads;
+  std::vector<TexturedQuad> textured_quads;
+  std::vector<Circle> circles;
+
+  void reset();
+  bool drawable() const;
+};
+
+/**
+ * @brief Texture creation options
+ */
+struct Renderer2DOptions
+{
+  std::size_t max_triangle_count_per_layer = 10000UL;
 };
 
 class Renderer2D
@@ -78,59 +107,13 @@ public:
 
   explicit Renderer2D(const Renderer2DOptions& options = {});
 
-  LayerSettings& layer(std::size_t layer);
-
-  /**
-   * @brief Add a quad to a specific layer
-   */
-  void submit(std::size_t layer, const Quad& quad);
-
-  /**
-   * @brief Add a textured quad to a specific layer
-   */
-  void submit(std::size_t layer, const TexturedQuad& quad);
-
-  /**
-   * @brief Add a circle
-   */
-  void submit(std::size_t layer, const Circle& circle);
-
-  /**
-   * @brief Add quad to the default layer
-   */
-  void submit(const Quad& quad) { this->submit(kDefaultLayer, quad); }
-
-  /**
-   * @brief Add textured quad to the default layer
-   */
-  void submit(const TexturedQuad& quad) { this->submit(kDefaultLayer, quad); }
-
-  /**
-   * @brief Add a circle to the default layer
-   */
-  void submit(const Circle& circle) { this->submit(kDefaultLayer, circle); }
-
   /**
    * @brief Draws buffered shapes
    */
-  void update(const ShaderCache& shader_cache, const TextureCache& texture_cache);
+  void submit(const ShaderCache& shader_cache, const TextureCache& texture_cache, Layer& layer);
 
 private:
-  struct Layer
-  {
-    static constexpr std::size_t kTextureUnits = 16UL;
-
-    LayerSettings settings;
-
-    std::vector<Quad> quads;
-    std::vector<TexturedQuad> textured_quads;
-    std::vector<Circle> circles;
-
-    void reset();
-    bool drawable() const;
-  };
-
-  std::vector<Layer> layers_;
+  LayerResources active_resources_;
 
   class Backend;
   std::unique_ptr<Backend> backend_;
