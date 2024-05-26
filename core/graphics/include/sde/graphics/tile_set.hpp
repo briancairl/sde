@@ -1,37 +1,66 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file texture.hpp
+ * @file tile_set.hpp
  */
 #pragma once
 
 // C++ Standard Library
+#include <iosfwd>
 #include <vector>
 
 // SDE
 #include "sde/expected.hpp"
 
 // SDE
-#include "sde/graphics/shapdes.hpp"
+#include "sde/graphics/shapes.hpp"
 #include "sde/graphics/texture_fwd.hpp"
+#include "sde/graphics/texture_handle.hpp"
 
 namespace sde::graphics
 {
 
 enum TileSetError
 {
-
+  kInvalidAtlasTexture,
+  kInvalidTileSize,
 };
+
+std::ostream& operator<<(std::ostream& os, TileSetError error);
 
 class TileSet
 {
 public:
-  static expected<TileSet, TileSetError>
-  slice(const TextureInfo& texture, const Vec2i tile_size, const Vec2i offset = Vec2i::Zero());
+  /**
+   * @brief Creates a tile set by uniformly slicing a texture
+   */
+  static expected<TileSet, TileSetError> slice(
+    const TextureHandle& texture,
+    const TextureInfo& texture_info,
+    const Vec2i tile_size,
+    const Vec2i tile_start_offset = Vec2i::Zero());
+
+  /**
+   * @brief Returns handle to atlas texture for this tile set
+   */
+  const TextureHandle atlas() const { return atlas_texture_; }
+
+  /**
+   * @brief Returns texture-space bounds for a given tile
+   */
+  const Rect& operator[](const std::size_t tile) const { return tile_bounds_[tile]; }
+
+  /**
+   * @brief Returns the number of tiles
+   */
+  std::size_t size() const { return tile_bounds_.size(); }
 
 private:
   explicit TileSet(std::vector<Rect> tex_coords);
-  std::vector<Rect> tex_coords_;
+  TextureHandle atlas_texture_;
+  std::vector<Rect> tile_bounds_;
 };
+
+std::ostream& operator<<(std::ostream& os, const TileSet& tile_set);
 
 }  // namespace sde::graphics

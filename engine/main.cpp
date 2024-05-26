@@ -1,5 +1,5 @@
 // C++ Standard Library
-#include <ostream>
+#include <iostream>
 
 // SDE
 #include "sde/graphics/image.hpp"

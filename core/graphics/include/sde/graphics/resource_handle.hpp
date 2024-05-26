@@ -58,7 +58,14 @@ struct ResourceHandleHash
 
 template <typename T> inline std::ostream& operator<<(std::ostream& os, const ResourceHandle<T>& handle)
 {
-  return os << "{ id: " << handle.id() << " }";
+  if (handle.is_null())
+  {
+    return os << "{ id: <NULL> }";
+  }
+  else
+  {
+    return os << "{ id: " << handle.id() << " }";
+  }
 }
 
 }  // namespace sde::graphics

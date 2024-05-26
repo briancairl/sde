@@ -456,4 +456,27 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
   layer.reset();
 }
 
+std::ostream& operator<<(std::ostream& os, const LayerResources& resources)
+{
+  os << "shader: " << resources.shader << "\ntexture-units:\n";
+  for (std::size_t unit = 0; unit < resources.textures.size(); ++unit)
+  {
+    os << "  [" << unit << "] : " << resources.textures[unit] << '\n';
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const LayerSettings& settings)
+{
+  return os << "screen_from_world:\n"
+            << settings.screen_from_world << "\ntime: " << settings.time << " (delta: " << settings.time_delta << ')'
+            << "\nscaling: " << settings.scaling << "\naspect: " << settings.aspect_ratio;
+}
+
+std::ostream& operator<<(std::ostream& os, const Layer& layer)
+{
+  return os << layer.resources << layer.settings << "\nquads: " << layer.quads.size()
+            << "\ntextured-quads: " << layer.textured_quads.size() << "\ncircles: " << layer.circles.size();
+}
+
 }  // namespace sde::graphics

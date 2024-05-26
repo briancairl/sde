@@ -8,5 +8,6 @@
 namespace sde::graphics
 {
 struct TextureHandle;
+struct TextureInfo;
 class TextureCache;
 }  // namespace sde::graphics

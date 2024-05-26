@@ -59,7 +59,8 @@ cc_library(
     "include/sde/graphics/shapes.hpp",
     "include/sde/graphics/texture.hpp",
     "include/sde/graphics/texture_fwd.hpp",
-    "include/sde/graphics/texture_handle.hpp"
+    "include/sde/graphics/texture_handle.hpp",
+    "include/sde/graphics/tile_set.hpp"
   ],
   strip_include_prefix="include",
   deps=[
@@ -103,7 +104,9 @@ cc_library(
   srcs=[
     "src/renderer.cpp",
     "src/shader.cpp",
+    "src/shapes.cpp",
     "src/texture.cpp",
+    "src/tile_set.cpp",
   ] + graphics_impl__renderer__opengl_debug_selector,
   deps=[
     ":graphics_impl__renderer__opengl_internal",

@@ -8,6 +8,7 @@
 // C++ Standard Library
 #include <array>
 #include <cstdint>
+#include <iosfwd>
 #include <memory>
 #include <vector>
 
@@ -33,6 +34,8 @@ struct LayerResources
   LayerResources();
 };
 
+std::ostream& operator<<(std::ostream& os, const LayerResources& resources);
+
 struct LayerSettings
 {
   Mat3f screen_from_world = Mat3f::Identity();
@@ -49,6 +52,8 @@ struct LayerSettings
   }
 };
 
+std::ostream& operator<<(std::ostream& os, const LayerSettings& settings);
+
 struct Layer
 {
   LayerSettings settings;
@@ -60,6 +65,8 @@ struct Layer
   void reset();
   bool drawable() const;
 };
+
+std::ostream& operator<<(std::ostream& os, const Layer& layer);
 
 /**
  * @brief Texture creation options
