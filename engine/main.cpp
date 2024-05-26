@@ -128,7 +128,9 @@ int main(int argc, char** argv)
   // clang-format off
   app.spin([&](const auto& window_properties) {
 
-    layer_base.settings.time = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time).count();
+    const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time).count();
+
+    layer_base.settings.time = time;
     layer_base.settings.time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time_delta).count();
     layer_base.settings.scaling = 1.0F;
     layer_base.settings.setAspectRatio(window_properties.size);
@@ -162,6 +164,12 @@ int main(int argc, char** argv)
       },
       .color = {1.0F, 1.0F, 1.0F, 1.0F},
       .texture_unit = 0});
+
+    layer_base.circles.push_back({
+      .center = {0.5F * std::cos(time), 0.5F * std::sin(time)},
+      .radius = 0.1F,
+      .color = {std::abs(std::cos(time)), 1.0F, 1.0F, std::abs(std::sin(time))}
+    });
 
     layer_base.textured_quads.push_back({
       .rect = {

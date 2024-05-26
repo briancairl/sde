@@ -10,6 +10,7 @@
 #include "opengl.inl"
 
 // SDE
+#include "sde/geometry_types.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/texture.hpp"
@@ -425,17 +426,16 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
     }
 
     // Set active texture units
-    for (std::size_t unit = 0; unit < layer.resources.textures.size(); ++unit)
+    for (std::size_t u = 0; u < layer.resources.textures.size(); ++u)
     {
-      if (layer.resources.textures[unit] and layer.resources.textures[unit] != active_resources_.textures[unit])
+      if (layer.resources.textures[u] and layer.resources.textures[u] != active_resources_.textures[u])
       {
-        const auto* texture = texture_cache.get(layer.resources.textures[unit]);
+        const auto* texture = texture_cache.get(layer.resources.textures[u]);
         SDE_ASSERT_NE(texture, nullptr);
 
-        glActiveTexture(GL_TEXTURE0 + unit);
+        glActiveTexture(GL_TEXTURE0 + u);
         glBindTexture(GL_TEXTURE_2D, texture->native_id);
-
-        glUniform1i(glGetUniformLocation(shader->native_id, "uTexture"), unit);
+        glUniform1i(glGetUniformLocation(shader->native_id, "uTexture"), u);
       }
     }
 

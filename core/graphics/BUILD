@@ -56,6 +56,7 @@ cc_library(
     "include/sde/graphics/shader.hpp",
     "include/sde/graphics/shader_fwd.hpp",
     "include/sde/graphics/shader_handle.hpp",
+    "include/sde/graphics/shapes.hpp",
     "include/sde/graphics/texture.hpp",
     "include/sde/graphics/texture_fwd.hpp",
     "include/sde/graphics/texture_handle.hpp"

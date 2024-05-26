@@ -95,8 +95,6 @@ struct TextureInfo
   TextureShape shape;
   TextureOptions options;
   native_texture_id_t native_id;
-
-  constexpr operator native_texture_id_t() const { return native_id; }
 };
 
 std::ostream& operator<<(std::ostream& os, const TextureInfo& info);
