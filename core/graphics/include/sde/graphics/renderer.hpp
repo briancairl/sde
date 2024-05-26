@@ -59,6 +59,13 @@ struct TexturedQuad
   std::size_t texture_unit;
 };
 
+struct Circle
+{
+  Vec2f center = {};
+  float radius = 1.0F;
+  Vec4f color = Vec4f::Ones();
+};
+
 struct LayerSettings
 {
   static constexpr std::size_t kTextureUnits = 16UL;
@@ -83,9 +90,14 @@ public:
   void submit(std::size_t layer, const Quad& quad);
 
   /**
-   * @brief Add a textured to a specific layer
+   * @brief Add a textured quad to a specific layer
    */
   void submit(std::size_t layer, const TexturedQuad& quad);
+
+  /**
+   * @brief Add a circle
+   */
+  void submit(std::size_t layer, const Circle& circle);
 
   /**
    * @brief Add quad to the default layer
@@ -96,6 +108,11 @@ public:
    * @brief Add textured quad to the default layer
    */
   void submit(const TexturedQuad& quad) { this->submit(kDefaultLayer, quad); }
+
+  /**
+   * @brief Add a circle to the default layer
+   */
+  void submit(const Circle& circle) { this->submit(kDefaultLayer, circle); }
 
   /**
    * @brief Draws buffered shapes
@@ -110,8 +127,10 @@ private:
     static constexpr std::size_t kTextureUnits = 16UL;
 
     LayerSettings settings;
+
     std::vector<Quad> quads;
     std::vector<TexturedQuad> textured_quads;
+    std::vector<Circle> circles;
 
     void reset();
     bool drawable() const;

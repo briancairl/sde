@@ -521,10 +521,10 @@ expected<ShaderHandle, ShaderError> ShaderCache::toShader(std::string_view sourc
   }
 
   native_shader_id_t geom_shader_id = 0;
-  if (info.components.has_vert)
+  if (info.components.has_geom)
   {
     parseUniformVariables(info.variables.uniforms, source_parts.geom);
-    geom_shader_id = createFragShaderFromSource(source_parts.geom);
+    geom_shader_id = createGeomShaderFromSource(source_parts.geom);
     if (geom_shader_id == 0)
     {
       return unexpected<ShaderError>{ShaderError::kGeomShaderCompilationFailure};
@@ -536,6 +536,8 @@ expected<ShaderHandle, ShaderError> ShaderCache::toShader(std::string_view sourc
   const auto handle = getNextShaderHandle();
 
   shaders_.emplace(handle, std::move(info));
+
+  last_shader_handle_ = handle;
 
   return handle;
 }

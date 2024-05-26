@@ -1,6 +1,8 @@
 // C++ Standard Library
 #include <atomic>
+#include <chrono>
 #include <cstdio>
+#include <thread>
 
 // GLAD
 #include <glad/glad.h>
@@ -72,6 +74,9 @@ WindowHandle glfw_try_init(const WindowOptions& options)
   static constexpr int kBufferSwapInterval_EnableVSync = 1;
   glfwSwapInterval(kBufferSwapInterval_EnableVSync);
 
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_BLEND);
+
   return WindowHandle{reinterpret_cast<void*>(window)};
 }
 }  // namespace
@@ -90,11 +95,17 @@ WindowHandle::~WindowHandle()
 
 void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
 {
+  static constexpr double kLoopRate = 60.0;
+
   WindowProperties window_properties;
 
   auto* window = reinterpret_cast<GLFWwindow*>(p_);
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  const auto t_advance =
+    std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(1.0 / kLoopRate));
+  auto t_next = std::chrono::steady_clock::now() + t_advance;
 
   while (!glfwWindowShouldClose(window))
   {
@@ -115,6 +126,17 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
 
     glViewport(0, 0, window_properties.size.x(), window_properties.size.y());
     glfwSwapBuffers(window);
+
+    if (const auto t_now = std::chrono::steady_clock::now(); t_now > t_next)
+    {
+      SDE_LOG_WARN_FMT("loop rate %e Hz not met", kLoopRate);
+      t_next = t_now + t_advance;
+    }
+    else
+    {
+      std::this_thread::sleep_until(t_next);
+      t_next += t_advance;
+    }
   }
 }
 

@@ -1,4 +1,7 @@
 // C++ Standard Library
+#include <array>
+#include <cmath>
+#include <mutex>
 #include <ostream>
 #include <type_traits>
 #include <vector>
@@ -13,14 +16,12 @@
 #include "sde/graphics/typedef.hpp"
 #include "sde/logging.hpp"
 
-#include <iostream>
-
-
 namespace sde::graphics
 {
 
 namespace
 {
+
 
 template <GLenum Target, GLenum Access> auto* map_buffer(GLuint id)
 {
@@ -112,9 +113,19 @@ using TexCoordAttribute = VertexAttribute<1, float, 2>;
 using TexUnitAttribute = VertexAttribute<2, float, 1>;
 using TintColorAttribute = VertexAttribute<3, float, 4>;
 
-constexpr std::size_t kVerticesPerQuad = 4UL;
 constexpr std::size_t kElementsPerTriangle = 3UL;
-constexpr std::size_t kElementsPerQuad = 2 * kElementsPerTriangle;
+
+constexpr std::size_t kVerticesPerQuad = 4UL;
+
+constexpr std::size_t kVerticesPerCircle = 17UL;
+
+void fillQuadPositions(Vec2f* target, const Vec2f min, const Vec2f max)
+{
+  target[0] = {min.x(), min.y()};
+  target[1] = {min.x(), max.y()};
+  target[2] = {max.x(), max.y()};
+  target[3] = {max.x(), min.y()};
+}
 
 }  // namespace
 
@@ -204,6 +215,7 @@ public:
       auto buffers = getVertexAttributeBuffers();
       addQuadAttributes(buffers, layer);
       addTexturedQuadAttributes(buffers, layer);
+      addCircleAttributes(buffers, layer);
       return buffers.vertex_count;
     }();
 
@@ -212,6 +224,7 @@ public:
       auto buffers = getVertexElementBuffer();
       addQuadElements(buffers, layer.quads.size());
       addQuadElements(buffers, layer.textured_quads.size());
+      addCircleElements(buffers, layer.circles.size());
       SDE_ASSERT_EQ(vertex_count, buffers.vertex_count);
       return buffers.element_count;
     }();
@@ -225,29 +238,24 @@ private:
   void addQuadElements(ElementBuffer& buffer, std::size_t quad_count)
   {
     auto* p = buffer.indices + buffer.element_count;
-    for (std::size_t n = 0; n < quad_count; ++n, p += kElementsPerQuad)
+    for (std::size_t n = 0; n < quad_count; ++n)
     {
       // Lower face
       p[0] = buffer.vertex_count + 0;
       p[1] = buffer.vertex_count + 1;
       p[2] = buffer.vertex_count + 2;
+      p += kElementsPerTriangle;
+      buffer.element_count += kElementsPerTriangle;
 
       // Upper face
-      p[3] = buffer.vertex_count + 2;
-      p[4] = buffer.vertex_count + 3;
-      p[5] = buffer.vertex_count + 0;
+      p[0] = buffer.vertex_count + 2;
+      p[1] = buffer.vertex_count + 3;
+      p[2] = buffer.vertex_count + 0;
+      p += kElementsPerTriangle;
+      buffer.element_count += kElementsPerTriangle;
 
       buffer.vertex_count += kVerticesPerQuad;
-      buffer.element_count += kElementsPerQuad;
     }
-  }
-
-  static void fillQuadPositions(Vec2f* target, const Vec2f min, const Vec2f max)
-  {
-    target[0] = {min.x(), min.y()};
-    target[1] = {min.x(), max.y()};
-    target[2] = {max.x(), max.y()};
-    target[3] = {max.x(), min.y()};
   }
 
   void addQuadAttributes(AttributeBuffers& buffers, const Layer& layer)
@@ -271,6 +279,66 @@ private:
       std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(q.texture_unit));
       std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
       buffers.vertex_count += kVerticesPerQuad;
+    }
+  }
+
+  void addCircleElements(ElementBuffer& buffer, std::size_t circle_count)
+  {
+    for (std::size_t n = 0; n < circle_count; ++n)
+    {
+      auto* p = buffer.indices + buffer.element_count;
+
+      const unsigned center_vertex_index = buffer.vertex_count;
+      for (std::size_t e = 1; e < kVerticesPerCircle - 1; ++e)
+      {
+        p[0] = center_vertex_index;
+        p[1] = p[0] + e;
+        p[2] = p[1] + 1;
+
+        p += kElementsPerTriangle;
+        buffer.element_count += kElementsPerTriangle;
+      }
+      p[2] = center_vertex_index + 1;
+      buffer.vertex_count += kVerticesPerCircle;
+    }
+  }
+
+  void addCircleAttributes(AttributeBuffers& buffers, const Layer& layer)
+  {
+    static_assert(kVerticesPerCircle > 4);
+
+    static std::array<Vec2f, kVerticesPerCircle> kUnitLookup;
+    static std::once_flag kInitLookup;
+    std::call_once(kInitLookup, [] {
+      constexpr float kAngleStamp = static_cast<float>(2.0 * M_PI) / static_cast<float>(kVerticesPerCircle - 2);
+      kUnitLookup[0] = {0.0F, 0.0F};
+      for (std::size_t v = 1; v < kVerticesPerCircle; ++v)
+      {
+        const float angle = ((v - 1) * kAngleStamp);
+        kUnitLookup[v] = {std::cos(angle), std::sin(angle)};
+      }
+    });
+
+    for (const auto& c : layer.circles)
+    {
+      // clang-format off
+      std::transform(
+        std::begin(kUnitLookup),
+        std::end(kUnitLookup),
+        buffers.position + buffers.vertex_count,
+        [&c](const Vec2f& unit)
+        {
+         return c.center + c.radius * unit;
+        });
+      std::copy(
+        std::begin(kUnitLookup),
+        std::end(kUnitLookup),
+        buffers.texcoord + buffers.vertex_count
+      );
+      std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerCircle, -1);
+      std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerCircle, c.color);
+      buffers.vertex_count += kVerticesPerCircle;
+      // clang-format on
     }
   }
 
@@ -307,11 +375,12 @@ void Renderer2D::Layer::reset()
 {
   quads.clear();
   textured_quads.clear();
+  circles.clear();
 }
 
 bool Renderer2D::Layer::drawable() const
 {
-  return settings.shader.is_valid() and !(quads.empty() and textured_quads.empty());
+  return settings.shader.is_valid() and !(quads.empty() and textured_quads.empty() and circles.empty());
 }
 
 Renderer2D::~Renderer2D() = default;
@@ -343,6 +412,12 @@ void Renderer2D::submit(std::size_t layer, const TexturedQuad& quad)
   layers_[layer].textured_quads.push_back(quad);
 }
 
+void Renderer2D::submit(std::size_t layer, const Circle& circle)
+{
+  SDE_ASSERT_LT(layer, layers_.size());
+  layers_[layer].circles.push_back(circle);
+}
+
 void Renderer2D::update(const ShaderCache& shader_cache)
 {
   native_shader_id_t active_shader_id = 0;
@@ -369,6 +444,7 @@ void Renderer2D::update(const ShaderCache& shader_cache)
       // clang-format on
 
       glUseProgram(shader_info->native_id);
+      SDE_LOG_INFO_FMT("%u | %u", active_shader_id, shader_info->native_id);
       active_shader_id = shader_info->native_id;
     }
 
