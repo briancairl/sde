@@ -47,14 +47,12 @@ struct Rect
 
 struct Quad
 {
-  static constexpr std::size_t kVertexCount = 4UL;
   Rect rect = {};
   Vec4f color = Vec4f::Ones();
 };
 
 struct TexturedQuad
 {
-  static constexpr std::size_t kVertexCount = 4UL;
   Rect rect;
   Rect texrect;
   Vec4f color = Vec4f::Ones();
@@ -102,7 +100,7 @@ public:
   /**
    * @brief Draws buffered shapes
    */
-  void update(const ShaderCache& shader_cache, const TextureCache& texture_cache);
+  void update(const ShaderCache& shader_cache);
 
   static expected<Renderer2D, Renderer2DError> create(const Renderer2DOptions& options = {});
 

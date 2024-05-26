@@ -50,16 +50,17 @@ int main(int argc, char** argv)
   out vec4 FragColor;
 
   in float fTexUnit;
-  in vec2  fTexCoord;
-  in vec4  fTintColor;
+  in vec2 fTexCoord;
+  in vec4 fTintColor;
 
   uniform sampler2D[16] fTextureID;
 
   void main()
   {
-    int u = int(fTexUnit);
-    vec4 TexureColor = texture2D(fTextureID[u], fTexCoord);
-    FragColor = (float(u < 0) * fTintColor) + float(u >= 0) * (fTintColor * TexureColor);
+    int texture_unit = int(fTexUnit);
+    bool texture_enabled = bool(texture_unit >= 0);
+    vec4 texture_color_sampled = texture2D(fTextureID[texture_unit], fTexCoord);
+    FragColor = (float(!texture_enabled) * fTintColor) + float(texture_enabled) * (fTintColor * texture_color_sampled);
   }
 
 )Shader");
@@ -80,16 +81,25 @@ int main(int argc, char** argv)
 
   renderer->layer(0).shader = *shader_or_error;
   renderer->layer(0).textures[0] = (*texture_or_error);
+  renderer->layer(0).textures[4] = (*texture_or_error);
 
   app.spin([&](const auto& window_properties) {
     renderer->submit(Quad{.rect = {.min = {0.7F, 0.7F}, .max = {0.8F, 0.8F}}, .color = {1.0F, 0.0F, 1.0F, 1.0F}});
     renderer->submit(Quad{.rect = {.min = {0.1F, 0.1F}, .max = {0.5F, 0.5F}}, .color = {1.0F, 1.0F, 1.0F, 1.0F}});
+
     renderer->submit(TexturedQuad{
       .rect = {.min = {0.1F, 0.1F}, .max = {0.3F, 0.3F}},
       .texrect = {.min = {0.0F, 0.0F}, .max = {1.0F, 1.0F}},
       .color = {1.0F, 1.0F, 1.0F, 1.0F},
       .texture_unit = 0});
-    renderer->update(shader_cache, texture_cache);
+
+    renderer->submit(TexturedQuad{
+      .rect = {.min = {-0.1F, -0.1F}, .max = {-0.3F, -0.3F}},
+      .texrect = {.min = {0.0F, 0.0F}, .max = {1.0F, 1.0F}},
+      .color = {1.0F, 0.0F, 1.0F, 0.1F},
+      .texture_unit = 4});
+
+    renderer->update(shader_cache);
   });
 
   SDE_LOG_INFO("done.");

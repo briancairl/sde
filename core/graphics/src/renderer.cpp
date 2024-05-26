@@ -13,6 +13,9 @@
 #include "sde/graphics/typedef.hpp"
 #include "sde/logging.hpp"
 
+#include <iostream>
+
+
 namespace sde::graphics
 {
 
@@ -40,9 +43,7 @@ void unmap_element_buffer() { unmap_buffer<GL_ELEMENT_ARRAY_BUFFER>(); }
 
 void draw_triangle_elements(GLuint vao, std::size_t element_count)
 {
-  glBindVertexArray(vao);
   glDrawElements(GL_TRIANGLES, element_count, GL_UNSIGNED_INT, 0);
-  glBindVertexArray(0);
 }
 
 enum class VertexAccessMode
@@ -64,9 +65,9 @@ struct VertexAttribute
   static constexpr std::size_t kBytesPerVertex = ElementCount * sizeof(ElementT);
 
   /// Vertex count
-  std::size_t length;
+  std::size_t vertex_count;
 
-  explicit VertexAttribute(const std::size_t _length) : length{_length} {}
+  explicit VertexAttribute(const std::size_t _vertex_count) : vertex_count{_vertex_count} {}
 };
 
 template <
@@ -82,7 +83,7 @@ std::size_t setAttribute(
   static constexpr std::uint8_t* kOffsetStart = nullptr;
   static constexpr std::size_t kBytesPerVertex = ElementCount * sizeof(ElementT);
 
-  const std::size_t total_bytes = kBytesPerVertex * attribute.length;
+  const std::size_t total_bytes = kBytesPerVertex * attribute.vertex_count;
 
   glEnableVertexAttribArray(Index);
 
@@ -100,16 +101,45 @@ std::size_t setAttribute(
   return total_bytes;
 }
 
+constexpr std::size_t kVertexAttributeIndex = 0;
+constexpr std::size_t kVertexElementIndex = 1;
+
 constexpr std::size_t kBufferCount = 2;
 constexpr std::size_t kAttributeCount = 4;
+
 using PositionAttribute = VertexAttribute<0, float, 2>;
 using TexCoordAttribute = VertexAttribute<1, float, 2>;
 using TexUnitAttribute = VertexAttribute<2, float, 1>;
 using TintColorAttribute = VertexAttribute<3, float, 4>;
 
+constexpr std::size_t kVerticesPerQuad = 4UL;
+constexpr std::size_t kElementsPerTriangle = 3UL;
+constexpr std::size_t kElementsPerQuad = 2 * kElementsPerTriangle;
+
 }  // namespace
 
 std::ostream& operator<<(std::ostream& os, Renderer2DError error) { return os; }
+
+struct AttributeBuffers
+{
+  std::size_t vertex_count = 0;
+
+  Vec2f* position = nullptr;
+  Vec2f* texcoord = nullptr;
+  float* texunit = nullptr;
+  Vec4f* tint = nullptr;
+
+  ~AttributeBuffers() { unmap_vertex_buffer(); }
+};
+
+struct ElementBuffer
+{
+  unsigned* indices = nullptr;
+  std::size_t vertex_count = 0;
+  std::size_t element_count = 0;
+
+  ~ElementBuffer() { unmap_element_buffer(); }
+};
 
 class Renderer2D::Backend
 {
@@ -127,7 +157,7 @@ public:
 
       const std::size_t total_bytes = 3UL * options.max_triangle_count_per_layer * kBytesPerIndex;
 
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, getVertexElementsID());
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vab_[kVertexElementIndex]);
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, total_bytes, nullptr, GL_DYNAMIC_DRAW);
 
       SDE_LOG_DEBUG_FMT("Allocated element mem: %lu bytes", total_bytes);
@@ -135,13 +165,12 @@ public:
 
     // Allocate attribute buffers
     {
-      glBindBuffer(GL_ARRAY_BUFFER, getVertexAttributesID());
+      glBindBuffer(GL_ARRAY_BUFFER, vab_[kVertexAttributeIndex]);
 
       std::size_t total_bytes = 0;
 
       vab_attribute_byte_offets_[PositionAttribute::kIndex] = total_bytes;
       total_bytes += setAttribute(total_bytes, PositionAttribute{3UL * options.max_triangle_count_per_layer});
-      SDE_LOG_INFO_FMT("%lu", total_bytes);
 
       vab_attribute_byte_offets_[TexCoordAttribute::kIndex] = total_bytes;
       total_bytes += setAttribute(total_bytes, TexCoordAttribute{3UL * options.max_triangle_count_per_layer});
@@ -166,106 +195,108 @@ public:
     glDeleteVertexArrays(1, &vao_);
   }
 
-  void draw(const ShaderInfo& shader, const TextureCache& texture_cache, const Layer& layer)
+  void draw(const Layer& layer)
   {
-    static constexpr std::size_t kElementsPerTriangle = 3UL;
-    static constexpr std::size_t kElementsPerQuad = 2 * kElementsPerTriangle;
+    glBindVertexArray(vao_);
 
     // Fill vertex attributes
-    {
-      auto* mapped_attr_buffer = map_write_only_vertex_buffer(getVertexAttributesID());
-      auto* positions = getVertexAttributes<Vec2f, PositionAttribute>(mapped_attr_buffer);
-      auto* tex_coord = getVertexAttributes<Vec2f, TexCoordAttribute>(mapped_attr_buffer);
-      auto* tex_unit = getVertexAttributes<float, TexUnitAttribute>(mapped_attr_buffer);
-      auto* colors = getVertexAttributes<Vec4f, TintColorAttribute>(mapped_attr_buffer);
-
-      for (const auto& q : layer.quads)
-      {
-        {
-          const auto& r = q.rect;
-          positions[0] = r.min;
-          positions[1] = {r.min.x(), r.max.y()};
-          positions[2] = r.max;
-          positions[3] = {r.max.x(), r.min.y()};
-        }
-        positions += Quad::kVertexCount;
-
-        std::fill(tex_coord, tex_coord + Quad::kVertexCount, Vec2f::Zero());
-        tex_coord += Quad::kVertexCount;
-
-        std::fill(tex_unit, tex_unit + Quad::kVertexCount, -1);
-        tex_unit += Quad::kVertexCount;
-
-        std::fill(colors, colors + Quad::kVertexCount, q.color);
-        colors += Quad::kVertexCount;
-      }
-
-      for (const auto& q : layer.textured_quads)
-      {
-        {
-          const auto& r = q.rect;
-          positions[0] = r.min;
-          positions[1] = {r.min.x(), r.max.y()};
-          positions[2] = r.max;
-          positions[3] = {r.max.x(), r.min.y()};
-        }
-        positions += Quad::kVertexCount;
-
-        {
-          const auto& r = q.texrect;
-          tex_coord[0] = r.min;
-          tex_coord[1] = {r.min.x(), r.max.y()};
-          tex_coord[2] = r.max;
-          tex_coord[3] = {r.max.x(), r.min.y()};
-        }
-        tex_coord += Quad::kVertexCount;
-
-        std::fill(tex_unit, tex_unit + Quad::kVertexCount, static_cast<float>(q.texture_unit));
-        tex_unit += Quad::kVertexCount;
-
-        std::fill(colors, colors + Quad::kVertexCount, q.color);
-        colors += Quad::kVertexCount;
-      }
-
-      unmap_vertex_buffer();
-    }
+    const std::size_t vertex_count = [this, &layer] {
+      auto buffers = getVertexAttributeBuffers();
+      addQuadAttributes(buffers, layer);
+      addTexturedQuadAttributes(buffers, layer);
+      return buffers.vertex_count;
+    }();
 
     // Fill vertex elements
-    std::size_t element_count = 0;
-    {
-      auto* mapped_element_buffer = map_write_only_element_buffer(getVertexElementsID());
-      auto* elements = getVertexElements(mapped_element_buffer);
-      const auto n_quads = layer.quads.size() + layer.textured_quads.size();
-      for (std::size_t quad_index = 0; quad_index < n_quads;
-           ++quad_index, elements += kElementsPerQuad, element_count += kElementsPerQuad)
-      {
-        // Lower face
-        elements[0] = (quad_index * Quad::kVertexCount) + 0;
-        elements[1] = (quad_index * Quad::kVertexCount) + 1;
-        elements[2] = (quad_index * Quad::kVertexCount) + 2;
+    const std::size_t element_count = [this, &layer, vertex_count] {
+      auto buffers = getVertexElementBuffer();
+      addQuadElements(buffers, layer.quads.size());
+      addQuadElements(buffers, layer.textured_quads.size());
+      SDE_ASSERT_EQ(vertex_count, buffers.vertex_count);
+      return buffers.element_count;
+    }();
 
-        // Upper face
-        elements[3] = (quad_index * Quad::kVertexCount) + 2;
-        elements[4] = (quad_index * Quad::kVertexCount) + 3;
-        elements[5] = (quad_index * Quad::kVertexCount) + 0;
-      }
-      unmap_element_buffer();
-    }
     draw_triangle_elements(vao_, element_count);
+
+    glBindVertexArray(0);
   }
 
-  GLuint getVertexAttributesID() const { return vab_[0]; }
+private:
+  void addQuadElements(ElementBuffer& buffer, std::size_t quad_count)
+  {
+    auto* p = buffer.indices + buffer.element_count;
+    for (std::size_t n = 0; n < quad_count; ++n, p += kElementsPerQuad)
+    {
+      // Lower face
+      p[0] = buffer.vertex_count + 0;
+      p[1] = buffer.vertex_count + 1;
+      p[2] = buffer.vertex_count + 2;
 
-  GLuint getVertexElementsID() const { return vab_[1]; }
+      // Upper face
+      p[3] = buffer.vertex_count + 2;
+      p[4] = buffer.vertex_count + 3;
+      p[5] = buffer.vertex_count + 0;
 
-  template <typename R, typename VertexAttributeT> [[nodiscard]] R* getVertexAttributes(void* mapped_buffer)
+      buffer.vertex_count += kVerticesPerQuad;
+      buffer.element_count += kElementsPerQuad;
+    }
+  }
+
+  static void fillQuadPositions(Vec2f* target, const Vec2f min, const Vec2f max)
+  {
+    target[0] = {min.x(), min.y()};
+    target[1] = {min.x(), max.y()};
+    target[2] = {max.x(), max.y()};
+    target[3] = {max.x(), min.y()};
+  }
+
+  void addQuadAttributes(AttributeBuffers& buffers, const Layer& layer)
+  {
+    for (const auto& q : layer.quads)
+    {
+      fillQuadPositions(buffers.position + buffers.vertex_count, q.rect.min, q.rect.max);
+      std::fill_n(buffers.texcoord + buffers.vertex_count, kVerticesPerQuad, Vec2f::Zero());
+      std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, -1);
+      std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
+      buffers.vertex_count += kVerticesPerQuad;
+    }
+  }
+
+  void addTexturedQuadAttributes(AttributeBuffers& buffers, const Layer& layer)
+  {
+    for (const auto& q : layer.textured_quads)
+    {
+      fillQuadPositions(buffers.position + buffers.vertex_count, q.rect.min, q.rect.max);
+      fillQuadPositions(buffers.texcoord + buffers.vertex_count, q.texrect.min, q.texrect.max);
+      std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(q.texture_unit));
+      std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
+      buffers.vertex_count += kVerticesPerQuad;
+    }
+  }
+
+  template <typename R, typename VertexAttributeT, typename ByteT>
+  [[nodiscard]] R* getVertexAttributeBuffer(ByteT* mapped_buffer)
   {
     static_assert(sizeof(R) == VertexAttributeT::kBytesPerVertex);
     return reinterpret_cast<R*>(
       reinterpret_cast<std::uint8_t*>(mapped_buffer) + vab_attribute_byte_offets_[VertexAttributeT::kIndex]);
   }
 
-  [[nodiscard]] GLuint* getVertexElements(void* mapped_buffer) { return reinterpret_cast<GLuint*>(mapped_buffer); }
+  AttributeBuffers getVertexAttributeBuffers()
+  {
+    auto* mapped_ptr = map_write_only_vertex_buffer(vab_[kVertexAttributeIndex]);
+    return {
+      .position = getVertexAttributeBuffer<Vec2f, PositionAttribute>(mapped_ptr),
+      .texcoord = getVertexAttributeBuffer<Vec2f, TexCoordAttribute>(mapped_ptr),
+      .texunit = getVertexAttributeBuffer<float, TexUnitAttribute>(mapped_ptr),
+      .tint = getVertexAttributeBuffer<Vec4f, TintColorAttribute>(mapped_ptr)};
+  }
+
+  ElementBuffer getVertexElementBuffer()
+  {
+    auto* mapped_ptr = map_write_only_element_buffer(vab_[kVertexElementIndex]);
+    return {.indices = reinterpret_cast<unsigned*>(mapped_ptr)};
+  }
 
   GLuint vao_;
   GLuint vab_[kBufferCount];
@@ -312,7 +343,7 @@ void Renderer2D::submit(std::size_t layer, const TexturedQuad& quad)
   layers_[layer].textured_quads.push_back(quad);
 }
 
-void Renderer2D::update(const ShaderCache& shader_cache, const TextureCache& texture_cache)
+void Renderer2D::update(const ShaderCache& shader_cache)
 {
   native_shader_id_t active_shader_id = 0;
   for (auto& layer : layers_)
@@ -353,7 +384,7 @@ void Renderer2D::update(const ShaderCache& shader_cache, const TextureCache& tex
     }
 
     // Draw
-    backend_->draw(*shader_info, texture_cache, layer);
+    backend_->draw(layer);
   }
 
   for (auto& layer : layers_)
