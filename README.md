@@ -17,3 +17,11 @@ sudo apt install           \
     libaudio-dev           \
     libglfw3-dev
 ```
+
+# Todo
+
+## 2D rendering
+
+- [ ] Tile sets
+- [ ] Tile map rendering feature
+- [ ] Render to frame buffer target
