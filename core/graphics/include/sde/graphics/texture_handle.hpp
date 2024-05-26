@@ -13,6 +13,7 @@ namespace sde::graphics
 
 struct TextureHandle : ResourceHandle<TextureHandle>
 {
+  TextureHandle() = default;
   explicit TextureHandle(id_type id) : ResourceHandle<TextureHandle>{id} {}
 };
 

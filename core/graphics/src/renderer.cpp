@@ -127,10 +127,6 @@ void fillQuadPositions(Vec2f* target, const Vec2f min, const Vec2f max)
   target[3] = {max.x(), min.y()};
 }
 
-}  // namespace
-
-std::ostream& operator<<(std::ostream& os, Renderer2DError error) { return os; }
-
 struct AttributeBuffers
 {
   std::size_t vertex_count = 0;
@@ -151,6 +147,8 @@ struct ElementBuffer
 
   ~ElementBuffer() { unmap_element_buffer(); }
 };
+
+}  // namespace
 
 class Renderer2D::Backend
 {
@@ -371,6 +369,8 @@ private:
   std::size_t vab_attribute_byte_offets_[kAttributeCount];
 };
 
+LayerSettings::LayerSettings() { textures.fill(TextureHandle::null()); }
+
 void Renderer2D::Layer::reset()
 {
   quads.clear();
@@ -385,14 +385,18 @@ bool Renderer2D::Layer::drawable() const
 
 Renderer2D::~Renderer2D() = default;
 
-Renderer2D::Renderer2D(std::unique_ptr<Backend> backend, std::vector<Layer> layers) :
-    layers_{std::move(layers)}, backend_{std::move(backend)}
+Renderer2D::Renderer2D(const Renderer2DOptions& options) :
+    layers_{[&options] {
+      std::vector<Layer> layers;
+      layers.resize(options.max_layers);
+      return layers;
+    }()},
+    backend_{std::make_unique<Backend>(options)}
 {
   GLint texture_units;
   glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
   SDE_ASSERT_GT(texture_units, LayerSettings::kTextureUnits);
 }
-
 
 LayerSettings& Renderer2D::layer(std::size_t layer)
 {
@@ -418,8 +422,9 @@ void Renderer2D::submit(std::size_t layer, const Circle& circle)
   layers_[layer].circles.push_back(circle);
 }
 
-void Renderer2D::update(const ShaderCache& shader_cache)
+void Renderer2D::update(const ShaderCache& shader_cache, const TextureCache& texture_cache)
 {
+  LayerSettings active_settings;
   native_shader_id_t active_shader_id = 0;
   for (auto& layer : layers_)
   {
@@ -428,33 +433,25 @@ void Renderer2D::update(const ShaderCache& shader_cache)
       continue;
     }
 
-    // Get shader from cacher
-    SDE_ASSERT_TRUE(layer.settings.shader.is_valid());
-    const auto* shader_info = shader_cache.get(layer.settings.shader);
-    SDE_ASSERT_NE(shader_info, nullptr);
-
     // Set active shader
-    if (active_shader_id != shader_info->native_id)
+    if (layer.settings.shader != active_settings.shader)
     {
-      // clang-format off
-      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vPosition",  ShaderVariableType::kVec2,  PositionAttribute::kIndex ));
-      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexCoord",  ShaderVariableType::kVec2,  TexCoordAttribute::kIndex ));
-      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTexUnit",   ShaderVariableType::kFloat, TexUnitAttribute::kIndex  ));
-      SDE_ASSERT_TRUE(hasLayout(*shader_info, "vTintColor", ShaderVariableType::kVec4,  TintColorAttribute::kIndex));
-      // clang-format on
-
-      glUseProgram(shader_info->native_id);
-      SDE_LOG_INFO_FMT("%u | %u", active_shader_id, shader_info->native_id);
-      active_shader_id = shader_info->native_id;
+      const auto* shader = shader_cache.get(layer.settings.shader);
+      SDE_ASSERT_NE(shader, nullptr);
+      glUseProgram(shader->native_id);
+      active_settings.textures.fill(TextureHandle::null());
     }
 
     // Set active texture units
     for (std::size_t unit = 0; unit < layer.settings.textures.size(); ++unit)
     {
-      if (const native_shader_id_t texture_id = layer.settings.textures[unit]; texture_id > 0)
+      if (!layer.settings.textures[unit] and layer.settings.textures[unit] != active_settings.textures[unit])
       {
+        const auto* texture = texture_cache.get(layer.settings.textures[unit]);
+        SDE_ASSERT_NE(texture, nullptr);
+
         glActiveTexture(GL_TEXTURE0 + unit);
-        glBindTexture(GL_TEXTURE_2D, texture_id);
+        glBindTexture(GL_TEXTURE_2D, texture->native_id);
         glUniform1i(glGetUniformLocation(active_shader_id, "fTextureID"), unit);
       }
     }
@@ -468,18 +465,5 @@ void Renderer2D::update(const ShaderCache& shader_cache)
     layer.reset();
   }
 }
-
-expected<Renderer2D, Renderer2DError> Renderer2D::create(const Renderer2DOptions& options)
-{
-  std::vector<Layer> layers;
-  layers.resize(options.max_layers);
-  for (auto& l : layers)
-  {
-    l.settings.textures.fill(0);
-  }
-  return Renderer2D{std::make_unique<Backend>(options), std::move(layers)};
-}
-
-std::ostream& operator<<(std::ostream& os, const Renderer2D& renderer) { return os; }
 
 }  // namespace sde::graphics

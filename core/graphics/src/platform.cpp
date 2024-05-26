@@ -105,7 +105,10 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
 
   const auto t_advance =
     std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(1.0 / kLoopRate));
-  auto t_next = std::chrono::steady_clock::now() + t_advance;
+
+  const auto t_start = std::chrono::steady_clock::now();
+
+  auto t_next = t_start + t_advance;
 
   while (!glfwWindowShouldClose(window))
   {
@@ -127,7 +130,8 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
     glViewport(0, 0, window_properties.size.x(), window_properties.size.y());
     glfwSwapBuffers(window);
 
-    if (const auto t_now = std::chrono::steady_clock::now(); t_now > t_next)
+    const auto t_now = std::chrono::steady_clock::now();
+    if (t_now > t_next)
     {
       SDE_LOG_WARN_FMT("loop rate %e Hz not met", kLoopRate);
       t_next = t_now + t_advance;
@@ -137,6 +141,7 @@ void WindowHandle::spin(std::function<void(const WindowProperties&)> on_update)
       std::this_thread::sleep_until(t_next);
       t_next += t_advance;
     }
+    window_properties.time = (t_now - t_start);
   }
 }
 

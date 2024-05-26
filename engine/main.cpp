@@ -1,5 +1,5 @@
 // C++ Standard Library
-#include <iostream>
+#include <ostream>
 
 // SDE
 #include "sde/graphics/image.hpp"
@@ -106,23 +106,19 @@ int main(int argc, char** argv)
 
   SDE_ASSERT_TRUE(texture_or_error.has_value());
 
-  const auto texture_info = texture_cache.get(*texture_or_error);
-  std::cerr << texture_info << std::endl;
-  std::cerr << (*texture_info) << std::endl;
+  Renderer2D renderer;
 
-  auto renderer = Renderer2D::create();
+  renderer.layer(0).shader = *shader1_or_error;
+  renderer.layer(0).textures[0] = (*texture_or_error);
+  renderer.layer(0).textures[4] = (*texture_or_error);
 
-  renderer->layer(0).shader = *shader1_or_error;
-  renderer->layer(0).textures[0] = (*texture_or_error);
-  renderer->layer(0).textures[4] = (*texture_or_error);
-
-  renderer->layer(1).shader = *shader2_or_error;
+  renderer.layer(1).shader = *shader2_or_error;
 
   app.spin([&](const auto& window_properties) {
-    renderer->submit(0, Quad{.rect = {.min = {0.7F, 0.7F}, .max = {0.8F, 0.8F}}, .color = {1.0F, 0.0F, 1.0F, 1.0F}});
-    renderer->submit(0, Quad{.rect = {.min = {0.1F, 0.1F}, .max = {0.5F, 0.5F}}, .color = {1.0F, 1.0F, 1.0F, 1.0F}});
+    renderer.submit(0, Quad{.rect = {.min = {0.7F, 0.7F}, .max = {0.8F, 0.8F}}, .color = {1.0F, 0.0F, 1.0F, 1.0F}});
+    renderer.submit(0, Quad{.rect = {.min = {0.1F, 0.1F}, .max = {0.5F, 0.5F}}, .color = {1.0F, 1.0F, 1.0F, 1.0F}});
 
-    renderer->submit(
+    renderer.submit(
       0,
       TexturedQuad{
         .rect = {.min = {0.1F, 0.1F}, .max = {0.3F, 0.3F}},
@@ -130,7 +126,7 @@ int main(int argc, char** argv)
         .color = {1.0F, 1.0F, 1.0F, 1.0F},
         .texture_unit = 0});
 
-    renderer->submit(
+    renderer.submit(
       0,
       TexturedQuad{
         .rect = {.min = {-0.1F, -0.1F}, .max = {-0.3F, -0.3F}},
@@ -138,12 +134,11 @@ int main(int argc, char** argv)
         .color = {1.0F, 0.0F, 1.0F, 0.1F},
         .texture_unit = 4});
 
-    renderer->submit(1, Circle{.center = {0.4F, 0.4F}, .radius = 0.5F, .color = {1.0F, 1.0F, 1.0F, 1.0F}});
+    renderer.submit(1, Circle{.center = {0.4F, 0.4F}, .radius = 1.5F, .color = {1.0F, 1.0F, 1.0F, 1.0F}});
 
-    renderer->submit(1, Circle{.center = {-0.4F, -0.4F}, .radius = 0.4F, .color = {1.0F, 1.0F, 1.0F, 0.5F}});
+    renderer.submit(1, Circle{.center = {-0.4F, -0.4F}, .radius = 0.4F, .color = {1.0F, 1.0F, 1.0F, 0.5F}});
 
-
-    renderer->update(shader_cache);
+    renderer.update(shader_cache, texture_cache);
   });
 
   SDE_LOG_INFO("done.");

@@ -18,6 +18,7 @@ template <typename T> struct ResourceHandle
 {
 public:
   explicit ResourceHandle(id_type id) : id_{id} {}
+  ResourceHandle() : ResourceHandle{0} {}
 
   constexpr id_type id() const { return id_; }
 

@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <chrono>
 #include <functional>
 
 // SDE
@@ -23,6 +24,11 @@ struct WindowOptions
 
 struct WindowProperties
 {
+  using Clock = std::chrono::steady_clock;
+  using Duration = Clock::duration;
+
+  Duration time = Duration::zero();
+
   Vec2i size = {640, 480};
   Vec2d mouse_position_px = {0.0, 0.0};
   Vec2f mouse_position_vp = {0.0, 0.0};

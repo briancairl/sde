@@ -12,7 +12,6 @@
 #include <vector>
 
 // SDE
-#include "sde/expected.hpp"
 #include "sde/geometry_types.hpp"
 #include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
@@ -31,13 +30,6 @@ struct Renderer2DOptions
   std::size_t max_layers = 3UL;
   std::size_t max_triangle_count_per_layer = 10000UL;
 };
-
-enum class Renderer2DError
-{
-  kNonEnoughMemory,
-};
-
-std::ostream& operator<<(std::ostream& os, Renderer2DError error);
 
 struct Rect
 {
@@ -70,7 +62,9 @@ struct LayerSettings
 {
   static constexpr std::size_t kTextureUnits = 16UL;
   ShaderHandle shader = ShaderHandle::null();
-  std::array<native_texture_id_t, kTextureUnits> textures;
+  std::array<TextureHandle, kTextureUnits> textures;
+
+  LayerSettings();
 };
 
 class Renderer2D
@@ -81,6 +75,8 @@ public:
   ~Renderer2D();
 
   Renderer2D(Renderer2D&& other) = default;
+
+  explicit Renderer2D(const Renderer2DOptions& options = {});
 
   LayerSettings& layer(std::size_t layer);
 
@@ -117,9 +113,7 @@ public:
   /**
    * @brief Draws buffered shapes
    */
-  void update(const ShaderCache& shader_cache);
-
-  static expected<Renderer2D, Renderer2DError> create(const Renderer2DOptions& options = {});
+  void update(const ShaderCache& shader_cache, const TextureCache& texture_cache);
 
 private:
   struct Layer
@@ -140,10 +134,6 @@ private:
 
   class Backend;
   std::unique_ptr<Backend> backend_;
-
-  explicit Renderer2D(std::unique_ptr<Backend> backend, std::vector<Layer> layers);
 };
-
-std::ostream& operator<<(std::ostream& os, const Renderer2D& renderer);
 
 }  // namespace sde::graphics
