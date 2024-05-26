@@ -38,13 +38,13 @@ static const auto* kShader1 = R"Shader1(
   in vec2 fTexCoord;
   in vec4 fTintColor;
 
-  uniform sampler2D[16] fTextureID;
+  uniform sampler2D[16] uTexture;
 
   void main()
   {
     int texture_unit = int(fTexUnit);
     bool texture_enabled = bool(texture_unit >= 0);
-    vec4 texture_color_sampled = texture2D(fTextureID[texture_unit], fTexCoord);
+    vec4 texture_color_sampled = texture2D(uTexture[texture_unit], fTexCoord);
     FragColor = (float(!texture_enabled) * fTintColor) + float(texture_enabled) * (fTintColor * texture_color_sampled);
   }
 )Shader1";
@@ -67,9 +67,9 @@ static const auto* kShader2 = R"Shader2(
   {
     gl_Position = vec4(uTransform * vec3(vPosition, 0), 1);
 
-    float w = (uTimeDelta * 10.0 + 10.0) * uTime;
+    float w = (2000.0 * (uTimeDelta + 0.01) + 200.0) * uTime;
 
-    fTexCoord = vTexCoord + 1e-1 * vec2(cos(w + vTexCoord[0]), sin(w + vTexCoord[1]));
+    fTexCoord = vTexCoord * (1 + 5e-2 * sin(w));
     fTintColor = vTintColor;
   }
 
@@ -179,7 +179,7 @@ int main(int argc, char** argv)
     layer_lighting.circles.push_back({
       .center = {0.4F, 0.4F}, 
       .radius = 1.5F,
-      .color = {1.0F, 1.0F, 1.0F, 1.0F}
+      .color = {1.0F, 1.0F, 0.5F, 1.0F}
     });
 
     layer_lighting.circles.push_back({

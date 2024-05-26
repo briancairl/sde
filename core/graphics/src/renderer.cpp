@@ -435,12 +435,12 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
         glActiveTexture(GL_TEXTURE0 + unit);
         glBindTexture(GL_TEXTURE_2D, texture->native_id);
 
-        glUniform1i(glGetUniformLocation(shader->native_id, "fTextureID"), unit);
+        glUniform1i(glGetUniformLocation(shader->native_id, "uTexture"), unit);
       }
     }
 
     // Apply other variables
-    glUniform1f(glGetUniformLocation(shader->native_id, "vTime"), layer.settings.time);
+    glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), layer.settings.time);
     glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), layer.settings.time_delta);
 
     {
