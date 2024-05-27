@@ -26,7 +26,7 @@ static const auto* kShader1 = R"Shader1(
 
   void main()
   {
-    gl_Position = vec4(uCameraTransform * vec3(vPosition, 0), 1);
+    gl_Position = vec4(uCameraTransform * vec3(vPosition, 1), 1);
     fTexUnit = vTexUnit;
     fTexCoord = vTexCoord;
     fTintColor = vTintColor;
@@ -67,7 +67,7 @@ static const auto* kShader2 = R"Shader2(
 
   void main()
   {
-    gl_Position = vec4(uCameraTransform * vec3(vPosition, 0), 1);
+    gl_Position = vec4(uCameraTransform * vec3(vPosition, 1), 1);
 
     float w = (2000.0 * (uTimeDelta + 0.01) + 200.0) * uTime;
 
@@ -136,11 +136,31 @@ int main(int argc, char** argv)
 
   // clang-format off
   app.spin([&](const auto& window_properties) {
-
     const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time).count();
+    const auto time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time_delta).count();
+
+    static constexpr float kMoveRate = 0.5;
+    if (window_properties.keys.isDown(KeyCode::kA))
+    {
+      layer_base.settings.world_from_camera(0, 2) -= time_delta * kMoveRate;
+    }
+    if (window_properties.keys.isDown(KeyCode::kD))
+    {
+      layer_base.settings.world_from_camera(0, 2) += time_delta * kMoveRate;
+    }
+    if (window_properties.keys.isDown(KeyCode::kS))
+    {
+      layer_base.settings.world_from_camera(1, 2) -= time_delta * kMoveRate;
+    }
+    if (window_properties.keys.isDown(KeyCode::kW))
+    {
+      layer_base.settings.world_from_camera(1, 2) += time_delta * kMoveRate;
+    }
+
+    std::cerr << layer_base.settings << std::endl;
 
     layer_base.settings.time = time;
-    layer_base.settings.time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time_delta).count();
+    layer_base.settings.time_delta = time_delta;
     layer_base.settings.scaling = 1.0F;
     layer_base.settings.setAspectRatio(window_properties.size);
 

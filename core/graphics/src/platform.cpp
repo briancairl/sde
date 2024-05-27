@@ -1,4 +1,5 @@
 // C++ Standard Library
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cstdio>
@@ -73,12 +74,62 @@ WindowHandle glfw_try_init(const WindowOptions& options)
 
   static constexpr int kBufferSwapInterval_EnableVSync = 1;
   glfwSwapInterval(kBufferSwapInterval_EnableVSync);
+  glfwSetInputMode(window, GLFW_STICKY_KEYS, GLFW_TRUE);
 
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
 
   return WindowHandle{reinterpret_cast<void*>(window)};
 }
+
+constexpr std::array<std::pair<int, std::size_t>, static_cast<size_t>(KeyCode::_Count_)> kKeyScanPattern{{
+  {GLFW_KEY_1, static_cast<std::size_t>(KeyCode::kNum1)},
+  {GLFW_KEY_2, static_cast<std::size_t>(KeyCode::kNum2)},
+  {GLFW_KEY_3, static_cast<std::size_t>(KeyCode::kNum3)},
+  {GLFW_KEY_4, static_cast<std::size_t>(KeyCode::kNum4)},
+  {GLFW_KEY_5, static_cast<std::size_t>(KeyCode::kNum5)},
+  {GLFW_KEY_6, static_cast<std::size_t>(KeyCode::kNum6)},
+  {GLFW_KEY_7, static_cast<std::size_t>(KeyCode::kNum7)},
+  {GLFW_KEY_8, static_cast<std::size_t>(KeyCode::kNum8)},
+  {GLFW_KEY_9, static_cast<std::size_t>(KeyCode::kNum9)},
+  {GLFW_KEY_0, static_cast<std::size_t>(KeyCode::kNum0)},
+  {GLFW_KEY_Q, static_cast<std::size_t>(KeyCode::kQ)},
+  {GLFW_KEY_W, static_cast<std::size_t>(KeyCode::kW)},
+  {GLFW_KEY_E, static_cast<std::size_t>(KeyCode::kE)},
+  {GLFW_KEY_A, static_cast<std::size_t>(KeyCode::kA)},
+  {GLFW_KEY_S, static_cast<std::size_t>(KeyCode::kS)},
+  {GLFW_KEY_D, static_cast<std::size_t>(KeyCode::kD)},
+  {GLFW_KEY_Z, static_cast<std::size_t>(KeyCode::kZ)},
+  {GLFW_KEY_X, static_cast<std::size_t>(KeyCode::kX)},
+  {GLFW_KEY_C, static_cast<std::size_t>(KeyCode::kC)},
+  {GLFW_KEY_SPACE, static_cast<std::size_t>(KeyCode::kSpace)},
+  {GLFW_KEY_LEFT_SHIFT, static_cast<std::size_t>(KeyCode::kLShift)},
+  {GLFW_KEY_RIGHT_SHIFT, static_cast<std::size_t>(KeyCode::kRShift)},
+  {GLFW_KEY_LEFT_CONTROL, static_cast<std::size_t>(KeyCode::kLCtrl)},
+  {GLFW_KEY_RIGHT_CONTROL, static_cast<std::size_t>(KeyCode::kRCtrl)},
+  {GLFW_KEY_LEFT_ALT, static_cast<std::size_t>(KeyCode::kLAlt)},
+  {GLFW_KEY_RIGHT_ALT, static_cast<std::size_t>(KeyCode::kRAlt)},
+}};
+
+void glfwScanKeyStates(GLFWwindow* window, WindowKeyStates& curr)
+{
+  auto prev_down = curr.down;
+  for (const auto& [keycode, index] : kKeyScanPattern)
+  {
+    switch (glfwGetKey(window, keycode))
+    {
+    case GLFW_PRESS:
+      curr.down.set(index, true);
+      break;
+    case GLFW_RELEASE:
+      curr.down.set(index, false);
+      break;
+    }
+  }
+  curr.pressed = (curr.down & (curr.down ^ prev_down));
+  curr.released = (prev_down & ~curr.down);
+}
+
 }  // namespace
 
 WindowHandle initialize(const WindowOptions& options) { return glfw_try_init(options); }
@@ -121,6 +172,8 @@ void WindowHandle::spin(std::function<WindowDirective(const WindowProperties&)> 
       1.0 - 2.0 * window_properties.mouse_position_px.y() / static_cast<double>(window_properties.size.y()));
 
     glfwPollEvents();
+
+    glfwScanKeyStates(window, window_properties.keys);
 
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
