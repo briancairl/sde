@@ -18,6 +18,7 @@
 #include "sde/graphics/shapes.hpp"
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
+#include "sde/graphics/texture_units.hpp"
 #include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/typedef.hpp"
 
@@ -28,11 +29,9 @@ struct LayerResources
 {
   static constexpr std::size_t kTextureUnits = 16UL;
   ShaderHandle shader = ShaderHandle::null();
-  std::array<TextureHandle, kTextureUnits> textures;
+  TextureUnits textures;
 
   bool is_valid() const { return shader.is_valid(); }
-
-  LayerResources();
 };
 
 std::ostream& operator<<(std::ostream& os, const LayerResources& resources);

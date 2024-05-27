@@ -60,6 +60,7 @@ cc_library(
     "include/sde/graphics/texture.hpp",
     "include/sde/graphics/texture_fwd.hpp",
     "include/sde/graphics/texture_handle.hpp",
+    "include/sde/graphics/texture_units.hpp",
     "include/sde/graphics/tile_set.hpp",
     "include/sde/graphics/tile_map.hpp"
   ],
@@ -107,6 +108,7 @@ cc_library(
     "src/shader.cpp",
     "src/shapes.cpp",
     "src/texture.cpp",
+    "src/texture_units.cpp",
     "src/tile_set.cpp",
     "src/tile_map.cpp",
   ] + graphics_impl__renderer__opengl_debug_selector,

@@ -174,13 +174,12 @@ int main(int argc, char** argv)
   });
 
   layer_base.tile_maps.push_back(
-    [&tile_set_or_error]
+    [&tile_set_or_error, &textures=layer_base.resources.textures]
     {
       TileMap tile_map;
       tile_map.position = {0.7F, -0.8F};
       tile_map.tile_size = {0.25F, 0.25F};
-      tile_map.tile_set = std::addressof(*tile_set_or_error);
-      tile_map.atlas_texture_unit = 0;
+      tile_map.info = TileMapInfo::create(*tile_set_or_error, textures).value();
       tile_map.tiles <<
         0, 1, 2, 3, 4, 5, 6,24,
         8, 9,10,11,12,13,14,15,
@@ -194,13 +193,12 @@ int main(int argc, char** argv)
     }()
   );
   layer_base.tile_maps.push_back(
-    [&tile_set_or_error, position = getNextRightStartPosition(layer_base.tile_maps.back())]
+    [&tile_set_or_error, &textures=layer_base.resources.textures, position = getNextRightPosition(layer_base.tile_maps.back())]
     {
       TileMap tile_map;
       tile_map.position = position;
       tile_map.tile_size = {0.25F, 0.25F};
-      tile_map.tile_set = std::addressof(*tile_set_or_error);
-      tile_map.atlas_texture_unit = 0;
+      tile_map.info = TileMapInfo::create(*tile_set_or_error, textures).value();
       tile_map.color[1] = 0.0;
       tile_map.tiles <<
         0, 1, 2, 3, 4, 5, 6,24,

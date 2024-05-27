@@ -205,9 +205,9 @@ public:
   Backend(const Renderer2DOptions& options)
   {
     {
-      GLint texture_units;
-      glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
-      SDE_ASSERT_GT(texture_units, LayerResources::kTextureUnits);
+      GLint actual_texture_unit_count;
+      glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &actual_texture_unit_count);
+      SDE_ASSERT_GE(actual_texture_unit_count, TextureUnits::kAvailable);
     }
 
     glGenVertexArrays(1, &vao_);
@@ -386,21 +386,21 @@ private:
     std::size_t submission_count = 0;
     for (const auto& tm : layer.tile_maps)
     {
+      SDE_ASSERT_TRUE(tm.info.isValid());
       if (intersectsAABB(clipping_bounds, tm))
       {
-        const auto& ts = (*tm.tile_set);
         for (int j = 0; j < tm.tiles.cols(); ++j)
         {
           for (int i = 0; i < tm.tiles.rows(); ++i)
           {
             const auto tile_index = tm.tiles(i, j);
-            const auto& tex = ts[tile_index];
+            const auto& tex = tm.info.getTileRects()[tile_index];
             const Vec2f p_max = tm.position + Vec2f{tm.tile_size.x() * j, -tm.tile_size.y() * i};
             const Vec2f p_min = p_max + Vec2f{tm.tile_size.x(), -tm.tile_size.y()};
             fillQuadPositions(buffers.position + buffers.vertex_count, p_min, p_max);
             fillQuadPositions(buffers.texcoord + buffers.vertex_count, tex.min, tex.max);
             std::fill_n(
-              buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(tm.atlas_texture_unit));
+              buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(tm.info.getTextureUnit()));
             std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, tm.color);
             buffers.vertex_count += kVerticesPerQuad;
           }
@@ -486,8 +486,6 @@ private:
   std::size_t vab_attribute_byte_offets_[kAttributeCount];
 };
 
-LayerResources::LayerResources() { textures.fill(TextureHandle::null()); }
-
 void Layer::reset()
 {
   if (is_static)
@@ -523,11 +521,11 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
     {
       SDE_ASSERT_NE(shader, nullptr);
       glUseProgram(shader->native_id);
-      active_resources_.textures.fill(TextureHandle::null());
+      active_resources_.textures.reset();
     }
 
     // Set active texture units
-    for (std::size_t u = 0; u < layer.resources.textures.size(); ++u)
+    for (std::size_t u = 0; u < layer.resources.textures.slots.size(); ++u)
     {
       if (layer.resources.textures[u] and layer.resources.textures[u] != active_resources_.textures[u])
       {
@@ -551,23 +549,9 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
     glUniformMatrix3fv(
       glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, camera_with_scaling_from_world.data());
 
-    // Verify that atlas texture is active
-#if SDE_DEBUG_ENABLED
-    for (const auto& tm : layer.tile_maps)
-    {
-      SDE_ASSERT_NE(tm.tile_set, nullptr);
-      SDE_ASSERT_TRUE(std::any_of(
-        std::begin(layer.resources.textures),
-        std::end(layer.resources.textures),
-        [altas_texture = tm.tile_set->atlas()](const auto& available_texture) {
-          return altas_texture == available_texture;
-        }));
-    }
-#endif  // SDE_DEBUG_ENABLED
-
-    // Pre-sort tilemaps by tile set
+    // Pre-sort tilemaps by texture unit
     std::sort(std::begin(layer.tile_maps), std::end(layer.tile_maps), [](const auto& lhs, const auto& rhs) {
-      return lhs.tile_set < rhs.tile_set;
+      return lhs.info.getTextureUnit() < rhs.info.getTextureUnit();
     });
 
     // Call backend
@@ -579,12 +563,7 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
 
 std::ostream& operator<<(std::ostream& os, const LayerResources& resources)
 {
-  os << "shader: " << resources.shader << "\ntexture-units:\n";
-  for (std::size_t unit = 0; unit < resources.textures.size(); ++unit)
-  {
-    os << "  [" << unit << "] : " << resources.textures[unit] << '\n';
-  }
-  return os;
+  return os << "shader: " << resources.shader << "\ntexture-units:\n" << resources.textures;
 }
 
 std::ostream& operator<<(std::ostream& os, const LayerSettings& settings)
