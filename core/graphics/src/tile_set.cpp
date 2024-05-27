@@ -61,7 +61,7 @@ expected<TileSet, TileSetError> TileSet::slice(
   const Vec2i tile_size,
   const Bounds2i& tile_slice_bounds)
 {
-  if (texture.is_null())
+  if (texture.isNull())
   {
     return unexpected<TileSetError>{TileSetError::kInvalidAtlasTexture};
   }

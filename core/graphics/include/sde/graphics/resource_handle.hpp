@@ -22,11 +22,11 @@ public:
 
   constexpr id_type id() const { return id_; }
 
-  constexpr bool is_null() const { return id_ == 0UL; }
+  constexpr bool isNull() const { return id_ == 0UL; }
 
-  constexpr bool is_valid() const { return id_ != 0UL; }
+  constexpr bool isValid() const { return id_ != 0UL; }
 
-  constexpr operator bool() const { return is_valid(); }
+  constexpr operator bool() const { return isValid(); }
 
   static constexpr T null() { return T{0}; }
 
@@ -58,7 +58,7 @@ struct ResourceHandleHash
 
 template <typename T> inline std::ostream& operator<<(std::ostream& os, const ResourceHandle<T>& handle)
 {
-  if (handle.is_null())
+  if (handle.isNull())
   {
     return os << "{ id: <NULL> }";
   }

@@ -31,7 +31,7 @@ struct LayerResources
   ShaderHandle shader = ShaderHandle::null();
   TextureUnits textures;
 
-  bool is_valid() const { return shader.is_valid(); }
+  bool isValid() const { return shader.isValid(); }
 };
 
 std::ostream& operator<<(std::ostream& os, const LayerResources& resources);

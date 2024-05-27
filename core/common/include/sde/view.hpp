@@ -17,8 +17,8 @@ namespace sde
 template <typename ViewT> class BasicView : crtp_base<BasicView<ViewT>>
 {
 public:
-  constexpr bool is_valid() const { return this->derived().data() != nullptr; }
-  constexpr operator bool() const { return is_valid(); }
+  constexpr bool isValid() const { return this->derived().data() != nullptr; }
+  constexpr operator bool() const { return isValid(); }
 
   constexpr auto* begin() { return this->derived().data(); }
   constexpr auto* end() { return this->derived().data() + this->derived().size(); }

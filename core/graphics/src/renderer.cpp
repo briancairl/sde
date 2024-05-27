@@ -500,7 +500,7 @@ void Layer::reset()
 
 bool Layer::drawable() const
 {
-  return resources.is_valid() and !(quads.empty() and textured_quads.empty() and circles.empty());
+  return resources.isValid() and !(quads.empty() and textured_quads.empty() and circles.empty() and tile_maps.empty());
 }
 
 Renderer2D::~Renderer2D() = default;
