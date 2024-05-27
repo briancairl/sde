@@ -192,6 +192,7 @@ int main(int argc, char** argv)
       return tile_map;
     }()
   );
+
   layer_base.tile_maps.push_back(
     [&tile_set_or_error, &textures=layer_base.resources.textures, position = getNextRightPosition(layer_base.tile_maps.back())]
     {
@@ -207,7 +208,7 @@ int main(int argc, char** argv)
         0, 1, 2, 3, 4, 5, 6, 7,
         0, 1, 2, 3, 4, 5, 6, 7,
         0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4,55, 6, 7,
         0, 1, 2, 3, 4, 5, 6, 7;
       return tile_map;
     }()
@@ -243,15 +244,26 @@ int main(int argc, char** argv)
       layer_base.settings.world_from_camera(1, 2) += time_delta * kMoveRate;
     }
 
+    static constexpr float kScaleRate = 1.5;
+    const float scroll_sensitivity = std::clamp(layer_base.settings.scaling, 1e-4F, 1e-2F);
+    if (window_properties.mouse_scroll.y() > 0)
+    {
+      layer_base.settings.scaling -= scroll_sensitivity * kScaleRate * time;
+    }
+    else if (window_properties.mouse_scroll.y() < 0)
+    {
+      layer_base.settings.scaling += scroll_sensitivity * kScaleRate * time;
+    }
+    layer_base.settings.scaling = std::max(layer_base.settings.scaling, 1e-3F);
+
     layer_base.settings.time = time;
     layer_base.settings.time_delta = time_delta;
-    layer_base.settings.scaling = 1.0F;
     layer_base.settings.setAspectRatio(window_properties.size);
 
     layer_lighting.settings = layer_base.settings;
 
     layer_lighting.circles.push_back({
-      .center = {0.4F, 0.4F}, 
+      .center = sde::transform(layer_lighting.settings.getWorldFromViewportMatrix(), window_properties.mouse_position_vp), 
       .radius = 1.5F,
       .color = {1.0F, 1.0F, 0.5F, 1.0F}
     });

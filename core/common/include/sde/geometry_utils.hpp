@@ -50,7 +50,7 @@ template <typename T, int Dim> Bounds<T, Dim> operator&(const Bounds<T, Dim>& lh
 }
 
 template <typename T, int MatDim, int VecDim>
-Vec<T, VecDim> operator*(const Mat<T, MatDim>& affine, const Vec<T, VecDim>& v)
+Vec<T, VecDim> transform(const Mat<T, MatDim>& affine, const Vec<T, VecDim>& v)
 {
   static_assert(MatDim == VecDim + 1);
   return affine.template block<VecDim, VecDim>(0, 0) * v +
@@ -58,9 +58,9 @@ Vec<T, VecDim> operator*(const Mat<T, MatDim>& affine, const Vec<T, VecDim>& v)
 }
 
 template <typename T, int MatDim, int VecDim>
-Bounds<T, VecDim> operator*(const Mat<T, MatDim>& affine, const Bounds<T, VecDim>& v)
+Bounds<T, VecDim> transform(const Mat<T, MatDim>& affine, const Bounds<T, VecDim>& v)
 {
-  return toBounds(affine * v.min(), affine * v.max());
+  return toBounds(transform(affine, v.min()), transform(affine, v.max()));
 }
 
 

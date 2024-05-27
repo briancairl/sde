@@ -130,6 +130,13 @@ void glfwScanKeyStates(GLFWwindow* window, WindowKeyStates& curr)
   curr.released = (prev_down & ~curr.down);
 }
 
+void glfwScrollEventHandler(GLFWwindow* window, double xoffset, double yoffset)
+{
+  auto* window_properties = reinterpret_cast<WindowProperties*>(glfwGetWindowUserPointer(window));
+  window_properties->mouse_scroll.x() = xoffset;
+  window_properties->mouse_scroll.y() = yoffset;
+}
+
 }  // namespace
 
 WindowHandle initialize(const WindowOptions& options) { return glfw_try_init(options); }
@@ -160,6 +167,9 @@ void WindowHandle::spin(std::function<WindowDirective(const WindowProperties&)> 
   auto t_start = std::chrono::steady_clock::now();
   auto t_prev = t_start;
   auto t_next = t_start + t_advance;
+
+  glfwSetWindowUserPointer(window, reinterpret_cast<void*>(&window_properties));
+  glfwSetScrollCallback(window, glfwScrollEventHandler);
 
   while (!glfwWindowShouldClose(window))
   {
@@ -204,10 +214,13 @@ void WindowHandle::spin(std::function<WindowDirective(const WindowProperties&)> 
       std::this_thread::sleep_until(t_next);
       t_next += t_advance;
     }
+
+    window_properties.mouse_scroll.setZero();
     window_properties.time = (t_now - t_start);
     window_properties.time_delta = (t_now - t_prev);
     t_prev = t_now;
   }
+  glfwSetWindowUserPointer(window, nullptr);
 }
 
 }  // namespace sde::graphics

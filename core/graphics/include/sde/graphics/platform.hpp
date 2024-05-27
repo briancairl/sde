@@ -79,6 +79,8 @@ struct WindowProperties
   Vec2d mouse_position_px = {0.0, 0.0};
   Vec2f mouse_position_vp = {0.0, 0.0};
 
+  Vec2d mouse_scroll = {0.0, 0.0};
+
   WindowKeyStates keys;
 };
 

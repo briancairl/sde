@@ -498,6 +498,11 @@ void Layer::reset()
   tile_maps.clear();
 }
 
+Mat3f LayerSettings::getWorldFromViewportMatrix() const
+{
+  return getInverseCameraMatrix(this->scaling, this->aspect_ratio) * this->world_from_camera;
+}
+
 bool Layer::drawable() const
 {
   return resources.isValid() and !(quads.empty() and textured_quads.empty() and circles.empty() and tile_maps.empty());
@@ -542,12 +547,11 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
     glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), layer.settings.time);
     glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), layer.settings.time_delta);
 
-    const Mat3f world_from_camera_with_scaling =
-      getInverseCameraMatrix(layer.settings.scaling, layer.settings.aspect_ratio) * layer.settings.world_from_camera;
-    const Mat3f camera_with_scaling_from_world = world_from_camera_with_scaling.inverse();
+    const Mat3f world_from_viewport = layer.settings.getWorldFromViewportMatrix();
+    const Mat3f viewport_from_world = world_from_viewport.inverse();
 
     glUniformMatrix3fv(
-      glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, camera_with_scaling_from_world.data());
+      glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, viewport_from_world.data());
 
     // Pre-sort tilemaps by texture unit
     std::sort(std::begin(layer.tile_maps), std::end(layer.tile_maps), [](const auto& lhs, const auto& rhs) {
@@ -555,7 +559,7 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
     });
 
     // Call backend
-    backend_->draw(layer, world_from_camera_with_scaling * Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
+    backend_->draw(layer, transform(world_from_viewport, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()}));
   }
 
   layer.reset();

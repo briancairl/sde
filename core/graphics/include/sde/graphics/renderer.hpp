@@ -50,6 +50,8 @@ struct LayerSettings
   {
     aspect_ratio = static_cast<float>(frame_buffer_dimensions.x()) / static_cast<float>(frame_buffer_dimensions.y());
   }
+
+  Mat3f getWorldFromViewportMatrix() const;
 };
 
 std::ostream& operator<<(std::ostream& os, const LayerSettings& settings);
