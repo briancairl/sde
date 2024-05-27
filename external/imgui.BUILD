@@ -15,7 +15,7 @@ cc_library(
   linkopts=["-ldl", "-lGL"],
   includes=[""],
   srcs=glob(["*.c", "*.cpp", "backends/*opengl3*.cpp", "backends/*glfw*.cpp"]),
-  deps=["@glfw//:glfw", "@//core/graphics/device/glad:glad", ":backends"],
+  deps=["@glfw//:glfw", "@//platform/glad:glad", ":backends"],
   visibility=["//visibility:public"]
 )
 
