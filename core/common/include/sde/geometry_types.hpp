@@ -39,4 +39,9 @@ using Mat4i = Mat<int, 4>;
 using Mat4f = Mat<float, 4>;
 using Mat4d = Mat<double, 4>;
 
+template <typename T, std::size_t Dim> using Bounds = Eigen::AlignedBox<T, Dim>;
+
+using Bounds2i = Bounds<int, 2>;
+using Bounds2f = Bounds<float, 2>;
+
 }  // namespace sde

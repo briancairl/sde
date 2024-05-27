@@ -18,6 +18,7 @@
 #include "sde/graphics/shapes.hpp"
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
+#include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/typedef.hpp"
 
 namespace sde::graphics
@@ -58,9 +59,11 @@ struct Layer
 {
   LayerSettings settings;
   LayerResources resources;
+
   std::vector<Quad> quads;
   std::vector<TexturedQuad> textured_quads;
   std::vector<Circle> circles;
+  std::vector<TileMap> tile_maps;
 
   void reset();
   bool drawable() const;

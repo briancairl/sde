@@ -2,11 +2,13 @@
 #include <iostream>
 
 // SDE
+#include "sde/geometry_utils.hpp"
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/platform.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/texture.hpp"
+#include "sde/graphics/tile_set.hpp"
 #include "sde/logging.hpp"
 
 static const auto* kShader1 = R"Shader1(
@@ -20,11 +22,11 @@ static const auto* kShader1 = R"Shader1(
   out vec4 fTintColor;
   out float fTexUnit;
 
-  uniform mat3 uTransform;
+  uniform mat3 uCameraTransform;
 
   void main()
   {
-    gl_Position = vec4(uTransform * vec3(vPosition, 0), 1);
+    gl_Position = vec4(uCameraTransform * vec3(vPosition, 0), 1);
     fTexUnit = vTexUnit;
     fTexCoord = vTexCoord;
     fTintColor = vTintColor;
@@ -59,13 +61,13 @@ static const auto* kShader2 = R"Shader2(
   out vec2 fTexCoord;
   out vec4 fTintColor;
 
-  uniform mat3 uTransform;
+  uniform mat3 uCameraTransform;
   uniform float uTime;
   uniform float uTimeDelta;
 
   void main()
   {
-    gl_Position = vec4(uTransform * vec3(vPosition, 0), 1);
+    gl_Position = vec4(uCameraTransform * vec3(vPosition, 0), 1);
 
     float w = (2000.0 * (uTimeDelta + 0.01) + 200.0) * uTime;
 
@@ -114,6 +116,13 @@ int main(int argc, char** argv)
   auto texture_or_error = texture_cache.toTexture(*image_or_error);
 
   SDE_ASSERT_TRUE(texture_or_error.has_value());
+
+  auto tile_set_or_error =
+    TileSet::slice(*texture_or_error, texture_cache, {16, 16}, sde::toBounds(sde::Vec2i{64, 64}));
+
+  SDE_ASSERT_TRUE(tile_set_or_error.has_value());
+
+  std::cerr << *tile_set_or_error << std::endl;
 
   Renderer2D renderer;
 

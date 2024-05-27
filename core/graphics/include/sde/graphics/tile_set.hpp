@@ -24,6 +24,7 @@ enum TileSetError
 {
   kInvalidAtlasTexture,
   kInvalidTileSize,
+  kInvalidSlicingBounds,
 };
 
 std::ostream& operator<<(std::ostream& os, TileSetError error);
@@ -38,7 +39,16 @@ public:
     const TextureHandle& texture,
     const TextureInfo& texture_info,
     const Vec2i tile_size,
-    const Vec2i tile_start_offset = Vec2i::Zero());
+    const Bounds2i& tile_slice_bounds = Bounds2i{});
+
+  /**
+   * @brief Creates a tile set by uniformly slicing a texture
+   */
+  static expected<TileSet, TileSetError> slice(
+    const TextureHandle& texture,
+    const TextureCache& texture_cache,
+    const Vec2i tile_size,
+    const Bounds2i& tile_slice_bounds = Bounds2i{});
 
   /**
    * @brief Returns handle to atlas texture for this tile set
@@ -56,7 +66,7 @@ public:
   std::size_t size() const { return tile_bounds_.size(); }
 
 private:
-  explicit TileSet(std::vector<Rect> tex_coords);
+  TileSet(TextureHandle atlas_texture, std::vector<Rect> tile_bounds);
   TextureHandle atlas_texture_;
   std::vector<Rect> tile_bounds_;
 };

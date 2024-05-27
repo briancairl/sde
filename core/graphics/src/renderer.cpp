@@ -11,6 +11,7 @@
 
 // SDE
 #include "sde/geometry_types.hpp"
+#include "sde/geometry_utils.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/texture.hpp"
@@ -22,7 +23,6 @@ namespace sde::graphics
 
 namespace
 {
-
 
 template <GLenum Target, GLenum Access> auto* map_buffer(GLuint id)
 {
@@ -149,7 +149,7 @@ struct ElementBuffer
   ~ElementBuffer() { unmap_element_buffer(); }
 };
 
-Mat3f inverse_camera_matrix(float scaling, float aspect)
+Mat3f getInverseCameraMatrix(float scaling, float aspect)
 {
   const float rxx = scaling * aspect;
   const float ryy = scaling;
@@ -161,6 +161,35 @@ Mat3f inverse_camera_matrix(float scaling, float aspect)
        0.f, 0.f, 1.f;
   // clang-format on
   return m;
+}
+
+bool intersectsAABB(const Bounds2f& bounds, const Line& line)
+{
+  return bounds.intersects(toBounds(line.tail, line.head));
+}
+
+bool intersectsAABB(const Bounds2f& bounds, const Rect& rect)
+{
+  return bounds.intersects(Bounds2f{rect.min, rect.max});
+}
+
+
+bool intersectsAABB(const Bounds2f& bounds, const Quad& quad) { return intersectsAABB(bounds, quad.rect); }
+
+bool intersectsAABB(const Bounds2f& bounds, const Circle& circle)
+{
+  const Vec2f extents{circle.radius, circle.radius};
+  return bounds.intersects(Bounds2f{circle.center - extents, circle.center + extents});
+}
+
+bool intersectsAABB(const Bounds2f& bounds, const TexturedQuad& quad) { return intersectsAABB(bounds, quad.rect); }
+
+bool intersectsAABB(const Bounds2f& bounds, const TileMap& tile_map)
+{
+  const auto p_min = tile_map.position;
+  const auto p_max = tile_map.position +
+    Vec2f{tile_map.tile_size.x() * tile_map.tiles.rows(), tile_map.tile_size.y() * tile_map.tiles.cols()};
+  return bounds.intersects(Bounds2f{p_min, p_max});
 }
 
 }  // namespace
@@ -225,26 +254,35 @@ public:
     glDeleteVertexArrays(1, &vao_);
   }
 
-  void draw(const Layer& layer)
+  void draw(const Layer& layer, const Bounds2f clipping_bounds)
   {
     glBindVertexArray(vao_);
 
+    struct Submissions
+    {
+      std::size_t vertices = 0;
+      std::size_t quads = 0;
+      std::size_t circles = 0;
+      std::size_t tile_maps = 0;
+    };
+
     // Fill vertex attributes
-    const std::size_t vertex_count = [this, &layer] {
+    const auto submissions = [this, &layer, &clipping_bounds] {
+      Submissions submissions;
       auto buffers = getVertexAttributeBuffers();
-      addQuadAttributes(buffers, layer);
-      addTexturedQuadAttributes(buffers, layer);
-      addCircleAttributes(buffers, layer);
-      return buffers.vertex_count;
+      submissions.quads += addQuadAttributes(buffers, clipping_bounds, layer);
+      submissions.quads += addTexturedQuadAttributes(buffers, clipping_bounds, layer);
+      submissions.circles += addCircleAttributes(buffers, clipping_bounds, layer);
+      submissions.vertices = buffers.vertex_count;
+      return submissions;
     }();
 
     // Fill vertex elements
-    const std::size_t element_count = [this, &layer, vertex_count] {
+    const std::size_t element_count = [this, &layer, &submissions] {
       auto buffers = getVertexElementBuffer();
-      addQuadElements(buffers, layer.quads.size());
-      addQuadElements(buffers, layer.textured_quads.size());
-      addCircleElements(buffers, layer.circles.size());
-      SDE_ASSERT_EQ(vertex_count, buffers.vertex_count);
+      addQuadElements(buffers, submissions.quads);
+      addCircleElements(buffers, submissions.circles);
+      SDE_ASSERT_EQ(submissions.vertices, buffers.vertex_count);
       return buffers.element_count;
     }();
 
@@ -254,7 +292,7 @@ public:
   }
 
 private:
-  void addQuadElements(ElementBuffer& buffer, std::size_t quad_count)
+  static void addQuadElements(ElementBuffer& buffer, std::size_t quad_count)
   {
     auto* p = buffer.indices + buffer.element_count;
     for (std::size_t n = 0; n < quad_count; ++n)
@@ -277,31 +315,7 @@ private:
     }
   }
 
-  void addQuadAttributes(AttributeBuffers& buffers, const Layer& layer)
-  {
-    for (const auto& q : layer.quads)
-    {
-      fillQuadPositions(buffers.position + buffers.vertex_count, q.rect.min, q.rect.max);
-      std::fill_n(buffers.texcoord + buffers.vertex_count, kVerticesPerQuad, Vec2f::Zero());
-      std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, -1);
-      std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
-      buffers.vertex_count += kVerticesPerQuad;
-    }
-  }
-
-  void addTexturedQuadAttributes(AttributeBuffers& buffers, const Layer& layer)
-  {
-    for (const auto& q : layer.textured_quads)
-    {
-      fillQuadPositions(buffers.position + buffers.vertex_count, q.rect.min, q.rect.max);
-      fillQuadPositions(buffers.texcoord + buffers.vertex_count, q.rect_texture.min, q.rect_texture.max);
-      std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(q.texture_unit));
-      std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
-      buffers.vertex_count += kVerticesPerQuad;
-    }
-  }
-
-  void addCircleElements(ElementBuffer& buffer, std::size_t circle_count)
+  static void addCircleElements(ElementBuffer& buffer, std::size_t circle_count)
   {
     for (std::size_t n = 0; n < circle_count; ++n)
     {
@@ -322,7 +336,44 @@ private:
     }
   }
 
-  void addCircleAttributes(AttributeBuffers& buffers, const Layer& layer)
+  static std::size_t addQuadAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
+  {
+    std::size_t submit_count = 0;
+    for (const auto& q : layer.quads)
+    {
+      if (intersectsAABB(clipping_bounds, q))
+      {
+        fillQuadPositions(buffers.position + buffers.vertex_count, q.rect.min, q.rect.max);
+        std::fill_n(buffers.texcoord + buffers.vertex_count, kVerticesPerQuad, Vec2f::Zero());
+        std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, -1);
+        std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
+        buffers.vertex_count += kVerticesPerQuad;
+        ++submit_count;
+      }
+    }
+    return submit_count;
+  }
+
+  static std::size_t
+  addTexturedQuadAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
+  {
+    std::size_t submit_count = 0;
+    for (const auto& q : layer.textured_quads)
+    {
+      if (intersectsAABB(clipping_bounds, q))
+      {
+        fillQuadPositions(buffers.position + buffers.vertex_count, q.rect.min, q.rect.max);
+        fillQuadPositions(buffers.texcoord + buffers.vertex_count, q.rect_texture.min, q.rect_texture.max);
+        std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(q.texture_unit));
+        std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
+        buffers.vertex_count += kVerticesPerQuad;
+        ++submit_count;
+      }
+    }
+    return submit_count;
+  }
+
+  static std::size_t addCircleAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
   {
     static_assert(kVerticesPerCircle > 4);
 
@@ -338,27 +389,34 @@ private:
       }
     });
 
+    std::size_t submit_count = 0;
     for (const auto& c : layer.circles)
     {
-      // clang-format off
-      std::transform(
-        std::begin(kUnitLookup),
-        std::end(kUnitLookup),
-        buffers.position + buffers.vertex_count,
-        [&c](const Vec2f& unit)
-        {
-         return c.center + c.radius * unit;
-        });
-      std::copy(
-        std::begin(kUnitLookup),
-        std::end(kUnitLookup),
-        buffers.texcoord + buffers.vertex_count
-      );
-      std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerCircle, -1);
-      std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerCircle, c.color);
-      buffers.vertex_count += kVerticesPerCircle;
-      // clang-format on
+      if (intersectsAABB(clipping_bounds, c))
+      {
+        // clang-format off
+        std::transform(
+          std::begin(kUnitLookup),
+          std::end(kUnitLookup),
+          buffers.position + buffers.vertex_count,
+          [&c](const Vec2f& unit)
+          {
+           return c.center + c.radius * unit;
+          });
+        std::copy(
+          std::begin(kUnitLookup),
+          std::end(kUnitLookup),
+          buffers.texcoord + buffers.vertex_count
+        );
+        std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerCircle, -1);
+        std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerCircle, c.color);
+        buffers.vertex_count += kVerticesPerCircle;
+        // clang-format on
+
+        ++submit_count;
+      }
     }
+    return submit_count;
   }
 
   template <typename R, typename VertexAttributeT, typename ByteT>
@@ -443,15 +501,15 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
     glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), layer.settings.time);
     glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), layer.settings.time_delta);
 
-    {
-      const Mat3f transform =
-        (inverse_camera_matrix(layer.settings.scaling, layer.settings.aspect_ratio) * layer.settings.screen_from_world)
-          .inverse();
-      glUniformMatrix3fv(glGetUniformLocation(shader->native_id, "uTransform"), 1, GL_FALSE, transform.data());
-    }
+    const Mat3f camera_transform_inverse =
+      getInverseCameraMatrix(layer.settings.scaling, layer.settings.aspect_ratio) * layer.settings.screen_from_world;
+    const Mat3f camera_transform = camera_transform_inverse.inverse();
+
+    glUniformMatrix3fv(
+      glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, camera_transform.data());
 
     // Call backend
-    backend_->draw(layer);
+    backend_->draw(layer, camera_transform_inverse * Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
   }
   layer.reset();
 }
