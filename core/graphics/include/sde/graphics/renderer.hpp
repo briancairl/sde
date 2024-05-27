@@ -39,7 +39,7 @@ std::ostream& operator<<(std::ostream& os, const LayerResources& resources);
 
 struct LayerSettings
 {
-  Mat3f screen_from_world = Mat3f::Identity();
+  Mat3f world_from_camera = Mat3f::Identity();
 
   float time = 0.0F;
   float time_delta = 0.0F;

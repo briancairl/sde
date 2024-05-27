@@ -501,15 +501,15 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
     glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), layer.settings.time);
     glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), layer.settings.time_delta);
 
-    const Mat3f camera_transform_inverse =
-      getInverseCameraMatrix(layer.settings.scaling, layer.settings.aspect_ratio) * layer.settings.screen_from_world;
-    const Mat3f camera_transform = camera_transform_inverse.inverse();
+    const Mat3f world_from_camera_with_scaling =
+      getInverseCameraMatrix(layer.settings.scaling, layer.settings.aspect_ratio) * layer.settings.world_from_camera;
+    const Mat3f camera_with_scaling_from_world = world_from_camera_with_scaling.inverse();
 
     glUniformMatrix3fv(
-      glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, camera_transform.data());
+      glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, camera_with_scaling_from_world.data());
 
     // Call backend
-    backend_->draw(layer, camera_transform_inverse * Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
+    backend_->draw(layer, world_from_camera_with_scaling * Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
   }
   layer.reset();
 }
@@ -526,8 +526,8 @@ std::ostream& operator<<(std::ostream& os, const LayerResources& resources)
 
 std::ostream& operator<<(std::ostream& os, const LayerSettings& settings)
 {
-  return os << "screen_from_world:\n"
-            << settings.screen_from_world << "\ntime: " << settings.time << " (delta: " << settings.time_delta << ')'
+  return os << "world_from_camera:\n"
+            << settings.world_from_camera << "\ntime: " << settings.time << " (delta: " << settings.time_delta << ')'
             << "\nscaling: " << settings.scaling << "\naspect: " << settings.aspect_ratio;
 }
 
