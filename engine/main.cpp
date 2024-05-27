@@ -1,4 +1,5 @@
 // C++ Standard Library
+#include <cmath>
 #include <iostream>
 
 // SDE
@@ -10,6 +11,8 @@
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_set.hpp"
 #include "sde/logging.hpp"
+
+// clang-format off
 
 static const auto* kShader1 = R"Shader1(
 
@@ -118,11 +121,9 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(texture_or_error.has_value());
 
   auto tile_set_or_error =
-    TileSet::slice(*texture_or_error, texture_cache, {16, 16}, sde::toBounds(sde::Vec2i{64, 64}));
+    TileSet::slice(*texture_or_error, texture_cache, {64, 64}, sde::toBounds(sde::Vec2i{8 * 64, 8 * 64}));
 
   SDE_ASSERT_TRUE(tile_set_or_error.has_value());
-
-  std::cerr << *tile_set_or_error << std::endl;
 
   Renderer2D renderer;
 
@@ -130,34 +131,119 @@ int main(int argc, char** argv)
   layer_base.resources.shader = *shader1_or_error;
   layer_base.resources.textures[0] = (*texture_or_error);
   layer_base.resources.textures[4] = (*texture_or_error);
+  layer_base.is_static = true;
+  layer_base.quads.push_back({
+    .rect = {
+      .min = {0.7F, 0.7F},
+      .max = {0.8F, 0.8F}
+    },
+    .color = {1.0F, 0.0F, 1.0F, 1.0F}
+  });
+
+  layer_base.quads.push_back({
+    .rect = {
+      .min = {0.1F, 0.1F},
+      .max = {0.5F, 0.5F}
+    },
+    .color = {1.0F, 1.0F, 1.0F, 1.0F}
+  });
+
+  layer_base.textured_quads.push_back({
+    .rect = {
+      .min = {0.1F, 0.1F},
+      .max = {0.3F, 0.3F}
+    },
+    .rect_texture = {
+      .min = {0.0F, 0.0F},
+      .max = {1.0F, 1.0F}
+    },
+    .color = {1.0F, 1.0F, 1.0F, 1.0F},
+    .texture_unit = 0});
+
+  layer_base.textured_quads.push_back({
+    .rect = {
+      .min = {-0.1F, -0.1F},
+      .max = {-0.3F, -0.3F}
+    },
+    .rect_texture = {
+      .min = {0.0F, 0.0F},
+      .max = {1.0F, 1.0F}
+    },
+    .color = {1.0F, 0.0F, 1.0F, 0.1F},
+    .texture_unit = 4
+  });
+
+  layer_base.tile_maps.push_back(
+    [&tile_set_or_error]
+    {
+      TileMap tile_map;
+      tile_map.position = {0.7F, -0.8F};
+      tile_map.tile_size = {0.25F, 0.25F};
+      tile_map.tile_set = std::addressof(*tile_set_or_error);
+      tile_map.atlas_texture_unit = 0;
+      tile_map.tiles <<
+        0, 1, 2, 3, 4, 5, 6,24,
+        8, 9,10,11,12,13,14,15,
+        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4, 5, 6, 7;
+      return tile_map;
+    }()
+  );
+  layer_base.tile_maps.push_back(
+    [&tile_set_or_error, position = getNextRightStartPosition(layer_base.tile_maps.back())]
+    {
+      TileMap tile_map;
+      tile_map.position = position;
+      tile_map.tile_size = {0.25F, 0.25F};
+      tile_map.tile_set = std::addressof(*tile_set_or_error);
+      tile_map.atlas_texture_unit = 0;
+      tile_map.color[1] = 0.0;
+      tile_map.tiles <<
+        0, 1, 2, 3, 4, 5, 6,24,
+        8, 9,10,11,12,13,14,15,
+        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4, 5, 6, 7,
+        0, 1, 2, 3, 4, 5, 6, 7;
+      return tile_map;
+    }()
+  );
 
   Layer layer_lighting;
   layer_lighting.resources.shader = *shader2_or_error;
 
-  // clang-format off
-  app.spin([&](const auto& window_properties) {
+  app.spin([&](const auto& window_properties)
+  {
     const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time).count();
     const auto time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time_delta).count();
 
     static constexpr float kMoveRate = 0.5;
+
     if (window_properties.keys.isDown(KeyCode::kA))
     {
       layer_base.settings.world_from_camera(0, 2) -= time_delta * kMoveRate;
     }
+
     if (window_properties.keys.isDown(KeyCode::kD))
     {
       layer_base.settings.world_from_camera(0, 2) += time_delta * kMoveRate;
     }
+
     if (window_properties.keys.isDown(KeyCode::kS))
     {
       layer_base.settings.world_from_camera(1, 2) -= time_delta * kMoveRate;
     }
+
     if (window_properties.keys.isDown(KeyCode::kW))
     {
       layer_base.settings.world_from_camera(1, 2) += time_delta * kMoveRate;
     }
-
-    std::cerr << layer_base.settings << std::endl;
 
     layer_base.settings.time = time;
     layer_base.settings.time_delta = time_delta;
@@ -165,53 +251,6 @@ int main(int argc, char** argv)
     layer_base.settings.setAspectRatio(window_properties.size);
 
     layer_lighting.settings = layer_base.settings;
-
-    layer_base.quads.push_back({
-      .rect = {
-        .min = {0.7F, 0.7F},
-        .max = {0.8F, 0.8F}
-      },
-      .color = {1.0F, 0.0F, 1.0F, 1.0F}
-    });
-
-    layer_base.quads.push_back({
-      .rect = {
-        .min = {0.1F, 0.1F},
-        .max = {0.5F, 0.5F}
-      },
-      .color = {1.0F, 1.0F, 1.0F, 1.0F}
-    });
-
-    layer_base.textured_quads.push_back({
-      .rect = {
-        .min = {0.1F, 0.1F},
-        .max = {0.3F, 0.3F}
-      },
-      .rect_texture = {
-        .min = {0.0F, 0.0F},
-        .max = {1.0F, 1.0F}
-      },
-      .color = {1.0F, 1.0F, 1.0F, 1.0F},
-      .texture_unit = 0});
-
-    layer_base.circles.push_back({
-      .center = {0.5F * std::cos(time), 0.5F * std::sin(time)},
-      .radius = 0.1F,
-      .color = {std::abs(std::cos(time)), 1.0F, 1.0F, std::abs(std::sin(time))}
-    });
-
-    layer_base.textured_quads.push_back({
-      .rect = {
-        .min = {-0.1F, -0.1F},
-        .max = {-0.3F, -0.3F}
-      },
-      .rect_texture = {
-        .min = {0.0F, 0.0F},
-        .max = {1.0F, 1.0F}
-      },
-      .color = {1.0F, 0.0F, 1.0F, 0.1F},
-      .texture_unit = 4
-    });
 
     layer_lighting.circles.push_back({
       .center = {0.4F, 0.4F}, 
@@ -232,8 +271,9 @@ int main(int argc, char** argv)
 
     return WindowDirective::kContinue;
   });
-  // clang-format on
 
   SDE_LOG_INFO("done.");
   return 0;
 }
+
+// clang-format on

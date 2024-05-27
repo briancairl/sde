@@ -40,7 +40,7 @@ enum class LogSeverity
 
 #endif  // SDE_LOGGING_DISABLED
 
-#if defined(NDEBUG) || defined(_NDEBUG)
+#if SDE_DEBUG_ENABLED
 #define SDE_LOG_DEBUG_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kDebug, fmt, __VA_ARGS__)
 #else
 #define SDE_LOG_DEBUG_FMT(fmt, ...) (void)0

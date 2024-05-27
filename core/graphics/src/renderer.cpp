@@ -1,4 +1,5 @@
 // C++ Standard Library
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <mutex>
@@ -10,11 +11,14 @@
 #include "opengl.inl"
 
 // SDE
+#include "sde/build.hpp"
 #include "sde/geometry_types.hpp"
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/texture.hpp"
+#include "sde/graphics/tile_map.hpp"
+#include "sde/graphics/tile_set.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/logging.hpp"
 
@@ -186,10 +190,11 @@ bool intersectsAABB(const Bounds2f& bounds, const TexturedQuad& quad) { return i
 
 bool intersectsAABB(const Bounds2f& bounds, const TileMap& tile_map)
 {
-  const auto p_min = tile_map.position;
-  const auto p_max = tile_map.position +
-    Vec2f{tile_map.tile_size.x() * tile_map.tiles.rows(), tile_map.tile_size.y() * tile_map.tiles.cols()};
-  return bounds.intersects(Bounds2f{p_min, p_max});
+  const Vec2f p_min = tile_map.position;
+  const Vec2f p_max =
+    (tile_map.position +
+     Vec2f{tile_map.tile_size.x() * tile_map.tiles.cols(), -tile_map.tile_size.y() * tile_map.tiles.rows()});
+  return bounds.intersects(toBounds(p_min, p_max));
 }
 
 }  // namespace
@@ -273,15 +278,17 @@ public:
       submissions.quads += addQuadAttributes(buffers, clipping_bounds, layer);
       submissions.quads += addTexturedQuadAttributes(buffers, clipping_bounds, layer);
       submissions.circles += addCircleAttributes(buffers, clipping_bounds, layer);
+      submissions.tile_maps += addTileMapAttributes(buffers, clipping_bounds, layer);
       submissions.vertices = buffers.vertex_count;
       return submissions;
     }();
 
     // Fill vertex elements
-    const std::size_t element_count = [this, &layer, &submissions] {
+    const std::size_t element_count = [this, &submissions] {
       auto buffers = getVertexElementBuffer();
       addQuadElements(buffers, submissions.quads);
       addCircleElements(buffers, submissions.circles);
+      addQuadElements(buffers, submissions.tile_maps * TileMap::kTileCount);
       SDE_ASSERT_EQ(submissions.vertices, buffers.vertex_count);
       return buffers.element_count;
     }();
@@ -338,7 +345,7 @@ private:
 
   static std::size_t addQuadAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
   {
-    std::size_t submit_count = 0;
+    std::size_t submission_count = 0;
     for (const auto& q : layer.quads)
     {
       if (intersectsAABB(clipping_bounds, q))
@@ -348,16 +355,16 @@ private:
         std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, -1);
         std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
         buffers.vertex_count += kVerticesPerQuad;
-        ++submit_count;
+        ++submission_count;
       }
     }
-    return submit_count;
+    return submission_count;
   }
 
   static std::size_t
   addTexturedQuadAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
   {
-    std::size_t submit_count = 0;
+    std::size_t submission_count = 0;
     for (const auto& q : layer.textured_quads)
     {
       if (intersectsAABB(clipping_bounds, q))
@@ -367,10 +374,41 @@ private:
         std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(q.texture_unit));
         std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
         buffers.vertex_count += kVerticesPerQuad;
-        ++submit_count;
+        ++submission_count;
       }
     }
-    return submit_count;
+    return submission_count;
+  }
+
+  static std::size_t
+  addTileMapAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
+  {
+    std::size_t submission_count = 0;
+    for (const auto& tm : layer.tile_maps)
+    {
+      if (intersectsAABB(clipping_bounds, tm))
+      {
+        const auto& ts = (*tm.tile_set);
+        for (int j = 0; j < tm.tiles.cols(); ++j)
+        {
+          for (int i = 0; i < tm.tiles.rows(); ++i)
+          {
+            const auto tile_index = tm.tiles(i, j);
+            const auto& tex = ts[tile_index];
+            const Vec2f p_max = tm.position + Vec2f{tm.tile_size.x() * j, -tm.tile_size.y() * i};
+            const Vec2f p_min = p_max + Vec2f{tm.tile_size.x(), -tm.tile_size.y()};
+            fillQuadPositions(buffers.position + buffers.vertex_count, p_min, p_max);
+            fillQuadPositions(buffers.texcoord + buffers.vertex_count, tex.min, tex.max);
+            std::fill_n(
+              buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(tm.atlas_texture_unit));
+            std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, tm.color);
+            buffers.vertex_count += kVerticesPerQuad;
+          }
+        }
+        ++submission_count;
+      }
+    }
+    return submission_count;
   }
 
   static std::size_t addCircleAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
@@ -389,7 +427,7 @@ private:
       }
     });
 
-    std::size_t submit_count = 0;
+    std::size_t submission_count = 0;
     for (const auto& c : layer.circles)
     {
       if (intersectsAABB(clipping_bounds, c))
@@ -413,10 +451,10 @@ private:
         buffers.vertex_count += kVerticesPerCircle;
         // clang-format on
 
-        ++submit_count;
+        ++submission_count;
       }
     }
-    return submit_count;
+    return submission_count;
   }
 
   template <typename R, typename VertexAttributeT, typename ByteT>
@@ -452,9 +490,14 @@ LayerResources::LayerResources() { textures.fill(TextureHandle::null()); }
 
 void Layer::reset()
 {
+  if (is_static)
+  {
+    return;
+  }
   quads.clear();
   textured_quads.clear();
   circles.clear();
+  tile_maps.clear();
 }
 
 bool Layer::drawable() const
@@ -508,9 +551,29 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
     glUniformMatrix3fv(
       glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, camera_with_scaling_from_world.data());
 
+    // Verify that atlas texture is active
+#if SDE_DEBUG_ENABLED
+    for (const auto& tm : layer.tile_maps)
+    {
+      SDE_ASSERT_NE(tm.tile_set, nullptr);
+      SDE_ASSERT_TRUE(std::any_of(
+        std::begin(layer.resources.textures),
+        std::end(layer.resources.textures),
+        [altas_texture = tm.tile_set->atlas()](const auto& available_texture) {
+          return altas_texture == available_texture;
+        }));
+    }
+#endif  // SDE_DEBUG_ENABLED
+
+    // Pre-sort tilemaps by tile set
+    std::sort(std::begin(layer.tile_maps), std::end(layer.tile_maps), [](const auto& lhs, const auto& rhs) {
+      return lhs.tile_set < rhs.tile_set;
+    });
+
     // Call backend
     backend_->draw(layer, world_from_camera_with_scaling * Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
   }
+
   layer.reset();
 }
 
@@ -534,7 +597,8 @@ std::ostream& operator<<(std::ostream& os, const LayerSettings& settings)
 std::ostream& operator<<(std::ostream& os, const Layer& layer)
 {
   return os << layer.resources << layer.settings << "\nquads: " << layer.quads.size()
-            << "\ntextured-quads: " << layer.textured_quads.size() << "\ncircles: " << layer.circles.size();
+            << "\ntextured-quads: " << layer.textured_quads.size() << "\ncircles: " << layer.circles.size()
+            << "\ntile-maps: " << layer.tile_maps.size() << "\nstatic: " << std::boolalpha << layer.is_static;
 }
 
 }  // namespace sde::graphics

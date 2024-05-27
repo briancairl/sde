@@ -1,4 +1,14 @@
 cc_library(
+  name="build",
+  hdrs=[
+    "include/sde/build.hpp",
+  ],
+  strip_include_prefix="include",
+  deps=[],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
   name="core",
   hdrs=[
     "include/sde/crtp.hpp",
@@ -29,7 +39,7 @@ cc_library(
   name="logging",
   hdrs=["include/sde/logging.hpp"],
   strip_include_prefix="include",
-  deps=[],
+  deps=[":build"],
   visibility=["//visibility:public"]
 )
 

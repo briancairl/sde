@@ -65,6 +65,11 @@ struct Layer
   std::vector<Circle> circles;
   std::vector<TileMap> tile_maps;
 
+  /**
+   *
+   */
+  bool is_static = false;
+
   void reset();
   bool drawable() const;
 };
