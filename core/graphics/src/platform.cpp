@@ -29,7 +29,7 @@ void glfw_error_callback(int error, const char* description)
 }
 #endif  // SDE_GLFW_DEBUG
 
-WindowHandle glfw_try_init(const WindowOptions& options)
+void* glfw_try_init(const WindowOptions& options)
 {
   SDE_LOG_INFO("Initializing GLFW...");
   SDE_ASSERT(!glfw_is_initialized.test_and_set(), "Graphics already initialized!");
@@ -79,7 +79,7 @@ WindowHandle glfw_try_init(const WindowOptions& options)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glEnable(GL_BLEND);
 
-  return WindowHandle{reinterpret_cast<void*>(window)};
+  return reinterpret_cast<void*>(window);
 }
 
 constexpr std::array<std::pair<int, std::size_t>, static_cast<size_t>(KeyCode::_Count_)> kKeyScanPattern{{
@@ -139,25 +139,23 @@ void glfwScrollEventHandler(GLFWwindow* window, double xoffset, double yoffset)
 
 }  // namespace
 
-WindowHandle initialize(const WindowOptions& options) { return glfw_try_init(options); }
+Window Window::initialize(const WindowOptions& options) { return Window{WindowHandle{glfw_try_init(options)}}; }
 
-WindowHandle::WindowHandle(WindowHandle&& other) : p_{other.p_} { other.p_ = nullptr; }
-
-WindowHandle::~WindowHandle()
+Window::~Window()
 {
-  if (p_ != nullptr)
+  if (handle())
   {
-    glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(p_));
+    glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(handle_.id()));
   }
 }
 
-void WindowHandle::spin(std::function<WindowDirective(const WindowProperties&)> on_update)
+void Window::spin(std::function<WindowDirective(const WindowProperties&)> on_update)
 {
   static constexpr double kLoopRate = 60.0;
 
   WindowProperties window_properties;
 
-  auto* window = reinterpret_cast<GLFWwindow*>(p_);
+  auto* window = reinterpret_cast<GLFWwindow*>(handle_.id());
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -173,18 +171,15 @@ void WindowHandle::spin(std::function<WindowDirective(const WindowProperties&)> 
 
   while (!glfwWindowShouldClose(window))
   {
-    glfwGetFramebufferSize(window, (window_properties.size.data() + 0), (window_properties.size.data() + 1));
     glfwGetCursorPos(
       window, (window_properties.mouse_position_px.data() + 0), (window_properties.mouse_position_px.data() + 1));
-    window_properties.mouse_position_vp.x() = static_cast<float>(
-      2.0 * window_properties.mouse_position_px.x() / static_cast<double>(window_properties.size.x()) - 1.0);
-    window_properties.mouse_position_vp.y() = static_cast<float>(
-      1.0 - 2.0 * window_properties.mouse_position_px.y() / static_cast<double>(window_properties.size.y()));
 
     glfwPollEvents();
 
     glfwScanKeyStates(window, window_properties.keys);
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, window_properties.size.x(), window_properties.size.y());
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -200,7 +195,6 @@ void WindowHandle::spin(std::function<WindowDirective(const WindowProperties&)> 
       return;
     }
 
-    glViewport(0, 0, window_properties.size.x(), window_properties.size.y());
     glfwSwapBuffers(window);
 
     const auto t_now = std::chrono::steady_clock::now();

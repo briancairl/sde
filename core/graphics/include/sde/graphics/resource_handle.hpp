@@ -12,26 +12,40 @@
 namespace sde::graphics
 {
 
-using id_type = std::size_t;
-
-template <typename T> struct ResourceHandle
+template <typename T, typename IdentifierT = std::size_t, auto kNullValue = 0> struct ResourceHandle
 {
 public:
-  explicit ResourceHandle(id_type id) : id_{id} {}
-  ResourceHandle() : ResourceHandle{0} {}
+  using id_type = IdentifierT;
 
-  constexpr id_type id() const { return id_; }
+  explicit ResourceHandle(IdentifierT id) : id_{id} {}
 
-  constexpr bool isNull() const { return id_ == 0UL; }
+  ResourceHandle(const ResourceHandle&) = default;
 
-  constexpr bool isValid() const { return id_ != 0UL; }
+  ResourceHandle(ResourceHandle&& other) : id_{other.id_} { other.id_ = kNullValue; }
+
+  ResourceHandle() : ResourceHandle{kNullValue} {}
+
+  ResourceHandle& operator=(const ResourceHandle&) = default;
+
+  ResourceHandle& operator=(ResourceHandle&& other)
+  {
+    id_ = other.id_;
+    other.id_ = kNullValue;
+    return *this;
+  }
+
+  constexpr IdentifierT id() const { return id_; }
+
+  constexpr bool isNull() const { return id_ == kNullValue; }
+
+  constexpr bool isValid() const { return id_ != kNullValue; }
 
   constexpr operator bool() const { return isValid(); }
 
-  static constexpr T null() { return T{0}; }
+  static constexpr T null() { return T{kNullValue}; }
 
 private:
-  id_type id_ = 0;
+  IdentifierT id_ = kNullValue;
 };
 
 template <typename T> constexpr bool operator<(const ResourceHandle<T>& lhs, const ResourceHandle<T>& rhs)

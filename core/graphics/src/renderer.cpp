@@ -498,12 +498,17 @@ void Layer::reset()
   tile_maps.clear();
 }
 
-Mat3f LayerSettings::getWorldFromViewportMatrix() const
+Mat3f LayerAttributes::getWorldFromViewportMatrix() const
 {
-  return getInverseCameraMatrix(this->scaling, this->aspect_ratio) * this->world_from_camera;
+  return getInverseCameraMatrix(this->scaling, getViewportAspectRatio()) * this->world_from_camera;
 }
 
-bool Layer::drawable() const
+float LayerAttributes::getViewportAspectRatio() const
+{
+  return static_cast<float>(frame_buffer_dimensions.x()) / static_cast<float>(frame_buffer_dimensions.y());
+}
+
+bool Layer::isValid() const
 {
   return resources.isValid() and !(quads.empty() and textured_quads.empty() and circles.empty() and tile_maps.empty());
 }
@@ -516,7 +521,7 @@ Renderer2D::Renderer2D(const Renderer2DOptions& options) :
 
 void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& texture_cache, Layer& layer)
 {
-  if (layer.drawable())
+  if (layer.isValid())
   {
     const auto* shader = shader_cache.get(layer.resources.shader);
     SDE_ASSERT_NE(shader, nullptr);
@@ -544,10 +549,10 @@ void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& tex
     }
 
     // Apply other variables
-    glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), layer.settings.time);
-    glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), layer.settings.time_delta);
+    glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), layer.attributes.time);
+    glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), layer.attributes.time_delta);
 
-    const Mat3f world_from_viewport = layer.settings.getWorldFromViewportMatrix();
+    const Mat3f world_from_viewport = layer.attributes.getWorldFromViewportMatrix();
     const Mat3f viewport_from_world = world_from_viewport.inverse();
 
     glUniformMatrix3fv(
@@ -570,16 +575,16 @@ std::ostream& operator<<(std::ostream& os, const LayerResources& resources)
   return os << "shader: " << resources.shader << "\ntexture-units:\n" << resources.textures;
 }
 
-std::ostream& operator<<(std::ostream& os, const LayerSettings& settings)
+std::ostream& operator<<(std::ostream& os, const LayerAttributes& attributes)
 {
   return os << "world_from_camera:\n"
-            << settings.world_from_camera << "\ntime: " << settings.time << " (delta: " << settings.time_delta << ')'
-            << "\nscaling: " << settings.scaling << "\naspect: " << settings.aspect_ratio;
+            << attributes.world_from_camera << "\ntime: " << attributes.time << " (delta: " << attributes.time_delta
+            << ')' << "\nscaling: " << attributes.scaling;
 }
 
 std::ostream& operator<<(std::ostream& os, const Layer& layer)
 {
-  return os << layer.resources << layer.settings << "\nquads: " << layer.quads.size()
+  return os << layer.resources << layer.attributes << "\nquads: " << layer.quads.size()
             << "\ntextured-quads: " << layer.textured_quads.size() << "\ncircles: " << layer.circles.size()
             << "\ntile-maps: " << layer.tile_maps.size() << "\nstatic: " << std::boolalpha << layer.is_static;
 }

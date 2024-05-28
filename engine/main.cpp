@@ -6,6 +6,7 @@
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/platform.hpp"
+#include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/texture.hpp"
@@ -96,7 +97,7 @@ int main(int argc, char** argv)
 {
   SDE_LOG_INFO("starting...");
 
-  auto app = sde::graphics::initialize({
+  auto app = sde::graphics::Window::initialize({
     .initial_size = {1000, 500},
   });
 
@@ -217,8 +218,15 @@ int main(int argc, char** argv)
   Layer layer_lighting;
   layer_lighting.resources.shader = *shader2_or_error;
 
+
+  auto window_target_or_error = RenderTarget::create(app.handle());
+
+  SDE_ASSERT_TRUE(window_target_or_error.has_value());
+
   app.spin([&](const auto& window_properties)
   {
+    const auto viewport_size = window_target_or_error->refresh();
+
     const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time).count();
     const auto time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time_delta).count();
 
@@ -226,44 +234,44 @@ int main(int argc, char** argv)
 
     if (window_properties.keys.isDown(KeyCode::kA))
     {
-      layer_base.settings.world_from_camera(0, 2) -= time_delta * kMoveRate;
+      layer_base.attributes.world_from_camera(0, 2) -= time_delta * kMoveRate;
     }
 
     if (window_properties.keys.isDown(KeyCode::kD))
     {
-      layer_base.settings.world_from_camera(0, 2) += time_delta * kMoveRate;
+      layer_base.attributes.world_from_camera(0, 2) += time_delta * kMoveRate;
     }
 
     if (window_properties.keys.isDown(KeyCode::kS))
     {
-      layer_base.settings.world_from_camera(1, 2) -= time_delta * kMoveRate;
+      layer_base.attributes.world_from_camera(1, 2) -= time_delta * kMoveRate;
     }
 
     if (window_properties.keys.isDown(KeyCode::kW))
     {
-      layer_base.settings.world_from_camera(1, 2) += time_delta * kMoveRate;
+      layer_base.attributes.world_from_camera(1, 2) += time_delta * kMoveRate;
     }
 
     static constexpr float kScaleRate = 1.5;
-    const float scroll_sensitivity = std::clamp(layer_base.settings.scaling, 1e-4F, 1e-2F);
+    const float scroll_sensitivity = std::clamp(layer_base.attributes.scaling, 1e-4F, 1e-2F);
     if (window_properties.mouse_scroll.y() > 0)
     {
-      layer_base.settings.scaling -= scroll_sensitivity * kScaleRate * time;
+      layer_base.attributes.scaling -= scroll_sensitivity * kScaleRate * time;
     }
     else if (window_properties.mouse_scroll.y() < 0)
     {
-      layer_base.settings.scaling += scroll_sensitivity * kScaleRate * time;
+      layer_base.attributes.scaling += scroll_sensitivity * kScaleRate * time;
     }
-    layer_base.settings.scaling = std::max(layer_base.settings.scaling, 1e-3F);
+    layer_base.attributes.scaling = std::max(layer_base.attributes.scaling, 1e-3F);
 
-    layer_base.settings.time = time;
-    layer_base.settings.time_delta = time_delta;
-    layer_base.settings.setAspectRatio(window_properties.size);
+    layer_base.attributes.time = time;
+    layer_base.attributes.time_delta = time_delta;
+    layer_base.attributes.frame_buffer_dimensions = viewport_size;
 
-    layer_lighting.settings = layer_base.settings;
+    layer_lighting.attributes = layer_base.attributes;
 
     layer_lighting.circles.push_back({
-      .center = sde::transform(layer_lighting.settings.getWorldFromViewportMatrix(), window_properties.mouse_position_vp), 
+      .center = sde::transform(layer_lighting.attributes.getWorldFromViewportMatrix(), window_properties.getMousePositionViewport(viewport_size)), 
       .radius = 1.5F,
       .color = {1.0F, 1.0F, 0.5F, 1.0F}
     });
@@ -277,7 +285,7 @@ int main(int argc, char** argv)
     renderer.submit(shader_cache, texture_cache, layer_base);
     renderer.submit(shader_cache, texture_cache, layer_lighting);
 
-    SDE_LOG_DEBUG_FMT("%f : %f", layer_base.settings.time, layer_base.settings.time_delta);
+    SDE_LOG_DEBUG_FMT("%f : %f", layer_base.attributes.time, layer_base.attributes.time_delta);
 
     return WindowDirective::kContinue;
   });

@@ -22,9 +22,9 @@ sudo apt install           \
 
 ## 2D rendering
 
-- [ ] Tile sets
-- [ ] Tile map rendering feature
+- [x] Tile sets
+- [x] Tile map rendering feature
 - [ ] Rendering to frame buffer target
-- [ ] Rednering text
+- [ ] Rendering text
 - [ ] Debug render layer (wire-frame boxes; times)
 - [ ] Stream-style logging

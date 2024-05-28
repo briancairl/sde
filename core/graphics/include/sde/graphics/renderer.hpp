@@ -36,7 +36,7 @@ struct LayerResources
 
 std::ostream& operator<<(std::ostream& os, const LayerResources& resources);
 
-struct LayerSettings
+struct LayerAttributes
 {
   Mat3f world_from_camera = Mat3f::Identity();
 
@@ -44,21 +44,18 @@ struct LayerSettings
   float time_delta = 0.0F;
 
   float scaling = 1.0F;
-  float aspect_ratio = 1.0F;
 
-  void setAspectRatio(Vec2i frame_buffer_dimensions)
-  {
-    aspect_ratio = static_cast<float>(frame_buffer_dimensions.x()) / static_cast<float>(frame_buffer_dimensions.y());
-  }
+  Vec2i frame_buffer_dimensions;
 
+  float getViewportAspectRatio() const;
   Mat3f getWorldFromViewportMatrix() const;
 };
 
-std::ostream& operator<<(std::ostream& os, const LayerSettings& settings);
+std::ostream& operator<<(std::ostream& os, const LayerAttributes& attributes);
 
 struct Layer
 {
-  LayerSettings settings;
+  LayerAttributes attributes;
   LayerResources resources;
 
   std::vector<Quad> quads;
@@ -72,7 +69,8 @@ struct Layer
   bool is_static = false;
 
   void reset();
-  bool drawable() const;
+
+  bool isValid() const;
 };
 
 std::ostream& operator<<(std::ostream& os, const Layer& layer);

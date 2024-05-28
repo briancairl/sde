@@ -52,6 +52,7 @@ cc_library(
   hdrs=[
     "include/sde/graphics/debug.hpp",
     "include/sde/graphics/resource_handle.hpp",
+    "include/sde/graphics/render_target.hpp",
     "include/sde/graphics/renderer.hpp",
     "include/sde/graphics/shader.hpp",
     "include/sde/graphics/shader_fwd.hpp",
@@ -62,7 +63,8 @@ cc_library(
     "include/sde/graphics/texture_handle.hpp",
     "include/sde/graphics/texture_units.hpp",
     "include/sde/graphics/tile_set.hpp",
-    "include/sde/graphics/tile_map.hpp"
+    "include/sde/graphics/tile_map.hpp",
+    "include/sde/graphics/window_handle.hpp",
   ],
   strip_include_prefix="include",
   deps=[
@@ -105,6 +107,7 @@ cc_library(
   name="graphics_impl__renderer__opengl",
   srcs=[
     "src/renderer.cpp",
+    "src/render_target.cpp",
     "src/shader.cpp",
     "src/shapes.cpp",
     "src/texture.cpp",
