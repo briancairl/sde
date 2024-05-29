@@ -121,10 +121,10 @@ public:
 
   bool remove(const TextureHandle& index);
 
-  expected<TextureHandle, TextureError> toTexture(const Image& image, const TextureOptions& options = {})
+  expected<TextureHandle, TextureError> upload(const Image& image, const TextureOptions& options = {})
   {
-    const auto texture = getNextTextureHandle();
-    const auto ok_or_error = toTexture(texture, image, options);
+    const auto texture = newTextureHandle();
+    const auto ok_or_error = transfer(texture, image, options);
     if (ok_or_error.has_value())
     {
       last_texture_handle_ = texture;
@@ -135,10 +135,24 @@ public:
 
   template <typename DataT>
   expected<TextureHandle, TextureError>
-  toTexture(View<const DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {})
+  upload(View<const DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {})
   {
-    const auto texture = getNextTextureHandle();
-    const auto ok_or_error = toTexture(texture, data, shape, options);
+    const auto texture = newTextureHandle();
+    const auto ok_or_error = transfer(texture, data, shape, options);
+    if (ok_or_error.has_value())
+    {
+      last_texture_handle_ = texture;
+      return texture;
+    }
+    return make_unexpected(ok_or_error.error());
+  }
+
+  template <typename DataT>
+  expected<TextureHandle, TextureError>
+  create(const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {})
+  {
+    const auto texture = newTextureHandle();
+    const auto ok_or_error = allocate<DataT>(texture, shape, options);
     if (ok_or_error.has_value())
     {
       last_texture_handle_ = texture;
@@ -152,21 +166,25 @@ public:
 private:
   using TextureCacheMap = std::unordered_map<TextureHandle, TextureInfo, ResourceHandleHash>;
 
-  expected<void, TextureError> toTexture(TextureHandle, const Image& image, const TextureOptions& options = {});
+  expected<void, TextureError> transfer(TextureHandle, const Image& image, const TextureOptions& options);
 
   template <typename T>
-  expected<void, TextureError> toTexture(
+  expected<void, TextureError> transfer(
     TextureHandle texture,
     View<const T> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
+  template <typename T>
+  expected<void, TextureError>
+  allocate(TextureHandle texture, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
+
   TextureHandle last_texture_handle_ = TextureHandle::null();
 
   TextureCacheMap textures_;
 
-  TextureHandle getNextTextureHandle() const { return TextureHandle{last_texture_handle_.id() + 1UL}; }
+  TextureHandle newTextureHandle() const { return TextureHandle{last_texture_handle_.id() + 1UL}; }
 };
 
 }  // namespace sde::graphics

@@ -14,10 +14,10 @@
 #include <vector>
 
 // SDE
+#include "sde/asset.hpp"
 #include "sde/expected.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/typedef.hpp"
-#include "sde/resources.hpp"
 
 namespace sde::graphics
 {
@@ -98,6 +98,7 @@ struct ShaderInfo
 std::ostream& operator<<(std::ostream& os, const ShaderInfo& error);
 
 [[nodiscard]] bool hasLayout(const ShaderInfo& info, std::string_view key, ShaderVariableType type, std::size_t index);
+
 [[nodiscard]] bool hasUniform(const ShaderInfo& info, std::string_view key, ShaderVariableType type);
 
 class ShaderCache
@@ -111,7 +112,7 @@ public:
 
   [[nodiscard]] expected<ShaderHandle, ShaderError> toShader(std::string_view source);
 
-  [[nodiscard]] expected<ShaderHandle, ShaderError> load(const resource::path& shader_path);
+  [[nodiscard]] expected<ShaderHandle, ShaderError> load(const asset::path& shader_path);
 
   const ShaderInfo* get(ShaderHandle shader) const;
 

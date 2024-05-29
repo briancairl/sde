@@ -13,6 +13,7 @@
 #include <vector>
 
 // SDE
+#include "sde/graphics/render_target.hpp"
 #include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/shapes.hpp"
@@ -97,7 +98,11 @@ public:
   /**
    * @brief Draws buffered shapes
    */
-  void submit(const ShaderCache& shader_cache, const TextureCache& texture_cache, Layer& layer);
+  void submit(
+    const RenderTargetActive& render_target,
+    const ShaderCache& shader_cache,
+    const TextureCache& texture_cache,
+    Layer& layer);
 
 private:
   LayerResources active_resources_;

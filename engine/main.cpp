@@ -117,7 +117,7 @@ int main(int argc, char** argv)
 
   TextureCache texture_cache;
 
-  auto texture_or_error = texture_cache.toTexture(*image_or_error);
+  auto texture_or_error = texture_cache.upload(*image_or_error);
 
   SDE_ASSERT_TRUE(texture_or_error.has_value());
 
@@ -225,8 +225,6 @@ int main(int argc, char** argv)
 
   app.spin([&](const auto& window_properties)
   {
-    const auto viewport_size = window_target_or_error->refresh();
-
     const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time).count();
     const auto time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time_delta).count();
 
@@ -266,12 +264,12 @@ int main(int argc, char** argv)
 
     layer_base.attributes.time = time;
     layer_base.attributes.time_delta = time_delta;
-    layer_base.attributes.frame_buffer_dimensions = viewport_size;
+    layer_base.attributes.frame_buffer_dimensions = window_target_or_error->getLastSize();
 
     layer_lighting.attributes = layer_base.attributes;
 
     layer_lighting.circles.push_back({
-      .center = sde::transform(layer_lighting.attributes.getWorldFromViewportMatrix(), window_properties.getMousePositionViewport(viewport_size)), 
+      .center = sde::transform(layer_lighting.attributes.getWorldFromViewportMatrix(), window_properties.getMousePositionViewport(window_target_or_error->getLastSize())), 
       .radius = 1.5F,
       .color = {1.0F, 1.0F, 0.5F, 1.0F}
     });
@@ -282,8 +280,9 @@ int main(int argc, char** argv)
       .color = {1.0F, 1.0F, 1.0F, 0.5F}
     });
 
-    renderer.submit(shader_cache, texture_cache, layer_base);
-    renderer.submit(shader_cache, texture_cache, layer_lighting);
+    RenderTargetActive render_target{*window_target_or_error};
+    renderer.submit(render_target, shader_cache, texture_cache, layer_base);
+    renderer.submit(render_target, shader_cache, texture_cache, layer_lighting);
 
     SDE_LOG_DEBUG_FMT("%f : %f", layer_base.attributes.time, layer_base.attributes.time_delta);
 

@@ -38,7 +38,7 @@ cc_library(
     ":graphics_impl__common",
     "//core/common:expected",
     "//core/common:geometry",
-    "//core/common:resources",
+    "//core/common:asset",
     "@stb//:stb",
   ],
   visibility=["//visibility:private"]
@@ -53,6 +53,7 @@ cc_library(
     "include/sde/graphics/debug.hpp",
     "include/sde/graphics/resource_handle.hpp",
     "include/sde/graphics/render_target.hpp",
+    "include/sde/graphics/render_target_fwd.hpp",
     "include/sde/graphics/renderer.hpp",
     "include/sde/graphics/shader.hpp",
     "include/sde/graphics/shader_fwd.hpp",
@@ -72,6 +73,7 @@ cc_library(
     "//core/common:expected",
     "//core/common:geometry",
     "//core/common:logging",
+    "//core/common:resource",
     ":graphics_impl__common",
     ":graphics_impl__image__stb"
   ],

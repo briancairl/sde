@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <mutex>
+#include <optional>
 #include <ostream>
 #include <type_traits>
 #include <vector>
@@ -14,6 +15,7 @@
 #include "sde/build.hpp"
 #include "sde/geometry_types.hpp"
 #include "sde/geometry_utils.hpp"
+#include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/texture.hpp"
@@ -519,7 +521,11 @@ Renderer2D::Renderer2D(const Renderer2DOptions& options) :
     active_resources_{}, backend_{std::make_unique<Backend>(options)}
 {}
 
-void Renderer2D::submit(const ShaderCache& shader_cache, const TextureCache& texture_cache, Layer& layer)
+void Renderer2D::submit(
+  const RenderTargetActive& render_target,
+  const ShaderCache& shader_cache,
+  const TextureCache& texture_cache,
+  Layer& layer)
 {
   if (layer.isValid())
   {

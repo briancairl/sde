@@ -10,10 +10,10 @@
 #include <iosfwd>
 
 // SDE
+#include "sde/asset.hpp"
 #include "sde/expected.hpp"
 #include "sde/geometry_types.hpp"
 #include "sde/graphics/typecode.hpp"
-#include "sde/resources.hpp"
 
 namespace sde::graphics
 {
@@ -139,7 +139,7 @@ public:
    * @brief Loads an Image from disk, or returns an ImageLoadError
    */
   [[nodiscard]] static expected<Image, ImageLoadError>
-  load(const resource::path& image_path, const ImageOptions& options = {});
+  load(const asset::path& image_path, const ImageOptions& options = {});
 
   /**
    * @brief Returns true if held resource is valid

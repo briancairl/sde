@@ -101,10 +101,10 @@ Image::~Image()
   stbi_image_free(data_);
 }
 
-expected<Image, ImageLoadError> Image::load(const resource::path& image_path, const ImageOptions& options)
+expected<Image, ImageLoadError> Image::load(const asset::path& image_path, const ImageOptions& options)
 {
   // Check if image point is valid
-  if (!resource::exists(image_path))
+  if (!asset::exists(image_path))
   {
     return make_unexpected(ImageLoadError::kResourceNotFound);
   }

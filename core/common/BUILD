@@ -44,9 +44,18 @@ cc_library(
 )
 
 cc_library(
-  name="resources",
-  hdrs=["include/sde/resources.hpp"],
+  name="asset",
+  hdrs=["include/sde/asset.hpp"],
   strip_include_prefix="include",
-  deps=["@tl_expected//:tl_expected"],
+  deps=[],
   visibility=["//visibility:public"]
 )
+
+cc_library(
+  name="resource",
+  hdrs=["include/sde/resource.hpp"],
+  strip_include_prefix="include",
+  deps=[],
+  visibility=["//visibility:public"]
+)
+

@@ -104,9 +104,21 @@ static_assert(sizeof(double) == byte_count<TypeCode::kFloat64>());
 static_assert(sizeof(int) == byte_count<TypeCode::kSInt32>());
 static_assert(sizeof(unsigned) == byte_count<TypeCode::kUInt32>());
 
-inline bool has_active_error()
+inline GLenum has_active_error()
 {
-  return glGetError() != GL_NO_ERROR;
+  GLenum last_err{GL_NO_ERROR};
+  while (true)
+  {
+    if (const auto next_err = glGetError(); next_err != GL_NO_ERROR)
+    {
+      last_err = next_err;
+    }
+    else
+    {
+      break;
+    }
+  }
+  return last_err;
 }
 
 }  // sde::graphics
