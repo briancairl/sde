@@ -157,8 +157,6 @@ void Window::spin(std::function<WindowDirective(const WindowProperties&)> on_upd
 
   auto* window = reinterpret_cast<GLFWwindow*>(handle_.id());
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
   const auto t_advance =
     std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(1.0 / kLoopRate));
 
@@ -177,11 +175,6 @@ void Window::spin(std::function<WindowDirective(const WindowProperties&)> on_upd
     glfwPollEvents();
 
     glfwScanKeyStates(window, window_properties.keys);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, window_properties.size.x(), window_properties.size.y());
-    glClearColor(0, 0, 0, 0);
-    glClear(GL_COLOR_BUFFER_BIT);
 
     switch (on_update(window_properties))
     {

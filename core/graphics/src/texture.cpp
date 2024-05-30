@@ -473,31 +473,29 @@ expected<void, TextureError> TextureCache::allocate(
   return make_unexpected(texture_info_or_error.error());
 }
 
-// template expected<void, TextureError> TextureCache::allocate<std::uint8_t>(
-//   TextureHandle texture,
-//   View<const std::uint8_t> data,
-//   const TextureShape& shape,
-//   TextureLayout layout,
-//   const TextureOptions& options);
+template expected<void, TextureError> TextureCache::allocate<std::uint8_t>(
+  TextureHandle texture,
+  const TextureShape& shape,
+  TextureLayout layout,
+  const TextureOptions& options);
 
-// template expected<void, TextureError> TextureCache::allocate<std::uint16_t>(
-//   TextureHandle texture,
-//   View<const std::uint16_t> data,
-//   const TextureShape& shape,
-//   TextureLayout layout,
-//   const TextureOptions& options);
+template expected<void, TextureError> TextureCache::allocate<std::uint16_t>(
+  TextureHandle texture,
+  const TextureShape& shape,
+  TextureLayout layout,
+  const TextureOptions& options);
 
-// template expected<void, TextureError> TextureCache::allocate<std::uint32_t>(
-//   TextureHandle texture,
-//   const TextureShape& shape,
-//   TextureLayout layout,
-//   const TextureOptions& options);
+template expected<void, TextureError> TextureCache::allocate<std::uint32_t>(
+  TextureHandle texture,
+  const TextureShape& shape,
+  TextureLayout layout,
+  const TextureOptions& options);
 
-// template expected<void, TextureError> TextureCache::allocate<float>(
-//   TextureHandle texture,
-//   const TextureShape& shape,
-//   TextureLayout layout,
-//   const TextureOptions& options);
+template expected<void, TextureError> TextureCache::allocate<float>(
+  TextureHandle texture,
+  const TextureShape& shape,
+  TextureLayout layout,
+  const TextureOptions& options);
 
 const TextureInfo* TextureCache::get(TextureHandle texture) const
 {

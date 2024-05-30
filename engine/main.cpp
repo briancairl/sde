@@ -126,11 +126,14 @@ int main(int argc, char** argv)
 
   SDE_ASSERT_TRUE(tile_set_or_error.has_value());
 
+  auto draw_texture_or_error = texture_cache.create<std::uint8_t>(TextureShape{{500, 500}}, TextureLayout::kRGB);
+
   Renderer2D renderer;
 
   Layer layer_base;
   layer_base.resources.shader = *shader1_or_error;
   layer_base.resources.textures[0] = (*texture_or_error);
+  layer_base.resources.textures[1] = (*draw_texture_or_error);
   layer_base.resources.textures[4] = (*texture_or_error);
   layer_base.is_static = true;
   layer_base.quads.push_back({
@@ -149,6 +152,7 @@ int main(int argc, char** argv)
     .color = {1.0F, 1.0F, 1.0F, 1.0F}
   });
 
+
   layer_base.textured_quads.push_back({
     .rect = {
       .min = {0.1F, 0.1F},
@@ -159,19 +163,20 @@ int main(int argc, char** argv)
       .max = {1.0F, 1.0F}
     },
     .color = {1.0F, 1.0F, 1.0F, 1.0F},
-    .texture_unit = 0});
+    .texture_unit = 4
+  });
 
   layer_base.textured_quads.push_back({
     .rect = {
-      .min = {-0.1F, -0.1F},
-      .max = {-0.3F, -0.3F}
+      .min = { 0.8F, 0.8F},
+      .max = { 1.8F, 1.8F}
     },
     .rect_texture = {
       .min = {0.0F, 0.0F},
       .max = {1.0F, 1.0F}
     },
-    .color = {1.0F, 0.0F, 1.0F, 0.1F},
-    .texture_unit = 4
+    .color = {1.0F, 0.0F, 1.0F, 0.9F},
+    .texture_unit = 1
   });
 
   layer_base.tile_maps.push_back(
@@ -218,9 +223,10 @@ int main(int argc, char** argv)
   Layer layer_lighting;
   layer_lighting.resources.shader = *shader2_or_error;
 
+  auto texture_target_or_error = RenderTarget::create(*draw_texture_or_error, texture_cache);
+  SDE_ASSERT_TRUE(texture_target_or_error.has_value());
 
   auto window_target_or_error = RenderTarget::create(app.handle());
-
   SDE_ASSERT_TRUE(window_target_or_error.has_value());
 
   app.spin([&](const auto& window_properties)
@@ -280,9 +286,19 @@ int main(int argc, char** argv)
       .color = {1.0F, 1.0F, 1.0F, 0.5F}
     });
 
-    RenderTargetActive render_target{*window_target_or_error};
-    renderer.submit(render_target, shader_cache, texture_cache, layer_base);
-    renderer.submit(render_target, shader_cache, texture_cache, layer_lighting);
+    {
+      RenderTargetActive render_target{*texture_target_or_error};
+      renderer.submit(render_target, shader_cache, texture_cache, layer_base);
+      renderer.submit(render_target, shader_cache, texture_cache, layer_lighting);
+    }
+
+    {
+      RenderTargetActive render_target{*window_target_or_error};
+      renderer.submit(render_target, shader_cache, texture_cache, layer_base);
+      renderer.submit(render_target, shader_cache, texture_cache, layer_lighting);
+    }
+
+    layer_lighting.reset();
 
     SDE_LOG_DEBUG_FMT("%f : %f", layer_base.attributes.time, layer_base.attributes.time_delta);
 

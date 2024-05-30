@@ -25,8 +25,8 @@ struct TextureUnits
 
   void reset() { slots.fill(TextureHandle::null()); }
 
-  decltype(auto) operator[](std::size_t index) { return slots[index]; }
-  decltype(auto) operator[](std::size_t index) const { return slots[index]; }
+  TextureHandle& operator[](std::size_t index) { return slots[index]; }
+  TextureHandle operator[](std::size_t index) const { return slots[index]; }
 
   decltype(auto) begin() { return slots.begin(); }
   decltype(auto) end() { return slots.end(); }

@@ -26,17 +26,22 @@ std::ostream& operator<<(std::ostream& os, RenderTargetError error)
   return os;
 }
 
+// RenderTarget::RenderTarget(RenderTarget&& other)
+// {
+
+// }
+
 RenderTarget::RenderTarget(WindowHandle window) : target_{window}, viewport_size_{Vec2i::Zero()} {}
 
 RenderTarget::RenderTarget(RenderTargetHandle frame_buffer, Vec2i size) : target_{frame_buffer}, viewport_size_{size} {}
 
 RenderTarget::~RenderTarget()
 {
-  if (handle().isValid())
-  {
-    GLuint texture_framebuffer = handle().id();
-    glDeleteFramebuffers(1, &texture_framebuffer);
-  }
+  // if (handle().isValid())
+  // {
+  //   GLuint texture_framebuffer = handle().id();
+  //   glDeleteFramebuffers(1, &texture_framebuffer);
+  // }
 }
 
 expected<RenderTarget, RenderTargetError> RenderTarget::create(const WindowHandle& window)

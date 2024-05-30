@@ -13,6 +13,7 @@
 
 // SDE
 #include "sde/build.hpp"
+#include "sde/format.hpp"
 #include "sde/geometry_types.hpp"
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/render_target.hpp"
@@ -490,10 +491,6 @@ private:
 
 void Layer::reset()
 {
-  if (is_static)
-  {
-    return;
-  }
   quads.clear();
   textured_quads.clear();
   circles.clear();
@@ -550,7 +547,7 @@ void Renderer2D::submit(
 
         glActiveTexture(GL_TEXTURE0 + u);
         glBindTexture(GL_TEXTURE_2D, texture->native_id);
-        glUniform1i(glGetUniformLocation(shader->native_id, "uTexture"), u);
+        glUniform1i(glGetUniformLocation(shader->native_id, format("uTexture[%lu]", u)), u);
       }
     }
 
@@ -572,8 +569,6 @@ void Renderer2D::submit(
     // Call backend
     backend_->draw(layer, transform(world_from_viewport, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()}));
   }
-
-  layer.reset();
 }
 
 std::ostream& operator<<(std::ostream& os, const LayerResources& resources)
@@ -592,7 +587,7 @@ std::ostream& operator<<(std::ostream& os, const Layer& layer)
 {
   return os << layer.resources << layer.attributes << "\nquads: " << layer.quads.size()
             << "\ntextured-quads: " << layer.textured_quads.size() << "\ncircles: " << layer.circles.size()
-            << "\ntile-maps: " << layer.tile_maps.size() << "\nstatic: " << std::boolalpha << layer.is_static;
+            << "\ntile-maps: " << layer.tile_maps.size();
 }
 
 }  // namespace sde::graphics

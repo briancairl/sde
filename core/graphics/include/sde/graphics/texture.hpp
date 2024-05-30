@@ -152,7 +152,7 @@ public:
   create(const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {})
   {
     const auto texture = newTextureHandle();
-    const auto ok_or_error = allocate<DataT>(texture, shape, options);
+    const auto ok_or_error = allocate<DataT>(texture, shape, layout, options);
     if (ok_or_error.has_value())
     {
       last_texture_handle_ = texture;
