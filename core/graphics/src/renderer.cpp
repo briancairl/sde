@@ -1,8 +1,8 @@
 // C++ Standard Library
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
-#include <mutex>
 #include <optional>
 #include <ostream>
 #include <type_traits>
@@ -110,22 +110,39 @@ std::size_t setAttribute(
   return total_bytes;
 }
 
-constexpr std::size_t kVertexAttributeIndex = 0;
-constexpr std::size_t kVertexElementIndex = 1;
 
-constexpr std::size_t kBufferCount = 2;
-constexpr std::size_t kAttributeCount = 4;
+constexpr std::size_t kElementsPerTriangle{3UL};
+constexpr std::size_t kVerticesPerQuad{4UL};
+constexpr std::size_t kVerticesPerCircle{17UL};
 
+
+constexpr std::size_t kVertexAttributeIndex{0};
+constexpr std::size_t kVertexElementIndex{1};
+constexpr std::size_t kVertexBufferCount{2};
+
+
+constexpr std::size_t kVertexAttributeCount{4};
 using PositionAttribute = VertexAttribute<0, float, 2>;
 using TexCoordAttribute = VertexAttribute<1, float, 2>;
 using TexUnitAttribute = VertexAttribute<2, float, 1>;
 using TintColorAttribute = VertexAttribute<3, float, 4>;
 
-constexpr std::size_t kElementsPerTriangle = 3UL;
 
-constexpr std::size_t kVerticesPerQuad = 4UL;
+std::array<Vec2f, kVerticesPerCircle> kUnitCircleLookup
+{
+  [] {
+    std::array<Vec2f, kVerticesPerCircle> lookup;
+    constexpr float kAngleStamp = static_cast<float>(2.0 * M_PI) / static_cast<float>(kVerticesPerCircle - 2);
+    lookup[0] = {0.0F, 0.0F};
+    for (std::size_t v = 1; v < kVerticesPerCircle; ++v)
+    {
+      const float angle = ((v - 1) * kAngleStamp);
+      lookup[v] = {std::cos(angle), std::sin(angle)};
+    }
+    return lookup
+  }()
+}
 
-constexpr std::size_t kVerticesPerCircle = 17UL;
 
 void fillQuadPositions(Vec2f* target, const Vec2f min, const Vec2f max)
 {
@@ -134,6 +151,7 @@ void fillQuadPositions(Vec2f* target, const Vec2f min, const Vec2f max)
   target[2] = {max.x(), max.y()};
   target[3] = {max.x(), min.y()};
 }
+
 
 struct AttributeBuffers
 {
@@ -147,6 +165,7 @@ struct AttributeBuffers
   ~AttributeBuffers() { unmap_vertex_buffer(); }
 };
 
+
 struct ElementBuffer
 {
   unsigned* indices = nullptr;
@@ -156,7 +175,8 @@ struct ElementBuffer
   ~ElementBuffer() { unmap_element_buffer(); }
 };
 
-Mat3f getInverseCameraMatrix(float scaling, float aspect)
+
+Mat3f toInverseCameraMatrix(float scaling, float aspect)
 {
   const float rxx = scaling * aspect;
   const float ryy = scaling;
@@ -169,6 +189,7 @@ Mat3f getInverseCameraMatrix(float scaling, float aspect)
   // clang-format on
   return m;
 }
+
 
 bool intersectsAABB(const Bounds2f& bounds, const Line& line)
 {
@@ -200,12 +221,14 @@ bool intersectsAABB(const Bounds2f& bounds, const TileMap& tile_map)
   return bounds.intersects(toBounds(p_min, p_max));
 }
 
-}  // namespace
-
-class Renderer2D::Backend
+class OpenGLBackend : public RenderBackend
 {
 public:
-  Backend(const Renderer2DOptions& options)
+  OpenGLBackend(const Renderer2DOptions& options) :
+      vao_main_vertex_count_{0},
+      vao_main_vertex_count_max_{3UL * options.max_triangle_count_per_render_pass},
+      vao_main_element_count_{0},
+      vao_main_element_count_max_{3UL * options.max_triangle_count_per_render_pass}
   {
     {
       GLint actual_texture_unit_count;
@@ -213,98 +236,156 @@ public:
       SDE_ASSERT_GE(actual_texture_unit_count, TextureUnits::kAvailable);
     }
 
-    glGenVertexArrays(1, &vao_);
-    glGenBuffers(2, vab_);
+    glGenVertexArrays(1, &vao_main_);
+    glGenBuffers(2, vab_main_);
 
-    glBindVertexArray(vao_);
+    glBindVertexArray(vao_main_);
 
     // Allocate element buffer
     {
       static constexpr std::size_t kBytesPerIndex = sizeof(GLuint);
-
-      const std::size_t total_bytes = 3UL * options.max_triangle_count_per_layer * kBytesPerIndex;
-
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vab_[kVertexElementIndex]);
+      const std::size_t total_bytes = vao_main_element_count_max_ * kBytesPerIndex;
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vab_main_[kVertexElementIndex]);
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, total_bytes, nullptr, GL_DYNAMIC_DRAW);
-
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
       SDE_LOG_DEBUG_FMT("Allocated element mem: %lu bytes", total_bytes);
     }
 
     // Allocate attribute buffers
     {
-      glBindBuffer(GL_ARRAY_BUFFER, vab_[kVertexAttributeIndex]);
-
+      glBindBuffer(GL_ARRAY_BUFFER, vab_main_[kVertexAttributeIndex]);
       std::size_t total_bytes = 0;
-
-      vab_attribute_byte_offets_[PositionAttribute::kIndex] = total_bytes;
-      total_bytes += setAttribute(total_bytes, PositionAttribute{3UL * options.max_triangle_count_per_layer});
-
-      vab_attribute_byte_offets_[TexCoordAttribute::kIndex] = total_bytes;
-      total_bytes += setAttribute(total_bytes, TexCoordAttribute{3UL * options.max_triangle_count_per_layer});
-
-      vab_attribute_byte_offets_[TexUnitAttribute::kIndex] = total_bytes;
-      total_bytes += setAttribute(total_bytes, TexUnitAttribute{3UL * options.max_triangle_count_per_layer});
-
-      vab_attribute_byte_offets_[TintColorAttribute::kIndex] = total_bytes;
-      total_bytes += setAttribute(total_bytes, TintColorAttribute{3UL * options.max_triangle_count_per_layer});
-
+      vab_main_attribute_byte_offets_[PositionAttribute::kIndex] = total_bytes;
+      total_bytes += setAttribute(total_bytes, PositionAttribute{3UL * options.max_triangle_count_per_render_pass});
+      vab_main_attribute_byte_offets_[TexCoordAttribute::kIndex] = total_bytes;
+      total_bytes += setAttribute(total_bytes, TexCoordAttribute{3UL * options.max_triangle_count_per_render_pass});
+      vab_main_attribute_byte_offets_[TexUnitAttribute::kIndex] = total_bytes;
+      total_bytes += setAttribute(total_bytes, TexUnitAttribute{3UL * options.max_triangle_count_per_render_pass});
+      vab_main_attribute_byte_offets_[TintColorAttribute::kIndex] = total_bytes;
+      total_bytes += setAttribute(total_bytes, TintColorAttribute{3UL * options.max_triangle_count_per_render_pass});
       glBufferData(GL_ARRAY_BUFFER, total_bytes, nullptr, GL_DYNAMIC_DRAW);
-
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
       SDE_LOG_DEBUG_FMT("Allocated attribute mem: %lu bytes", total_bytes);
     }
+  }
 
+  ~OpenGLBackend()
+  {
+    glDeleteBuffers(2, vab_main_);
+    glDeleteVertexArrays(1, &vao_main_);
+  }
+
+  void start()
+  {
+    glBindVertexArray(vao_main_);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vab_main_[kVertexElementIndex]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vab_main_[kVertexAttributeIndex]);
+  }
+
+  void finish()
+  {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-  }
-
-  ~Backend()
-  {
-    glDeleteBuffers(2, vab_);
-    glDeleteVertexArrays(1, &vao_);
-  }
-
-  void draw(const Layer& layer, const Bounds2f clipping_bounds)
-  {
-    glBindVertexArray(vao_);
-
-    struct Submissions
-    {
-      std::size_t vertices = 0;
-      std::size_t quads = 0;
-      std::size_t circles = 0;
-      std::size_t tile_maps = 0;
-    };
-
-    // Fill vertex attributes
-    const auto submissions = [this, &layer, &clipping_bounds] {
-      Submissions submissions;
-      auto buffers = getVertexAttributeBuffers();
-      submissions.quads += addQuadAttributes(buffers, clipping_bounds, layer);
-      submissions.quads += addTexturedQuadAttributes(buffers, clipping_bounds, layer);
-      submissions.circles += addCircleAttributes(buffers, clipping_bounds, layer);
-      submissions.tile_maps += addTileMapAttributes(buffers, clipping_bounds, layer);
-      submissions.vertices = buffers.vertex_count;
-      return submissions;
-    }();
-
-    // Fill vertex elements
-    const std::size_t element_count = [this, &submissions] {
-      auto buffers = getVertexElementBuffer();
-      addQuadElements(buffers, submissions.quads);
-      addCircleElements(buffers, submissions.circles);
-      addQuadElements(buffers, submissions.tile_maps * TileMap::kTileCount);
-      SDE_ASSERT_EQ(submissions.vertices, buffers.vertex_count);
-      return buffers.element_count;
-    }();
-
-    draw_triangle_elements(vao_, element_count);
-
     glBindVertexArray(0);
+    vao_main_vertex_count_ = 0;
+    vao_main_element_count_ = 0;
+  }
+
+  void submit(const Bounds2f& visible_bounds, View<const Quad> quads)
+  {
+    // Add vertex attribute data
+    {
+      auto b = getMainVertexAttributeBuffers();
+      std::size_t visible_count = 0;
+      for (const auto& q : quads)
+      {
+        if (intersectsAABB(visible_bounds, q))
+        {
+          static constexpr float kNoTextureUnitAssigned = -1.0F;
+          fillQuadPositions(b.position + vao_main_vertex_count_, q.rect.min, q.rect.max);
+          b.texcoord = std::fill_n(b.texcoord, kVerticesPerQuad, Vec2f::Zero());
+          b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, kNoTextureUnitAssigned);
+          b.tint = std::fill_n(b.tint, kVerticesPerQuad, q.color);
+          vao_main_vertex_count_ += kVerticesPerQuad;
+          ++visible_count;
+        }
+      }
+    }
+
+    // Add vertex element data
+    if (visible_count > 0)
+    {
+      auto b = getMainVertexElementBuffer();
+      addQuadElements(b, visible_count);
+    }
+  }
+
+  void submit(const Bounds2f& visible_bounds, View<const TexturedQuad> quads)
+  {
+    // Add vertex attribute data
+    {
+      auto b = getMainVertexAttributeBuffers();
+      std::size_t visible_count = 0;
+      for (const auto& q : quads)
+      {
+        if (intersectsAABB(visible_bounds, q))
+        {
+          b.position = fillQuadPositions(b.position, q.rect.min, q.rect.max);
+          b.texcoord = fillQuadPositions(b.texcoord, q.rect_texture.min, q.rect_texture.max);
+          buffers.texunit = std::fill_n(buffers.texunit, kVerticesPerQuad, static_cast<float>(q.texture_unit));
+          buffers.tint = std::fill_n(buffers.tint, kVerticesPerQuad, q.color);
+          vao_main_vertex_count_ += kVerticesPerQuad;
+          ++visible_count;
+        }
+      }
+    }
+
+    // Add vertex element data
+    if (visible_count > 0)
+    {
+      auto b = getMainVertexElementBuffer();
+      addQuadElements(b, visible_count);
+    }
+  }
+
+  void submit(const Bounds2f& visible_bounds, View<const Circle> circles)
+  {
+    // Get vertex count before adding attributes
+    const std::size_t = start_vertex_count = vao_main_vertex_count_;
+
+    // Add vertex attribute data
+    {
+      auto b = getMainVertexAttributeBuffers();
+      std::size_t visible_count = 0;
+      for (const auto& c : circles)
+      {
+        if (intersectsAABB(visible_bounds, q))
+        {
+          static constexpr float kNoTextureUnitAssigned = -1.0F;
+          // clang-format off
+          b.position = std::transform(std::begin(kUnitCircleLookup), std::end(kUnitCircleLookup), b.position, [&c](const Vec2f& unit) { return c.center + c.radius * unit; });
+          b.texcoord = std::copy(std::begin(kUnitCircleLookup), std::end(kUnitCircleLookup), b.texcoord);
+          b.texunit = std::fill_n(b.texunit, kVerticesPerCircle, kNoTextureUnitAssigned);
+          b.tint = std::fill_n(b.tint, kVerticesPerCircle, c.color);
+          vao_main_vertex_count_ += kVerticesPerCircle;
+          // clang-format on
+          ++visible_count;
+        }
+      }
+    }
+
+    // Add vertex element data
+    if (visible_count > 0)
+    {
+      auto b = getMainVertexElementBuffer();
+      addCircleElements(b, visible_count, start_vertex_count);
+    }
   }
 
 private:
   static void addQuadElements(ElementBuffer& buffer, std::size_t quad_count)
   {
-    auto* p = buffer.indices + buffer.element_count;
+    auto* p = buffer.indices + vao_main_element_count_;
     for (std::size_t n = 0; n < quad_count; ++n)
     {
       // Lower face
@@ -312,24 +393,22 @@ private:
       p[1] = buffer.vertex_count + 1;
       p[2] = buffer.vertex_count + 2;
       p += kElementsPerTriangle;
-      buffer.element_count += kElementsPerTriangle;
+      vao_main_element_count_ += kElementsPerTriangle;
 
       // Upper face
       p[0] = buffer.vertex_count + 2;
       p[1] = buffer.vertex_count + 3;
       p[2] = buffer.vertex_count + 0;
       p += kElementsPerTriangle;
-      buffer.element_count += kElementsPerTriangle;
-
-      buffer.vertex_count += kVerticesPerQuad;
+      vao_main_element_count_ += kElementsPerTriangle;
     }
   }
 
-  static void addCircleElements(ElementBuffer& buffer, std::size_t circle_count)
+  static void addCircleElements(ElementBuffer& buffer, std::size_t circle_count, std::size_t start_vertex_count)
   {
     for (std::size_t n = 0; n < circle_count; ++n)
     {
-      auto* p = buffer.indices + buffer.element_count;
+      auto* p = buffer.indices + vao_main_element_count_;
 
       const unsigned center_vertex_index = buffer.vertex_count;
       for (std::size_t e = 1; e < kVerticesPerCircle - 1; ++e)
@@ -339,58 +418,19 @@ private:
         p[2] = p[1] + 1;
 
         p += kElementsPerTriangle;
-        buffer.element_count += kElementsPerTriangle;
+        vao_main_element_count_ += kElementsPerTriangle;
       }
       p[2] = center_vertex_index + 1;
-      buffer.vertex_count += kVerticesPerCircle;
     }
   }
 
-  static std::size_t addQuadAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
-  {
-    std::size_t submission_count = 0;
-    for (const auto& q : layer.quads)
-    {
-      if (intersectsAABB(clipping_bounds, q))
-      {
-        fillQuadPositions(buffers.position + buffers.vertex_count, q.rect.min, q.rect.max);
-        std::fill_n(buffers.texcoord + buffers.vertex_count, kVerticesPerQuad, Vec2f::Zero());
-        std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, -1);
-        std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
-        buffers.vertex_count += kVerticesPerQuad;
-        ++submission_count;
-      }
-    }
-    return submission_count;
-  }
-
-  static std::size_t
-  addTexturedQuadAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
-  {
-    std::size_t submission_count = 0;
-    for (const auto& q : layer.textured_quads)
-    {
-      if (intersectsAABB(clipping_bounds, q))
-      {
-        fillQuadPositions(buffers.position + buffers.vertex_count, q.rect.min, q.rect.max);
-        fillQuadPositions(buffers.texcoord + buffers.vertex_count, q.rect_texture.min, q.rect_texture.max);
-        std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(q.texture_unit));
-        std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, q.color);
-        buffers.vertex_count += kVerticesPerQuad;
-        ++submission_count;
-      }
-    }
-    return submission_count;
-  }
-
-  static std::size_t
-  addTileMapAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
+  static std::size_t addTileMapAttributes(AttributeBuffers& buffers, const Bounds2f& visible_bounds, const Layer& layer)
   {
     std::size_t submission_count = 0;
     for (const auto& tm : layer.tile_maps)
     {
       SDE_ASSERT_TRUE(tm.info.isValid());
-      if (intersectsAABB(clipping_bounds, tm))
+      if (intersectsAABB(visible_bounds, tm))
       {
         for (int j = 0; j < tm.tiles.cols(); ++j)
         {
@@ -414,180 +454,201 @@ private:
     return submission_count;
   }
 
-  static std::size_t addCircleAttributes(AttributeBuffers& buffers, const Bounds2f& clipping_bounds, const Layer& layer)
-  {
-    static_assert(kVerticesPerCircle > 4);
-
-    static std::array<Vec2f, kVerticesPerCircle> kUnitLookup;
-    static std::once_flag kInitLookup;
-    std::call_once(kInitLookup, [] {
-      constexpr float kAngleStamp = static_cast<float>(2.0 * M_PI) / static_cast<float>(kVerticesPerCircle - 2);
-      kUnitLookup[0] = {0.0F, 0.0F};
-      for (std::size_t v = 1; v < kVerticesPerCircle; ++v)
-      {
-        const float angle = ((v - 1) * kAngleStamp);
-        kUnitLookup[v] = {std::cos(angle), std::sin(angle)};
-      }
-    });
-
-    std::size_t submission_count = 0;
-    for (const auto& c : layer.circles)
-    {
-      if (intersectsAABB(clipping_bounds, c))
-      {
-        // clang-format off
-        std::transform(
-          std::begin(kUnitLookup),
-          std::end(kUnitLookup),
-          buffers.position + buffers.vertex_count,
-          [&c](const Vec2f& unit)
-          {
-           return c.center + c.radius * unit;
-          });
-        std::copy(
-          std::begin(kUnitLookup),
-          std::end(kUnitLookup),
-          buffers.texcoord + buffers.vertex_count
-        );
-        std::fill_n(buffers.texunit + buffers.vertex_count, kVerticesPerCircle, -1);
-        std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerCircle, c.color);
-        buffers.vertex_count += kVerticesPerCircle;
-        // clang-format on
-
-        ++submission_count;
-      }
-    }
-    return submission_count;
-  }
-
   template <typename R, typename VertexAttributeT, typename ByteT>
   [[nodiscard]] R* getVertexAttributeBuffer(ByteT* mapped_buffer)
   {
     static_assert(sizeof(R) == VertexAttributeT::kBytesPerVertex);
     return reinterpret_cast<R*>(
-      reinterpret_cast<std::uint8_t*>(mapped_buffer) + vab_attribute_byte_offets_[VertexAttributeT::kIndex]);
+      reinterpret_cast<std::uint8_t*>(mapped_buffer) + vab_main_attribute_byte_offets_[VertexAttributeT::kIndex]);
   }
 
-  AttributeBuffers getVertexAttributeBuffers()
+  AttributeBuffers getMainVertexAttributeBuffers()
   {
-    auto* mapped_ptr = map_write_only_vertex_buffer(vab_[kVertexAttributeIndex]);
+    auto* mapped_ptr = map_write_only_vertex_buffer(vab_main_[kVertexAttributeIndex]);
     return {
-      .position = getVertexAttributeBuffer<Vec2f, PositionAttribute>(mapped_ptr),
-      .texcoord = getVertexAttributeBuffer<Vec2f, TexCoordAttribute>(mapped_ptr),
-      .texunit = getVertexAttributeBuffer<float, TexUnitAttribute>(mapped_ptr),
-      .tint = getVertexAttributeBuffer<Vec4f, TintColorAttribute>(mapped_ptr)};
+      .position = getVertexAttributeBuffer<Vec2f, PositionAttribute>(mapped_ptr) + vao_main_vertex_count_,
+      .texcoord = getVertexAttributeBuffer<Vec2f, TexCoordAttribute>(mapped_ptr) + vao_main_vertex_count_,
+      .texunit = getVertexAttributeBuffer<float, TexUnitAttribute>(mapped_ptr) + vao_main_vertex_count_,
+      .tint = getVertexAttributeBuffer<Vec4f, TintColorAttribute>(mapped_ptr) + vao_main_vertex_count_};
   }
 
-  ElementBuffer getVertexElementBuffer()
+  ElementBuffer getMainVertexElementBuffer()
   {
-    auto* mapped_ptr = map_write_only_element_buffer(vab_[kVertexElementIndex]);
-    return {.indices = reinterpret_cast<unsigned*>(mapped_ptr)};
+    auto* mapped_ptr = map_write_only_element_buffer(vab_main_[kVertexElementIndex]);
+    return {.indices = (reinterpret_cast<unsigned*>(mapped_ptr) + vao_main_element_count_)};
   }
 
-  GLuint vao_;
-  GLuint vab_[kBufferCount];
-  std::size_t vab_attribute_byte_offets_[kAttributeCount];
+  std::size_t vao_main_vertex_count_max_;
+  std::size_t vao_main_vertex_count_;
+  std::size_t vao_main_element_count_max_;
+  std::size_t vao_main_element_count_;
+  GLuint vao_main_;
+  GLuint vab_main_[kVertexBufferCount];
+  std::size_t vab_main_attribute_byte_offets_[kVertexAttributeCount];
 };
 
-void Layer::reset()
+std::optional<OpenGLBackend> backend__opengl;
+std::atomic_flag backend__render_pass_active = false;
+
+}  // namespace
+
+Mat3f LayerAttributes::getWorldFromViewportMatrix(const RenderTarget& target) const
 {
-  quads.clear();
-  textured_quads.clear();
-  circles.clear();
-  tile_maps.clear();
+  return toInverseCameraMatrix(scaling, target.getLastAspectRatio()) * world_from_camera;
 }
 
-Mat3f LayerAttributes::getWorldFromViewportMatrix() const
+static expected<Renderer2D, RendererError>
+Renderer2D::create(const ShaderCache* shader_cache, const TextureCache* texture_cache, const Renderer2DOptions& options)
 {
-  return getInverseCameraMatrix(this->scaling, getViewportAspectRatio()) * this->world_from_camera;
-}
-
-float LayerAttributes::getViewportAspectRatio() const
-{
-  return static_cast<float>(frame_buffer_dimensions.x()) / static_cast<float>(frame_buffer_dimensions.y());
-}
-
-bool Layer::isValid() const
-{
-  return resources.isValid() and !(quads.empty() and textured_quads.empty() and circles.empty() and tile_maps.empty());
-}
-
-Renderer2D::~Renderer2D() = default;
-
-Renderer2D::Renderer2D(const Renderer2DOptions& options) :
-    active_resources_{}, backend_{std::make_unique<Backend>(options)}
-{}
-
-void Renderer2D::submit(
-  const RenderTargetActive& render_target,
-  const ShaderCache& shader_cache,
-  const TextureCache& texture_cache,
-  Layer& layer)
-{
-  if (layer.isValid())
+  if (backend__opengl.has_value())
   {
-    const auto* shader = shader_cache.get(layer.resources.shader);
-    SDE_ASSERT_NE(shader, nullptr);
-
-    // Set active shader
-    if (layer.resources.shader != active_resources_.shader)
-    {
-      SDE_ASSERT_NE(shader, nullptr);
-      glUseProgram(shader->native_id);
-      active_resources_.textures.reset();
-    }
-
-    // Set active texture units
-    for (std::size_t u = 0; u < layer.resources.textures.slots.size(); ++u)
-    {
-      if (layer.resources.textures[u] and layer.resources.textures[u] != active_resources_.textures[u])
-      {
-        const auto* texture = texture_cache.get(layer.resources.textures[u]);
-        SDE_ASSERT_NE(texture, nullptr);
-
-        glActiveTexture(GL_TEXTURE0 + u);
-        glBindTexture(GL_TEXTURE_2D, texture->native_id);
-        glUniform1i(glGetUniformLocation(shader->native_id, format("uTexture[%lu]", u)), u);
-      }
-    }
-
-    // Apply other variables
-    glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), layer.attributes.time);
-    glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), layer.attributes.time_delta);
-
-    const Mat3f world_from_viewport = layer.attributes.getWorldFromViewportMatrix();
-    const Mat3f viewport_from_world = world_from_viewport.inverse();
-
-    glUniformMatrix3fv(
-      glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, viewport_from_world.data());
-
-    // Pre-sort tilemaps by texture unit
-    std::sort(std::begin(layer.tile_maps), std::end(layer.tile_maps), [](const auto& lhs, const auto& rhs) {
-      return lhs.info.getTextureUnit() < rhs.info.getTextureUnit();
-    });
-
-    // Call backend
-    backend_->draw(layer, transform(world_from_viewport, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()}));
+    return make_unexpected(RendererError::kRendererAlreadyInitialized);
   }
+
+  SDE_ASSERT_NE(shader_cache_, nullptr);
+  SDE_ASSERT_NE(texture_cache_, nullptr);
+
+  // Initialize rendering backend
+  backend__opengl.emplace(options);
+
+  Renderer2D renderer;
+  renderer.shader_cache_ = shader_cache;
+  renderer.texture_cache_ = texture_cache;
+  renderer.backend_ = std::addressof(*backend__opengl);
+  return renderer
 }
 
-std::ostream& operator<<(std::ostream& os, const LayerResources& resources)
+Renderer2D::~Renderer2D()
+{
+  if ((backend == nullptr) or (!backend__opengl.has_value()))
+  {
+    return;
+  }
+  backend__opengl.reset();
+}
+
+Renderer2D Renderer2D(Renderer2D&& other) :
+    shader_cache_{other.shader_cache_},
+    texture_cache_{other.texture_cache_},
+    active_resources_{other.active_resources_},
+    backend_{other.backend_}
+{
+  other.backend_ = nullptr;
+}
+
+Mat3f Renderer2D::refresh(RenderTarget& target, const RenderAttributes& attributes, const RenderResources& resources)
+{
+  target.refresh(Vec4f::Zero());
+
+  SDE_ASSERT_TRUE(resources.isValid());
+
+  const auto* shader = shader_cache.get(resources.shader);
+
+  SDE_ASSERT_NE(shader, nullptr);
+
+  // Set active shader
+  if (resources.shader != active_resources_.shader)
+  {
+    SDE_ASSERT_NE(shader, nullptr);
+    glUseProgram(shader->native_id);
+    active_resources_.textures.reset();
+  }
+
+  // Set active texture units
+  for (std::size_t u = 0; u < resources.textures.slots.size(); ++u)
+  {
+    if (resources.textures[u] and resources.textures[u] != active_resources_.textures[u])
+    {
+      const auto* texture = texture_cache.get(layer.resources.textures[u]);
+      SDE_ASSERT_NE(texture, nullptr);
+
+      glActiveTexture(GL_TEXTURE0 + u);
+      glBindTexture(GL_TEXTURE_2D, texture->native_id);
+      glUniform1i(glGetUniformLocation(shader->native_id, format("uTexture[%lu]", u)), u);
+    }
+  }
+
+  // Apply other variables
+  glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), attributes.time);
+  glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), attributes.time_delta);
+
+  const Mat3f world_from_viewport = attributes.getWorldFromViewportMatrix(target);
+  const Mat3f viewport_from_world = world_from_viewport.inverse();
+
+  glUniformMatrix3fv(
+    glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, viewport_from_world.data());
+
+  backend__opengl->start();
+
+  return world_from_viewport;
+}
+
+void Renderer2D::flush() { backend__opengl->finish(); }
+
+void RenderPass::submit(View<const Quad> quads) { backend__opengl->submit(rp->getViewportInWorldBounds(), quads); }
+
+void RenderPass::submit(View<const Circle> circles)
+{
+  backend__opengl->submit(rp->getViewportInWorldBounds(), circles);
+}
+
+void RenderPass::submit(View<const TexutreQuad> quads)
+{
+  backend__opengl->submit(rp->getViewportInWorldBounds(), quads);
+}
+
+void RenderPass::submit(const TileMap& tile_map, const TileSet& tile_set)
+{
+  backend__opengl->submit(rp->getViewportInWorldBounds(), tile_map, tile_set);
+}
+
+RenderPass::~RenderPass()
+{
+  if (renderer_ == nullptr)
+  {
+    return;
+  }
+  backend__opengl->finish();
+  backend__render_pass_active = false;
+}
+
+expected<RenderPass, RenderPassError> RenderPass::create(
+  RenderTarget& target,
+  Renderer2D& renderer,
+  const RenderAttributes& attributes,
+  const RenderResources& resources)
+{
+  if (backend__render_pass_active)
+  {
+    return make_unexpected(RenderPassError::kRenderPassActive);
+  }
+
+  RenderPass render_pass;
+  render_pass.renderer = std::addressof(renderer);
+  render_pass.world_from_viewport_ = renderer.refresh(target, attributes, resources);
+  render_pass.viewport_in_world_bounds_ =
+    transform(render_pass.world_from_viewport_, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
+
+  backend__render_pass_active = true;
+
+  return render_pass;
+}
+
+std::ostream& operator<<(std::ostream& os, const RenderResources& resources)
 {
   return os << "shader: " << resources.shader << "\ntexture-units:\n" << resources.textures;
 }
 
-std::ostream& operator<<(std::ostream& os, const LayerAttributes& attributes)
+std::ostream& operator<<(std::ostream& os, const RenderAttributes& attributes)
 {
-  return os << "world_from_camera:\n"
-            << attributes.world_from_camera << "\ntime: " << attributes.time << " (delta: " << attributes.time_delta
-            << ')' << "\nscaling: " << attributes.scaling;
+  // clang-format off
+  return os << "world_from_camera:\n" << attributes.world_from_camera
+            << "\ntime: " << attributes.time
+            << " (delta: " << attributes.time_delta << ')'
+            << "\nscaling: " << attributes.scaling;
+  // clang-format on
 }
 
-std::ostream& operator<<(std::ostream& os, const Layer& layer)
-{
-  return os << layer.resources << layer.attributes << "\nquads: " << layer.quads.size()
-            << "\ntextured-quads: " << layer.textured_quads.size() << "\ncircles: " << layer.circles.size()
-            << "\ntile-maps: " << layer.tile_maps.size();
-}
+std::ostream& operator<<(std::ostream& os, const RenderPass& render_pass) { return os; }
 
 }  // namespace sde::graphics

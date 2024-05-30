@@ -51,12 +51,19 @@ public:
                                                                : RenderTargetHandle::null();
   }
 
+  Vec2i refresh(const Vec4f& clear_color = Vec4f::Zero());
+
   Vec2i getLastSize() const { return viewport_size_; }
+
+  float getLastAspectRatio() const { return toAspectRatio(viewport_size_); }
+
+  static float toAspectRatio(const Vec2i viewport_size)
+  {
+    return static_cast<float>(viewport_size.x()) / static_cast<float>(viewport_size.y());
+  }
 
 private:
   void activate();
-
-  Vec2i refresh(const Vec4f& clear_color = Vec4f::Zero());
 
   friend class RenderTargetActive;
 
@@ -64,38 +71,8 @@ private:
   RenderTarget(RenderTargetHandle frame_buffer, Vec2i size);
 
   std::variant<WindowHandle, RenderTargetHandle> target_;
+
   Vec2i viewport_size_;
-};
-
-
-class RenderTargetActive
-{
-public:
-  explicit RenderTargetActive(RenderTarget& target, Vec4f clear_color = Vec4f::Zero()) :
-      last_active_{nullptr}, clear_color_{clear_color}
-  {
-    exchange(target);
-  }
-
-  RenderTarget* exchange(RenderTarget& target)
-  {
-    auto* prev_active = last_active_;
-    if (auto* next_active = std::addressof(target); last_active_ != next_active)
-    {
-      next_active->refresh(clear_color_);
-      last_active_ = next_active;
-    }
-    return prev_active;
-  }
-
-  const RenderTarget* operator->() const { return last_active_; }
-
-private:
-  RenderTargetActive(RenderTargetActive&&) = delete;
-  RenderTargetActive(const RenderTargetActive&) = delete;
-
-  RenderTarget* last_active_;
-  Vec4f clear_color_;
 };
 
 }  // namespace sde::graphics
