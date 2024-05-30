@@ -6,7 +6,7 @@
 #pragma once
 
 // SDE
-#include "sde/graphics/resource_handle.hpp"
+#include "sde/resource_handle.hpp"
 
 namespace sde::graphics
 {

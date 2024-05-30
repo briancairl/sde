@@ -42,7 +42,10 @@ cc_library(
 
 cc_library(
   name="resource",
-  hdrs=["include/sde/resource.hpp"],
+  hdrs=[
+    "include/sde/resource.hpp",
+    "include/sde/resource_handle.hpp"
+  ],
   strip_include_prefix="include",
   deps=[],
   visibility=["//visibility:public"]

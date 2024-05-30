@@ -12,10 +12,10 @@
 // SDE
 #include "sde/expected.hpp"
 #include "sde/geometry_types.hpp"
-#include "sde/graphics/resource_handle.hpp"
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/graphics/window_handle.hpp"
+#include "sde/resource_handle.hpp"
 
 namespace sde::graphics
 {

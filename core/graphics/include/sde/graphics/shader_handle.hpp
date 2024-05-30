@@ -6,7 +6,7 @@
 #pragma once
 
 // SDE
-#include "sde/graphics/resource_handle.hpp"
+#include "sde/resource_handle.hpp"
 
 namespace sde::graphics
 {
@@ -17,11 +17,3 @@ struct ShaderHandle : ResourceHandle<ShaderHandle>
 };
 
 }  // namespace sde::graphics
-
-namespace std
-{
-
-template <> struct hash<sde::graphics::ShaderHandle> : sde::graphics::ResourceHandleHash
-{};
-
-}  // namespace std

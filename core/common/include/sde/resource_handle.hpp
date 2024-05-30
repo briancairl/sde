@@ -1,7 +1,7 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file texture_handle.hpp
+ * @file resource_handle.hpp
  */
 #pragma once
 
@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <iosfwd>
 
-namespace sde::graphics
+namespace sde
 {
 
 template <typename T, typename IdentifierT = std::size_t, auto kNullValue = 0> struct ResourceHandle
@@ -82,4 +82,4 @@ template <typename T> inline std::ostream& operator<<(std::ostream& os, const Re
   }
 }
 
-}  // namespace sde::graphics
+}  // namespace sde
