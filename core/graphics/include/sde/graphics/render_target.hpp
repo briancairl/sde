@@ -40,6 +40,8 @@ class RenderTarget
 public:
   ~RenderTarget();
 
+  RenderTarget(RenderTarget&& other);
+
   static expected<RenderTarget, RenderTargetError> create(const WindowHandle& window);
 
   static expected<RenderTarget, RenderTargetError>
