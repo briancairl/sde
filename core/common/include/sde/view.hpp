@@ -56,8 +56,28 @@ private:
   std::size_t size_;
 };
 
-template <typename T> [[nodiscard]] View<T, 0UL> make_view(T* data, std::size_t len) { return View<T, 0UL>{data, len}; }
-
+template <typename T> [[nodiscard]] View<T> make_view(T* data, std::size_t len) { return View<T>{data, len}; }
 template <std::size_t Len, typename T> [[nodiscard]] View<T, Len> make_view(T* data) { return View<T, Len>{data}; }
+
+template <std::size_t Len, typename T> [[nodiscard]] View<const T, Len> make_const_view(const T* data)
+{
+  return View<const T, Len>{data};
+}
+template <std::size_t Len, typename T> [[nodiscard]] View<const T> make_const_view(const T* data, std::size_t len)
+{
+  return View<const T>{data, len};
+}
+
+template <template <class, class...> class Container, typename T, typename... OtherTs>
+[[nodiscard]] auto make_view(Container<T, OtherTs...>& container)
+{
+  return View<T>{container.data(), container.size()};
+}
+
+template <template <class, class...> class Container, typename T, typename... OtherTs>
+[[nodiscard]] auto make_const_view(const Container<T, OtherTs...>& container)
+{
+  return View<std::add_const_t<T>>{container.data(), container.size()};
+}
 
 }  // namespace sde

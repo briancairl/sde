@@ -10,6 +10,5 @@ namespace sde::graphics
 
 struct RenderTargetHandle;
 class RenderTarget;
-class RenderTargetActive;
 
 }  // namespace sde::graphics

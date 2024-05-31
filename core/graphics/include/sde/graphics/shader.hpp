@@ -110,7 +110,7 @@ public:
 
   bool remove(const ShaderHandle& index);
 
-  [[nodiscard]] expected<ShaderHandle, ShaderError> toShader(std::string_view source);
+  [[nodiscard]] expected<ShaderHandle, ShaderError> create(std::string_view source);
 
   [[nodiscard]] expected<ShaderHandle, ShaderError> load(const asset::path& shader_path);
 

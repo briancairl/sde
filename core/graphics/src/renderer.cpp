@@ -25,6 +25,8 @@
 #include "sde/graphics/typedef.hpp"
 #include "sde/logging.hpp"
 
+#include <iostream>
+
 namespace sde::graphics
 {
 
@@ -49,11 +51,6 @@ template <GLenum Target> void unmap_buffer() { glUnmapBuffer(Target); }
 void unmap_vertex_buffer() { unmap_buffer<GL_ARRAY_BUFFER>(); }
 
 void unmap_element_buffer() { unmap_buffer<GL_ELEMENT_ARRAY_BUFFER>(); }
-
-void draw_triangle_elements(GLuint vao, std::size_t element_count)
-{
-  glDrawElements(GL_TRIANGLES, element_count, GL_UNSIGNED_INT, 0);
-}
 
 enum class VertexAccessMode
 {
@@ -128,40 +125,35 @@ using TexUnitAttribute = VertexAttribute<2, float, 1>;
 using TintColorAttribute = VertexAttribute<3, float, 4>;
 
 
-std::array<Vec2f, kVerticesPerCircle> kUnitCircleLookup
-{
-  [] {
-    std::array<Vec2f, kVerticesPerCircle> lookup;
-    constexpr float kAngleStamp = static_cast<float>(2.0 * M_PI) / static_cast<float>(kVerticesPerCircle - 2);
-    lookup[0] = {0.0F, 0.0F};
-    for (std::size_t v = 1; v < kVerticesPerCircle; ++v)
-    {
-      const float angle = ((v - 1) * kAngleStamp);
-      lookup[v] = {std::cos(angle), std::sin(angle)};
-    }
-    return lookup
-  }()
-}
+std::array<Vec2f, kVerticesPerCircle> kUnitCircleLookup{[] {
+  std::array<Vec2f, kVerticesPerCircle> lookup;
+  constexpr float kAngleStamp = static_cast<float>(2.0 * M_PI) / static_cast<float>(kVerticesPerCircle - 2);
+  lookup[0] = {0.0F, 0.0F};
+  for (std::size_t v = 1; v < kVerticesPerCircle; ++v)
+  {
+    const float angle = ((v - 1) * kAngleStamp);
+    lookup[v] = {std::cos(angle), std::sin(angle)};
+  }
+  return lookup;
+}()};
 
 
-void fillQuadPositions(Vec2f* target, const Vec2f min, const Vec2f max)
+Vec2f* fillQuadPositions(Vec2f* target, const Vec2f min, const Vec2f max)
 {
   target[0] = {min.x(), min.y()};
   target[1] = {min.x(), max.y()};
   target[2] = {max.x(), max.y()};
   target[3] = {max.x(), min.y()};
+  return target + kVerticesPerQuad;
 }
 
 
 struct AttributeBuffers
 {
-  std::size_t vertex_count = 0;
-
   Vec2f* position = nullptr;
   Vec2f* texcoord = nullptr;
   float* texunit = nullptr;
   Vec4f* tint = nullptr;
-
   ~AttributeBuffers() { unmap_vertex_buffer(); }
 };
 
@@ -169,9 +161,6 @@ struct AttributeBuffers
 struct ElementBuffer
 {
   unsigned* indices = nullptr;
-  std::size_t vertex_count = 0;
-  std::size_t element_count = 0;
-
   ~ElementBuffer() { unmap_element_buffer(); }
 };
 
@@ -191,16 +180,10 @@ Mat3f toInverseCameraMatrix(float scaling, float aspect)
 }
 
 
-bool intersectsAABB(const Bounds2f& bounds, const Line& line)
-{
-  return bounds.intersects(toBounds(line.tail, line.head));
-}
-
 bool intersectsAABB(const Bounds2f& bounds, const Rect& rect)
 {
   return bounds.intersects(Bounds2f{rect.min, rect.max});
 }
-
 
 bool intersectsAABB(const Bounds2f& bounds, const Quad& quad) { return intersectsAABB(bounds, quad.rect); }
 
@@ -225,10 +208,10 @@ class OpenGLBackend : public RenderBackend
 {
 public:
   OpenGLBackend(const Renderer2DOptions& options) :
-      vao_main_vertex_count_{0},
       vao_main_vertex_count_max_{3UL * options.max_triangle_count_per_render_pass},
-      vao_main_element_count_{0},
-      vao_main_element_count_max_{3UL * options.max_triangle_count_per_render_pass}
+      vao_main_element_count_max_{3UL * options.max_triangle_count_per_render_pass},
+      vao_main_vertex_count_{0},
+      vao_main_element_count_{0}
   {
     {
       GLint actual_texture_unit_count;
@@ -277,6 +260,9 @@ public:
 
   void start()
   {
+    vao_main_vertex_count_ = 0;
+    vao_main_element_count_ = 0;
+
     glBindVertexArray(vao_main_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vab_main_[kVertexElementIndex]);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vab_main_[kVertexAttributeIndex]);
@@ -284,133 +270,272 @@ public:
 
   void finish()
   {
+    glDrawElements(GL_TRIANGLES, vao_main_element_count_, GL_UNSIGNED_INT, 0);
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-    vao_main_vertex_count_ = 0;
-    vao_main_element_count_ = 0;
   }
 
-  void submit(const Bounds2f& visible_bounds, View<const Quad> quads)
-  {
-    // Add vertex attribute data
-    {
-      auto b = getMainVertexAttributeBuffers();
-      std::size_t visible_count = 0;
-      for (const auto& q : quads)
-      {
-        if (intersectsAABB(visible_bounds, q))
-        {
-          static constexpr float kNoTextureUnitAssigned = -1.0F;
-          fillQuadPositions(b.position + vao_main_vertex_count_, q.rect.min, q.rect.max);
-          b.texcoord = std::fill_n(b.texcoord, kVerticesPerQuad, Vec2f::Zero());
-          b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, kNoTextureUnitAssigned);
-          b.tint = std::fill_n(b.tint, kVerticesPerQuad, q.color);
-          vao_main_vertex_count_ += kVerticesPerQuad;
-          ++visible_count;
-        }
-      }
-    }
-
-    // Add vertex element data
-    if (visible_count > 0)
-    {
-      auto b = getMainVertexElementBuffer();
-      addQuadElements(b, visible_count);
-    }
-  }
-
-  void submit(const Bounds2f& visible_bounds, View<const TexturedQuad> quads)
-  {
-    // Add vertex attribute data
-    {
-      auto b = getMainVertexAttributeBuffers();
-      std::size_t visible_count = 0;
-      for (const auto& q : quads)
-      {
-        if (intersectsAABB(visible_bounds, q))
-        {
-          b.position = fillQuadPositions(b.position, q.rect.min, q.rect.max);
-          b.texcoord = fillQuadPositions(b.texcoord, q.rect_texture.min, q.rect_texture.max);
-          buffers.texunit = std::fill_n(buffers.texunit, kVerticesPerQuad, static_cast<float>(q.texture_unit));
-          buffers.tint = std::fill_n(buffers.tint, kVerticesPerQuad, q.color);
-          vao_main_vertex_count_ += kVerticesPerQuad;
-          ++visible_count;
-        }
-      }
-    }
-
-    // Add vertex element data
-    if (visible_count > 0)
-    {
-      auto b = getMainVertexElementBuffer();
-      addQuadElements(b, visible_count);
-    }
-  }
-
-  void submit(const Bounds2f& visible_bounds, View<const Circle> circles)
+  expected<void, RenderPassError> submit(const Bounds2f& visible_bounds, View<const Quad> quads)
   {
     // Get vertex count before adding attributes
-    const std::size_t = start_vertex_count = vao_main_vertex_count_;
+    const std::size_t start_vertex_count = vao_main_vertex_count_;
 
     // Add vertex attribute data
+    std::size_t quad_count = 0;
     {
       auto b = getMainVertexAttributeBuffers();
-      std::size_t visible_count = 0;
-      for (const auto& c : circles)
+      for (const auto& q : quads)
       {
-        if (intersectsAABB(visible_bounds, q))
+        if (!intersectsAABB(visible_bounds, q))
         {
-          static constexpr float kNoTextureUnitAssigned = -1.0F;
-          // clang-format off
-          b.position = std::transform(std::begin(kUnitCircleLookup), std::end(kUnitCircleLookup), b.position, [&c](const Vec2f& unit) { return c.center + c.radius * unit; });
-          b.texcoord = std::copy(std::begin(kUnitCircleLookup), std::end(kUnitCircleLookup), b.texcoord);
-          b.texunit = std::fill_n(b.texunit, kVerticesPerCircle, kNoTextureUnitAssigned);
-          b.tint = std::fill_n(b.tint, kVerticesPerCircle, c.color);
-          vao_main_vertex_count_ += kVerticesPerCircle;
-          // clang-format on
-          ++visible_count;
+          continue;
         }
+
+        const std::size_t next_vertex_count = vao_main_vertex_count_ + kVerticesPerQuad;
+
+        if (next_vertex_count > vao_main_vertex_count_max_)
+        {
+          return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
+        }
+
+        ++quad_count;
+
+        static constexpr float kNoTextureUnitAssigned = -1.0F;
+
+        // clang-format off
+        b.position = fillQuadPositions(b.position, q.rect.min, q.rect.max);
+        b.texcoord = std::fill_n(b.texcoord, kVerticesPerQuad, Vec2f::Zero());
+        b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, kNoTextureUnitAssigned);
+        b.tint = std::fill_n(b.tint, kVerticesPerQuad, q.color);
+        // clang-format on
+
+        vao_main_vertex_count_ = next_vertex_count;
       }
     }
 
     // Add vertex element data
-    if (visible_count > 0)
+    if (quad_count == 0)
     {
-      auto b = getMainVertexElementBuffer();
-      addCircleElements(b, visible_count, start_vertex_count);
+      return {};
     }
+
+    if (auto b = getMainVertexElementBuffer(); addQuadElements(b, quad_count, start_vertex_count))
+    {
+      return {};
+    }
+
+    return make_unexpected(RenderPassError::kMaxElementCountExceeded);
+  }
+
+  expected<void, RenderPassError> submit(const Bounds2f& visible_bounds, View<const TexturedQuad> quads)
+  {
+    // Get vertex count before adding attributes
+    const std::size_t start_vertex_count = vao_main_vertex_count_;
+
+    // Add vertex attribute data
+    std::size_t quad_count = 0;
+    {
+      auto b = getMainVertexAttributeBuffers();
+      for (const auto& q : quads)
+      {
+        if (!intersectsAABB(visible_bounds, q))
+        {
+          continue;
+        }
+
+        const std::size_t next_vertex_count = vao_main_vertex_count_ + kVerticesPerQuad;
+
+        if (next_vertex_count > vao_main_vertex_count_max_)
+        {
+          return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
+        }
+
+        ++quad_count;
+
+        // clang-format off
+        b.position = fillQuadPositions(b.position, q.rect.min, q.rect.max);
+        b.texcoord = fillQuadPositions(b.texcoord, q.rect_texture.min, q.rect_texture.max);
+        b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, static_cast<float>(q.texture_unit));
+        b.tint = std::fill_n(b.tint, kVerticesPerQuad, q.color);
+        // clang-format on
+
+        vao_main_vertex_count_ = next_vertex_count;
+      }
+    }
+
+    // Add vertex element data
+    if (quad_count == 0)
+    {
+      return {};
+    }
+
+    if (auto b = getMainVertexElementBuffer(); addQuadElements(b, quad_count, start_vertex_count))
+    {
+      return {};
+    }
+
+    return make_unexpected(RenderPassError::kMaxElementCountExceeded);
+  }
+
+  expected<void, RenderPassError> submit(const Bounds2f& visible_bounds, View<const Circle> circles)
+  {
+    // Get vertex count before adding attributes
+    const std::size_t start_vertex_count = vao_main_vertex_count_;
+
+    // Add vertex attribute data
+    std::size_t circle_count = 0;
+    {
+      auto b = getMainVertexAttributeBuffers();
+      for (const auto& c : circles)
+      {
+        if (!intersectsAABB(visible_bounds, c))
+        {
+          continue;
+        }
+
+        const std::size_t next_vertex_count = vao_main_vertex_count_ + kVerticesPerCircle;
+
+        if (next_vertex_count > vao_main_vertex_count_max_)
+        {
+          return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
+        }
+
+        ++circle_count;
+
+        static constexpr float kNoTextureUnitAssigned = -1.0F;
+
+        // clang-format off
+        b.position = std::transform(std::begin(kUnitCircleLookup), std::end(kUnitCircleLookup), b.position,
+                                    [&c](const Vec2f& unit) { return c.center + c.radius * unit; });
+        b.texcoord = std::copy(std::begin(kUnitCircleLookup), std::end(kUnitCircleLookup), b.texcoord);
+        b.texunit = std::fill_n(b.texunit, kVerticesPerCircle, kNoTextureUnitAssigned);
+        b.tint = std::fill_n(b.tint, kVerticesPerCircle, c.color);
+        // clang-format on
+
+        vao_main_vertex_count_ = next_vertex_count;
+      }
+    }
+
+    // Add vertex element data
+    if (circle_count == 0)
+    {
+      return {};
+    }
+
+    if (auto b = getMainVertexElementBuffer(); addCircleElements(b, circle_count, start_vertex_count))
+    {
+      return {};
+    }
+
+    return make_unexpected(RenderPassError::kMaxElementCountExceeded);
+  }
+
+  expected<void, RenderPassError>
+  submit(const Bounds2f& visible_bounds, View<const TileMap> tile_maps, const TileSet& tile_set)
+  {
+    // Get vertex count before adding attributes
+    const std::size_t start_vertex_count = vao_main_vertex_count_;
+
+    // Add vertex attribute data
+    std::size_t quad_count = 0;
+    {
+      auto b = getMainVertexAttributeBuffers();
+      for (const auto& tm : tile_maps)
+      {
+        if (!intersectsAABB(visible_bounds, tm))
+        {
+          continue;
+        }
+
+        const std::size_t next_vertex_count =
+          vao_main_vertex_count_ + (kVerticesPerQuad * static_cast<std::size_t>(tm.tiles.size()));
+
+        if (next_vertex_count > vao_main_vertex_count_max_)
+        {
+          return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
+        }
+
+        for (int j = 0; j < tm.tiles.cols(); ++j)
+        {
+          for (int i = 0; i < tm.tiles.rows(); ++i)
+          {
+            const auto& texcoord = tile_set[tm.tiles(i, j)];
+            const Vec2f pos_rect_max = tm.position + Vec2f{tm.tile_size.x() * j, -tm.tile_size.y() * i};
+            const Vec2f pos_rect_min = pos_rect_max + Vec2f{tm.tile_size.x(), -tm.tile_size.y()};
+
+            // clang-format off
+            b.position = fillQuadPositions(b.position, pos_rect_min, pos_rect_max);
+            b.texcoord = fillQuadPositions(b.texcoord, texcoord.min, texcoord.max);
+            b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, static_cast<float>(tm.texture_unit));
+            b.tint = std::fill_n(b.tint, kVerticesPerQuad, tm.color);
+            // clang-format on
+
+            vao_main_vertex_count_ += kVerticesPerQuad;
+          }
+        }
+
+        quad_count += static_cast<std::size_t>(tm.tiles.size());
+      }
+    }
+
+    // Add vertex element data
+    if (quad_count == 0)
+    {
+      return {};
+    }
+
+    if (auto b = getMainVertexElementBuffer(); addQuadElements(b, quad_count, start_vertex_count))
+    {
+      return {};
+    }
+
+    return make_unexpected(RenderPassError::kMaxElementCountExceeded);
   }
 
 private:
-  static void addQuadElements(ElementBuffer& buffer, std::size_t quad_count)
+  bool addQuadElements(ElementBuffer& buffer, const std::size_t n, std::size_t start_vertex_count)
   {
     auto* p = buffer.indices + vao_main_element_count_;
-    for (std::size_t n = 0; n < quad_count; ++n)
+    for (std::size_t i = 0; i < n; ++i, start_vertex_count += kVerticesPerQuad)
     {
+      const std::size_t next_element_count = vao_main_element_count_ + 2UL * kElementsPerTriangle;
+      if (next_element_count > vao_main_element_count_max_)
+      {
+        return false;
+      }
+
       // Lower face
-      p[0] = buffer.vertex_count + 0;
-      p[1] = buffer.vertex_count + 1;
-      p[2] = buffer.vertex_count + 2;
+      p[0] = start_vertex_count + 0;
+      p[1] = start_vertex_count + 1;
+      p[2] = start_vertex_count + 2;
       p += kElementsPerTriangle;
-      vao_main_element_count_ += kElementsPerTriangle;
 
       // Upper face
-      p[0] = buffer.vertex_count + 2;
-      p[1] = buffer.vertex_count + 3;
-      p[2] = buffer.vertex_count + 0;
+      p[0] = start_vertex_count + 2;
+      p[1] = start_vertex_count + 3;
+      p[2] = start_vertex_count + 0;
       p += kElementsPerTriangle;
-      vao_main_element_count_ += kElementsPerTriangle;
+
+
+      vao_main_element_count_ = next_element_count;
     }
+    return true;
   }
 
-  static void addCircleElements(ElementBuffer& buffer, std::size_t circle_count, std::size_t start_vertex_count)
+  bool addCircleElements(ElementBuffer& buffer, const std::size_t n, std::size_t start_vertex_count)
   {
-    for (std::size_t n = 0; n < circle_count; ++n)
+    auto* p = buffer.indices + vao_main_element_count_;
+    for (std::size_t i = 0; i < n; ++i)
     {
-      auto* p = buffer.indices + vao_main_element_count_;
+      const std::size_t next_element_count = vao_main_element_count_ + kElementsPerTriangle * (kVerticesPerCircle - 2);
+      if (next_element_count > vao_main_element_count_max_)
+      {
+        return false;
+      }
 
-      const unsigned center_vertex_index = buffer.vertex_count;
+      const unsigned center_vertex_index = start_vertex_count;
       for (std::size_t e = 1; e < kVerticesPerCircle - 1; ++e)
       {
         p[0] = center_vertex_index;
@@ -418,40 +543,13 @@ private:
         p[2] = p[1] + 1;
 
         p += kElementsPerTriangle;
-        vao_main_element_count_ += kElementsPerTriangle;
       }
       p[2] = center_vertex_index + 1;
-    }
-  }
 
-  static std::size_t addTileMapAttributes(AttributeBuffers& buffers, const Bounds2f& visible_bounds, const Layer& layer)
-  {
-    std::size_t submission_count = 0;
-    for (const auto& tm : layer.tile_maps)
-    {
-      SDE_ASSERT_TRUE(tm.info.isValid());
-      if (intersectsAABB(visible_bounds, tm))
-      {
-        for (int j = 0; j < tm.tiles.cols(); ++j)
-        {
-          for (int i = 0; i < tm.tiles.rows(); ++i)
-          {
-            const auto tile_index = tm.tiles(i, j);
-            const auto& tex = tm.info.getTileRects()[tile_index];
-            const Vec2f p_max = tm.position + Vec2f{tm.tile_size.x() * j, -tm.tile_size.y() * i};
-            const Vec2f p_min = p_max + Vec2f{tm.tile_size.x(), -tm.tile_size.y()};
-            fillQuadPositions(buffers.position + buffers.vertex_count, p_min, p_max);
-            fillQuadPositions(buffers.texcoord + buffers.vertex_count, tex.min, tex.max);
-            std::fill_n(
-              buffers.texunit + buffers.vertex_count, kVerticesPerQuad, static_cast<float>(tm.info.getTextureUnit()));
-            std::fill_n(buffers.tint + buffers.vertex_count, kVerticesPerQuad, tm.color);
-            buffers.vertex_count += kVerticesPerQuad;
-          }
-        }
-        ++submission_count;
-      }
+      start_vertex_count += kVerticesPerCircle;
+      vao_main_element_count_ = next_element_count;
     }
-    return submission_count;
+    return true;
   }
 
   template <typename R, typename VertexAttributeT, typename ByteT>
@@ -479,8 +577,8 @@ private:
   }
 
   std::size_t vao_main_vertex_count_max_;
-  std::size_t vao_main_vertex_count_;
   std::size_t vao_main_element_count_max_;
+  std::size_t vao_main_vertex_count_;
   std::size_t vao_main_element_count_;
   GLuint vao_main_;
   GLuint vab_main_[kVertexBufferCount];
@@ -488,25 +586,25 @@ private:
 };
 
 std::optional<OpenGLBackend> backend__opengl;
-std::atomic_flag backend__render_pass_active = false;
+std::atomic_flag backend__render_pass_active;
 
 }  // namespace
 
-Mat3f LayerAttributes::getWorldFromViewportMatrix(const RenderTarget& target) const
+Mat3f RenderAttributes::getWorldFromViewportMatrix(const RenderTarget& target) const
 {
   return toInverseCameraMatrix(scaling, target.getLastAspectRatio()) * world_from_camera;
 }
 
-static expected<Renderer2D, RendererError>
+expected<Renderer2D, RendererError>
 Renderer2D::create(const ShaderCache* shader_cache, const TextureCache* texture_cache, const Renderer2DOptions& options)
 {
   if (backend__opengl.has_value())
   {
-    return make_unexpected(RendererError::kRendererAlreadyInitialized);
+    return make_unexpected(RendererError::kRendererPreviouslyInitialized);
   }
 
-  SDE_ASSERT_NE(shader_cache_, nullptr);
-  SDE_ASSERT_NE(texture_cache_, nullptr);
+  SDE_ASSERT_NE(shader_cache, nullptr);
+  SDE_ASSERT_NE(texture_cache, nullptr);
 
   // Initialize rendering backend
   backend__opengl.emplace(options);
@@ -515,19 +613,19 @@ Renderer2D::create(const ShaderCache* shader_cache, const TextureCache* texture_
   renderer.shader_cache_ = shader_cache;
   renderer.texture_cache_ = texture_cache;
   renderer.backend_ = std::addressof(*backend__opengl);
-  return renderer
+  return renderer;
 }
 
 Renderer2D::~Renderer2D()
 {
-  if ((backend == nullptr) or (!backend__opengl.has_value()))
+  if ((backend_ == nullptr) or (!backend__opengl.has_value()))
   {
     return;
   }
   backend__opengl.reset();
 }
 
-Renderer2D Renderer2D(Renderer2D&& other) :
+Renderer2D::Renderer2D(Renderer2D&& other) :
     shader_cache_{other.shader_cache_},
     texture_cache_{other.texture_cache_},
     active_resources_{other.active_resources_},
@@ -542,7 +640,7 @@ Mat3f Renderer2D::refresh(RenderTarget& target, const RenderAttributes& attribut
 
   SDE_ASSERT_TRUE(resources.isValid());
 
-  const auto* shader = shader_cache.get(resources.shader);
+  const auto* shader = shader_cache_->get(resources.shader);
 
   SDE_ASSERT_NE(shader, nullptr);
 
@@ -559,7 +657,7 @@ Mat3f Renderer2D::refresh(RenderTarget& target, const RenderAttributes& attribut
   {
     if (resources.textures[u] and resources.textures[u] != active_resources_.textures[u])
     {
-      const auto* texture = texture_cache.get(layer.resources.textures[u]);
+      const auto* texture = texture_cache_->get(resources.textures[u]);
       SDE_ASSERT_NE(texture, nullptr);
 
       glActiveTexture(GL_TEXTURE0 + u);
@@ -585,21 +683,32 @@ Mat3f Renderer2D::refresh(RenderTarget& target, const RenderAttributes& attribut
 
 void Renderer2D::flush() { backend__opengl->finish(); }
 
-void RenderPass::submit(View<const Quad> quads) { backend__opengl->submit(rp->getViewportInWorldBounds(), quads); }
-
-void RenderPass::submit(View<const Circle> circles)
+expected<void, RenderPassError> RenderPass::submit(View<const Quad> quads)
 {
-  backend__opengl->submit(rp->getViewportInWorldBounds(), circles);
+  return backend__opengl->submit(viewport_in_world_bounds_, quads);
 }
 
-void RenderPass::submit(View<const TexutreQuad> quads)
+expected<void, RenderPassError> RenderPass::submit(View<const Circle> circles)
 {
-  backend__opengl->submit(rp->getViewportInWorldBounds(), quads);
+  return backend__opengl->submit(viewport_in_world_bounds_, circles);
 }
 
-void RenderPass::submit(const TileMap& tile_map, const TileSet& tile_set)
+expected<void, RenderPassError> RenderPass::submit(View<const TexturedQuad> quads)
 {
-  backend__opengl->submit(rp->getViewportInWorldBounds(), tile_map, tile_set);
+  return backend__opengl->submit(viewport_in_world_bounds_, quads);
+}
+
+expected<void, RenderPassError> RenderPass::submit(View<const TileMap> tile_maps, const TileSet& tile_set)
+{
+  return backend__opengl->submit(viewport_in_world_bounds_, tile_maps, tile_set);
+}
+
+RenderPass::RenderPass(RenderPass&& other) :
+    renderer_{other.renderer_},
+    world_from_viewport_{other.world_from_viewport_},
+    viewport_in_world_bounds_{other.viewport_in_world_bounds_}
+{
+  other.renderer_ = nullptr;
 }
 
 RenderPass::~RenderPass()
@@ -609,7 +718,7 @@ RenderPass::~RenderPass()
     return;
   }
   backend__opengl->finish();
-  backend__render_pass_active = false;
+  backend__render_pass_active.clear();
 }
 
 expected<RenderPass, RenderPassError> RenderPass::create(
@@ -618,18 +727,16 @@ expected<RenderPass, RenderPassError> RenderPass::create(
   const RenderAttributes& attributes,
   const RenderResources& resources)
 {
-  if (backend__render_pass_active)
+  if (backend__render_pass_active.test_and_set())
   {
     return make_unexpected(RenderPassError::kRenderPassActive);
   }
 
   RenderPass render_pass;
-  render_pass.renderer = std::addressof(renderer);
+  render_pass.renderer_ = std::addressof(renderer);
   render_pass.world_from_viewport_ = renderer.refresh(target, attributes, resources);
   render_pass.viewport_in_world_bounds_ =
     transform(render_pass.world_from_viewport_, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
-
-  backend__render_pass_active = true;
 
   return render_pass;
 }

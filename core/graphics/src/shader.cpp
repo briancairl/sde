@@ -482,7 +482,7 @@ bool hasUniform(const ShaderInfo& info, std::string_view key, ShaderVariableType
 
 ShaderCache::~ShaderCache() {}
 
-expected<ShaderHandle, ShaderError> ShaderCache::toShader(std::string_view source)
+expected<ShaderHandle, ShaderError> ShaderCache::create(std::string_view source)
 {
   const auto source_parts = toShaderSourceParts(source);
 

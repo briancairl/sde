@@ -10,8 +10,10 @@
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/texture.hpp"
+#include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/tile_set.hpp"
 #include "sde/logging.hpp"
+#include "sde/view.hpp"
 
 // clang-format off
 
@@ -109,10 +111,10 @@ int main(int argc, char** argv)
 
   ShaderCache shader_cache;
 
-  auto shader1_or_error = shader_cache.toShader(kShader1);
+  auto shader1_or_error = shader_cache.create(kShader1);
   SDE_ASSERT_TRUE(shader1_or_error.has_value());
 
-  auto shader2_or_error = shader_cache.toShader(kShader2);
+  auto shader2_or_error = shader_cache.create(kShader2);
   SDE_ASSERT_TRUE(shader2_or_error.has_value());
 
   TextureCache texture_cache;
@@ -128,15 +130,20 @@ int main(int argc, char** argv)
 
   auto draw_texture_or_error = texture_cache.create<std::uint8_t>(TextureShape{{500, 500}}, TextureLayout::kRGB);
 
-  Renderer2D renderer;
+  auto renderer_or_error = Renderer2D::create(&shader_cache, &texture_cache);
+  SDE_ASSERT_TRUE(renderer_or_error.has_value());
 
-  Layer layer_base;
-  layer_base.resources.shader = *shader1_or_error;
-  layer_base.resources.textures[0] = (*texture_or_error);
-  layer_base.resources.textures[1] = (*draw_texture_or_error);
-  layer_base.resources.textures[4] = (*texture_or_error);
-  layer_base.is_static = true;
-  layer_base.quads.push_back({
+  RenderResources default_resources;
+  default_resources.shader = *shader1_or_error;
+  default_resources.textures[0] = (*texture_or_error);
+  default_resources.textures[1] = (*draw_texture_or_error);
+  default_resources.textures[4] = (*texture_or_error);
+
+  std::vector<Quad> layer_base_quads;
+  std::vector<TileMap> layer_base_tile_maps;
+  std::vector<TexturedQuad> layer_base_textured_quads;
+
+  layer_base_quads.push_back({
     .rect = {
       .min = {0.7F, 0.7F},
       .max = {0.8F, 0.8F}
@@ -144,7 +151,7 @@ int main(int argc, char** argv)
     .color = {1.0F, 0.0F, 1.0F, 1.0F}
   });
 
-  layer_base.quads.push_back({
+  layer_base_quads.push_back({
     .rect = {
       .min = {0.1F, 0.1F},
       .max = {0.5F, 0.5F}
@@ -153,7 +160,7 @@ int main(int argc, char** argv)
   });
 
 
-  layer_base.textured_quads.push_back({
+  layer_base_textured_quads.push_back({
     .rect = {
       .min = {0.1F, 0.1F},
       .max = {0.3F, 0.3F}
@@ -163,10 +170,10 @@ int main(int argc, char** argv)
       .max = {1.0F, 1.0F}
     },
     .color = {1.0F, 1.0F, 1.0F, 1.0F},
-    .texture_unit = 4
+    .texture_unit = 1
   });
 
-  layer_base.textured_quads.push_back({
+  layer_base_textured_quads.push_back({
     .rect = {
       .min = { 0.8F, 0.8F},
       .max = { 1.8F, 1.8F}
@@ -179,13 +186,13 @@ int main(int argc, char** argv)
     .texture_unit = 1
   });
 
-  layer_base.tile_maps.push_back(
-    [&tile_set_or_error, &textures=layer_base.resources.textures]
+  layer_base_tile_maps.push_back(
+    []
     {
       TileMap tile_map;
       tile_map.position = {0.7F, -0.8F};
       tile_map.tile_size = {0.25F, 0.25F};
-      tile_map.info = TileMapInfo::create(*tile_set_or_error, textures).value();
+      tile_map.texture_unit = 0;
       tile_map.tiles <<
         0, 1, 2, 3, 4, 5, 6,24,
         8, 9,10,11,12,13,14,15,
@@ -199,13 +206,13 @@ int main(int argc, char** argv)
     }()
   );
 
-  layer_base.tile_maps.push_back(
-    [&tile_set_or_error, &textures=layer_base.resources.textures, position = getNextRightPosition(layer_base.tile_maps.back())]
+  layer_base_tile_maps.push_back(
+    [position = getNextRightPosition(layer_base_tile_maps.back())]
     {
       TileMap tile_map;
       tile_map.position = position;
       tile_map.tile_size = {0.25F, 0.25F};
-      tile_map.info = TileMapInfo::create(*tile_set_or_error, textures).value();
+      tile_map.texture_unit = 0;
       tile_map.color[1] = 0.0;
       tile_map.tiles <<
         0, 1, 2, 3, 4, 5, 6,24,
@@ -220,14 +227,18 @@ int main(int argc, char** argv)
     }()
   );
 
-  Layer layer_lighting;
-  layer_lighting.resources.shader = *shader2_or_error;
+  RenderResources lighting_resources;
+  lighting_resources.shader = *shader2_or_error;
 
   auto texture_target_or_error = RenderTarget::create(*draw_texture_or_error, texture_cache);
   SDE_ASSERT_TRUE(texture_target_or_error.has_value());
 
   auto window_target_or_error = RenderTarget::create(app.handle());
   SDE_ASSERT_TRUE(window_target_or_error.has_value());
+
+  std::vector<Circle> layer_lighting_circles;
+
+  RenderAttributes attributes;
 
   app.spin([&](const auto& window_properties)
   {
@@ -238,69 +249,67 @@ int main(int argc, char** argv)
 
     if (window_properties.keys.isDown(KeyCode::kA))
     {
-      layer_base.attributes.world_from_camera(0, 2) -= time_delta * kMoveRate;
+      attributes.world_from_camera(0, 2) -= time_delta * kMoveRate;
     }
 
     if (window_properties.keys.isDown(KeyCode::kD))
     {
-      layer_base.attributes.world_from_camera(0, 2) += time_delta * kMoveRate;
+      attributes.world_from_camera(0, 2) += time_delta * kMoveRate;
     }
 
     if (window_properties.keys.isDown(KeyCode::kS))
     {
-      layer_base.attributes.world_from_camera(1, 2) -= time_delta * kMoveRate;
+      attributes.world_from_camera(1, 2) -= time_delta * kMoveRate;
     }
 
     if (window_properties.keys.isDown(KeyCode::kW))
     {
-      layer_base.attributes.world_from_camera(1, 2) += time_delta * kMoveRate;
+      attributes.world_from_camera(1, 2) += time_delta * kMoveRate;
     }
 
     static constexpr float kScaleRate = 1.5;
-    const float scroll_sensitivity = std::clamp(layer_base.attributes.scaling, 1e-4F, 1e-2F);
+    const float scroll_sensitivity = std::clamp(attributes.scaling, 1e-4F, 1e-2F);
     if (window_properties.mouse_scroll.y() > 0)
     {
-      layer_base.attributes.scaling -= scroll_sensitivity * kScaleRate * time;
+      attributes.scaling -= scroll_sensitivity * kScaleRate * time;
     }
     else if (window_properties.mouse_scroll.y() < 0)
     {
-      layer_base.attributes.scaling += scroll_sensitivity * kScaleRate * time;
+      attributes.scaling += scroll_sensitivity * kScaleRate * time;
     }
-    layer_base.attributes.scaling = std::max(layer_base.attributes.scaling, 1e-3F);
+    attributes.scaling = std::max(attributes.scaling, 1e-3F);
 
-    layer_base.attributes.time = time;
-    layer_base.attributes.time_delta = time_delta;
-    layer_base.attributes.frame_buffer_dimensions = window_target_or_error->getLastSize();
+    attributes.time = time;
+    attributes.time_delta = time_delta;
 
-    layer_lighting.attributes = layer_base.attributes;
 
-    layer_lighting.circles.push_back({
-      .center = sde::transform(layer_lighting.attributes.getWorldFromViewportMatrix(), window_properties.getMousePositionViewport(window_target_or_error->getLastSize())), 
-      .radius = 1.5F,
-      .color = {1.0F, 1.0F, 0.5F, 1.0F}
-    });
-
-    layer_lighting.circles.push_back({
-      .center = {-0.4F, -0.4F},
-      .radius = 0.4F,
-      .color = {1.0F, 1.0F, 1.0F, 0.5F}
-    });
-
+    if (auto render_pass_or_error = RenderPass::create(*texture_target_or_error, *renderer_or_error, attributes, lighting_resources); render_pass_or_error.has_value())
     {
-      RenderTargetActive render_target{*texture_target_or_error};
-      renderer.submit(render_target, shader_cache, texture_cache, layer_base);
-      renderer.submit(render_target, shader_cache, texture_cache, layer_lighting);
+      //render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
+      // layer_lighting_circles.push_back({
+      //   .center = sde::transform(attributes.getWorldFromViewportMatrix(*window_target_or_error), window_properties.getMousePositionViewport(window_target_or_error->getLastSize())), 
+      //   .radius = 1.5F,
+      //   .color = {1.0F, 1.0F, 0.5F, 1.0F}
+      // });
+
+      // // layer_lighting_circles.push_back({
+      // //   .center = {-0.4F, -0.4F},
+      // //   .radius = 0.4F,
+      // //   .color = {1.0F, 1.0F, 1.0F, 0.5F}
+      // // });
+
+      // render_pass_or_error->submit(sde::make_const_view(layer_lighting_circles));
+      // layer_lighting_circles.clear();
     }
 
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, default_resources); render_pass_or_error.has_value())
     {
-      RenderTargetActive render_target{*window_target_or_error};
-      renderer.submit(render_target, shader_cache, texture_cache, layer_base);
-      renderer.submit(render_target, shader_cache, texture_cache, layer_lighting);
+      render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
+      //render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
+      render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error);
     }
 
-    layer_lighting.reset();
-
-    SDE_LOG_DEBUG_FMT("%f : %f", layer_base.attributes.time, layer_base.attributes.time_delta);
+    SDE_LOG_DEBUG_FMT("%f : %f", attributes.time, attributes.time_delta);
 
     return WindowDirective::kContinue;
   });

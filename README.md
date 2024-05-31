@@ -24,7 +24,9 @@ sudo apt install           \
 
 - [x] Tile sets
 - [x] Tile map rendering feature
-- [ ] Rendering to frame buffer target
+- [x] Rendering to frame buffer target
+- [ ] Static VAO?
 - [ ] Rendering text
 - [ ] Debug render layer (wire-frame boxes; times)
 - [ ] Stream-style logging
+

@@ -19,12 +19,13 @@
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/texture_units.hpp"
-#include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
 {
+class TileSet;
+struct TileMap;
 
 /**
  * @brief Resources used during a render pass
@@ -94,18 +95,21 @@ public:
   Mat3f refresh(RenderTarget& target, const RenderAttributes& attributes, const RenderResources& resources);
 
 private:
+  Renderer2D() = default;
   Renderer2D(const Renderer2D&) = delete;
 
-  RenderBackend* backend_ = nullptr;
   const ShaderCache* shader_cache_ = nullptr;
   const TextureCache* texture_cache_ = nullptr;
   RenderResources active_resources_;
+  RenderBackend* backend_ = nullptr;
 };
 
 
 enum class RenderPassError
 {
   kRenderPassActive,
+  kMaxVertexCountExceeded,
+  kMaxElementCountExceeded,
 };
 
 /**
@@ -118,12 +122,12 @@ public:
 
   RenderPass(RenderPass&& other);
 
-  void submit(View<const Quad> quads) { renderer_->submit(this, quads); }
-  void submit(View<const Circle> circles) { renderer_->submit(this, circles); }
-  void submit(View<const TexutreQuad> quads) { renderer_->submit(this, quads); }
-  void submit(const TileMap& tile_map, const TileSet& tile_set) { renderer_->submit(this, tile_map, tile_set); }
+  expected<void, RenderPassError> submit(View<const Quad> quads);
+  expected<void, RenderPassError> submit(View<const Circle> circles);
+  expected<void, RenderPassError> submit(View<const TexturedQuad> quads);
+  expected<void, RenderPassError> submit(View<const TileMap> tile_maps, const TileSet& tile_set);
 
-  expected<RenderPass, RenderPassError> create(
+  static expected<RenderPass, RenderPassError> create(
     RenderTarget& target,
     Renderer2D& renderer,
     const RenderAttributes& attributes,
