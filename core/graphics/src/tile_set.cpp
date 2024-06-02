@@ -31,12 +31,13 @@ std::ostream& operator<<(std::ostream& os, const TileSet& tile_set)
   os << "tiles:\n";
   for (std::size_t tile = 0; tile < tile_set.size(); ++tile)
   {
-    os << "  [" << tile << "] : " << tile_set[tile] << '\n';
+    os << "  [" << tile << "] : " << tile_set[tile].min().transpose() << ", " << tile_set[tile].max().transpose()
+       << '\n';
   }
   return os;
 }
 
-TileSet::TileSet(TextureHandle atlas_texture, std::vector<Rect> tile_bounds) :
+TileSet::TileSet(TextureHandle atlas_texture, std::vector<Bounds2f> tile_bounds) :
     atlas_texture_{atlas_texture}, tile_bounds_{std::move(tile_bounds)}
 {}
 

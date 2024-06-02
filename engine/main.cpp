@@ -10,6 +10,7 @@
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
+#include "sde/graphics/text.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/tile_set.hpp"
@@ -96,6 +97,46 @@ static const auto* kShader2 = R"Shader2(
   }
 )Shader2";
 
+static const auto* kTextShader = R"TextShader(
+
+  layout (location = 0) in vec2 vPosition;
+  layout (location = 1) in vec2 vTexCoord;
+  layout (location = 2) in float vTexUnit;
+  layout (location = 3) in vec4 vTintColor;
+
+  out vec2 fTexCoord;
+  out vec4 fTintColor;
+  out float fTexUnit;
+
+  uniform mat3 uCameraTransform;
+
+  void main()
+  {
+    gl_Position = vec4(uCameraTransform * vec3(vPosition, 1), 1);
+    fTexCoord = vTexCoord;
+    fTintColor = vTintColor;
+    fTexUnit = vTexUnit;
+  }
+
+  ---
+  out vec4 FragColor;
+
+  in float fTexUnit;
+  in vec2 fTexCoord;
+  in vec4 fTintColor;
+
+  uniform sampler2D[16] uTexture;
+
+  void main()
+  {
+    int u = int(fTexUnit);
+    vec4 s = texture2D(uTexture[u], fTexCoord);
+    vec4 c = vec4(sin(3.0 * fTexCoord[0]), cos(3.0 * fTexCoord[1]), fTintColor[2], fTintColor[3]) * s[0];
+    FragColor = c;
+  }
+
+)TextShader";
+
 int main(int argc, char** argv)
 {
   SDE_LOG_INFO("starting...");
@@ -118,6 +159,9 @@ int main(int argc, char** argv)
   auto shader2_or_error = shader_cache.create(kShader2);
   SDE_ASSERT_TRUE(shader2_or_error.has_value());
 
+  auto text_shader_or_error = shader_cache.create(kTextShader);
+  SDE_ASSERT_TRUE(text_shader_or_error.has_value());
+
   TextureCache texture_cache;
 
   auto texture_or_error = texture_cache.upload(*image_or_error);
@@ -133,6 +177,12 @@ int main(int argc, char** argv)
 
   auto renderer_or_error = Renderer2D::create(&shader_cache, &texture_cache);
   SDE_ASSERT_TRUE(renderer_or_error.has_value());
+
+  auto font_or_error = Font::load("/home/brian/Downloads/coffee_fills/font.ttf");
+  SDE_ASSERT_TRUE(font_or_error.has_value());
+
+  auto glyphs_or_error = font_or_error->glyphs(texture_cache, {.height_px = 100});
+  SDE_ASSERT_TRUE(glyphs_or_error.has_value());
 
   RenderResources default_resources;
   default_resources.shader = *shader1_or_error;
@@ -150,20 +200,12 @@ int main(int argc, char** argv)
   });
 
   layer_base_quads.push_back({
-    .rect = Rect{Point{0.1F, 0.1F}, Point{0.5F, 0.5F}},
-    .color = White()
-  });
-
-
-  layer_base_textured_quads.push_back({
-    .rect = Rect{Point{0.1F, 0.1F}, Point{0.3F, 0.3F}},
-    .rect_texture = Rect{Point{0.0F, 0.0F}, Point{1.0F, 1.0F}},
-    .color = White(),
-    .texture_unit = 1
+    .rect = Rect{Point{0.0F, 0.0F}, Point{0.5F, 0.5F}},
+    .color = Red()
   });
 
   layer_base_textured_quads.push_back({
-    .rect = Rect{Point{ 0.8F, 0.8F}, Point{ 1.8F, 1.8F}},
+    .rect = Rect{Point{ 0.8F, 0.8F}, Point{ 1.8F, 1.8F }},
     .rect_texture = Rect{Point{0.0F, 0.0F}, Point{1.0F, 1.0F}},
     .color = Cyan(0.5F),
     .texture_unit = 0
@@ -210,6 +252,10 @@ int main(int argc, char** argv)
       return tile_map;
     }()
   );
+
+  RenderResources text_resources;
+  text_resources.shader = *text_shader_or_error;
+  text_resources.textures[0] = glyphs_or_error->atlas();
 
   RenderResources lighting_resources;
   lighting_resources.shader = *shader2_or_error;
@@ -284,6 +330,17 @@ int main(int argc, char** argv)
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error);
+    }
+
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, text_resources); render_pass_or_error.has_value())
+    {
+      render_pass_or_error->submit(Text{
+        .text="This is a test! damn, text rendering is annoying... :'[",
+        .position = {0.0F, 0.0F},
+        .color = White(0.8F),
+        .scale = 0.1F,
+        .texture_unit = 0
+      }, *glyphs_or_error);
     }
 
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, lighting_resources); render_pass_or_error.has_value())

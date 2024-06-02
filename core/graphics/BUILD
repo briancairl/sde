@@ -59,6 +59,8 @@ cc_library(
     "include/sde/graphics/shader_fwd.hpp",
     "include/sde/graphics/shader_handle.hpp",
     "include/sde/graphics/shapes.hpp",
+    "include/sde/graphics/text.hpp",
+    "include/sde/graphics/text_fwd.hpp",
     "include/sde/graphics/texture.hpp",
     "include/sde/graphics/texture_fwd.hpp",
     "include/sde/graphics/texture_handle.hpp",
@@ -116,22 +118,23 @@ cc_library(
     "src/texture_units.cpp",
     "src/tile_set.cpp",
     "src/tile_map.cpp",
+    "src/text.cpp",
   ] + graphics_impl__renderer__opengl_debug_selector,
   deps=[
     ":graphics_impl__renderer__opengl_internal",
     ":graphics_impl__renderer__hdrs",
     ":graphics_impl__common",
-    ":graphics_impl__opengl",],
+    ":graphics_impl__opengl",
+    "@freetype2//:freetype2",],
   visibility=["//visibility:private"]
 )
+
 
 alias(
   name="graphics",
   actual=":graphics_impl__renderer__opengl",
   visibility=["//visibility:public"]
 )
-
-
 
 
 platform_glfw_debug_selector = select({
@@ -146,7 +149,7 @@ cc_library(
   defines=platform_glfw_debug_selector,
   strip_include_prefix="include",
   deps=[
-    ":graphics",
+    ":graphics_impl__renderer__opengl",
     "//core/common:logging",
     "//core/common:geometry",
     "//platform/glad:glad",

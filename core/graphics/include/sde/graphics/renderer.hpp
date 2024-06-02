@@ -6,9 +6,9 @@
 #pragma once
 
 // C++ Standard Library
-#include <array>
 #include <cstdint>
 #include <iosfwd>
+#include <string_view>
 
 // SDE
 #include "sde/expected.hpp"
@@ -16,6 +16,7 @@
 #include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/shapes.hpp"
+#include "sde/graphics/text_fwd.hpp"
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/texture_units.hpp"
@@ -126,6 +127,7 @@ public:
   expected<void, RenderPassError> submit(View<const Circle> circles);
   expected<void, RenderPassError> submit(View<const TexturedQuad> quads);
   expected<void, RenderPassError> submit(View<const TileMap> tile_maps, const TileSet& tile_set);
+  expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs);
 
   static expected<RenderPass, RenderPassError> create(
     RenderTarget& target,

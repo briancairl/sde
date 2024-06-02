@@ -8,6 +8,7 @@
 #include "opengl.inl"
 
 // SDE
+#include "sde/geometry_utils.hpp"
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/logging.hpp"
@@ -71,6 +72,8 @@ enum_t to_native_wrapping_mode_enum(const TextureWrapping mode)
   {
   case TextureWrapping::kClampToBorder:
     return GL_CLAMP_TO_BORDER;
+  case TextureWrapping::kClampToEdge:
+    return GL_CLAMP_TO_EDGE;
   case TextureWrapping::kRepeat:
     return GL_REPEAT;
   default:
@@ -134,22 +137,20 @@ NativeTextureID allocate_texture_2D_and_bind(
 
 expected<void, TextureError> upload_texture_2D(
   const void* const data,
-  const TextureShape& shape,
   const TextureLayout layout,
-  const TextureOptions& options,
-  const TypeCode type)
+  const TypeCode type,
+  const Vec2i& offset,
+  const Vec2i& shape)
 {
   static constexpr GLint kDefaultLevelOfDetail = 0;
-  static constexpr GLint kDefaultXOffset = 0;
-  static constexpr GLint kDefaultYOffset = 0;
 
   glTexSubImage2D(
     GL_TEXTURE_2D,
     kDefaultLevelOfDetail,
-    kDefaultXOffset,
-    kDefaultYOffset,
-    shape.value.x(),
-    shape.value.y(),
+    offset.x(),
+    offset.y(),
+    shape.x(),
+    shape.y(),
     to_native_layout_enum(layout),
     to_native_typecode(type),
     reinterpret_cast<const void*>(data));
@@ -157,12 +158,6 @@ expected<void, TextureError> upload_texture_2D(
   if (has_active_error())
   {
     return make_unexpected(TextureError::kBackendTransferFailure);
-  }
-
-  glGenerateMipmap(GL_TEXTURE_2D);
-  if (has_active_error())
-  {
-    return make_unexpected(TextureError::kBackendMipMapGenerationFailure);
   }
 
   return {};
@@ -182,10 +177,21 @@ expected<NativeTextureID, TextureError> create_native_texture_2D(
     return make_unexpected(TextureError::kBackendCreationFailure);
   }
 
-  if (const auto ok_or_error = upload_texture_2D(data, shape, layout, options, type); !ok_or_error.has_value())
+  if (const auto ok_or_error = upload_texture_2D(data, layout, type, Vec2i::Zero(), shape.value);
+      !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }
+
+  if (options.flags.generate_mip_map)
+  {
+    glGenerateMipmap(GL_TEXTURE_2D);
+    if (has_active_error())
+    {
+      return make_unexpected(TextureError::kBackendMipMapGenerationFailure);
+    }
+  }
+
   return texture_id;
 }
 
@@ -237,9 +243,14 @@ TextureLayout layout_from_channel_count(std::size_t channel_count)
   return TextureLayout::kR;
 }
 
-template <typename T>
+std::size_t size_in_bytes(const Vec2i& extents, TextureLayout layout)
+{
+  return (static_cast<std::size_t>(extents.prod()) * to_channel_count(layout));
+}
+
+template <typename DataT>
 expected<TextureInfo, TextureError>
-create_texture_impl(View<T> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
+create_texture_impl(View<DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
 {
   if (!data)
   {
@@ -250,8 +261,8 @@ create_texture_impl(View<T> data, const TextureShape& shape, TextureLayout layou
     return make_unexpected(TextureError::kInvalidDimensions);
   }
 
-  const std::size_t required_size = (shape.height() * shape.width() * to_channel_count(layout));
-  const std::size_t actual_size = sizeof(T) * data.size();
+  const std::size_t required_size = size_in_bytes(shape.value, layout);
+  const std::size_t actual_size = sizeof(DataT) * data.size();
   if (actual_size != required_size)
   {
     SDE_LOG_FATAL_FMT("Expected texture to have data len %lu but has %lu", required_size, actual_size);
@@ -259,7 +270,7 @@ create_texture_impl(View<T> data, const TextureShape& shape, TextureLayout layou
   }
 
   auto texture_or_error =
-    create_native_texture_2D(reinterpret_cast<const void*>(data.data()), shape, layout, options, typecode<T>());
+    create_native_texture_2D(reinterpret_cast<const void*>(data.data()), shape, layout, options, typecode<DataT>());
   if (!texture_or_error.has_value())
   {
     return make_unexpected(texture_or_error.error());
@@ -269,11 +280,11 @@ create_texture_impl(View<T> data, const TextureShape& shape, TextureLayout layou
     .layout = layout, .shape = shape, .options = options, .native_id = texture_or_error->exchange(kInvalidTextureID)};
 }
 
-template <typename T>
+template <typename DataT>
 expected<TextureInfo, TextureError>
 create_texture_impl(const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
 {
-  auto texture_or_error = create_native_texture_2D(shape, layout, options, typecode<T>());
+  auto texture_or_error = create_native_texture_2D(shape, layout, options, typecode<DataT>());
 
   if (!texture_or_error.has_value())
   {
@@ -312,6 +323,8 @@ std::ostream& operator<<(std::ostream& os, TextureWrapping wrapping)
   {
   case TextureWrapping::kClampToBorder:
     return os << "ClampToBorder";
+  case TextureWrapping::kClampToEdge:
+    return os << "ClampToEdge";
   case TextureWrapping::kRepeat:
     return os << "Repeat";
   }
@@ -364,6 +377,10 @@ std::ostream& operator<<(std::ostream& os, TextureError error)
     return os << "BackendTransferFailure";
   case TextureError::kBackendMipMapGenerationFailure:
     return os << "BackendMipMapGenerationFailure";
+  case TextureError::kReplaceAreaEmpty:
+    return os << "ReplaceAreaEmpty";
+  case TextureError::kReplaceAreaOutOfBounds:
+    return os << "ReplaceAreaOutOfBounds";
   }
 }
 
@@ -400,10 +417,10 @@ bool TextureCache::remove(const TextureHandle& index)
   return false;
 }
 
-template <typename T>
+template <typename DataT>
 expected<void, TextureError> TextureCache::transfer(
   TextureHandle texture,
-  View<const T> data,
+  View<const DataT> data,
   const TextureShape& shape,
   TextureLayout layout,
   const TextureOptions& options)
@@ -457,14 +474,14 @@ TextureCache::transfer(TextureHandle texture, const Image& image, const TextureO
     options);
 }
 
-template <typename T>
+template <typename DataT>
 expected<void, TextureError> TextureCache::allocate(
   TextureHandle texture,
   const TextureShape& shape,
   TextureLayout layout,
   const TextureOptions& options)
 {
-  auto texture_info_or_error = create_texture_impl<T>(shape, layout, options);
+  auto texture_info_or_error = create_texture_impl<DataT>(shape, layout, options);
   if (texture_info_or_error.has_value())
   {
     textures_.emplace(texture, std::move(*texture_info_or_error));
@@ -505,5 +522,45 @@ const TextureInfo* TextureCache::get(TextureHandle texture) const
   }
   return nullptr;
 }
+
+
+template <typename DataT>
+expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data, const Bounds2i& area)
+{
+  if (isEmpty(area))
+  {
+    SDE_LOG_DEBUG("ReplaceAreaEmpty");
+    return make_unexpected(TextureError::kReplaceAreaEmpty);
+  }
+
+  const std::size_t required_size = size_in_bytes(area.max() - area.min(), texture_info.layout);
+  const std::size_t actual_size = sizeof(DataT) * data.size();
+  if (actual_size != required_size)
+  {
+    SDE_LOG_DEBUG("InvalidDataLength");
+    return make_unexpected(TextureError::kInvalidDataLength);
+  }
+
+  if (Bounds2i{Vec2i::Zero(), texture_info.shape.value}.contains(area))
+  {
+    glBindTexture(GL_TEXTURE_2D, texture_info.native_id);
+    return upload_texture_2D(data.data(), texture_info.layout, typecode<DataT>(), area.min(), area.max() - area.min());
+  }
+
+  SDE_LOG_DEBUG("ReplaceAreaOutOfBounds");
+  return make_unexpected(TextureError::kReplaceAreaOutOfBounds);
+}
+
+template expected<void, TextureError>
+replace(const TextureInfo& texture_info, View<const std::uint8_t> data, const Bounds2i& area);
+
+template expected<void, TextureError>
+replace(const TextureInfo& texture_info, View<const std::uint16_t> data, const Bounds2i& area);
+
+template expected<void, TextureError>
+replace(const TextureInfo& texture_info, View<const std::uint32_t> data, const Bounds2i& area);
+
+template expected<void, TextureError>
+replace(const TextureInfo& texture_info, View<const float> data, const Bounds2i& area);
 
 }  // namespace sde::graphics

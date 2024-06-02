@@ -13,7 +13,7 @@
 #include "sde/expected.hpp"
 
 // SDE
-#include "sde/graphics/shapes.hpp"
+#include "sde/geometry_types.hpp"
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 
@@ -58,17 +58,23 @@ public:
   /**
    * @brief Returns texture-space bounds for a given tile
    */
-  const Rect& operator[](const std::size_t tile) const { return tile_bounds_[tile]; }
+  const Bounds2f& get(const std::size_t tile) const { return tile_bounds_[tile]; }
+
+  /**
+   * @brief Returns texture-space bounds for a given tile
+   */
+  const Bounds2f& operator[](const std::size_t tile) const { return tile_bounds_[tile]; }
 
   /**
    * @brief Returns the number of tiles
    */
   std::size_t size() const { return tile_bounds_.size(); }
 
+  TileSet(TextureHandle atlas_texture, std::vector<Bounds2f> tile_bounds);
+
 private:
-  TileSet(TextureHandle atlas_texture, std::vector<Rect> tile_bounds);
   TextureHandle atlas_texture_;
-  std::vector<Rect> tile_bounds_;
+  std::vector<Bounds2f> tile_bounds_;
 };
 
 std::ostream& operator<<(std::ostream& os, const TileSet& tile_set);

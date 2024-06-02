@@ -117,8 +117,8 @@ std::ostream& operator<<(std::ostream& os, const ImageShape& error);
  */
 enum class ImageLoadError
 {
-  kResourceNotFound,
-  kResourceInvalid,
+  kAssetNotFound,
+  kAssetInvalid,
   kUnsupportedBitDepth,
 };
 

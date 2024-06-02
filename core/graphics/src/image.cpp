@@ -72,10 +72,10 @@ std::ostream& operator<<(std::ostream& os, ImageLoadError error)
 {
   switch (error)
   {
-  case ImageLoadError::kResourceNotFound:
-    return os << "ResourceNotFound";
-  case ImageLoadError::kResourceInvalid:
-    return os << "ResourceInvalid";
+  case ImageLoadError::kAssetNotFound:
+    return os << "AssetNotFound";
+  case ImageLoadError::kAssetInvalid:
+    return os << "AssetInvalid";
   case ImageLoadError::kUnsupportedBitDepth:
     return os << "UnsupportedBitDepth";
   }
@@ -106,7 +106,7 @@ expected<Image, ImageLoadError> Image::load(const asset::path& image_path, const
   // Check if image point is valid
   if (!asset::exists(image_path))
   {
-    return make_unexpected(ImageLoadError::kResourceNotFound);
+    return make_unexpected(ImageLoadError::kAssetNotFound);
   }
 
   // Set flag determining whether image should be flipped on load
@@ -140,7 +140,7 @@ expected<Image, ImageLoadError> Image::load(const asset::path& image_path, const
   // Check if image point is valid
   if (image_data_ptr == nullptr)
   {
-    return make_unexpected(ImageLoadError::kResourceInvalid);
+    return make_unexpected(ImageLoadError::kAssetInvalid);
   }
 
   return Image{

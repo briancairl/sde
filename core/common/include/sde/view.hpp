@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <array>
 #include <cstdint>
 
 // SDE
@@ -23,7 +24,9 @@ public:
   constexpr auto* begin() { return this->derived().data(); }
   constexpr auto* end() { return this->derived().data() + this->derived().size(); }
   constexpr const auto* begin() const { return this->derived().data(); }
-  constexpr const auto* end() const { return this->derived().data().size(); }
+  constexpr const auto* end() const { return this->derived().data() + this->derived().size(); }
+
+  constexpr bool empty() const { return begin() == end(); }
 
 private:
   // BasicView() = delete;
@@ -45,6 +48,8 @@ private:
 template <typename T> class View<T, 0> : public BasicView<View<T, 0>>
 {
 public:
+  explicit View([[maybe_unused]] std::nullptr_t _) : data_{nullptr}, size_{0} {};
+
   View(T* data, std::size_t size) : data_{data}, size_{size} {};
 
   constexpr T* data() { return data_; }
@@ -63,7 +68,7 @@ template <std::size_t Len, typename T> [[nodiscard]] View<const T, Len> make_con
 {
   return View<const T, Len>{data};
 }
-template <std::size_t Len, typename T> [[nodiscard]] View<const T> make_const_view(const T* data, std::size_t len)
+template <typename T> [[nodiscard]] View<const T> make_const_view(const T* data, std::size_t len)
 {
   return View<const T>{data, len};
 }

@@ -50,6 +50,7 @@ std::ostream& operator<<(std::ostream& os, TextureFlags flags);
 enum class TextureWrapping : std::uint8_t
 {
   kClampToBorder,
+  kClampToEdge,
   kRepeat
 };
 
@@ -107,7 +108,9 @@ enum class TextureError
   kInvalidDataLength,
   kBackendCreationFailure,
   kBackendTransferFailure,
-  kBackendMipMapGenerationFailure
+  kBackendMipMapGenerationFailure,
+  kReplaceAreaEmpty,
+  kReplaceAreaOutOfBounds,
 };
 
 std::ostream& operator<<(std::ostream& os, TextureError error);
@@ -168,15 +171,15 @@ private:
 
   expected<void, TextureError> transfer(TextureHandle, const Image& image, const TextureOptions& options);
 
-  template <typename T>
+  template <typename DataT>
   expected<void, TextureError> transfer(
     TextureHandle texture,
-    View<const T> data,
+    View<const DataT> data,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
 
-  template <typename T>
+  template <typename DataT>
   expected<void, TextureError>
   allocate(TextureHandle texture, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
 
@@ -186,5 +189,14 @@ private:
 
   TextureHandle newTextureHandle() const { return TextureHandle{last_texture_handle_.id() + 1UL}; }
 };
+
+
+template <typename DataT>
+expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data, const Bounds2i& area);
+
+template <typename DataT> expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data)
+{
+  return replace(texture_info, data, Bounds2i{Vec2i{0, 0}, texture_info.shape.value});
+}
 
 }  // namespace sde::graphics

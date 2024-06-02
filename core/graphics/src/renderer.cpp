@@ -19,6 +19,7 @@
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
+#include "sde/graphics/text.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/tile_set.hpp"
@@ -597,6 +598,42 @@ public:
     return {};
   }
 
+  expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs)
+  {
+    // Check that submission doesn't go over capacity
+    if ((va_.size() + vertex_count_of<Quad>(text.text.size())) > va_.capacity())
+    {
+      return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
+    }
+
+    Vec2f text_pos = text.position;
+
+    // Add vertex attribute data
+    auto b = va_.getVertexAttributeBuffer();
+    for (const char c : text.text)
+    {
+      const auto glyph_index = static_cast<std::size_t>(c);
+      const auto& glyph = glyphs[glyph_index];
+
+      const Vec2f pos_rect_min =
+        text_pos + Vec2f{glyph.bearing_px.x() * text.scale, (glyph.bearing_px.y() - glyph.size_px.y()) * text.scale};
+      const Vec2f pos_rect_max = pos_rect_min + glyph.size_px * text.scale;
+
+      // clang-format off
+      b.position = fillQuadPositions(b.position, pos_rect_min, pos_rect_max);
+      b.texcoord = fillQuadPositions(b.texcoord, glyph.tex_rect.min(), glyph.tex_rect.max());
+      b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, static_cast<float>(text.texture_unit));
+      b.tint = std::fill_n(b.tint, kVerticesPerQuad, text.color);
+      // clang-format on
+
+      text_pos.x() += glyph.advance_px * text.scale;
+    }
+
+    // Add vertex + element information
+    va_.add<Quad>(text.text.size());
+    return {};
+  }
+
 private:
   VertexArray va_;
 };
@@ -712,6 +749,11 @@ expected<void, RenderPassError> RenderPass::submit(View<const TexturedQuad> quad
 expected<void, RenderPassError> RenderPass::submit(View<const TileMap> tile_maps, const TileSet& tile_set)
 {
   return backend__opengl->submit(tile_maps, tile_set);
+}
+
+expected<void, RenderPassError> RenderPass::submit(const Text& text, const GlyphSet& glyphs)
+{
+  return backend__opengl->submit(text, glyphs);
 }
 
 RenderPass::RenderPass(RenderPass&& other) :

@@ -292,7 +292,7 @@ template <GLenum ShaderType> native_shader_id_t createShaderFromSource(std::stri
   GLsizei written;
   glGetShaderInfoLog(shader_id, len, &written, info_log_contents.data());
 
-  SDE_LOG_ERROR_FMT("shader compilation error: %s", info_log_contents.data());
+  SDE_LOG_ERROR_FMT("shader compilation error: %s in:\n%s", info_log_contents.data(), source_with_version.data());
 
   glDeleteShader(shader_id);
 
