@@ -15,7 +15,8 @@ TODO
 sudo apt install           \
     libopenal-dev          \
     libaudio-dev           \
-    libglfw3-dev
+    libglfw3-dev           \
+    libfreetype6-dev
 ```
 
 # Todo
