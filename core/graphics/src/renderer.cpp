@@ -303,11 +303,7 @@ public:
 
   template <typename ShapeT> void add(const View<const ShapeT>& views) { add<ShapeT>(views.size()); }
 
-  void reset()
-  {
-    element_layout_buffer_.clear();
-    vertex_count_ = 0;
-  }
+  void reset() { vertex_count_ = 0; }
 
   std::size_t size() const { return vertex_count_; }
 
@@ -461,35 +457,44 @@ template <> void VertexArray::add<TileMap>(std::size_t map_count)
 class OpenGLBackend : public RenderBackend
 {
 public:
-  OpenGLBackend(const Renderer2DOptions& options) : va_{3UL * options.max_triangle_count_per_render_pass, false} {}
+  OpenGLBackend(const Renderer2DOptions& options) : va_active_{nullptr}
+  {
+    auto va_opt_itr = std::begin(options.buffers);
+    for (auto va_itr = std::begin(va_); va_itr != std::end(va_); ++va_itr, ++va_opt_itr)
+    {
+      va_itr->emplace(
+        3UL * va_opt_itr->max_triangle_count_per_render_pass, va_opt_itr->mode == RenderBufferMode::kStatic);
+    }
+  }
 
   ~OpenGLBackend() = default;
 
-  void start()
+  void start(std::size_t active_buffer_index)
   {
-    va_.reset();
-    va_.map();
+    va_active_ = std::addressof(*va_[active_buffer_index]);
+    va_active_->reset();
+    va_active_->map();
   }
 
   void finish()
   {
     // Un-map vertex attribute buffer to make it inactive
-    va_.unmap();
+    va_active_->unmap();
 
     // Draw elements
-    va_.draw();
+    va_active_->draw();
   }
 
   expected<void, RenderPassError> submit(View<const Quad> quads)
   {
     // Check that submission doesn't go over capacity
-    if ((va_.size() + vertex_count_of(quads)) > va_.capacity())
+    if ((va_active_->size() + vertex_count_of(quads)) > va_active_->capacity())
     {
       return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
     }
 
     // Add vertex attribute data
-    auto buffers = va_.getVertexAttributeBuffer();
+    auto buffers = va_active_->getVertexAttributeBuffer();
     for (const auto& q : quads)
     {
       static constexpr float kNoTextureUnitAssigned = -1.0F;
@@ -503,20 +508,20 @@ public:
     }
 
     // Add vertex + element information
-    va_.add(quads);
+    va_active_->add(quads);
     return {};
   }
 
   expected<void, RenderPassError> submit(View<const TexturedQuad> textured_quads)
   {
     // Check that submission doesn't go over capacity
-    if ((va_.size() + vertex_count_of(textured_quads)) > va_.capacity())
+    if ((va_active_->size() + vertex_count_of(textured_quads)) > va_active_->capacity())
     {
       return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
     }
 
     // Add vertex attribute data
-    auto buffers = va_.getVertexAttributeBuffer();
+    auto buffers = va_active_->getVertexAttributeBuffer();
     for (const auto& tq : textured_quads)
     {
       // clang-format off
@@ -528,20 +533,20 @@ public:
     }
 
     // Add vertex + element information
-    va_.add(textured_quads);
+    va_active_->add(textured_quads);
     return {};
   }
 
   expected<void, RenderPassError> submit(View<const Circle> circles)
   {
     // Check that submission doesn't go over capacity
-    if ((va_.size() + vertex_count_of(circles)) > va_.capacity())
+    if ((va_active_->size() + vertex_count_of(circles)) > va_active_->capacity())
     {
       return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
     }
 
     // Add vertex attribute data
-    auto buffers = va_.getVertexAttributeBuffer();
+    auto buffers = va_active_->getVertexAttributeBuffer();
     for (const auto& c : circles)
     {
       static constexpr float kNoTextureUnitAssigned = -1.0F;
@@ -556,20 +561,20 @@ public:
     }
 
     // Add vertex + element information
-    va_.add(circles);
+    va_active_->add(circles);
     return {};
   }
 
   expected<void, RenderPassError> submit(View<const TileMap>& tile_maps, const TileSet& tile_set)
   {
     // Check that submission doesn't go over capacity
-    if ((va_.size() + vertex_count_of(tile_maps)) > va_.capacity())
+    if ((va_active_->size() + vertex_count_of(tile_maps)) > va_active_->capacity())
     {
       return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
     }
 
     // Add vertex attribute data
-    auto b = va_.getVertexAttributeBuffer();
+    auto b = va_active_->getVertexAttributeBuffer();
     for (const auto& tm : tile_maps)
     {
       // clang-format off
@@ -594,14 +599,14 @@ public:
     }
 
     // Add vertex + element information
-    va_.add(tile_maps);
+    va_active_->add(tile_maps);
     return {};
   }
 
   expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs)
   {
     // Check that submission doesn't go over capacity
-    if ((va_.size() + vertex_count_of<Quad>(text.text.size())) > va_.capacity())
+    if ((va_active_->size() + vertex_count_of<Quad>(text.text.size())) > va_active_->capacity())
     {
       return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
     }
@@ -609,7 +614,7 @@ public:
     Vec2f text_pos = text.position;
 
     // Add vertex attribute data
-    auto b = va_.getVertexAttributeBuffer();
+    auto b = va_active_->getVertexAttributeBuffer();
     for (const char c : text.text)
     {
       const auto& glyph = glyphs[c];
@@ -629,12 +634,13 @@ public:
     }
 
     // Add vertex + element information
-    va_.add<Quad>(text.text.size());
+    va_active_->add<Quad>(text.text.size());
     return {};
   }
 
 private:
-  VertexArray va_;
+  VertexArray* va_active_ = nullptr;
+  std::array<std::optional<VertexArray>, Renderer2DOptions::kVetexArrayCount> va_;
 };
 
 std::optional<OpenGLBackend> backend__opengl;
@@ -726,7 +732,7 @@ Mat3f Renderer2D::refresh(RenderTarget& target, const RenderAttributes& attribut
   glUniformMatrix3fv(
     glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, viewport_from_world.data());
 
-  backend__opengl->start();
+  backend__opengl->start(resources.buffer_group);
 
   return world_from_viewport;
 }
@@ -783,29 +789,6 @@ expected<RenderPass, RenderPassError> RenderPass::create(
   {
     return make_unexpected(RenderPassError::kRenderPassActive);
   }
-
-  RenderPass render_pass;
-  render_pass.renderer_ = std::addressof(renderer);
-  render_pass.world_from_viewport_ = renderer.refresh(target, attributes, resources);
-  render_pass.viewport_in_world_bounds_ =
-    transform(render_pass.world_from_viewport_, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
-
-  return render_pass;
-}
-
-expected<RenderPass, RenderPassError> RenderPass::create(
-  RenderTarget& target,
-  Renderer2D& renderer,
-  const RenderAttributes& attributes,
-  const RenderResources& resources,
-  const Vec4f& clear_color)
-{
-  if (backend__render_pass_active.test_and_set())
-  {
-    return make_unexpected(RenderPassError::kRenderPassActive);
-  }
-
-  target.refresh(clear_color);
 
   RenderPass render_pass;
   render_pass.renderer_ = std::addressof(renderer);

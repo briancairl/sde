@@ -319,13 +319,15 @@ int main(int argc, char** argv)
       .color = Yellow()
     });
 
-    if (auto render_pass_or_error = RenderPass::create(*texture_target_or_error, *renderer_or_error, attributes, lighting_resources, Black()); render_pass_or_error.has_value())
+    texture_target_or_error->refresh(Black());
+    if (auto render_pass_or_error = RenderPass::create(*texture_target_or_error, *renderer_or_error, attributes, lighting_resources); render_pass_or_error.has_value())
     {
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_lighting_circles));
     }
 
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, default_resources, Black()); render_pass_or_error.has_value())
+    window_target_or_error->refresh(Black());
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, default_resources); render_pass_or_error.has_value())
     {
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));

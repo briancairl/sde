@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <array>
 #include <cstdint>
 #include <iosfwd>
 #include <string_view>
@@ -35,6 +36,7 @@ struct RenderResources
 {
   ShaderHandle shader = ShaderHandle::null();
   TextureUnits textures = {};
+  std::size_t buffer_group = 0UL;
   bool isValid() const { return shader.isValid(); }
 };
 
@@ -56,7 +58,23 @@ struct RenderAttributes
 std::ostream& operator<<(std::ostream& os, const RenderAttributes& attributes);
 
 
-struct RenderPass;
+/**
+ * @brief Buffer mode
+ */
+enum class RenderBufferMode
+{
+  kStatic,
+  kDynamic
+};
+
+/**
+ * @brief Texture creation options
+ */
+struct RenderBufferOptions
+{
+  std::size_t max_triangle_count_per_render_pass = 10000UL;
+  RenderBufferMode mode = RenderBufferMode::kDynamic;
+};
 
 
 /**
@@ -64,7 +82,8 @@ struct RenderPass;
  */
 struct Renderer2DOptions
 {
-  std::size_t max_triangle_count_per_render_pass = 10000UL;
+  static constexpr std::size_t kVetexArrayCount = 4;
+  std::array<RenderBufferOptions, kVetexArrayCount> buffers;
 };
 
 struct RenderBackend
@@ -134,13 +153,6 @@ public:
     Renderer2D& renderer,
     const RenderAttributes& attributes,
     const RenderResources& resources);
-
-  static expected<RenderPass, RenderPassError> create(
-    RenderTarget& target,
-    Renderer2D& renderer,
-    const RenderAttributes& attributes,
-    const RenderResources& resources,
-    const Vec4f& clear_color);
 
   const Mat3f& getWorldFromViewportMatrix() const { return world_from_viewport_; };
   const Bounds2f& getViewportInWorldBounds() const { return viewport_in_world_bounds_; };
