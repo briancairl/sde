@@ -50,6 +50,7 @@ cc_library(
 cc_library(
   name="graphics_impl__renderer__hdrs",
   hdrs=[
+    "include/sde/graphics/colors.hpp",
     "include/sde/graphics/debug.hpp",
     "include/sde/graphics/render_target.hpp",
     "include/sde/graphics/render_target_fwd.hpp",

@@ -78,7 +78,7 @@ expected<TileSet, TileSetError> TileSet::slice(
 
   const Vec2f axis_rates{1.0F / texture_info.shape.value.array().cast<float>()};
 
-  std::vector<Rect> tile_bounds;
+  std::vector<Bounds2f> tile_bounds;
   tile_bounds.reserve(static_cast<std::size_t>(tile_count.prod()));
   for (int x_min = sliced_region.min().x(); x_min < sliced_region.max().x(); x_min += tile_size.x())
   {
@@ -86,10 +86,9 @@ expected<TileSet, TileSetError> TileSet::slice(
     for (int y_min = sliced_region.min().y(); y_min < sliced_region.max().y(); y_min += tile_size.y())
     {
       const int y_max = y_min + tile_size.y();
-      tile_bounds.push_back({
-        .min = Vec2f{static_cast<float>(x_min), static_cast<float>(y_min)}.array() * axis_rates.array(),
-        .max = Vec2f{static_cast<float>(x_max), static_cast<float>(y_max)}.array() * axis_rates.array(),
-      });
+      tile_bounds.emplace_back(
+        Vec2f{static_cast<float>(x_min), static_cast<float>(y_min)}.array() * axis_rates.array(),
+        Vec2f{static_cast<float>(x_max), static_cast<float>(y_max)}.array() * axis_rates.array());
     }
   }
 

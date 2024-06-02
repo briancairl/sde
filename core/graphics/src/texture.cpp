@@ -49,21 +49,21 @@ enum_t to_native_layout_enum(const TextureLayout channels)
   return GL_RED;
 }
 
-TextureLayout from_native_layout_enum(const enum_t count)
-{
-  switch (count)
-  {
-  case GL_RED:
-    return TextureLayout::kR;
-  case GL_RG:
-    return TextureLayout::kRG;
-  case GL_RGB:
-    return TextureLayout::kRGB;
-  case GL_RGBA:
-    return TextureLayout::kRGBA;
-  }
-  return TextureLayout::kR;
-}
+// TextureLayout from_native_layout_enum(const enum_t count)
+// {
+//   switch (count)
+//   {
+//   case GL_RED:
+//     return TextureLayout::kR;
+//   case GL_RG:
+//     return TextureLayout::kRG;
+//   case GL_RGB:
+//     return TextureLayout::kRGB;
+//   case GL_RGBA:
+//     return TextureLayout::kRGBA;
+//   }
+//   return TextureLayout::kR;
+// }
 
 enum_t to_native_wrapping_mode_enum(const TextureWrapping mode)
 {

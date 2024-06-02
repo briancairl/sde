@@ -15,7 +15,7 @@ std::ostream& operator<<(std::ostream& os, const Line& line)
 
 std::ostream& operator<<(std::ostream& os, const Rect& rect)
 {
-  return os << "{ min: " << rect.min.transpose() << ", max: " << rect.max.transpose() << " }";
+  return os << "{ min: " << rect.min().transpose() << ", max: " << rect.max().transpose() << " }";
 }
 
 std::ostream& operator<<(std::ostream& os, const Quad& quad)

@@ -4,6 +4,7 @@
 
 // SDE
 #include "sde/geometry_utils.hpp"
+#include "sde/graphics/colors.hpp"
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/platform.hpp"
 #include "sde/graphics/render_target.hpp"
@@ -144,46 +145,28 @@ int main(int argc, char** argv)
   std::vector<TexturedQuad> layer_base_textured_quads;
 
   layer_base_quads.push_back({
-    .rect = {
-      .min = {0.7F, 0.7F},
-      .max = {0.8F, 0.8F}
-    },
-    .color = {1.0F, 0.0F, 1.0F, 1.0F}
+    .rect = Rect{Point{0.7F, 0.7F}, Point{0.8F, 0.8F}},
+    .color = Magenta()
   });
 
   layer_base_quads.push_back({
-    .rect = {
-      .min = {0.1F, 0.1F},
-      .max = {0.5F, 0.5F}
-    },
-    .color = {1.0F, 1.0F, 1.0F, 1.0F}
+    .rect = Rect{Point{0.1F, 0.1F}, Point{0.5F, 0.5F}},
+    .color = White()
   });
 
 
   layer_base_textured_quads.push_back({
-    .rect = {
-      .min = {0.1F, 0.1F},
-      .max = {0.3F, 0.3F}
-    },
-    .rect_texture = {
-      .min = {0.0F, 0.0F},
-      .max = {1.0F, 1.0F}
-    },
-    .color = {1.0F, 1.0F, 1.0F, 1.0F},
+    .rect = Rect{Point{0.1F, 0.1F}, Point{0.3F, 0.3F}},
+    .rect_texture = Rect{Point{0.0F, 0.0F}, Point{1.0F, 1.0F}},
+    .color = White(),
     .texture_unit = 1
   });
 
   layer_base_textured_quads.push_back({
-    .rect = {
-      .min = { 0.8F, 0.8F},
-      .max = { 1.8F, 1.8F}
-    },
-    .rect_texture = {
-      .min = {0.0F, 0.0F},
-      .max = {1.0F, 1.0F}
-    },
-    .color = {1.0F, 0.0F, 1.0F, 0.9F},
-    .texture_unit = 1
+    .rect = Rect{Point{ 0.8F, 0.8F}, Point{ 1.8F, 1.8F}},
+    .rect_texture = Rect{Point{0.0F, 0.0F}, Point{1.0F, 1.0F}},
+    .color = Cyan(0.5F),
+    .texture_unit = 0
   });
 
   layer_base_tile_maps.push_back(
@@ -193,6 +176,7 @@ int main(int argc, char** argv)
       tile_map.position = {0.7F, -0.8F};
       tile_map.tile_size = {0.25F, 0.25F};
       tile_map.texture_unit = 0;
+      tile_map.color = White();
       tile_map.tiles <<
         0, 1, 2, 3, 4, 5, 6,24,
         8, 9,10,11,12,13,14,15,
@@ -212,8 +196,8 @@ int main(int argc, char** argv)
       TileMap tile_map;
       tile_map.position = position;
       tile_map.tile_size = {0.25F, 0.25F};
-      tile_map.texture_unit = 0;
-      tile_map.color[1] = 0.0;
+      tile_map.texture_unit = 4;
+      tile_map.color = Yellow(0.4F);
       tile_map.tiles <<
         0, 1, 2, 3, 4, 5, 6,24,
         8, 9,10,11,12,13,14,15,
@@ -240,40 +224,40 @@ int main(int argc, char** argv)
 
   RenderAttributes attributes;
 
-  app.spin([&](const auto& window_properties)
+  app.spin([&](const auto& window)
   {
-    const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time).count();
-    const auto time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window_properties.time_delta).count();
+    const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window.time).count();
+    const auto time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window.time_delta).count();
 
     static constexpr float kMoveRate = 0.5;
 
-    if (window_properties.keys.isDown(KeyCode::kA))
+    if (window.keys.isDown(KeyCode::kA))
     {
       attributes.world_from_camera(0, 2) -= time_delta * kMoveRate;
     }
 
-    if (window_properties.keys.isDown(KeyCode::kD))
+    if (window.keys.isDown(KeyCode::kD))
     {
       attributes.world_from_camera(0, 2) += time_delta * kMoveRate;
     }
 
-    if (window_properties.keys.isDown(KeyCode::kS))
+    if (window.keys.isDown(KeyCode::kS))
     {
       attributes.world_from_camera(1, 2) -= time_delta * kMoveRate;
     }
 
-    if (window_properties.keys.isDown(KeyCode::kW))
+    if (window.keys.isDown(KeyCode::kW))
     {
       attributes.world_from_camera(1, 2) += time_delta * kMoveRate;
     }
 
     static constexpr float kScaleRate = 1.5;
     const float scroll_sensitivity = std::clamp(attributes.scaling, 1e-4F, 1e-2F);
-    if (window_properties.mouse_scroll.y() > 0)
+    if (window.mouse_scroll.y() > 0)
     {
       attributes.scaling -= scroll_sensitivity * kScaleRate * time;
     }
-    else if (window_properties.mouse_scroll.y() < 0)
+    else if (window.mouse_scroll.y() < 0)
     {
       attributes.scaling += scroll_sensitivity * kScaleRate * time;
     }
@@ -283,33 +267,33 @@ int main(int argc, char** argv)
     attributes.time_delta = time_delta;
 
 
-    if (auto render_pass_or_error = RenderPass::create(*texture_target_or_error, *renderer_or_error, attributes, lighting_resources); render_pass_or_error.has_value())
-    {
-      //render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
-      // layer_lighting_circles.push_back({
-      //   .center = sde::transform(attributes.getWorldFromViewportMatrix(*window_target_or_error), window_properties.getMousePositionViewport(window_target_or_error->getLastSize())), 
-      //   .radius = 1.5F,
-      //   .color = {1.0F, 1.0F, 0.5F, 1.0F}
-      // });
+    layer_lighting_circles.push_back({
+      .center = sde::transform(attributes.getWorldFromViewportMatrix(*window_target_or_error), window.getMousePositionViewport(window_target_or_error->getLastSize())), 
+      .radius = 1.5F,
+      .color = Yellow()
+    });
 
-      // // layer_lighting_circles.push_back({
-      // //   .center = {-0.4F, -0.4F},
-      // //   .radius = 0.4F,
-      // //   .color = {1.0F, 1.0F, 1.0F, 0.5F}
-      // // });
-
-      // render_pass_or_error->submit(sde::make_const_view(layer_lighting_circles));
-      // layer_lighting_circles.clear();
-    }
-
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, default_resources); render_pass_or_error.has_value())
+    if (auto render_pass_or_error = RenderPass::create(*texture_target_or_error, *renderer_or_error, attributes, lighting_resources, Black()); render_pass_or_error.has_value())
     {
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
-      //render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
+      render_pass_or_error->submit(sde::make_const_view(layer_lighting_circles));
+    }
+
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, default_resources, Black()); render_pass_or_error.has_value())
+    {
+      render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
+      render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error);
     }
 
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, lighting_resources); render_pass_or_error.has_value())
+    {
+      render_pass_or_error->submit(sde::make_const_view(layer_lighting_circles));
+    }
+
     SDE_LOG_DEBUG_FMT("%f : %f", attributes.time, attributes.time_delta);
+
+    layer_lighting_circles.clear();
 
     return WindowDirective::kContinue;
   });

@@ -53,7 +53,9 @@ public:
                                                                : RenderTargetHandle::null();
   }
 
-  Vec2i refresh(const Vec4f& clear_color = Vec4f::Zero());
+  void refresh();
+
+  void refresh(const Vec4f& clear_color);
 
   Vec2i getLastSize() const { return viewport_size_; }
 

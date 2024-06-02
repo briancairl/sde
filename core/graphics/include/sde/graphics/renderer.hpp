@@ -133,6 +133,13 @@ public:
     const RenderAttributes& attributes,
     const RenderResources& resources);
 
+  static expected<RenderPass, RenderPassError> create(
+    RenderTarget& target,
+    Renderer2D& renderer,
+    const RenderAttributes& attributes,
+    const RenderResources& resources,
+    const Vec4f& clear_color);
+
   const Mat3f& getWorldFromViewportMatrix() const { return world_from_viewport_; };
   const Bounds2f& getViewportInWorldBounds() const { return viewport_in_world_bounds_; };
 

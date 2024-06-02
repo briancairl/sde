@@ -9,11 +9,12 @@
 #include <iosfwd>
 
 // SDE
-#include "sde/expected.hpp"
 #include "sde/geometry_types.hpp"
+#include "sde/geometry_utils.hpp"
 
 namespace sde::graphics
 {
+
 struct TileMap
 {
   static constexpr std::size_t kDim = 8;
@@ -24,6 +25,13 @@ struct TileMap
   Vec4f color = Vec4f::Ones();
   Mat<std::size_t, kDim> tiles;
   std::size_t texture_unit;
+
+  Bounds2f bounds() const
+  {
+    const Vec2f p_min = position;
+    const Vec2f p_max = (position + Vec2f{tile_size.x() * tiles.cols(), -tile_size.y() * tiles.rows()});
+    return toBounds(p_min, p_max);
+  }
 };
 
 inline Vec2f getNextRightPosition(const TileMap& tm)

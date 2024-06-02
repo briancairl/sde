@@ -14,19 +14,17 @@
 namespace sde::graphics
 {
 
+using Point = Vec2f;
+
 struct Line
 {
-  Vec2f tail = Vec2f::Zero();
-  Vec2f head = Vec2f::Zero();
+  Point tail = Point::Zero();
+  Point head = Point::Zero();
 };
 
 std::ostream& operator<<(std::ostream& os, const Line& line);
 
-struct Rect
-{
-  Vec2f min = Vec2f::Zero();
-  Vec2f max = Vec2f::Zero();
-};
+using Rect = Bounds2f;
 
 std::ostream& operator<<(std::ostream& os, const Rect& rect);
 
@@ -34,15 +32,23 @@ struct Quad
 {
   Rect rect = {};
   Vec4f color = Vec4f::Ones();
+
+  const Bounds2f& bounds() const { return rect; }
 };
 
 std::ostream& operator<<(std::ostream& os, const Quad& quad);
 
 struct Circle
 {
-  Vec2f center = {};
+  Point center = {};
   float radius = 1.0F;
   Vec4f color = Vec4f::Ones();
+
+  const Bounds2f bounds() const
+  {
+    const Point extents{radius, radius};
+    return Bounds2f{center - extents, center + extents};
+  }
 };
 
 std::ostream& operator<<(std::ostream& os, const Circle& circle);
@@ -53,6 +59,8 @@ struct TexturedQuad
   Rect rect_texture;
   Vec4f color = Vec4f::Ones();
   std::size_t texture_unit;
+
+  const Bounds2f& bounds() const { return rect; }
 };
 
 std::ostream& operator<<(std::ostream& os, const TexturedQuad& quad);

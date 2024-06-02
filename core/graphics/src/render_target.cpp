@@ -78,7 +78,7 @@ RenderTarget::create(const TextureHandle& texture, const TextureCache& texture_c
 
 void RenderTarget::activate() { glBindFramebuffer(GL_FRAMEBUFFER, handle().id()); }
 
-Vec2i RenderTarget::refresh(const Vec4f& color)
+void RenderTarget::refresh()
 {
   if (const WindowHandle* window_handle = std::get_if<WindowHandle>(&target_); window_handle != nullptr)
   {
@@ -91,9 +91,14 @@ Vec2i RenderTarget::refresh(const Vec4f& color)
     glBindFramebuffer(GL_FRAMEBUFFER, std::get<RenderTargetHandle>(target_).id());
   }
   glViewport(0, 0, viewport_size_.x(), viewport_size_.y());
+}
+
+void RenderTarget::refresh(const Vec4f& color)
+{
+  refresh();
   glClearColor(color[0], color[1], color[2], color[3]);
   glClear(GL_COLOR_BUFFER_BIT);
-  return viewport_size_;
 }
+
 
 }  // namespace sde::graphics
