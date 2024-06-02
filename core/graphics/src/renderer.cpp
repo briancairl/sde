@@ -612,8 +612,7 @@ public:
     auto b = va_.getVertexAttributeBuffer();
     for (const char c : text.text)
     {
-      const auto glyph_index = static_cast<std::size_t>(c);
-      const auto& glyph = glyphs[glyph_index];
+      const auto& glyph = glyphs[c];
 
       const Vec2f pos_rect_min =
         text_pos + Vec2f{glyph.bearing_px.x() * text.scale, (glyph.bearing_px.y() - glyph.size_px.y()) * text.scale};

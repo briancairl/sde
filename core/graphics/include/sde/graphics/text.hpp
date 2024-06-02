@@ -48,12 +48,12 @@ public:
   /**
    * @brief Returns texture-space bounds for a given tile
    */
-  const Glyph& get(const std::size_t tile) const { return glyphs_[tile]; }
+  const Glyph& get(const char c) const { return glyphs_[static_cast<std::size_t>(c)]; }
 
   /**
-   * @brief Returns texture-space bounds for a given tile
+   * @brief Returns texture-space bounds for a given c
    */
-  const Glyph& operator[](const std::size_t tile) const { return glyphs_[tile]; }
+  const Glyph& operator[](const char c) const { return get(c); }
 
   /**
    * @brief Returns the number of tiles
@@ -76,6 +76,7 @@ enum class FontError
   kGlyphSizeInvalid,
   kGlyphTextureInvalid,
 };
+
 
 class Font
 {
