@@ -26,7 +26,7 @@ MODE_LINKOPTS = select({
 cc_binary(
     name="engine",
     srcs=["main.cpp"],
-    deps=["//core/graphics"],
+    deps=["//core/graphics:graphics", "//core/graphics:platform"],
     visibility=["//visibility:public"],
     linkopts=MODE_LINKOPTS,
     copts=MODE_COPTS,

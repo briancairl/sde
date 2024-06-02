@@ -62,6 +62,13 @@ new_local_repository(
   build_file="@//external:glfw.BUILD",
 )
 
+# FreeType
+new_local_repository(
+  name="freetype2",
+  path="/usr/",
+  build_file="@//external:freetype2.BUILD",
+)
+
 # STB
 new_git_repository(
   name="stb",

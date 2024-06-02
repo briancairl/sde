@@ -14,7 +14,9 @@ cc_library(
     "include/sde/graphics/typecode.hpp",
     "include/sde/graphics/typedef.hpp",
   ],
-  srcs=[],
+  srcs=[
+    "src/typecode.cpp"
+  ],
   strip_include_prefix="include",
   deps=[],
   visibility=["//visibility:private"]
@@ -35,7 +37,8 @@ cc_library(
   deps=[
     ":graphics_impl__common",
     "//core/common:expected",
-    "//core/common:resources",
+    "//core/common:geometry",
+    "//core/common:asset",
     "@stb//:stb",
   ],
   visibility=["//visibility:private"]
@@ -47,18 +50,37 @@ cc_library(
 cc_library(
   name="graphics_impl__renderer__hdrs",
   hdrs=[
-    "include/sde/graphics/renderer_2D.hpp",
-    "include/sde/graphics/texture_2D.hpp"
+    "include/sde/graphics/colors.hpp",
+    "include/sde/graphics/debug.hpp",
+    "include/sde/graphics/render_target.hpp",
+    "include/sde/graphics/render_target_fwd.hpp",
+    "include/sde/graphics/renderer.hpp",
+    "include/sde/graphics/shader.hpp",
+    "include/sde/graphics/shader_fwd.hpp",
+    "include/sde/graphics/shader_handle.hpp",
+    "include/sde/graphics/shapes.hpp",
+    "include/sde/graphics/text.hpp",
+    "include/sde/graphics/text_fwd.hpp",
+    "include/sde/graphics/texture.hpp",
+    "include/sde/graphics/texture_fwd.hpp",
+    "include/sde/graphics/texture_handle.hpp",
+    "include/sde/graphics/texture_units.hpp",
+    "include/sde/graphics/tile_set.hpp",
+    "include/sde/graphics/tile_map.hpp",
+    "include/sde/graphics/window_handle.hpp",
   ],
   strip_include_prefix="include",
   deps=[
+    "//core/common:core",
     "//core/common:expected",
+    "//core/common:geometry",
+    "//core/common:logging",
+    "//core/common:resource",
     ":graphics_impl__common",
     ":graphics_impl__image__stb"
   ],
   visibility=["//visibility:private"]
 )
-
 
 
 
@@ -78,30 +100,60 @@ config_setting(
     values = {"compilation_mode": "dbg"},
 )
 
+
+
 graphics_impl__renderer__opengl_debug_selector = select({
-    ":debug": [], #["src/debug.cpp"],
-    "//conditions:default": [] #["src/debug_null.cpp"],
+    ":debug": ["src/debug.cpp"],
+    "//conditions:default": ["src/debug_null.cpp"],
 })
 
 cc_library(
   name="graphics_impl__renderer__opengl",
   srcs=[
-    "src/renderer_2D.cpp",
-    "src/texture_2D.cpp",
+    "src/renderer.cpp",
+    "src/render_target.cpp",
+    "src/shader.cpp",
+    "src/shapes.cpp",
+    "src/texture.cpp",
+    "src/texture_units.cpp",
+    "src/tile_set.cpp",
+    "src/tile_map.cpp",
+    "src/text.cpp",
   ] + graphics_impl__renderer__opengl_debug_selector,
   deps=[
     ":graphics_impl__renderer__opengl_internal",
     ":graphics_impl__renderer__hdrs",
     ":graphics_impl__common",
-    ":graphics_impl__opengl",],
+    ":graphics_impl__opengl",
+    "@freetype2//:freetype2",],
   visibility=["//visibility:private"]
 )
-
-
 
 
 alias(
   name="graphics",
   actual=":graphics_impl__renderer__opengl",
+  visibility=["//visibility:public"]
+)
+
+
+platform_glfw_debug_selector = select({
+    ":debug": ["SDE_GLFW_DEBUG=1"],
+    "//conditions:default": ["SDE_GLFW_DEBUG=0"]
+})
+
+cc_library(
+  name="platform",
+  hdrs=["include/sde/graphics/platform.hpp"],
+  srcs=["src/platform.cpp"],
+  defines=platform_glfw_debug_selector,
+  strip_include_prefix="include",
+  deps=[
+    ":graphics_impl__renderer__opengl",
+    "//core/common:logging",
+    "//core/common:geometry",
+    "//platform/glad:glad",
+    "@glfw//:glfw",
+  ],
   visibility=["//visibility:public"]
 )

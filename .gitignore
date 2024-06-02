@@ -3,7 +3,8 @@ bazel-testlogs
 bazel-bin
 bazel-genfiles
 bazel-out
-bazel-tyl
+bazel-sde
+MODULE*
 
 # Backup Files
 *.cpp~

@@ -26,16 +26,16 @@ enum class TypeCode
 
 std::ostream& operator<<(std::ostream& os, TypeCode channels);
 
-template <TypeCode C> constexpr std::size_t byte_count();
+template <TypeCode C> [[nodiscard]] constexpr std::size_t byte_count() { return 0UL; }
 
-template <> constexpr std::size_t byte_count<TypeCode::kSInt8>() { return 1UL; }
-template <> constexpr std::size_t byte_count<TypeCode::kUInt8>() { return 1UL; }
-template <> constexpr std::size_t byte_count<TypeCode::kSInt16>() { return 2UL; }
-template <> constexpr std::size_t byte_count<TypeCode::kUInt16>() { return 2UL; }
-template <> constexpr std::size_t byte_count<TypeCode::kFloat32>() { return 4UL; }
-template <> constexpr std::size_t byte_count<TypeCode::kFloat64>() { return 8UL; }
-template <> constexpr std::size_t byte_count<TypeCode::kSInt32>() { return 4UL; }
-template <> constexpr std::size_t byte_count<TypeCode::kUInt32>() { return 4UL; }
+template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kSInt8>() { return 1UL; }
+template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kUInt8>() { return 1UL; }
+template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kSInt16>() { return 2UL; }
+template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kUInt16>() { return 2UL; }
+template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kFloat32>() { return 4UL; }
+template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kFloat64>() { return 8UL; }
+template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kSInt32>() { return 4UL; }
+template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kUInt32>() { return 4UL; }
 
 inline std::size_t byte_count(TypeCode code)
 {
@@ -61,15 +61,15 @@ inline std::size_t byte_count(TypeCode code)
   return 0UL;
 }
 
-template <typename T> constexpr TypeCode typecode();
+template <typename T> [[nodiscard]] constexpr TypeCode typecode() { return TypeCode::kUInt8; };
 
-template <> constexpr TypeCode typecode<float>() { return TypeCode::kFloat32; };
-template <> constexpr TypeCode typecode<double>() { return TypeCode::kFloat64; };
-template <> constexpr TypeCode typecode<std::int32_t>() { return TypeCode::kSInt32; };
-template <> constexpr TypeCode typecode<std::uint32_t>() { return TypeCode::kUInt32; };
-template <> constexpr TypeCode typecode<std::int16_t>() { return TypeCode::kSInt16; };
-template <> constexpr TypeCode typecode<std::uint16_t>() { return TypeCode::kUInt16; };
-template <> constexpr TypeCode typecode<std::int8_t>() { return TypeCode::kSInt8; };
-template <> constexpr TypeCode typecode<std::uint8_t>() { return TypeCode::kUInt8; };
+template <> [[nodiscard]] constexpr TypeCode typecode<float>() { return TypeCode::kFloat32; };
+template <> [[nodiscard]] constexpr TypeCode typecode<double>() { return TypeCode::kFloat64; };
+template <> [[nodiscard]] constexpr TypeCode typecode<std::int32_t>() { return TypeCode::kSInt32; };
+template <> [[nodiscard]] constexpr TypeCode typecode<std::uint32_t>() { return TypeCode::kUInt32; };
+template <> [[nodiscard]] constexpr TypeCode typecode<std::int16_t>() { return TypeCode::kSInt16; };
+template <> [[nodiscard]] constexpr TypeCode typecode<std::uint16_t>() { return TypeCode::kUInt16; };
+template <> [[nodiscard]] constexpr TypeCode typecode<std::int8_t>() { return TypeCode::kSInt8; };
+template <> [[nodiscard]] constexpr TypeCode typecode<std::uint8_t>() { return TypeCode::kUInt8; };
 
 }  // namespace sde::graphics

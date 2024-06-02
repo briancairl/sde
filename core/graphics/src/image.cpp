@@ -65,17 +65,17 @@ std::ostream& operator<<(std::ostream& os, ImageLoadFlags flags)
 
 std::ostream& operator<<(std::ostream& os, const ImageShape& shape)
 {
-  return os << "{ height: " << shape.height << ", width: " << shape.width << " }";
+  return os << "{ height: " << shape.value.y() << ", width: " << shape.value.x() << " }";
 }
 
 std::ostream& operator<<(std::ostream& os, ImageLoadError error)
 {
   switch (error)
   {
-  case ImageLoadError::kResourceNotFound:
-    return os << "ResourceNotFound";
-  case ImageLoadError::kResourceInvalid:
-    return os << "ResourceInvalid";
+  case ImageLoadError::kAssetNotFound:
+    return os << "AssetNotFound";
+  case ImageLoadError::kAssetInvalid:
+    return os << "AssetInvalid";
   case ImageLoadError::kUnsupportedBitDepth:
     return os << "UnsupportedBitDepth";
   }
@@ -101,12 +101,12 @@ Image::~Image()
   stbi_image_free(data_);
 }
 
-expected<Image, ImageLoadError> Image::load(const resource::path& image_path, const ImageOptions& options)
+expected<Image, ImageLoadError> Image::load(const asset::path& image_path, const ImageOptions& options)
 {
   // Check if image point is valid
-  if (!resource::exists(image_path))
+  if (!asset::exists(image_path))
   {
-    return make_unexpected(ImageLoadError::kResourceNotFound);
+    return make_unexpected(ImageLoadError::kAssetNotFound);
   }
 
   // Set flag determining whether image should be flipped on load
@@ -140,13 +140,12 @@ expected<Image, ImageLoadError> Image::load(const resource::path& image_path, co
   // Check if image point is valid
   if (image_data_ptr == nullptr)
   {
-    return make_unexpected(ImageLoadError::kResourceInvalid);
+    return make_unexpected(ImageLoadError::kAssetInvalid);
   }
 
   return Image{
     {
-      .height = static_cast<std::size_t>(height_on_load),
-      .width = static_cast<std::size_t>(width_on_load),
+      .value = {height_on_load, width_on_load},
     },
     ((options.channels == ImageChannels::kDefault) ? from_channel_count(channel_count_on_load) : options.channels),
     options.bit_depth,

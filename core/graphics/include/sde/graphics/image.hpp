@@ -10,10 +10,9 @@
 #include <iosfwd>
 
 // SDE
+#include "sde/asset.hpp"
 #include "sde/expected.hpp"
-#include "sde/resources.hpp"
-
-// SDE
+#include "sde/geometry_types.hpp"
 #include "sde/graphics/typecode.hpp"
 
 namespace sde::graphics
@@ -105,10 +104,10 @@ std::ostream& operator<<(std::ostream& os, const ImageOptions& error);
  */
 struct ImageShape
 {
-  /// Number of rows
-  std::size_t height;
-  /// Number of cols
-  std::size_t width;
+  Vec2i value = {};
+  auto width() const { return value.x(); }
+  auto height() const { return value.y(); }
+  auto pixels() const { return value.x() * value.y(); }
 };
 
 std::ostream& operator<<(std::ostream& os, const ImageShape& error);
@@ -118,8 +117,8 @@ std::ostream& operator<<(std::ostream& os, const ImageShape& error);
  */
 enum class ImageLoadError
 {
-  kResourceNotFound,
-  kResourceInvalid,
+  kAssetNotFound,
+  kAssetInvalid,
   kUnsupportedBitDepth,
 };
 
@@ -139,42 +138,53 @@ public:
   /**
    * @brief Loads an Image from disk, or returns an ImageLoadError
    */
-  static expected<Image, ImageLoadError> load(const resource::path& image_path, const ImageOptions& options = {});
+  [[nodiscard]] static expected<Image, ImageLoadError>
+  load(const asset::path& image_path, const ImageOptions& options = {});
 
   /**
    * @brief Returns true if held resource is valid
    */
-  constexpr bool valid() const { return data_ != nullptr; }
+  [[nodiscard]] constexpr bool valid() const { return data_ != nullptr; }
 
   /**
    * @copydoc valid
    */
-  constexpr operator bool() const { return valid(); }
+  [[nodiscard]] constexpr operator bool() const { return valid(); }
 
   /**
    * @brief Returns image dimensions
    */
-  constexpr const ImageShape& shape() const { return shape_; }
+  [[nodiscard]] constexpr const ImageShape& shape() const { return shape_; }
 
   /**
    * @brief Returns image pixel depth
    */
-  constexpr TypeCode depth() const { return bit_depth_; }
+  [[nodiscard]] constexpr TypeCode depth() const { return bit_depth_; }
+
+  /**
+   * @brief Returns image channel count
+   */
+  [[nodiscard]] constexpr ImageChannels channels() const { return channels_; }
+
+  /**
+   * @brief Returns image channel count
+   */
+  [[nodiscard]] constexpr std::size_t channel_count() const { return to_channel_count(channels_); }
 
   /**
    * @brief Returns size of single pixel, in bytes
    */
-  constexpr std::size_t pixel_size_in_bytes() const { return to_channel_count(channels_) * byte_count(bit_depth_); }
+  [[nodiscard]] constexpr std::size_t pixel_size_in_bytes() const { return channel_count() * byte_count(bit_depth_); }
 
   /**
    * @brief Returns total size of image in bytes
    */
-  constexpr std::size_t total_size_in_bytes() const { return shape_.height * shape_.width * pixel_size_in_bytes(); }
+  [[nodiscard]] constexpr std::size_t total_size_in_bytes() const { return shape_.pixels() * pixel_size_in_bytes(); }
 
   /**
    * @brief Returns pointer to image data
    */
-  constexpr void* data() const { return data_; }
+  [[nodiscard]] constexpr void* data() const { return data_; }
 
 private:
   Image(const ImageShape& shape, ImageChannels channels, TypeCode bit_depth, void* data);

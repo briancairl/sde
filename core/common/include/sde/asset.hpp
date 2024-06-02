@@ -1,7 +1,7 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file resources.hpp
+ * @file asset.hpp
  */
 #pragma once
 
@@ -78,5 +78,5 @@ namespace filesystem = experimental::filesystem;
 
 namespace sde
 {
-namespace resource = std::filesystem;
+namespace asset = std::filesystem;
 }  // namespace sde
