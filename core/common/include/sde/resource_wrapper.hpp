@@ -16,7 +16,8 @@ template <typename T> struct DefaultExchanger
   void operator()(T& lhs, T& rhs) const { std::swap(lhs, rhs); }
 };
 
-template <typename T, typename DeleterT, typename ExchangerT = DefaultExchanger<T>> class UniqueResource
+template <typename T, typename DeleterT, typename ExchangerT = DefaultExchanger<T>, T kNullValue = static_cast<T>(0)>
+class UniqueResource
 {
 public:
   explicit UniqueResource(const T& v, DeleterT deleter = DeleterT{}, ExchangerT exchanger = ExchangerT{}) :
@@ -25,19 +26,18 @@ public:
 
   UniqueResource(UniqueResource&& other) { this->swap(other); }
 
-  ~UniqueResource() { deleter_(value_); }
+  ~UniqueResource()
+  {
+    if (value_ != kNullValue)
+    {
+      deleter_(value_);
+    }
+  }
 
   UniqueResource& operator=(UniqueResource&& other)
   {
     this->swap(other);
     return *this;
-  }
-
-  template <typename U> T exchange(U&& value)
-  {
-    T e{std::forward<U>(value)};
-    exchanger_(value_, e);
-    return e;
   }
 
   void swap(T& other) { exchanger_(value_, other); }
@@ -57,7 +57,7 @@ private:
   UniqueResource(const UniqueResource&) = delete;
   UniqueResource& operator=(const UniqueResource&) = delete;
 
-  T value_;
+  T value_ = kNullValue;
   DeleterT deleter_;
   ExchangerT exchanger_;
 };

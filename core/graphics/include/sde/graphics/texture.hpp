@@ -18,6 +18,8 @@
 #include "sde/graphics/image_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/typedef.hpp"
+#include "sde/resource_cache.hpp"
+#include "sde/resource_wrapper.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
@@ -90,12 +92,19 @@ struct TextureShape
 
 std::ostream& operator<<(std::ostream& os, const TextureShape& shape);
 
+struct TextureNativeDeleter
+{
+  void operator()(native_texture_id_t id) const;
+};
+
+using TextureNativeID = UniqueResource<native_texture_id_t, TextureNativeDeleter>;
+
 struct TextureInfo
 {
   TextureLayout layout;
   TextureShape shape;
   TextureOptions options;
-  native_texture_id_t native_id;
+  TextureNativeID native_id;
 };
 
 std::ostream& operator<<(std::ostream& os, const TextureInfo& info);
@@ -115,79 +124,47 @@ enum class TextureError
 
 std::ostream& operator<<(std::ostream& os, TextureError error);
 
-class TextureCache
+class TextureCache;
+
+}  // namespace sde::graphics
+
+namespace sde
 {
+
+template <> struct ResourceCacheTypes<graphics::TextureCache>
+{
+  using error_type = graphics::TextureError;
+  using handle_type = graphics::TextureHandle;
+  using value_type = graphics::TextureInfo;
+};
+
+}  // namespace sde
+
+namespace sde::graphics
+{
+
+class TextureCache : public ResourceCache<TextureCache>
+{
+  friend class ResourceCache<TextureCache>;
+
 public:
   TextureCache() = default;
 
-  ~TextureCache();
-
-  bool remove(const TextureHandle& index);
-
-  expected<TextureHandle, TextureError> upload(const Image& image, const TextureOptions& options = {})
-  {
-    const auto texture = newTextureHandle();
-    const auto ok_or_error = transfer(texture, image, options);
-    if (ok_or_error.has_value())
-    {
-      last_texture_handle_ = texture;
-      return texture;
-    }
-    return make_unexpected(ok_or_error.error());
-  }
-
-  template <typename DataT>
-  expected<TextureHandle, TextureError>
-  upload(View<const DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {})
-  {
-    const auto texture = newTextureHandle();
-    const auto ok_or_error = transfer(texture, data, shape, options);
-    if (ok_or_error.has_value())
-    {
-      last_texture_handle_ = texture;
-      return texture;
-    }
-    return make_unexpected(ok_or_error.error());
-  }
-
-  template <typename DataT>
-  expected<TextureHandle, TextureError>
-  create(const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {})
-  {
-    const auto texture = newTextureHandle();
-    const auto ok_or_error = allocate<DataT>(texture, shape, layout, options);
-    if (ok_or_error.has_value())
-    {
-      last_texture_handle_ = texture;
-      return texture;
-    }
-    return make_unexpected(ok_or_error.error());
-  }
-
-  const TextureInfo* get(TextureHandle texture) const;
+  ~TextureCache() = default;
 
 private:
-  using TextureCacheMap = std::unordered_map<TextureHandle, TextureInfo, ResourceHandleHash>;
-
-  expected<void, TextureError> transfer(TextureHandle, const Image& image, const TextureOptions& options);
+  expected<TextureInfo, TextureError> generate(const Image& image, const TextureOptions& options = {});
 
   template <typename DataT>
-  expected<void, TextureError> transfer(
-    TextureHandle texture,
-    View<const DataT> data,
+  expected<TextureInfo, TextureError>
+  generate(View<const DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
+
+  template <typename DataT>
+  expected<TextureInfo, TextureError> generate(
+    TypeTag<const DataT> /*_*/,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {});
-
-  template <typename DataT>
-  expected<void, TextureError>
-  allocate(TextureHandle texture, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
-
-  TextureHandle last_texture_handle_ = TextureHandle::null();
-
-  TextureCacheMap textures_;
-
-  TextureHandle newTextureHandle() const { return TextureHandle{last_texture_handle_.id() + 1UL}; }
 };
 
 

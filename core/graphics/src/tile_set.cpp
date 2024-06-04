@@ -48,7 +48,7 @@ expected<TileSet, TileSetError> TileSet::slice(
   const Vec2i tile_size,
   const Bounds2i& tile_slice_bounds)
 {
-  const auto* texture_info = texture_cache.get(texture);
+  const auto* texture_info = texture_cache.get_if(texture);
   if (texture_info == nullptr)
   {
     return unexpected<TileSetError>{TileSetError::kInvalidAtlasTexture};

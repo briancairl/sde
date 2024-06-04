@@ -164,7 +164,7 @@ int main(int argc, char** argv)
 
   TextureCache texture_cache;
 
-  auto texture_or_error = texture_cache.upload(*image_or_error);
+  auto texture_or_error = texture_cache.create(*image_or_error);
 
   SDE_ASSERT_TRUE(texture_or_error.has_value());
 
@@ -173,7 +173,7 @@ int main(int argc, char** argv)
 
   SDE_ASSERT_TRUE(tile_set_or_error.has_value());
 
-  auto draw_texture_or_error = texture_cache.create<std::uint8_t>(TextureShape{{500, 500}}, TextureLayout::kRGB);
+  auto draw_texture_or_error = texture_cache.create(sde::Type<std::uint8_t>, TextureShape{{500, 500}}, TextureLayout::kRGB);
 
   auto renderer_or_error = Renderer2D::create(&shader_cache, &texture_cache);
   SDE_ASSERT_TRUE(renderer_or_error.has_value());

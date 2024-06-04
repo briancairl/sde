@@ -34,6 +34,12 @@ public:
     return *this;
   }
 
+  ResourceHandle& operator++()
+  {
+    ++id_;
+    return *this;
+  }
+
   constexpr IdentifierT id() const { return id_; }
 
   constexpr bool isNull() const { return id_ == kNullValue; }
@@ -52,14 +58,17 @@ template <typename T> constexpr bool operator<(const ResourceHandle<T>& lhs, con
 {
   return lhs.id() < rhs.id();
 }
+
 template <typename T> constexpr bool operator>(const ResourceHandle<T>& lhs, const ResourceHandle<T>& rhs)
 {
   return lhs.id() > rhs.id();
 }
+
 template <typename T> constexpr bool operator==(const ResourceHandle<T>& lhs, const ResourceHandle<T>& rhs)
 {
   return lhs.id() == rhs.id();
 }
+
 template <typename T> constexpr bool operator!=(const ResourceHandle<T>& lhs, const ResourceHandle<T>& rhs)
 {
   return lhs.id() != rhs.id();

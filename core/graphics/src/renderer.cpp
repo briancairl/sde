@@ -713,7 +713,7 @@ Mat3f Renderer2D::refresh(RenderTarget& target, const RenderAttributes& attribut
   {
     if (resources.textures[u] and resources.textures[u] != active_resources_.textures[u])
     {
-      const auto* texture = texture_cache_->get(resources.textures[u]);
+      const auto* texture = texture_cache_->get_if(resources.textures[u]);
       SDE_ASSERT_NE(texture, nullptr);
 
       glActiveTexture(GL_TEXTURE0 + u);

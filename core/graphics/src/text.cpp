@@ -13,7 +13,6 @@
 #include "sde/graphics/text.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/logging.hpp"
-#include "sde/resource.hpp"
 
 namespace sde::graphics
 {
@@ -160,7 +159,8 @@ Font::glyphs(TextureCache& texture_cache, const GlyphOptions& options, View<cons
   glyphs = or_default(glyphs);
 
   // clang-format off
-  auto glyph_atlas_texture_or_error = texture_cache.create<std::uint8_t>(
+  auto glyph_atlas_texture_or_error = texture_cache.create(
+    Type<std::uint8_t>,
     TextureShape{{static_cast<int>(options.height_px), static_cast<int>(glyphs.size() * options.height_px)}},
     TextureLayout::kR,
     TextureOptions{
@@ -177,7 +177,7 @@ Font::glyphs(TextureCache& texture_cache, const GlyphOptions& options, View<cons
   if (glyph_atlas_texture_or_error.has_value())
   {
     return createImpl(
-      *glyph_atlas_texture_or_error, *texture_cache.get(*glyph_atlas_texture_or_error), options, glyphs);
+      *glyph_atlas_texture_or_error, *texture_cache.get_if(*glyph_atlas_texture_or_error), options, glyphs);
   }
   SDE_LOG_DEBUG("GlyphTextureInvalid");
   return make_unexpected(FontError::kGlyphTextureInvalid);
