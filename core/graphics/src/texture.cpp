@@ -157,6 +157,14 @@ expected<void, TextureError> upload_texture_2D(
 
   if (has_active_error())
   {
+    SDE_LOG_DEBUG_FMT(
+      "BackendTransferFailure: [offset_x=%d, offset_y=%d, shape_x=%d, shape_y=%d, format=%s, type=%s]",
+      offset.x(),
+      offset.y(),
+      shape.x(),
+      shape.y(),
+      static_cast<int>(to_native_layout_enum(layout)),
+      static_cast<int>(to_native_typecode(type)));
     return make_unexpected(TextureError::kBackendTransferFailure);
   }
 
@@ -174,6 +182,7 @@ expected<NativeTextureID, TextureError> create_native_texture_2D(
 
   if (has_active_error())
   {
+    SDE_LOG_DEBUG("BackendCreationFailure");
     return make_unexpected(TextureError::kBackendCreationFailure);
   }
 
@@ -188,6 +197,7 @@ expected<NativeTextureID, TextureError> create_native_texture_2D(
     glGenerateMipmap(GL_TEXTURE_2D);
     if (has_active_error())
     {
+      SDE_LOG_DEBUG("BackendMipMapGenerationFailure");
       return make_unexpected(TextureError::kBackendMipMapGenerationFailure);
     }
   }
@@ -205,6 +215,7 @@ expected<NativeTextureID, TextureError> create_native_texture_2D(
 
   if (has_active_error())
   {
+    SDE_LOG_DEBUG("BackendCreationFailure");
     return make_unexpected(TextureError::kBackendCreationFailure);
   }
 
@@ -254,10 +265,12 @@ create_texture_impl(View<DataT> data, const TextureShape& shape, TextureLayout l
 {
   if (!data)
   {
+    SDE_LOG_DEBUG("InvalidDataValue");
     return make_unexpected(TextureError::kInvalidDataValue);
   }
   else if (shape.height() == 0 or shape.width() == 0)
   {
+    SDE_LOG_DEBUG("InvalidDimensions");
     return make_unexpected(TextureError::kInvalidDimensions);
   }
 
@@ -265,7 +278,7 @@ create_texture_impl(View<DataT> data, const TextureShape& shape, TextureLayout l
   const std::size_t actual_size = sizeof(DataT) * data.size();
   if (actual_size != required_size)
   {
-    SDE_LOG_FATAL_FMT("Expected texture to have data len %lu but has %lu", required_size, actual_size);
+    SDE_LOG_DEBUG_FMT("Expected texture to have data len %lu but has %lu", required_size, actual_size);
     return make_unexpected(TextureError::kInvalidDataLength);
   }
 

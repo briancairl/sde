@@ -505,7 +505,8 @@ expected<ShaderHandle, ShaderError> ShaderCache::create(std::string_view source)
     vert_shader_id = createVertShaderFromSource(source_parts.vert);
     if (vert_shader_id == 0)
     {
-      return unexpected<ShaderError>{ShaderError::kVertShaderCompilationFailure};
+      SDE_LOG_DEBUG("VertShaderCompilationFailure");
+      return make_unexpected(ShaderError::kVertShaderCompilationFailure);
     }
   }
 
@@ -516,7 +517,8 @@ expected<ShaderHandle, ShaderError> ShaderCache::create(std::string_view source)
     frag_shader_id = createFragShaderFromSource(source_parts.frag);
     if (frag_shader_id == 0)
     {
-      return unexpected<ShaderError>{ShaderError::kFragShaderCompilationFailure};
+      SDE_LOG_DEBUG("FragShaderCompilationFailure");
+      return make_unexpected(ShaderError::kFragShaderCompilationFailure);
     }
   }
 
@@ -527,7 +529,8 @@ expected<ShaderHandle, ShaderError> ShaderCache::create(std::string_view source)
     geom_shader_id = createGeomShaderFromSource(source_parts.geom);
     if (geom_shader_id == 0)
     {
-      return unexpected<ShaderError>{ShaderError::kGeomShaderCompilationFailure};
+      SDE_LOG_DEBUG("GeomShaderCompilationFailure");
+      return make_unexpected(ShaderError::kGeomShaderCompilationFailure);
     }
   }
 

@@ -65,6 +65,7 @@ expected<Font, FontError> Font::load(const asset::path& font_path)
 {
   if (!asset::exists(font_path))
   {
+    SDE_LOG_DEBUG("AssetNotFound");
     return make_unexpected(FontError::kAssetNotFound);
   }
 
@@ -75,6 +76,7 @@ expected<Font, FontError> Font::load(const asset::path& font_path)
   static constexpr FT_Long kFontIndex = 0;
   if (FT_New_Face(FreeType, font_path.string().c_str(), kFontIndex, &face) != kFreeTypeSuccess)
   {
+    SDE_LOG_DEBUG("AssetInvalid");
     return make_unexpected(FontError::kAssetInvalid);
   }
 
@@ -95,6 +97,7 @@ expected<GlyphSet, FontError> Font::createImpl(
   static constexpr int kWidthFromHeight = 0;
   if ((options.height_px == 0) or (FT_Set_Pixel_Sizes(face, kWidthFromHeight, options.height_px) != kFreeTypeSuccess))
   {
+    SDE_LOG_DEBUG("GlyphSizeInvalid");
     return make_unexpected(FontError::kGlyphSizeInvalid);
   }
 
@@ -106,6 +109,7 @@ expected<GlyphSet, FontError> Font::createImpl(
   {
     if (FT_Load_Char(face, c, FT_LOAD_RENDER) != kFreeTypeSuccess)
     {
+      SDE_LOG_DEBUG("GlyphMissing");
       return make_unexpected(FontError::kGlyphMissing);
     }
 
@@ -125,6 +129,7 @@ expected<GlyphSet, FontError> Font::createImpl(
                texture_info, make_const_view(buffer_data, buffer_length), Bounds2i{tex_coord_min_px, tex_coord_max_px});
              !ok_or_error.has_value())
     {
+      SDE_LOG_DEBUG("GlyphTextureInvalid");
       return make_unexpected(FontError::kGlyphTextureInvalid);
     }
 
@@ -174,6 +179,7 @@ Font::glyphs(TextureCache& texture_cache, const GlyphOptions& options, View<cons
     return createImpl(
       *glyph_atlas_texture_or_error, *texture_cache.get(*glyph_atlas_texture_or_error), options, glyphs);
   }
+  SDE_LOG_DEBUG("GlyphTextureInvalid");
   return make_unexpected(FontError::kGlyphTextureInvalid);
 }
 
@@ -185,6 +191,7 @@ expected<GlyphSet, FontError> Font::glyphs(
 {
   if (texture_info.layout == TextureLayout::kR)
   {
+    SDE_LOG_DEBUG("GlyphTextureInvalid");
     return make_unexpected(FontError::kGlyphTextureInvalid);
   }
   return createImpl(texture, texture_info, options, or_default(glyphs));

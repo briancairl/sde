@@ -350,7 +350,7 @@ int main(int argc, char** argv)
       render_pass_or_error->submit(sde::make_const_view(layer_lighting_circles));
     }
 
-    SDE_LOG_DEBUG_FMT("%f : %f", attributes.time, attributes.time_delta);
+    // SDE_LOG_DEBUG_FMT("%f : %f", attributes.time, attributes.time_delta);
 
     layer_lighting_circles.clear();
 
