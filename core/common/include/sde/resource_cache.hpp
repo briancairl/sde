@@ -31,7 +31,7 @@ public:
 
   using CacheMap = std::unordered_map<handle_type, value_type, ResourceHandleHash>;
 
-  template <typename... CreateArgTs> expected<handle_type, error_type> create(CreateArgTs&&... args)
+  template <typename... CreateArgTs> [[nodiscard]] expected<handle_type, error_type> create(CreateArgTs&&... args)
   {
     auto h = handle_lower_bound_;
     ++h;
@@ -42,7 +42,8 @@ public:
     return h;
   }
 
-  template <typename... CreateArgTs> expected<void, error_type> add(const handle_type& handle, CreateArgTs&&... args)
+  template <typename... CreateArgTs>
+  [[nodiscard]] expected<void, error_type> add(const handle_type& handle, CreateArgTs&&... args)
   {
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
     if (value_or_error.has_value())
@@ -54,7 +55,7 @@ public:
     return make_unexpected(value_or_error.error());
   }
 
-  const value_type* get_if(const handle_type& handle) const
+  [[nodiscard]] const value_type* get_if(const handle_type& handle) const
   {
     if (auto itr = handle_to_value_cache_.find(handle); itr != std::end(handle_to_value_cache_))
     {
@@ -63,15 +64,15 @@ public:
     return nullptr;
   }
 
-  const bool exists(handle_type handle) const { return handle_to_value_cache_.count(handle) != 0; }
+  [[nodiscard]] const bool exists(handle_type handle) const { return handle_to_value_cache_.count(handle) != 0; }
 
   void remove(handle_type handle) { handle_to_value_cache_.erase(handle); }
 
-  const auto& cache() const { return handle_to_value_cache_; }
+  [[nodiscard]] const auto& cache() const { return handle_to_value_cache_; }
 
-  const auto begin() const { return std::begin(handle_to_value_cache_); }
+  [[nodiscard]] const auto begin() const { return std::begin(handle_to_value_cache_); }
 
-  const auto end() const { return std::end(handle_to_value_cache_); }
+  [[nodiscard]] const auto end() const { return std::end(handle_to_value_cache_); }
 
 private:
   /// Last used resource handle
