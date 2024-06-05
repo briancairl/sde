@@ -251,7 +251,7 @@ void addShaderVersionInfo(std::ostream& os)
   GLint major, minor;
   glGetIntegerv(GL_MAJOR_VERSION, &major);
   glGetIntegerv(GL_MINOR_VERSION, &minor);
-  os << "#version " << major << minor << 0 << "\n\n";
+  os << "#version " << major << minor << 0;
 }
 
 template <GLenum ShaderType> native_shader_id_t createShaderFromSource(std::string_view source)
@@ -297,21 +297,6 @@ template <GLenum ShaderType> native_shader_id_t createShaderFromSource(std::stri
   glDeleteShader(shader_id);
 
   return 0;
-}
-
-native_shader_id_t createVertShaderFromSource(std::string_view source)
-{
-  return createShaderFromSource<GL_VERTEX_SHADER>(source);
-}
-
-native_shader_id_t createFragShaderFromSource(std::string_view source)
-{
-  return createShaderFromSource<GL_FRAGMENT_SHADER>(source);
-}
-
-native_shader_id_t createGeomShaderFromSource(std::string_view source)
-{
-  return createShaderFromSource<GL_GEOMETRY_SHADER>(source);
 }
 
 native_shader_id_t createShaderProgram(native_shader_id_t vert, native_shader_id_t frag, native_shader_id_t geom)
@@ -480,29 +465,37 @@ bool hasUniform(const ShaderInfo& info, std::string_view key, ShaderVariableType
     std::end(info.variables.uniforms);
 }
 
-ShaderCache::~ShaderCache() {}
+void ShaderNativeDeleter::operator()(native_shader_id_t id) const
+{
+  if (id != 0)
+  {
+    SDE_LOG_DEBUG_FMT("glDeleteTextures(1, &%u)", id);
+    glDeleteTextures(1, &id);
+  }
+}
 
-expected<ShaderHandle, ShaderError> ShaderCache::create(std::string_view source)
+expected<ShaderInfo, ShaderError> ShaderCache::generate(std::string_view source)
 {
   const auto source_parts = toShaderSourceParts(source);
 
-  ShaderInfo info{
-    .components = {
-      .has_vert = !source_parts.vert.empty(),
-      .has_frag = !source_parts.frag.empty(),
-      .has_geom = !source_parts.geom.empty(),
-    }};
+  ShaderComponents components{
+    .has_vert = !source_parts.vert.empty(),
+    .has_frag = !source_parts.frag.empty(),
+    .has_geom = !source_parts.geom.empty(),
+  };
 
-  SDE_ASSERT(info.components.has_vert, "shader source missing vertex part");
-  SDE_ASSERT(info.components.has_frag, "shader source missing fragment part");
+  SDE_ASSERT(components.has_vert, "shader source missing vertex part");
+  SDE_ASSERT(components.has_frag, "shader source missing fragment part");
+
+  ShaderVariables variables;
 
   native_shader_id_t vert_shader_id = 0;
-  if (info.components.has_vert)
+  if (components.has_vert)
   {
     std::size_t next_start_pos = 0;
-    next_start_pos = parseLayoutVariables(info.variables.layout, source_parts.vert, next_start_pos);
-    next_start_pos = parseUniformVariables(info.variables.uniforms, source_parts.vert, next_start_pos);
-    vert_shader_id = createVertShaderFromSource(source_parts.vert);
+    next_start_pos = parseLayoutVariables(variables.layout, source_parts.vert, next_start_pos);
+    next_start_pos = parseUniformVariables(variables.uniforms, source_parts.vert, next_start_pos);
+    vert_shader_id = createShaderFromSource<GL_VERTEX_SHADER>(source_parts.vert);
     if (vert_shader_id == 0)
     {
       SDE_LOG_DEBUG("VertShaderCompilationFailure");
@@ -511,10 +504,10 @@ expected<ShaderHandle, ShaderError> ShaderCache::create(std::string_view source)
   }
 
   native_shader_id_t frag_shader_id = 0;
-  if (info.components.has_frag)
+  if (components.has_frag)
   {
-    parseUniformVariables(info.variables.uniforms, source_parts.frag);
-    frag_shader_id = createFragShaderFromSource(source_parts.frag);
+    parseUniformVariables(variables.uniforms, source_parts.frag);
+    frag_shader_id = createShaderFromSource<GL_FRAGMENT_SHADER>(source_parts.frag);
     if (frag_shader_id == 0)
     {
       SDE_LOG_DEBUG("FragShaderCompilationFailure");
@@ -523,10 +516,10 @@ expected<ShaderHandle, ShaderError> ShaderCache::create(std::string_view source)
   }
 
   native_shader_id_t geom_shader_id = 0;
-  if (info.components.has_geom)
+  if (components.has_geom)
   {
-    parseUniformVariables(info.variables.uniforms, source_parts.geom);
-    geom_shader_id = createGeomShaderFromSource(source_parts.geom);
+    parseUniformVariables(variables.uniforms, source_parts.geom);
+    geom_shader_id = createShaderFromSource<GL_GEOMETRY_SHADER>(source_parts.geom);
     if (geom_shader_id == 0)
     {
       SDE_LOG_DEBUG("GeomShaderCompilationFailure");
@@ -534,25 +527,10 @@ expected<ShaderHandle, ShaderError> ShaderCache::create(std::string_view source)
     }
   }
 
-  info.native_id = createShaderProgram(vert_shader_id, frag_shader_id, geom_shader_id);
-
-  const auto handle = getNextShaderHandle();
-
-  shaders_.emplace(handle, std::move(info));
-
-  last_shader_handle_ = handle;
-
-  return handle;
-}
-
-
-const ShaderInfo* ShaderCache::get(ShaderHandle shader) const
-{
-  if (auto itr = shaders_.find(shader); itr != std::end(shaders_))
-  {
-    return std::addressof(itr->second);
-  }
-  return nullptr;
+  return ShaderInfo{
+    .components = components,
+    .variables = std::move(variables),
+    .native_id = ShaderNativeID{createShaderProgram(vert_shader_id, frag_shader_id, geom_shader_id)}};
 }
 
 }  // namespace sde::graphics

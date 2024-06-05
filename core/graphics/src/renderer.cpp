@@ -696,7 +696,7 @@ Mat3f Renderer2D::refresh(RenderTarget& target, const RenderAttributes& attribut
 {
   SDE_ASSERT_TRUE(resources.isValid());
 
-  const auto* shader = shader_cache_->get(resources.shader);
+  const auto* shader = shader_cache_->get_if(resources.shader);
 
   SDE_ASSERT_NE(shader, nullptr);
 

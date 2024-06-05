@@ -18,6 +18,8 @@
 #include "sde/expected.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/typedef.hpp"
+#include "sde/resource_cache.hpp"
+#include "sde/resource_wrapper.hpp"
 
 namespace sde::graphics
 {
@@ -75,6 +77,11 @@ struct ShaderComponents
   std::uint8_t __pad__ : 5;
 };
 
+[[nodiscard]] constexpr bool isValid(ShaderComponents components)
+{
+  return components.has_vert and components.has_frag;
+}
+
 std::ostream& operator<<(std::ostream& os, ShaderComponents components);
 
 struct ShaderVariables
@@ -85,6 +92,14 @@ struct ShaderVariables
 
 std::ostream& operator<<(std::ostream& os, const ShaderVariables& variables);
 
+
+struct ShaderNativeDeleter
+{
+  void operator()(native_shader_id_t id) const;
+};
+
+using ShaderNativeID = UniqueResource<native_shader_id_t, ShaderNativeDeleter>;
+
 /**
  * @brief Information about an active shader
  */
@@ -92,7 +107,9 @@ struct ShaderInfo
 {
   ShaderComponents components;
   ShaderVariables variables;
-  native_shader_id_t native_id;
+  ShaderNativeID native_id;
+
+  [[nodiscard]] constexpr bool isValid() const { return ::sde::graphics::isValid(components); }
 };
 
 std::ostream& operator<<(std::ostream& os, const ShaderInfo& error);
@@ -101,29 +118,35 @@ std::ostream& operator<<(std::ostream& os, const ShaderInfo& error);
 
 [[nodiscard]] bool hasUniform(const ShaderInfo& info, std::string_view key, ShaderVariableType type);
 
-class ShaderCache
+class ShaderCache;
+
+}  // namespace sde::graphics
+
+namespace sde
 {
+
+template <> struct ResourceCacheTypes<graphics::ShaderCache>
+{
+  using error_type = graphics::ShaderError;
+  using handle_type = graphics::ShaderHandle;
+  using value_type = graphics::ShaderInfo;
+};
+
+}  // namespace sde
+
+namespace sde::graphics
+{
+
+class ShaderCache : public ResourceCache<ShaderCache>
+{
+  friend class ResourceCache<ShaderCache>;
+
 public:
   ShaderCache() = default;
-
-  ~ShaderCache();
-
-  bool remove(const ShaderHandle& index);
-
-  [[nodiscard]] expected<ShaderHandle, ShaderError> create(std::string_view source);
-
-  [[nodiscard]] expected<ShaderHandle, ShaderError> load(const asset::path& shader_path);
-
-  const ShaderInfo* get(ShaderHandle shader) const;
+  ~ShaderCache() = default;
 
 private:
-  using ShaderCacheMap = std::unordered_map<ShaderHandle, ShaderInfo, ResourceHandleHash>;
-
-  ShaderHandle last_shader_handle_ = ShaderHandle::null();
-
-  ShaderCacheMap shaders_;
-
-  ShaderHandle getNextShaderHandle() { return ShaderHandle{last_shader_handle_.id() + 1UL}; }
+  expected<ShaderInfo, ShaderError> generate(std::string_view source);
 };
 
 }  // namespace sde::graphics

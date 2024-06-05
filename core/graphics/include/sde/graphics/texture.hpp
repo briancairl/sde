@@ -149,7 +149,6 @@ class TextureCache : public ResourceCache<TextureCache>
 
 public:
   TextureCache() = default;
-
   ~TextureCache() = default;
 
 private:
