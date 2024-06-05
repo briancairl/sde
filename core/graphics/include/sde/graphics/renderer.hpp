@@ -114,6 +114,8 @@ public:
 
   Mat3f refresh(RenderTarget& target, const RenderAttributes& attributes, const RenderResources& resources);
 
+  const RenderResources& resources() { return active_resources_; }
+
 private:
   Renderer2D() = default;
   Renderer2D(const Renderer2D&) = delete;
@@ -135,7 +137,7 @@ enum class RenderPassError
 /**
  * @brief Encapsulates a single render pass
  */
-struct RenderPass
+class RenderPass
 {
 public:
   ~RenderPass();
@@ -147,6 +149,8 @@ public:
   expected<void, RenderPassError> submit(View<const TexturedQuad> quads);
   expected<void, RenderPassError> submit(View<const TileMap> tile_maps, const TileSet& tile_set);
   expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs);
+
+  const RenderResources& resources() { return *resources_; }
 
   static expected<RenderPass, RenderPassError> create(
     RenderTarget& target,
@@ -162,6 +166,7 @@ private:
   RenderPass(const RenderPass&) = delete;
 
   Renderer2D* renderer_;
+  const RenderResources* resources_;
   Mat3f world_from_viewport_;
   Bounds2f viewport_in_world_bounds_;
 };

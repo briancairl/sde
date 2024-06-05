@@ -10,6 +10,7 @@
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
+#include "sde/graphics/sprite.hpp"
 #include "sde/graphics/text.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_map.hpp"
@@ -270,6 +271,8 @@ int main(int argc, char** argv)
 
   RenderAttributes attributes;
 
+  Sprite sprite{*texture_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.8, 0.5}}};
+
   app.spin([&](const auto& window)
   {
     const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window.time).count();
@@ -329,6 +332,7 @@ int main(int argc, char** argv)
     window_target_or_error->refresh(Black());
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, default_resources); render_pass_or_error.has_value())
     {
+      sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.8, 0.8}});
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error);

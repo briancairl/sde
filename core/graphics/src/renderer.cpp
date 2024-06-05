@@ -763,6 +763,7 @@ expected<void, RenderPassError> RenderPass::submit(const Text& text, const Glyph
 
 RenderPass::RenderPass(RenderPass&& other) :
     renderer_{other.renderer_},
+    resources_{other.resources_},
     world_from_viewport_{other.world_from_viewport_},
     viewport_in_world_bounds_{other.viewport_in_world_bounds_}
 {
@@ -792,6 +793,7 @@ expected<RenderPass, RenderPassError> RenderPass::create(
 
   RenderPass render_pass;
   render_pass.renderer_ = std::addressof(renderer);
+  render_pass.resources_ = std::addressof(resources);
   render_pass.world_from_viewport_ = renderer.refresh(target, attributes, resources);
   render_pass.viewport_in_world_bounds_ =
     transform(render_pass.world_from_viewport_, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});

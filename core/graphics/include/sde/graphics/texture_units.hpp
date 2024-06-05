@@ -1,11 +1,12 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file texture.hpp
+ * @file texture_units.hpp
  */
 #pragma once
 
 // C++ Standard Library
+#include <algorithm>
 #include <array>
 #include <iosfwd>
 
@@ -33,6 +34,11 @@ struct TextureUnits
 
   decltype(auto) begin() const { return slots.begin(); }
   decltype(auto) end() const { return slots.end(); }
+
+  [[nodiscard]] auto find(TextureHandle handle) const
+  {
+    return std::find(TextureUnits::begin(), TextureUnits::end(), handle);
+  }
 };
 
 std::ostream& operator<<(std::ostream& os, const TextureUnits& tu);
