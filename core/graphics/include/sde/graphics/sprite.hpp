@@ -7,10 +7,8 @@
 
 // SDE
 #include "sde/geometry_types.hpp"
-#include "sde/graphics/assets_fwd.hpp"
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
-#include "sde/graphics/tile_set.hpp"
 #include "sde/graphics/tile_set_handle.hpp"
 
 namespace sde::graphics
@@ -19,7 +17,7 @@ namespace sde::graphics
 class Sprite
 {
 public:
-  Sprite(const TextureHandle& tile_atlas, const Bounds2f& tile_bounds);
+  Sprite(TextureHandle tile_atlas, const Bounds2f& tile_bounds);
 
   void draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones()) const;
 
@@ -44,7 +42,7 @@ public:
   using Mode = AnimatedSpriteMode;
 
   AnimatedSprite(
-    const TileSetHandle& frames_handle,
+    TileSetHandle frames_handle,
     float frames_per_second,
     AnimatedSpriteMode looped = AnimatedSpriteMode::kLooped);
 

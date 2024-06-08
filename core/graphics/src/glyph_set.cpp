@@ -22,7 +22,6 @@ namespace
 {
 
 using GlyphLookup = std::array<Glyph, GlyphSetInfo::kGlyphCount>;
-using GlyphBitmaps = std::array<View<const std::uint8_t>, GlyphSetInfo::kGlyphCount>;
 
 constexpr int kFreeTypeSuccess = 0;
 
@@ -43,8 +42,7 @@ const auto kDefaultGlyphs{[] {
   return glyphs;
 }()};
 
-expected<void, GlyphSetError>
-loadGlyphsFromFont(GlyphLookup& glyph_lut, GlyphBitmaps& glyph_bitmaps, const FontInfo& font, int glyph_height)
+expected<void, GlyphSetError> loadGlyphsFromFont(GlyphLookup& glyph_lut, const FontInfo& font, int glyph_height)
 {
   if (glyph_height == 0)
   {
@@ -69,12 +67,6 @@ loadGlyphsFromFont(GlyphLookup& glyph_lut, GlyphBitmaps& glyph_bitmaps, const Fo
     }
     else
     {
-      const auto* buffer_ptr = reinterpret_cast<std::uint8_t*>(face->glyph->bitmap.buffer);
-      const auto buffer_length =
-        static_cast<std::size_t>(face->glyph->bitmap.width) * static_cast<std::size_t>(face->glyph->bitmap.rows);
-
-      glyph_bitmaps[char_index] = make_const_view(buffer_ptr, buffer_length);
-
       glyph_lut[char_index] = Glyph{
         .character = kDefaultGlyphs[char_index],
         .size_px = Vec2i{static_cast<float>(face->glyph->bitmap.width), static_cast<float>(face->glyph->bitmap.rows)},
@@ -88,7 +80,7 @@ loadGlyphsFromFont(GlyphLookup& glyph_lut, GlyphBitmaps& glyph_bitmaps, const Fo
 }
 
 expected<TextureHandle, GlyphSetError>
-sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const GlyphBitmaps& glyph_bitmaps)
+sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const FontInfo& font)
 {
   // Compute required texture dimensions
   Vec2i texture_dimensions{0, 0};
@@ -126,25 +118,34 @@ sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const G
     return make_unexpected(GlyphSetError::kGlyphAtlasTextureCreationFailed);
   }
 
+  const auto face = reinterpret_cast<FT_Face>(font.native_id.value());
+
   int prex_px_y = 0;
-  for (std::size_t glyph_index = 0; glyph_index < glyph_lut.size(); ++glyph_index)
+  for (auto& g : glyph_lut)
   {
-    auto& g = glyph_lut[glyph_index];
     if (g.size_px.prod() == 0)
     {
       continue;
     }
 
+    if (FT_Load_Char(face, g.character, FT_LOAD_RENDER) != kFreeTypeSuccess)
+    {
+      SDE_LOG_DEBUG("GlyphMissing");
+      return make_unexpected(GlyphSetError::kGlyphDataMissing);
+    }
+
+    const auto* buffer_ptr = reinterpret_cast<std::uint8_t*>(face->glyph->bitmap.buffer);
+    const auto buffer_length =
+      static_cast<std::size_t>(face->glyph->bitmap.width) * static_cast<std::size_t>(face->glyph->bitmap.rows);
+
     const Vec2i tex_coord_min_px{0, prex_px_y};
     const Vec2i tex_coord_max_px{tex_coord_min_px + g.size_px};
 
-    if (glyph_bitmaps[glyph_index].empty())
-    {
-      // [[fallthrough]]
-    }
-    else if (const auto ok_or_error = replace(
-               *atlas_texture_or_error, glyph_bitmaps[glyph_index], Bounds2i{tex_coord_min_px, tex_coord_max_px});
-             !ok_or_error.has_value())
+    if (const auto ok_or_error = replace(
+          *atlas_texture_or_error,
+          make_const_view(buffer_ptr, buffer_length),
+          Bounds2i{tex_coord_min_px, tex_coord_max_px});
+        !ok_or_error.has_value())
     {
       SDE_LOG_DEBUG("GlyphRenderingFailure");
       return make_unexpected(GlyphSetError::kGlyphRenderingFailure);
@@ -163,19 +164,36 @@ sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const G
 
 }  // namespace
 
+const Bounds2i GlyphSetInfo::getTextBounds(std::string_view text) const
+{
+  Bounds2i text_bounds;
+
+  Vec2i cursor{0, 0};
+  text_bounds.extend(cursor);
+
+  for (const char c : text)
+  {
+    const auto& g = getGlyph(c);
+    const Vec2i rect_min = cursor + Vec2i{g.bearing_px.x(), (g.bearing_px.y() - g.size_px.y())};
+    const Vec2i rect_max = rect_min + g.size_px;
+    text_bounds.extend(rect_min);
+    text_bounds.extend(rect_max);
+    cursor.x() += g.advance_px;
+  }
+  return text_bounds;
+}
 
 expected<GlyphSetInfo, GlyphSetError>
 GlyphSetCache::generate(TextureCache& texture_cache, const element_t<FontCache>& font, const GlyphSetOptions& options)
 {
   GlyphLookup glyph_lut;
-  GlyphBitmaps glyph_bitmaps;
-  if (auto ok_or_error = loadGlyphsFromFont(glyph_lut, glyph_bitmaps, font, static_cast<int>(options.height_px));
+  if (auto ok_or_error = loadGlyphsFromFont(glyph_lut, font, static_cast<int>(options.height_px));
       !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }
 
-  auto glyph_atlas_texture_or_error = sendGlyphsToTexture(texture_cache, glyph_lut, glyph_bitmaps);
+  auto glyph_atlas_texture_or_error = sendGlyphsToTexture(texture_cache, glyph_lut, font);
   if (!glyph_atlas_texture_or_error.has_value())
   {
     SDE_LOG_DEBUG("GlyphTextureInvalid");

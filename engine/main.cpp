@@ -13,7 +13,7 @@
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/shapes.hpp"
 #include "sde/graphics/sprite.hpp"
-//#include "sde/graphics/text.hpp"
+#include "sde/graphics/text.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/tile_set.hpp"
@@ -276,6 +276,8 @@ int main(int argc, char** argv)
   AnimatedSprite animated_sprite{tile_set_or_error->handle, 15.0F, AnimatedSprite::Mode::kLooped};
   AnimatedSprite animated_sprite_once{tile_set_or_error->handle, 5.0F, AnimatedSprite::Mode::kOneShot};
 
+  TypeSetter typesetter{glyphs_or_error->handle};
+
   app.spin([&](const auto& window)
   {
     const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window.time).count();
@@ -338,24 +340,19 @@ int main(int argc, char** argv)
     window_target_or_error->refresh(Black());
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, default_resources); render_pass_or_error.has_value())
     {
-      sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.8, 0.8}}, Red(0.4));
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
       //render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error->value);
+      sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.8, 0.8}}, Red(0.4));
       animated_sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0.8, 0.8}, sde::Vec2f{1.4, 1.4}}, Blue(0.9));
       animated_sprite_once.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{-0.8, -0.8}, sde::Vec2f{-0.4, -0.4}}, Green(0.9));
+
     }
 
-    // if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, text_resources); render_pass_or_error.has_value())
-    // {
-    //   render_pass_or_error->submit(Text{
-    //     .text="This is a test! damn, text rendering is annoying... :'[",
-    //     .position = {0.0F, 0.0F},
-    //     .color = White(0.8F),
-    //     .scale = 0.1F,
-    //     .texture_unit = 0
-    //   }, *glyphs_or_error);
-    // }
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, text_resources); render_pass_or_error.has_value())
+    {
+      typesetter.draw(*render_pass_or_error, "Poop is always funny :]", sde::Vec2f{0.0, 0.0}, 0.5F);
+    }
 
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, lighting_resources); render_pass_or_error.has_value())
     {

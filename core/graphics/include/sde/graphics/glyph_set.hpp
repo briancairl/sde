@@ -45,8 +45,10 @@ struct GlyphSetInfo
   TextureHandle glyph_atlas;
   std::array<Glyph, kGlyphCount> glyphs;
 
-  const Glyph& getGlyph(char c) { return glyphs[static_cast<std::size_t>(c)]; }
-  const Glyph& operator[](char c) { return getGlyph(c); }
+  const Glyph& getGlyph(char c) const { return glyphs[static_cast<std::size_t>(c)]; }
+  const Glyph& operator[](char c) const { return getGlyph(c); }
+
+  const Bounds2i getTextBounds(std::string_view text) const;
 };
 
 enum class GlyphSetError
