@@ -344,6 +344,8 @@ std::ostream& operator<<(std::ostream& os, TextureError error)
 {
   switch (error)
   {
+  case TextureError::kElementAlreadyExists:
+    return os << "ElementAlreadyExists";
   case TextureError::kInvalidHandle:
     return os << "InvalidHandle";
   case TextureError::kInvalidDimensions:

@@ -169,8 +169,10 @@ int main(int argc, char** argv)
 
   SDE_ASSERT_TRUE(texture_or_error.has_value());
 
+  TileSetCache tile_set_cache;
+
   auto tile_set_or_error =
-    TileSet::slice(*texture_or_error, texture_cache, {64, 64}, sde::toBounds(sde::Vec2i{8 * 64, 8 * 64}));
+    tile_set_cache.create(texture_or_error->handle, texture_cache, sde::Vec2i{64, 64}, sde::toBounds(sde::Vec2i{8 * 64, 8 * 64}));
 
   SDE_ASSERT_TRUE(tile_set_or_error.has_value());
 
@@ -186,10 +188,10 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(glyphs_or_error.has_value());
 
   RenderResources default_resources;
-  default_resources.shader = *shader1_or_error;
-  default_resources.textures[0] = (*texture_or_error);
-  default_resources.textures[1] = (*draw_texture_or_error);
-  default_resources.textures[4] = (*texture_or_error);
+  default_resources.shader = shader1_or_error->handle;
+  default_resources.textures[0] = texture_or_error->handle;
+  default_resources.textures[1] = draw_texture_or_error->handle;
+  default_resources.textures[4] = texture_or_error->handle;
 
   std::vector<Quad> layer_base_quads;
   std::vector<TileMap> layer_base_tile_maps;
@@ -255,13 +257,13 @@ int main(int argc, char** argv)
   );
 
   RenderResources text_resources;
-  text_resources.shader = *text_shader_or_error;
+  text_resources.shader = text_shader_or_error->handle;
   text_resources.textures[0] = glyphs_or_error->atlas();
 
   RenderResources lighting_resources;
-  lighting_resources.shader = *shader2_or_error;
+  lighting_resources.shader = shader2_or_error->handle;
 
-  auto texture_target_or_error = RenderTarget::create(*draw_texture_or_error, texture_cache);
+  auto texture_target_or_error = RenderTarget::create(draw_texture_or_error->handle, texture_cache);
   SDE_ASSERT_TRUE(texture_target_or_error.has_value());
 
   auto window_target_or_error = RenderTarget::create(app.handle());
@@ -271,7 +273,10 @@ int main(int argc, char** argv)
 
   RenderAttributes attributes;
 
-  Sprite sprite{*texture_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.8, 0.5}}};
+  Sprite sprite{texture_or_error->handle, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.8, 0.5}}};
+
+  AnimatedSprite animated_sprite{tile_set_or_error->handle, 15.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite animated_sprite_once{tile_set_or_error->handle, 5.0F, AnimatedSprite::Mode::kOneShot};
 
   app.spin([&](const auto& window)
   {
@@ -315,6 +320,9 @@ int main(int argc, char** argv)
     attributes.time = time;
     attributes.time_delta = time_delta;
 
+    animated_sprite.update(time);
+    animated_sprite_once.update(time);
+
 
     layer_lighting_circles.push_back({
       .center = sde::transform(attributes.getWorldFromViewportMatrix(*window_target_or_error), window.getMousePositionViewport(window_target_or_error->getLastSize())), 
@@ -332,10 +340,12 @@ int main(int argc, char** argv)
     window_target_or_error->refresh(Black());
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, default_resources); render_pass_or_error.has_value())
     {
-      sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.8, 0.8}});
+      sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.8, 0.8}}, Red(0.4));
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
-      render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error);
+      render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error->value);
+      animated_sprite.draw(*render_pass_or_error, tile_set_cache, sde::Bounds2f{sde::Vec2f{0.8, 0.8}, sde::Vec2f{1.4, 1.4}}, Blue(0.9));
+      animated_sprite_once.draw(*render_pass_or_error, tile_set_cache, sde::Bounds2f{sde::Vec2f{-0.8, -0.8}, sde::Vec2f{-0.4, -0.4}}, Green(0.9));
     }
 
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, text_resources); render_pass_or_error.has_value())

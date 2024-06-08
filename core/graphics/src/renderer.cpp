@@ -565,7 +565,7 @@ public:
     return {};
   }
 
-  expected<void, RenderPassError> submit(View<const TileMap>& tile_maps, const TileSet& tile_set)
+  expected<void, RenderPassError> submit(View<const TileMap>& tile_maps, const TileSetInfo& tile_set)
   {
     // Check that submission doesn't go over capacity
     if ((va_active_->size() + vertex_count_of(tile_maps)) > va_active_->capacity())
@@ -751,7 +751,7 @@ expected<void, RenderPassError> RenderPass::submit(View<const TexturedQuad> quad
   return backend__opengl->submit(quads);
 }
 
-expected<void, RenderPassError> RenderPass::submit(View<const TileMap> tile_maps, const TileSet& tile_set)
+expected<void, RenderPassError> RenderPass::submit(View<const TileMap> tile_maps, const TileSetInfo& tile_set)
 {
   return backend__opengl->submit(tile_maps, tile_set);
 }

@@ -29,30 +29,41 @@ public:
   using handle_type = typename type_info::handle_type;
   using value_type = typename type_info::value_type;
 
+  struct element_type
+  {
+    handle_type handle;
+    const value_type* value;
+  };
+
   using CacheMap = std::unordered_map<handle_type, value_type, ResourceHandleHash>;
 
-  template <typename... CreateArgTs> [[nodiscard]] expected<handle_type, error_type> create(CreateArgTs&&... args)
+  template <typename... CreateArgTs> [[nodiscard]] expected<element_type, error_type> create(CreateArgTs&&... args)
   {
     auto h = handle_lower_bound_;
     ++h;
-    if (auto ok_or_error = this->add(h, std::forward<CreateArgTs>(args)...); !ok_or_error.has_value())
-    {
-      return make_unexpected(ok_or_error.error());
-    }
-    return h;
+    return this->add(h, std::forward<CreateArgTs>(args)...);
   }
 
   template <typename... CreateArgTs>
-  [[nodiscard]] expected<void, error_type> add(const handle_type& handle, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_type, error_type> add(const handle_type& handle, CreateArgTs&&... args)
   {
+    // Create a new element
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
-    if (value_or_error.has_value())
+    if (!value_or_error.has_value())
+    {
+      return make_unexpected(value_or_error.error());
+    }
+
+    // Add it to the cache
+    const auto [itr, added] = handle_to_value_cache_.emplace(handle, std::move(value_or_error).value());
+    if (added)
     {
       handle_lower_bound_ = std::max(handle_lower_bound_, handle);
-      handle_to_value_cache_.emplace(handle, std::move(value_or_error).value());
-      return {};
+      return element_type{itr->first, std::addressof(itr->second)};
     }
-    return make_unexpected(value_or_error.error());
+
+    // Element was a duplicate
+    return make_unexpected(error_type::kElementAlreadyExists);
   }
 
   [[nodiscard]] const value_type* get_if(const handle_type& handle) const

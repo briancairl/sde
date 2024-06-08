@@ -16,6 +16,8 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 {
   switch (error)
   {
+  case TileSetError::kElementAlreadyExists:
+    return os << "ElementAlreadyExists";
   case TileSetError::kInvalidAtlasTexture:
     return os << "InvalidAtlasTexture";
   case TileSetError::kInvalidTileSize:
@@ -26,23 +28,20 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const TileSet& tile_set)
+
+std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info)
 {
-  os << "tiles:\n";
-  for (std::size_t tile = 0; tile < tile_set.size(); ++tile)
+  os << "tile_atlas: " << tile_set_info.atlas << '\n';
+  os << "tiles:\n{\n";
+  for (std::size_t tile = 0; tile < tile_set_info.atlas_bounds.size(); ++tile)
   {
-    os << "  [" << tile << "] : " << tile_set[tile].min().transpose() << ", " << tile_set[tile].max().transpose()
-       << '\n';
+    os << "  [" << tile << "] : " << tile_set_info.atlas_bounds[tile] << '\n';
   }
+  os << '}';
   return os;
 }
 
-TileSet::TileSet(TextureHandle atlas_texture, std::vector<Bounds2f> tile_bounds) :
-    atlas_texture_{atlas_texture}, tile_bounds_{std::move(tile_bounds)}
-{}
-
-
-expected<TileSet, TileSetError> TileSet::slice(
+expected<TileSetInfo, TileSetError> TileSetCache::generate(
   const TextureHandle& texture,
   const TextureCache& texture_cache,
   const Vec2i tile_size,
@@ -51,12 +50,12 @@ expected<TileSet, TileSetError> TileSet::slice(
   const auto* texture_info = texture_cache.get_if(texture);
   if (texture_info == nullptr)
   {
-    return unexpected<TileSetError>{TileSetError::kInvalidAtlasTexture};
+    return make_unexpected(TileSetError::kInvalidAtlasTexture);
   }
-  return TileSet::slice(texture, *texture_info, tile_size, tile_slice_bounds);
+  return TileSetCache::generate(texture, *texture_info, tile_size, tile_slice_bounds);
 }
 
-expected<TileSet, TileSetError> TileSet::slice(
+expected<TileSetInfo, TileSetError> TileSetCache::generate(
   const TextureHandle& texture,
   const TextureInfo& texture_info,
   const Vec2i tile_size,
@@ -64,7 +63,7 @@ expected<TileSet, TileSetError> TileSet::slice(
 {
   if (texture.isNull())
   {
-    return unexpected<TileSetError>{TileSetError::kInvalidAtlasTexture};
+    return make_unexpected(TileSetError::kInvalidAtlasTexture);
   }
 
   const Bounds2i texture_bounds{Vec2i::Zero(), texture_info.shape.value};
@@ -74,7 +73,7 @@ expected<TileSet, TileSetError> TileSet::slice(
 
   if (tile_count.prod() == 0)
   {
-    return unexpected<TileSetError>{TileSetError::kInvalidTileSize};
+    return make_unexpected(TileSetError::kInvalidTileSize);
   }
 
   const Vec2f axis_rates{1.0F / texture_info.shape.value.array().cast<float>()};
@@ -93,7 +92,7 @@ expected<TileSet, TileSetError> TileSet::slice(
     }
   }
 
-  return TileSet{texture, std::move(tile_bounds)};
+  return TileSetInfo{.atlas = texture, .atlas_bounds = std::move(tile_bounds)};
 }
 
 }  // namespace sde::graphics

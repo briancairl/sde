@@ -60,6 +60,7 @@ std::ostream& operator<<(std::ostream& os, const ShaderVariable& value);
  */
 enum class ShaderError
 {
+  kElementAlreadyExists,
   kLoadFailure,
   kLinkageFailure,
   kVertShaderCompilationFailure,

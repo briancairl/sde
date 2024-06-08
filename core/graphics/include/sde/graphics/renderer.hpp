@@ -21,6 +21,7 @@
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/texture_units.hpp"
+#include "sde/graphics/tile_set_fwd.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/view.hpp"
 
@@ -147,7 +148,7 @@ public:
   expected<void, RenderPassError> submit(View<const Quad> quads);
   expected<void, RenderPassError> submit(View<const Circle> circles);
   expected<void, RenderPassError> submit(View<const TexturedQuad> quads);
-  expected<void, RenderPassError> submit(View<const TileMap> tile_maps, const TileSet& tile_set);
+  expected<void, RenderPassError> submit(View<const TileMap> tile_maps, const TileSetInfo& tile_set);
   expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs);
 
   const RenderResources& resources() { return *resources_; }

@@ -68,6 +68,8 @@ cc_library(
     "include/sde/graphics/texture_handle.hpp",
     "include/sde/graphics/texture_units.hpp",
     "include/sde/graphics/tile_set.hpp",
+    "include/sde/graphics/tile_set_fwd.hpp",
+    "include/sde/graphics/tile_set_handle.hpp",
     "include/sde/graphics/tile_map.hpp",
     "include/sde/graphics/window_handle.hpp",
   ],

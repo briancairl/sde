@@ -407,6 +407,8 @@ std::ostream& operator<<(std::ostream& os, ShaderError error)
 {
   switch (error)
   {
+  case ShaderError::kElementAlreadyExists:
+    return os << "ElementAlreadyExists";
   case ShaderError::kLoadFailure:
     return os << "LoadFailure";
   case ShaderError::kLinkageFailure:

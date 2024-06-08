@@ -16,67 +16,74 @@
 #include "sde/geometry_types.hpp"
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
+#include "sde/graphics/tile_set_handle.hpp"
+#include "sde/resource_cache.hpp"
+#include "sde/view.hpp"
 
 namespace sde::graphics
 {
 
 enum TileSetError
 {
+  kElementAlreadyExists,
   kInvalidAtlasTexture,
   kInvalidTileSize,
   kInvalidSlicingBounds,
 };
 
-std::ostream& operator<<(std::ostream& os, TileSetError error);
+std::ostream& operator<<(std::ostream& os, TileSetError tile_set_error);
 
-class TileSet
+struct TileSetInfo
 {
+  TextureHandle atlas;
+  std::vector<Bounds2f> atlas_bounds;
+
+  View<const Bounds2f> getBounds() const { return make_const_view(atlas_bounds); }
+
+  const Bounds2f& operator[](const std::size_t index) const { return atlas_bounds[index]; };
+};
+
+std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info);
+
+class TileSetCache;
+
+}  // namespace sde::graphics
+
+namespace sde
+{
+
+template <> struct ResourceCacheTypes<graphics::TileSetCache>
+{
+  using error_type = graphics::TileSetError;
+  using handle_type = graphics::TileSetHandle;
+  using value_type = graphics::TileSetInfo;
+};
+
+}  // namespace sde
+
+namespace sde::graphics
+{
+
+class TileSetCache : public ResourceCache<TileSetCache>
+{
+  friend class ResourceCache<TileSetCache>;
+
 public:
-  /**
-   * @brief Creates a tile set by uniformly slicing a texture
-   */
-  static expected<TileSet, TileSetError> slice(
+  TileSetCache() = default;
+  ~TileSetCache() = default;
+
+private:
+  expected<TileSetInfo, TileSetError> generate(
     const TextureHandle& texture,
     const TextureInfo& texture_info,
     const Vec2i tile_size,
     const Bounds2i& tile_slice_bounds = Bounds2i{});
 
-  /**
-   * @brief Creates a tile set by uniformly slicing a texture
-   */
-  static expected<TileSet, TileSetError> slice(
+  expected<TileSetInfo, TileSetError> generate(
     const TextureHandle& texture,
     const TextureCache& texture_cache,
     const Vec2i tile_size,
     const Bounds2i& tile_slice_bounds = Bounds2i{});
-
-  /**
-   * @brief Returns handle to atlas texture for this tile set
-   */
-  const TextureHandle atlas() const { return atlas_texture_; }
-
-  /**
-   * @brief Returns texture-space bounds for a given tile
-   */
-  const Bounds2f& get(const std::size_t tile) const { return tile_bounds_[tile]; }
-
-  /**
-   * @brief Returns texture-space bounds for a given tile
-   */
-  const Bounds2f& operator[](const std::size_t tile) const { return tile_bounds_[tile]; }
-
-  /**
-   * @brief Returns the number of tiles
-   */
-  std::size_t size() const { return tile_bounds_.size(); }
-
-  TileSet(TextureHandle atlas_texture, std::vector<Bounds2f> tile_bounds);
-
-private:
-  TextureHandle atlas_texture_;
-  std::vector<Bounds2f> tile_bounds_;
 };
-
-std::ostream& operator<<(std::ostream& os, const TileSet& tile_set);
 
 }  // namespace sde::graphics

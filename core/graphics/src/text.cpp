@@ -176,8 +176,7 @@ Font::glyphs(TextureCache& texture_cache, const GlyphOptions& options, View<cons
 
   if (glyph_atlas_texture_or_error.has_value())
   {
-    return createImpl(
-      *glyph_atlas_texture_or_error, *texture_cache.get_if(*glyph_atlas_texture_or_error), options, glyphs);
+    return createImpl(glyph_atlas_texture_or_error->handle, *glyph_atlas_texture_or_error->value, options, glyphs);
   }
   SDE_LOG_DEBUG("GlyphTextureInvalid");
   return make_unexpected(FontError::kGlyphTextureInvalid);

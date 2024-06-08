@@ -19,6 +19,7 @@ cc_library(
 cc_library(
   name="geometry",
   hdrs=["include/sde/geometry_types.hpp", "include/sde/geometry_utils.hpp"],
+  srcs=["src/geometry_types.cpp"],
   strip_include_prefix="include",
   deps=["@eigen//:eigen"],
   visibility=["//visibility:public"]
