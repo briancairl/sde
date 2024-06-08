@@ -192,7 +192,6 @@ int main(int argc, char** argv)
   default_resources.textures[4] = texture_or_error->handle;
 
   std::vector<Quad> layer_base_quads;
-  std::vector<TileMap> layer_base_tile_maps;
   std::vector<TexturedQuad> layer_base_textured_quads;
 
   layer_base_quads.push_back({
@@ -212,47 +211,15 @@ int main(int argc, char** argv)
     .texture_unit = 0
   });
 
-  layer_base_tile_maps.push_back(
-    []
-    {
-      TileMap tile_map;
-      tile_map.position = {0.7F, -0.8F};
-      tile_map.tile_size = {0.25F, 0.25F};
-      tile_map.texture_unit = 0;
-      tile_map.color = White();
-      tile_map.tiles <<
-        0, 1, 2, 3, 4, 5, 6,24,
-        8, 9,10,11,12,13,14,15,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7;
-      return tile_map;
-    }()
-  );
+  auto tile_map = TileMap::create(*tile_set_or_error, {8, 8}, {0.0F, 0.0F}, {0.1F, 0.1F});
 
-  layer_base_tile_maps.push_back(
-    [position = getNextRightPosition(layer_base_tile_maps.back())]
+  for (int y = 0; y < 8; ++y)
+  {
+    for (int x = 0; x < 8; ++x)
     {
-      TileMap tile_map;
-      tile_map.position = position;
-      tile_map.tile_size = {0.25F, 0.25F};
-      tile_map.texture_unit = 4;
-      tile_map.color = Yellow(0.4F);
-      tile_map.tiles <<
-        0, 1, 2, 3, 4, 5, 6,24,
-        8, 9,10,11,12,13,14,15,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4,55, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7;
-      return tile_map;
-    }()
-  );
+      tile_map[{x, y}] = y * 8 + x;
+    }
+  }
 
   RenderResources text_resources;
   text_resources.shader = text_shader_or_error->handle;
@@ -342,7 +309,7 @@ int main(int argc, char** argv)
     {
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
-      //render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error->value);
+      tile_map.draw(*render_pass_or_error);
       sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.5, 0.5}}, Red(0.4));
       animated_sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0.8, 0.8}, sde::Vec2f{1.4, 1.4}}, Blue(0.9));
       animated_sprite_once.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{-0.8, -0.8}, sde::Vec2f{-0.4, -0.4}}, Green(0.9));
@@ -352,6 +319,7 @@ int main(int argc, char** argv)
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, text_resources); render_pass_or_error.has_value())
     {
       typesetter.draw(*render_pass_or_error, "Poop is always funny :]", sde::Vec2f{0.0, 0.0}, 0.5F);
+      typesetter.draw(*render_pass_or_error, "Poop is always funny :]", sde::Vec2f{0.5, 0.0}, 0.5F, Blue(0.3));
     }
 
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, lighting_resources); render_pass_or_error.has_value())

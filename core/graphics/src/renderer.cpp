@@ -155,11 +155,6 @@ template <> std::size_t vertex_count_of<TexturedQuad>(std::size_t shape_count)
 
 template <> std::size_t vertex_count_of<Circle>(std::size_t shape_count) { return shape_count * kVerticesPerCircle; }
 
-template <> std::size_t vertex_count_of<TileMap>(std::size_t shape_count)
-{
-  return vertex_count_of<Quad>(TileMap::kTileCount * shape_count);
-}
-
 template <typename ShapeT> constexpr std::size_t vertex_count_of(const View<const ShapeT>& shapes)
 {
   return vertex_count_of<ShapeT>(shapes.size());
@@ -448,13 +443,6 @@ template <> void VertexArray::add<Circle>(std::size_t shape_count)
   this->template add_element_layout<ElementLayout::kCircle>(shape_count);
 }
 
-template <> void VertexArray::add<TileMap>(std::size_t map_count)
-{
-  const auto quad_count = map_count * TileMap::kTileCount;
-  vertex_count_ += quad_count * kVerticesPerQuad;
-  this->template add_element_layout<ElementLayout::kQuad>(quad_count);
-}
-
 class OpenGLBackend : public RenderBackend
 {
 public:
@@ -566,79 +554,6 @@ public:
     return {};
   }
 
-  // expected<void, RenderPassError> submit(View<const TileMap>& tile_maps, const TileSetInfo& tile_set)
-  // {
-  //   // Check that submission doesn't go over capacity
-  //   if ((va_active_->size() + vertex_count_of(tile_maps)) > va_active_->capacity())
-  //   {
-  //     return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
-  //   }
-
-  //   // Add vertex attribute data
-  //   auto b = va_active_->getVertexAttributeBuffer();
-  //   for (const auto& tm : tile_maps)
-  //   {
-  //     // clang-format off
-  //     for (int j = 0; j < tm.tiles.cols(); ++j)
-  //     {
-  //       for (int i = 0; i < tm.tiles.rows(); ++i)
-  //       {
-  //         const auto& tex_rect = tile_set[tm.tiles(i, j)];
-
-  //         const Vec2f pos_rect_max = tm.position + Vec2f{tm.tile_size.x() * j, -tm.tile_size.y() * i};
-  //         const Vec2f pos_rect_min = pos_rect_max + Vec2f{tm.tile_size.x(), -tm.tile_size.y()};
-
-  //         // clang-format off
-  //         b.position = fillQuadPositions(b.position, pos_rect_min,   pos_rect_max);
-  //         b.texcoord = fillQuadPositions(b.texcoord, tex_rect.min(), tex_rect.max());
-  //         b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, static_cast<float>(tm.texture_unit));
-  //         b.tint = std::fill_n(b.tint, kVerticesPerQuad, tm.color);
-  //         // clang-format on
-  //       }
-  //     }
-  //     // clang-format on
-  //   }
-
-  //   // Add vertex + element information
-  //   va_active_->add(tile_maps);
-  //   return {};
-  // }
-
-  // expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs)
-  // {
-  //   // Check that submission doesn't go over capacity
-  //   if ((va_active_->size() + vertex_count_of<Quad>(text.text.size())) > va_active_->capacity())
-  //   {
-  //     return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
-  //   }
-
-  //   Vec2f text_pos = text.position;
-
-  //   // Add vertex attribute data
-  //   auto b = va_active_->getVertexAttributeBuffer();
-  //   for (const char c : text.text)
-  //   {
-  //     const auto& glyph = glyphs[c];
-
-  //     const Vec2f pos_rect_min =
-  //       text_pos + Vec2f{glyph.bearing_px.x() * text.scale, (glyph.bearing_px.y() - glyph.size_px.y()) * text.scale};
-  //     const Vec2f pos_rect_max = pos_rect_min + glyph.size_px * text.scale;
-
-  //     // clang-format off
-  //     b.position = fillQuadPositions(b.position, pos_rect_min, pos_rect_max);
-  //     b.texcoord = fillQuadPositions(b.texcoord, glyph.tex_rect.min(), glyph.tex_rect.max());
-  //     b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, static_cast<float>(text.texture_unit));
-  //     b.tint = std::fill_n(b.tint, kVerticesPerQuad, text.color);
-  //     // clang-format on
-
-  //     text_pos.x() += glyph.advance_px * text.scale;
-  //   }
-
-  //   // Add vertex + element information
-  //   va_active_->add<Quad>(text.text.size());
-  //   return {};
-  // }
-
 private:
   VertexArray* va_active_ = nullptr;
   std::array<std::optional<VertexArray>, Renderer2DOptions::kVetexArrayCount> va_;
@@ -746,16 +661,6 @@ expected<void, RenderPassError> RenderPass::submit(View<const TexturedQuad> quad
 {
   return backend__opengl->submit(quads);
 }
-
-// expected<void, RenderPassError> RenderPass::submit(View<const TileMap> tile_maps, const TileSetInfo& tile_set)
-// {
-//   return backend__opengl->submit(tile_maps, tile_set);
-// }
-
-// expected<void, RenderPassError> RenderPass::submit(const Text& text, const GlyphSet& glyphs)
-// {
-//   return backend__opengl->submit(text, glyphs);
-// }
 
 RenderPass::RenderPass(RenderPass&& other) :
     renderer_{other.renderer_},

@@ -10,34 +10,49 @@
 
 // SDE
 #include "sde/geometry_types.hpp"
-#include "sde/geometry_utils.hpp"
+#include "sde/graphics/renderer_fwd.hpp"
+#include "sde/graphics/tile_set_handle.hpp"
+#include "sde/view.hpp"
 
 namespace sde::graphics
 {
 
-struct TileMap
+class TileMap
 {
-  static constexpr std::size_t kDim = 8;
-  static constexpr std::size_t kTileCount = kDim * kDim;
+public:
+  ~TileMap();
 
-  Vec2f position = Vec2f::Zero();
-  Vec2f tile_size = Vec2f::Zero();
-  Vec4f color = Vec4f::Ones();
-  Mat<std::size_t, kDim> tiles;
-  std::size_t texture_unit;
+  TileMap(TileMap&&);
+  TileMap& operator=(TileMap&&);
 
-  Bounds2f bounds() const
+  void draw(RenderPass& rp, const Vec4f& tint = Vec4f::Ones()) const;
+
+  const Vec2i shape() const { return shape_; }
+
+  View<const std::size_t> data() const
   {
-    const Vec2f p_min = position;
-    const Vec2f p_max = (position + Vec2f{tile_size.x() * tiles.cols(), -tile_size.y() * tiles.rows()});
-    return toBounds(p_min, p_max);
+    return View<const std::size_t>{tile_indices_, static_cast<std::size_t>(shape_.prod())};
   }
-};
 
-inline Vec2f getNextRightPosition(const TileMap& tm)
-{
-  return tm.position + Vec2f{tm.tile_size.x() * TileMap::kDim, 0.0F};
-}
+  std::size_t operator[](const Vec2i indices) const { return tile_indices_[indices.y() * shape_.y() + indices.x()]; }
+
+  std::size_t& operator[](const Vec2i indices) { return tile_indices_[indices.y() * shape_.y() + indices.x()]; }
+
+  void swap(TileMap& other);
+
+  static TileMap create(const TileSetHandle& tile_set, const Vec2i& shape, const Vec2f& origin, const Vec2f& tile_size);
+
+private:
+  TileMap() = default;
+  TileMap(const TileMap&) = delete;
+  TileMap& operator=(const TileMap&) = delete;
+
+  Vec2i shape_;
+  Vec2f origin_;
+  Vec2f tile_size_;
+  TileSetHandle tile_set_handle_;
+  std::size_t* tile_indices_ = nullptr;
+};
 
 std::ostream& operator<<(std::ostream& os, const TileMap& tile_map);
 

@@ -10,13 +10,6 @@
 
 namespace sde::graphics
 {
-namespace
-{
-
-std::vector<TexturedQuad> textured_quad_buffer;
-
-}  // namespace
-
 TypeSetter::TypeSetter(const GlyphSetHandle& glyphs) : glyph_set_handle_{glyphs} {}
 
 void TypeSetter::draw(RenderPass& rp, std::string_view text, const Vec2f& pos, float height, const Vec4f& color) const
@@ -46,6 +39,8 @@ void TypeSetter::draw(RenderPass& rp, std::string_view text, const Vec2f& pos, f
 
   Vec2f text_pos = pos;
 
+  static std::vector<TexturedQuad> s__textured_quad_buffer;
+
   // Add vertex attribute data
   for (const char c : text)
   {
@@ -55,7 +50,7 @@ void TypeSetter::draw(RenderPass& rp, std::string_view text, const Vec2f& pos, f
       text_pos + Vec2f{glyph.bearing_px.x() * scaling, (glyph.bearing_px.y() - glyph.size_px.y()) * scaling};
     const Vec2f pos_rect_max = pos_rect_min + glyph.size_px.cast<float>() * scaling;
 
-    textured_quad_buffer.push_back(
+    s__textured_quad_buffer.push_back(
       {.rect = Bounds2f{pos_rect_min, pos_rect_max},
        .rect_texture = glyph.atlas_bounds,
        .color = color,
@@ -63,8 +58,8 @@ void TypeSetter::draw(RenderPass& rp, std::string_view text, const Vec2f& pos, f
     text_pos.x() += glyph.advance_px * scaling;
   }
 
-  rp.submit(make_const_view(textured_quad_buffer));
-  textured_quad_buffer.clear();
+  rp.submit(make_const_view(s__textured_quad_buffer));
+  s__textured_quad_buffer.clear();
 }
 
 }  // namespace sde::graphics
