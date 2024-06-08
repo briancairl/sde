@@ -27,8 +27,12 @@ sudo apt install           \
 - [x] Tile sets
 - [x] Tile map rendering feature
 - [x] Rendering to frame buffer target
-- [ ] Static VAO? (selectable VAO)
+- [x] Static VAO? (selectable VAO)
 - [x] Rendering text
 - [ ] Debug render layer (wire-frame boxes; times)
 - [ ] Stream-style logging
 
+## Systems
+
+- [ ] "Script" interface
+- [ ] Character script
