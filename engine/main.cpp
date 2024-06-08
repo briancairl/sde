@@ -343,7 +343,7 @@ int main(int argc, char** argv)
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
       //render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error->value);
-      sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.8, 0.8}}, Red(0.4));
+      sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.5, 0.5}}, Red(0.4));
       animated_sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0.8, 0.8}, sde::Vec2f{1.4, 1.4}}, Blue(0.9));
       animated_sprite_once.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{-0.8, -0.8}, sde::Vec2f{-0.4, -0.4}}, Green(0.9));
 

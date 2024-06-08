@@ -27,15 +27,22 @@ void TypeSetter::draw(RenderPass& rp, std::string_view text, const Vec2f& pos, f
     return;
   }
 
+  const auto text_bounds = glyphs->getTextBounds(text);
+  const float text_height_original = text_bounds.max().y() - text_bounds.min().y();
+  const float scaling = height / text_height_original;
+
+  const Bounds2f text_aabb{
+    pos + text_bounds.min().cast<float>() * scaling, pos + text_bounds.max().cast<float>() * scaling};
+  if (!rp.getViewportInWorldBounds().intersects(text_aabb))
+  {
+    return;
+  }
+
   const auto texture_unit_opt = rp.resources().textures(glyphs->glyph_atlas);
   if (!texture_unit_opt.has_value())
   {
     return;
   }
-
-  const auto text_bounds = glyphs->getTextBounds(text);
-  const float text_height_original = text_bounds.max().y() - text_bounds.min().y();
-  const float scaling = height / text_height_original;
 
   Vec2f text_pos = pos;
 
@@ -57,7 +64,6 @@ void TypeSetter::draw(RenderPass& rp, std::string_view text, const Vec2f& pos, f
   }
 
   rp.submit(make_const_view(textured_quad_buffer));
-
   textured_quad_buffer.clear();
 }
 

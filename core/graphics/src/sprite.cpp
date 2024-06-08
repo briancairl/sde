@@ -18,6 +18,11 @@ Sprite::Sprite(TextureHandle tile_atlas, const Bounds2f& tile_bounds) :
 
 void Sprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
 {
+  if (!rp.getViewportInWorldBounds().intersects(rect))
+  {
+    return;
+  }
+
   const auto& textures = rp.resources().textures;
   if (const auto texture_unit_opt = textures(tile_atlas_); texture_unit_opt.has_value())
   {
@@ -35,7 +40,12 @@ void AnimatedSprite::update(float t) { frame_ = static_cast<std::size_t>(t * fra
 
 void AnimatedSprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
 {
-  const auto* frames = rp.assets().tile_sets.get_if(frames_handle_);
+  if (!rp.getViewportInWorldBounds().intersects(rect))
+  {
+    return;
+  }
+
+  const auto* frames = rp.assets().tile_sets(frames_handle_);
   if (frames == nullptr)
   {
     return;
