@@ -36,6 +36,7 @@ cc_library(
   strip_include_prefix="include",
   deps=[
     ":graphics_impl__common",
+    "//core/common:core",
     "//core/common:expected",
     "//core/common:geometry",
     "//core/common:asset",

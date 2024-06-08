@@ -35,12 +35,12 @@ std::ostream& operator<<(std::ostream& os, TileSetError tile_set_error);
 
 struct TileSetInfo
 {
-  TextureHandle atlas;
-  std::vector<Bounds2f> atlas_bounds;
+  TextureHandle tile_atlas;
+  std::vector<Bounds2f> tile_bounds;
 
-  View<const Bounds2f> getBounds() const { return make_const_view(atlas_bounds); }
+  View<const Bounds2f> getBounds() const { return make_const_view(tile_bounds); }
 
-  const Bounds2f& operator[](const std::size_t index) const { return atlas_bounds[index]; };
+  const Bounds2f& operator[](const std::size_t index) const { return tile_bounds[index]; };
 };
 
 std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info);

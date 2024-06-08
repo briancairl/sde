@@ -31,11 +31,11 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 
 std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info)
 {
-  os << "tile_atlas: " << tile_set_info.atlas << '\n';
-  os << "tiles:\n{\n";
-  for (std::size_t tile = 0; tile < tile_set_info.atlas_bounds.size(); ++tile)
+  os << "tile_atlas: " << tile_set_info.tile_atlas << '\n';
+  os << "tile_bounds:\n{\n";
+  for (std::size_t tile = 0; tile < tile_set_info.tile_bounds.size(); ++tile)
   {
-    os << "  [" << tile << "] : " << tile_set_info.atlas_bounds[tile] << '\n';
+    os << "  [" << tile << "] : " << tile_set_info.tile_bounds[tile] << '\n';
   }
   os << '}';
   return os;
@@ -92,7 +92,7 @@ expected<TileSetInfo, TileSetError> TileSetCache::generate(
     }
   }
 
-  return TileSetInfo{.atlas = texture, .atlas_bounds = std::move(tile_bounds)};
+  return TileSetInfo{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
 }
 
 }  // namespace sde::graphics

@@ -709,7 +709,7 @@ Mat3f Renderer2D::refresh(RenderTarget& target, const RenderAttributes& attribut
   }
 
   // Set active texture units
-  for (std::size_t u = 0; u < resources.textures.slots.size(); ++u)
+  for (std::size_t u = 0; u < TextureUnits::kAvailable; ++u)
   {
     if (resources.textures[u] and resources.textures[u] != active_resources_.textures[u])
     {

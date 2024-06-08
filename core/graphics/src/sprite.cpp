@@ -9,21 +9,18 @@
 namespace sde::graphics
 {
 
-Sprite::Sprite(const TextureHandle& atlas_handle, const Bounds2f& texbounds) :
-    atlas_handle_{atlas_handle}, texbounds_{texbounds}
+Sprite::Sprite(const TextureHandle& tile_atlas, const Bounds2f& tile_bounds) :
+    tile_atlas_{tile_atlas}, tile_bounds_{tile_bounds}
 {}
 
 
 void Sprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
 {
   const auto& textures = rp.resources().textures;
-  if (const auto unit_itr = textures.find(atlas_handle_); unit_itr != textures.end())
+  if (const auto texture_unit_opt = textures(tile_atlas_); texture_unit_opt.has_value())
   {
     const TexturedQuad texture_quad{
-      .rect = rect,
-      .rect_texture = texbounds_,
-      .color = tint,
-      .texture_unit = static_cast<std::size_t>(std::distance(std::begin(textures), unit_itr))};
+      .rect = rect, .rect_texture = tile_bounds_, .color = tint, .texture_unit = (*texture_unit_opt)};
     rp.submit(make_const_view(&texture_quad, 1UL));
   }
 }
@@ -38,17 +35,17 @@ void AnimatedSprite::draw(RenderPass& rp, const TileSetCache& tileset_cache, con
   const
 {
   const auto* frames = tileset_cache.get_if(frames_handle_);
-  const auto frame_idx_saturated = (mode_ == Mode::kLooped) ? (frame_ % frames->atlas_bounds.size())
-                                                            : std::min(frame_, frames->atlas_bounds.size() - 1UL);
+  const auto frame_idx_saturated = (mode_ == Mode::kLooped) ? (frame_ % frames->tile_bounds.size())
+                                                            : std::min(frame_, frames->tile_bounds.size() - 1UL);
 
   const auto& textures = rp.resources().textures;
-  if (const auto unit_itr = textures.find(frames->atlas); unit_itr != textures.end())
+  if (const auto texture_unit_opt = textures(frames->tile_atlas); texture_unit_opt.has_value())
   {
     const TexturedQuad texture_quad{
       .rect = rect,
-      .rect_texture = frames->atlas_bounds[frame_idx_saturated],
+      .rect_texture = frames->tile_bounds[frame_idx_saturated],
       .color = tint,
-      .texture_unit = static_cast<std::size_t>(std::distance(std::begin(textures), unit_itr))};
+      .texture_unit = (*texture_unit_opt)};
     rp.submit(make_const_view(&texture_quad, 1UL));
   }
 }

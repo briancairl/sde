@@ -18,17 +18,17 @@ namespace sde::graphics
 class Sprite
 {
 public:
-  Sprite(const TextureHandle& atlas_handle, const Bounds2f& texbounds);
+  Sprite(const TextureHandle& tile_atlas, const Bounds2f& tile_bounds);
 
   void draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones()) const;
 
-  TextureHandle atlas() const { return atlas_handle_; }
+  TextureHandle atlas() const { return tile_atlas_; }
 
-  const Bounds2f& texbounds() const { return texbounds_; }
+  const Bounds2f& texbounds() const { return tile_bounds_; }
 
 private:
-  TextureHandle atlas_handle_;
-  Bounds2f texbounds_;
+  TextureHandle tile_atlas_;
+  Bounds2f tile_bounds_;
 };
 
 enum class AnimatedSpriteMode
@@ -51,6 +51,8 @@ public:
     const;
 
   void update(float t);
+
+  void setMode(Mode mode) { mode_ = mode; }
 
 private:
   TileSetHandle frames_handle_;
