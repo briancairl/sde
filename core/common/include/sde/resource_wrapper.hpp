@@ -53,6 +53,10 @@ public:
 
   [[nodiscard]] constexpr operator const T&() const { return value_; }
 
+  [[nodiscard]] constexpr bool isValid() const { return value_ != kNullValue; }
+
+  [[nodiscard]] constexpr bool isNull() const { return value_ == kNullValue; }
+
 private:
   UniqueResource(const UniqueResource&) = delete;
   UniqueResource& operator=(const UniqueResource&) = delete;
@@ -61,5 +65,49 @@ private:
   DeleterT deleter_;
   ExchangerT exchanger_;
 };
+
+template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
+constexpr bool operator==(
+  const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& lhs,
+  const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& rhs)
+{
+  return lhs.value() == rhs.value();
+}
+
+template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
+constexpr bool
+operator==([[maybe_unused]] std::nullptr_t _, const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& rhs)
+{
+  return rhs.isNull();
+}
+
+template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
+constexpr bool
+operator==(const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& lhs, [[maybe_unused]] std::nullptr_t _)
+{
+  return lhs.isNull();
+}
+
+template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
+constexpr bool operator!=(
+  const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& lhs,
+  const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& rhs)
+{
+  return lhs.value() != rhs.value();
+}
+
+template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
+constexpr bool
+operator!=([[maybe_unused]] std::nullptr_t _, const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& rhs)
+{
+  return rhs.isValid();
+}
+
+template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
+constexpr bool
+operator!=(const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& lhs, [[maybe_unused]] std::nullptr_t _)
+{
+  return lhs.isValid();
+}
 
 }  // namespace sde

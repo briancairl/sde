@@ -16,6 +16,7 @@
 // SDE
 #include "sde/geometry_types.hpp"
 #include "sde/graphics/image_fwd.hpp"
+#include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/resource_cache.hpp"
@@ -125,8 +126,6 @@ enum class TextureError
 
 std::ostream& operator<<(std::ostream& os, TextureError error);
 
-class TextureCache;
-
 }  // namespace sde::graphics
 
 namespace sde
@@ -147,10 +146,6 @@ namespace sde::graphics
 class TextureCache : public ResourceCache<TextureCache>
 {
   friend class ResourceCache<TextureCache>;
-
-public:
-  TextureCache() = default;
-  ~TextureCache() = default;
 
 private:
   expected<TextureInfo, TextureError> generate(const Image& image, const TextureOptions& options = {});

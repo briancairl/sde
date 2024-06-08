@@ -18,8 +18,6 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
   {
   case TileSetError::kElementAlreadyExists:
     return os << "ElementAlreadyExists";
-  case TileSetError::kInvalidAtlasTexture:
-    return os << "InvalidAtlasTexture";
   case TileSetError::kInvalidTileSize:
     return os << "InvalidTileSize";
   case TileSetError::kInvalidSlicingBounds:
@@ -41,32 +39,10 @@ std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info)
   return os;
 }
 
-expected<TileSetInfo, TileSetError> TileSetCache::generate(
-  const TextureHandle& texture,
-  const TextureCache& texture_cache,
-  const Vec2i tile_size,
-  const Bounds2i& tile_slice_bounds)
+expected<TileSetInfo, TileSetError>
+TileSetCache::generate(const element_t<TextureCache>& texture, const Vec2i tile_size, const Bounds2i& tile_slice_bounds)
 {
-  const auto* texture_info = texture_cache.get_if(texture);
-  if (texture_info == nullptr)
-  {
-    return make_unexpected(TileSetError::kInvalidAtlasTexture);
-  }
-  return TileSetCache::generate(texture, *texture_info, tile_size, tile_slice_bounds);
-}
-
-expected<TileSetInfo, TileSetError> TileSetCache::generate(
-  const TextureHandle& texture,
-  const TextureInfo& texture_info,
-  const Vec2i tile_size,
-  const Bounds2i& tile_slice_bounds)
-{
-  if (texture.isNull())
-  {
-    return make_unexpected(TileSetError::kInvalidAtlasTexture);
-  }
-
-  const Bounds2i texture_bounds{Vec2i::Zero(), texture_info.shape.value};
+  const Bounds2i texture_bounds{Vec2i::Zero(), texture.value->shape.value};
   const Bounds2i sliced_region = isEmpty(tile_slice_bounds) ? texture_bounds : (tile_slice_bounds & texture_bounds);
 
   const Vec2i tile_count = toExtents(sliced_region).array() / tile_size.array();
@@ -76,7 +52,7 @@ expected<TileSetInfo, TileSetError> TileSetCache::generate(
     return make_unexpected(TileSetError::kInvalidTileSize);
   }
 
-  const Vec2f axis_rates{1.0F / texture_info.shape.value.array().cast<float>()};
+  const Vec2f axis_rates{1.0F / texture.value->shape.value.array().cast<float>()};
 
   std::vector<Bounds2f> tile_bounds;
   tile_bounds.reserve(static_cast<std::size_t>(tile_count.prod()));

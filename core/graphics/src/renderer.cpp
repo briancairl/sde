@@ -16,10 +16,11 @@
 #include "sde/format.hpp"
 #include "sde/geometry_types.hpp"
 #include "sde/geometry_utils.hpp"
+#include "sde/graphics/assets.hpp"
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
-#include "sde/graphics/text.hpp"
+#include "sde/graphics/shapes.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/tile_set.hpp"
@@ -565,78 +566,78 @@ public:
     return {};
   }
 
-  expected<void, RenderPassError> submit(View<const TileMap>& tile_maps, const TileSetInfo& tile_set)
-  {
-    // Check that submission doesn't go over capacity
-    if ((va_active_->size() + vertex_count_of(tile_maps)) > va_active_->capacity())
-    {
-      return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
-    }
+  // expected<void, RenderPassError> submit(View<const TileMap>& tile_maps, const TileSetInfo& tile_set)
+  // {
+  //   // Check that submission doesn't go over capacity
+  //   if ((va_active_->size() + vertex_count_of(tile_maps)) > va_active_->capacity())
+  //   {
+  //     return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
+  //   }
 
-    // Add vertex attribute data
-    auto b = va_active_->getVertexAttributeBuffer();
-    for (const auto& tm : tile_maps)
-    {
-      // clang-format off
-      for (int j = 0; j < tm.tiles.cols(); ++j)
-      {
-        for (int i = 0; i < tm.tiles.rows(); ++i)
-        {
-          const auto& tex_rect = tile_set[tm.tiles(i, j)];
+  //   // Add vertex attribute data
+  //   auto b = va_active_->getVertexAttributeBuffer();
+  //   for (const auto& tm : tile_maps)
+  //   {
+  //     // clang-format off
+  //     for (int j = 0; j < tm.tiles.cols(); ++j)
+  //     {
+  //       for (int i = 0; i < tm.tiles.rows(); ++i)
+  //       {
+  //         const auto& tex_rect = tile_set[tm.tiles(i, j)];
 
-          const Vec2f pos_rect_max = tm.position + Vec2f{tm.tile_size.x() * j, -tm.tile_size.y() * i};
-          const Vec2f pos_rect_min = pos_rect_max + Vec2f{tm.tile_size.x(), -tm.tile_size.y()};
+  //         const Vec2f pos_rect_max = tm.position + Vec2f{tm.tile_size.x() * j, -tm.tile_size.y() * i};
+  //         const Vec2f pos_rect_min = pos_rect_max + Vec2f{tm.tile_size.x(), -tm.tile_size.y()};
 
-          // clang-format off
-          b.position = fillQuadPositions(b.position, pos_rect_min,   pos_rect_max);
-          b.texcoord = fillQuadPositions(b.texcoord, tex_rect.min(), tex_rect.max());
-          b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, static_cast<float>(tm.texture_unit));
-          b.tint = std::fill_n(b.tint, kVerticesPerQuad, tm.color);
-          // clang-format on
-        }
-      }
-      // clang-format on
-    }
+  //         // clang-format off
+  //         b.position = fillQuadPositions(b.position, pos_rect_min,   pos_rect_max);
+  //         b.texcoord = fillQuadPositions(b.texcoord, tex_rect.min(), tex_rect.max());
+  //         b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, static_cast<float>(tm.texture_unit));
+  //         b.tint = std::fill_n(b.tint, kVerticesPerQuad, tm.color);
+  //         // clang-format on
+  //       }
+  //     }
+  //     // clang-format on
+  //   }
 
-    // Add vertex + element information
-    va_active_->add(tile_maps);
-    return {};
-  }
+  //   // Add vertex + element information
+  //   va_active_->add(tile_maps);
+  //   return {};
+  // }
 
-  expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs)
-  {
-    // Check that submission doesn't go over capacity
-    if ((va_active_->size() + vertex_count_of<Quad>(text.text.size())) > va_active_->capacity())
-    {
-      return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
-    }
+  // expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs)
+  // {
+  //   // Check that submission doesn't go over capacity
+  //   if ((va_active_->size() + vertex_count_of<Quad>(text.text.size())) > va_active_->capacity())
+  //   {
+  //     return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
+  //   }
 
-    Vec2f text_pos = text.position;
+  //   Vec2f text_pos = text.position;
 
-    // Add vertex attribute data
-    auto b = va_active_->getVertexAttributeBuffer();
-    for (const char c : text.text)
-    {
-      const auto& glyph = glyphs[c];
+  //   // Add vertex attribute data
+  //   auto b = va_active_->getVertexAttributeBuffer();
+  //   for (const char c : text.text)
+  //   {
+  //     const auto& glyph = glyphs[c];
 
-      const Vec2f pos_rect_min =
-        text_pos + Vec2f{glyph.bearing_px.x() * text.scale, (glyph.bearing_px.y() - glyph.size_px.y()) * text.scale};
-      const Vec2f pos_rect_max = pos_rect_min + glyph.size_px * text.scale;
+  //     const Vec2f pos_rect_min =
+  //       text_pos + Vec2f{glyph.bearing_px.x() * text.scale, (glyph.bearing_px.y() - glyph.size_px.y()) * text.scale};
+  //     const Vec2f pos_rect_max = pos_rect_min + glyph.size_px * text.scale;
 
-      // clang-format off
-      b.position = fillQuadPositions(b.position, pos_rect_min, pos_rect_max);
-      b.texcoord = fillQuadPositions(b.texcoord, glyph.tex_rect.min(), glyph.tex_rect.max());
-      b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, static_cast<float>(text.texture_unit));
-      b.tint = std::fill_n(b.tint, kVerticesPerQuad, text.color);
-      // clang-format on
+  //     // clang-format off
+  //     b.position = fillQuadPositions(b.position, pos_rect_min, pos_rect_max);
+  //     b.texcoord = fillQuadPositions(b.texcoord, glyph.tex_rect.min(), glyph.tex_rect.max());
+  //     b.texunit = std::fill_n(b.texunit, kVerticesPerQuad, static_cast<float>(text.texture_unit));
+  //     b.tint = std::fill_n(b.tint, kVerticesPerQuad, text.color);
+  //     // clang-format on
 
-      text_pos.x() += glyph.advance_px * text.scale;
-    }
+  //     text_pos.x() += glyph.advance_px * text.scale;
+  //   }
 
-    // Add vertex + element information
-    va_active_->add<Quad>(text.text.size());
-    return {};
-  }
+  //   // Add vertex + element information
+  //   va_active_->add<Quad>(text.text.size());
+  //   return {};
+  // }
 
 private:
   VertexArray* va_active_ = nullptr;
@@ -653,23 +654,17 @@ Mat3f RenderAttributes::getWorldFromViewportMatrix(const RenderTarget& target) c
   return toInverseCameraMatrix(scaling, target.getLastAspectRatio()) * world_from_camera;
 }
 
-expected<Renderer2D, RendererError>
-Renderer2D::create(const ShaderCache* shader_cache, const TextureCache* texture_cache, const Renderer2DOptions& options)
+expected<Renderer2D, RendererError> Renderer2D::create(const Renderer2DOptions& options)
 {
   if (backend__opengl.has_value())
   {
     return make_unexpected(RendererError::kRendererPreviouslyInitialized);
   }
 
-  SDE_ASSERT_NE(shader_cache, nullptr);
-  SDE_ASSERT_NE(texture_cache, nullptr);
-
   // Initialize rendering backend
   backend__opengl.emplace(options);
 
   Renderer2D renderer;
-  renderer.shader_cache_ = shader_cache;
-  renderer.texture_cache_ = texture_cache;
   renderer.backend_ = std::addressof(*backend__opengl);
   return renderer;
 }
@@ -684,19 +679,20 @@ Renderer2D::~Renderer2D()
 }
 
 Renderer2D::Renderer2D(Renderer2D&& other) :
-    shader_cache_{other.shader_cache_},
-    texture_cache_{other.texture_cache_},
-    active_resources_{other.active_resources_},
-    backend_{other.backend_}
+    active_resources_{std::move(other.active_resources_)}, backend_{other.backend_}
 {
   other.backend_ = nullptr;
 }
 
-Mat3f Renderer2D::refresh(RenderTarget& target, const RenderAttributes& attributes, const RenderResources& resources)
+Mat3f Renderer2D::refresh(
+  RenderTarget& target,
+  const Assets& assets,
+  const RenderAttributes& attributes,
+  const RenderResources& resources)
 {
   SDE_ASSERT_TRUE(resources.isValid());
 
-  const auto* shader = shader_cache_->get_if(resources.shader);
+  const auto* shader = assets.shaders(resources.shader);
 
   SDE_ASSERT_NE(shader, nullptr);
 
@@ -713,7 +709,7 @@ Mat3f Renderer2D::refresh(RenderTarget& target, const RenderAttributes& attribut
   {
     if (resources.textures[u] and resources.textures[u] != active_resources_.textures[u])
     {
-      const auto* texture = texture_cache_->get_if(resources.textures[u]);
+      const auto* texture = assets.textures(resources.textures[u]);
       SDE_ASSERT_NE(texture, nullptr);
 
       glActiveTexture(GL_TEXTURE0 + u);
@@ -751,18 +747,19 @@ expected<void, RenderPassError> RenderPass::submit(View<const TexturedQuad> quad
   return backend__opengl->submit(quads);
 }
 
-expected<void, RenderPassError> RenderPass::submit(View<const TileMap> tile_maps, const TileSetInfo& tile_set)
-{
-  return backend__opengl->submit(tile_maps, tile_set);
-}
+// expected<void, RenderPassError> RenderPass::submit(View<const TileMap> tile_maps, const TileSetInfo& tile_set)
+// {
+//   return backend__opengl->submit(tile_maps, tile_set);
+// }
 
-expected<void, RenderPassError> RenderPass::submit(const Text& text, const GlyphSet& glyphs)
-{
-  return backend__opengl->submit(text, glyphs);
-}
+// expected<void, RenderPassError> RenderPass::submit(const Text& text, const GlyphSet& glyphs)
+// {
+//   return backend__opengl->submit(text, glyphs);
+// }
 
 RenderPass::RenderPass(RenderPass&& other) :
     renderer_{other.renderer_},
+    assets_{other.assets_},
     resources_{other.resources_},
     world_from_viewport_{other.world_from_viewport_},
     viewport_in_world_bounds_{other.viewport_in_world_bounds_}
@@ -783,6 +780,7 @@ RenderPass::~RenderPass()
 expected<RenderPass, RenderPassError> RenderPass::create(
   RenderTarget& target,
   Renderer2D& renderer,
+  const Assets& assets,
   const RenderAttributes& attributes,
   const RenderResources& resources)
 {
@@ -793,8 +791,9 @@ expected<RenderPass, RenderPassError> RenderPass::create(
 
   RenderPass render_pass;
   render_pass.renderer_ = std::addressof(renderer);
+  render_pass.assets_ = std::addressof(assets);
   render_pass.resources_ = std::addressof(resources);
-  render_pass.world_from_viewport_ = renderer.refresh(target, attributes, resources);
+  render_pass.world_from_viewport_ = renderer.refresh(target, assets, attributes, resources);
   render_pass.viewport_in_world_bounds_ =
     transform(render_pass.world_from_viewport_, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
 

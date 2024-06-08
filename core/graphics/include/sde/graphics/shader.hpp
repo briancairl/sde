@@ -16,6 +16,7 @@
 // SDE
 #include "sde/asset.hpp"
 #include "sde/expected.hpp"
+#include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/resource_cache.hpp"
@@ -119,8 +120,6 @@ std::ostream& operator<<(std::ostream& os, const ShaderInfo& error);
 
 [[nodiscard]] bool hasUniform(const ShaderInfo& info, std::string_view key, ShaderVariableType type);
 
-class ShaderCache;
-
 }  // namespace sde::graphics
 
 namespace sde
@@ -141,10 +140,6 @@ namespace sde::graphics
 class ShaderCache : public ResourceCache<ShaderCache>
 {
   friend class ResourceCache<ShaderCache>;
-
-public:
-  ShaderCache() = default;
-  ~ShaderCache() = default;
 
 private:
   expected<ShaderInfo, ShaderError> generate(std::string_view source);

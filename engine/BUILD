@@ -12,13 +12,13 @@ config_setting(
 )
 
 MODE_COPTS = select({
-    ":debug": BASE_COPTS + ["-fsanitize=address", "-fsanitize-address-use-after-scope", "-DADDRESS_SANITIZER", "-g", "-fno-omit-frame-pointer", "-O0"],
+    ":debug": BASE_COPTS, #+ ["-fsanitize=address", "-fsanitize-address-use-after-scope", "-DADDRESS_SANITIZER", "-g", "-fno-omit-frame-pointer", "-O0"],
     ":sanitize_only": BASE_COPTS + ["-fsanitize=address", "-DADDRESS_SANITIZER", "-g", "-fno-omit-frame-pointer", "-O1", "-DNDEBUG"],
     "//conditions:default": BASE_COPTS + ["-O3", "-DNDEBUG"],
 })
 
 MODE_LINKOPTS = select({
-    ":debug": BASE_LINKOPTS + ["-fsanitize=address"],
+    ":debug": BASE_LINKOPTS, #+ ["-fsanitize=address"],
     ":sanitize_only": BASE_LINKOPTS + ["-fsanitize=address"],
     "//conditions:default": BASE_LINKOPTS + [],
 })

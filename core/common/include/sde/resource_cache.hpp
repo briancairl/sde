@@ -33,6 +33,9 @@ public:
   {
     handle_type handle;
     const value_type* value;
+
+    operator handle_type() const { return handle; }
+    operator const value_type&() const { return (*value); }
   };
 
   using CacheMap = std::unordered_map<handle_type, value_type, ResourceHandleHash>;
@@ -75,6 +78,8 @@ public:
     return nullptr;
   }
 
+  [[nodiscard]] const value_type* operator()(const handle_type& handle) const { return get_if(handle); }
+
   [[nodiscard]] const bool exists(handle_type handle) const { return handle_to_value_cache_.count(handle) != 0; }
 
   void remove(handle_type handle) { handle_to_value_cache_.erase(handle); }
@@ -85,11 +90,26 @@ public:
 
   [[nodiscard]] const auto end() const { return std::end(handle_to_value_cache_); }
 
+
+  ResourceCache() = default;
+  ResourceCache(ResourceCache&&) = default;
+  ResourceCache& operator=(ResourceCache&&) = default;
+
 private:
+  ResourceCache(const ResourceCache&) = delete;
+  ResourceCache& operator=(const ResourceCache&) = delete;
+
   /// Last used resource handle
   handle_type handle_lower_bound_ = handle_type::null();
   /// Map of {resource_handle, resource_value} objects
   CacheMap handle_to_value_cache_;
 };
+
+template <typename DerivedT> struct ElementType
+{
+  using type = typename ResourceCache<DerivedT>::element_type;
+};
+
+template <typename DerivedT> using element_t = typename ElementType<DerivedT>::type;
 
 }  // namespace sde

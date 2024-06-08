@@ -4,14 +4,16 @@
 
 // SDE
 #include "sde/geometry_utils.hpp"
+#include "sde/graphics/assets.hpp"
 #include "sde/graphics/colors.hpp"
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/platform.hpp"
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
+#include "sde/graphics/shapes.hpp"
 #include "sde/graphics/sprite.hpp"
-#include "sde/graphics/text.hpp"
+//#include "sde/graphics/text.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/tile_set.hpp"
@@ -150,41 +152,37 @@ int main(int argc, char** argv)
 
   auto image_or_error = Image::load("/home/brian/Pictures/nokron_background.png", {.flags = {.flip_vertically = true}});
 
+  Assets assets;
+
+  auto renderer_or_error = Renderer2D::create();
+  SDE_ASSERT_TRUE(renderer_or_error.has_value());
+
   SDE_ASSERT_TRUE(image_or_error.has_value());
 
-  ShaderCache shader_cache;
-
-  auto shader1_or_error = shader_cache.create(kShader1);
+  auto shader1_or_error = assets.shaders.create(kShader1);
   SDE_ASSERT_TRUE(shader1_or_error.has_value());
 
-  auto shader2_or_error = shader_cache.create(kShader2);
+  auto shader2_or_error = assets.shaders.create(kShader2);
   SDE_ASSERT_TRUE(shader2_or_error.has_value());
 
-  auto text_shader_or_error = shader_cache.create(kTextShader);
+  auto text_shader_or_error = assets.shaders.create(kTextShader);
   SDE_ASSERT_TRUE(text_shader_or_error.has_value());
 
-  TextureCache texture_cache;
-
-  auto texture_or_error = texture_cache.create(*image_or_error);
+  auto texture_or_error = assets.textures.create(*image_or_error);
 
   SDE_ASSERT_TRUE(texture_or_error.has_value());
 
-  TileSetCache tile_set_cache;
-
   auto tile_set_or_error =
-    tile_set_cache.create(texture_or_error->handle, texture_cache, sde::Vec2i{64, 64}, sde::toBounds(sde::Vec2i{8 * 64, 8 * 64}));
+    assets.tile_sets.create(*texture_or_error, sde::Vec2i{64, 64}, sde::toBounds(sde::Vec2i{8 * 64, 8 * 64}));
 
   SDE_ASSERT_TRUE(tile_set_or_error.has_value());
 
-  auto draw_texture_or_error = texture_cache.create(sde::Type<std::uint8_t>, TextureShape{{500, 500}}, TextureLayout::kRGB);
+  auto draw_texture_or_error = assets.textures.create(sde::Type<std::uint8_t>, TextureShape{{500, 500}}, TextureLayout::kRGB);
 
-  auto renderer_or_error = Renderer2D::create(&shader_cache, &texture_cache);
-  SDE_ASSERT_TRUE(renderer_or_error.has_value());
-
-  auto font_or_error = Font::load("/home/brian/Downloads/coffee_fills/font.ttf");
+  auto font_or_error = assets.fonts.create("/home/brian/Downloads/coffee_fills/font.ttf");
   SDE_ASSERT_TRUE(font_or_error.has_value());
 
-  auto glyphs_or_error = font_or_error->glyphs(texture_cache, {.height_px = 100});
+  auto glyphs_or_error = assets.glyph_sets.create(assets.textures, *font_or_error, GlyphSetOptions{.height_px = 100});
   SDE_ASSERT_TRUE(glyphs_or_error.has_value());
 
   RenderResources default_resources;
@@ -258,12 +256,12 @@ int main(int argc, char** argv)
 
   RenderResources text_resources;
   text_resources.shader = text_shader_or_error->handle;
-  text_resources.textures[0] = glyphs_or_error->atlas();
+  text_resources.textures[0] = glyphs_or_error->value->glyph_atlas;
 
   RenderResources lighting_resources;
   lighting_resources.shader = shader2_or_error->handle;
 
-  auto texture_target_or_error = RenderTarget::create(draw_texture_or_error->handle, texture_cache);
+  auto texture_target_or_error = RenderTarget::create(draw_texture_or_error->handle, assets.textures);
   SDE_ASSERT_TRUE(texture_target_or_error.has_value());
 
   auto window_target_or_error = RenderTarget::create(app.handle());
@@ -331,35 +329,35 @@ int main(int argc, char** argv)
     });
 
     texture_target_or_error->refresh(Black());
-    if (auto render_pass_or_error = RenderPass::create(*texture_target_or_error, *renderer_or_error, attributes, lighting_resources); render_pass_or_error.has_value())
+    if (auto render_pass_or_error = RenderPass::create(*texture_target_or_error, *renderer_or_error, assets, attributes, lighting_resources); render_pass_or_error.has_value())
     {
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_lighting_circles));
     }
 
     window_target_or_error->refresh(Black());
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, default_resources); render_pass_or_error.has_value())
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, default_resources); render_pass_or_error.has_value())
     {
       sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0, 0}, sde::Vec2f{0.8, 0.8}}, Red(0.4));
       render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
       render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
-      render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error->value);
-      animated_sprite.draw(*render_pass_or_error, tile_set_cache, sde::Bounds2f{sde::Vec2f{0.8, 0.8}, sde::Vec2f{1.4, 1.4}}, Blue(0.9));
-      animated_sprite_once.draw(*render_pass_or_error, tile_set_cache, sde::Bounds2f{sde::Vec2f{-0.8, -0.8}, sde::Vec2f{-0.4, -0.4}}, Green(0.9));
+      //render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error->value);
+      animated_sprite.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{0.8, 0.8}, sde::Vec2f{1.4, 1.4}}, Blue(0.9));
+      animated_sprite_once.draw(*render_pass_or_error, sde::Bounds2f{sde::Vec2f{-0.8, -0.8}, sde::Vec2f{-0.4, -0.4}}, Green(0.9));
     }
 
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, text_resources); render_pass_or_error.has_value())
-    {
-      render_pass_or_error->submit(Text{
-        .text="This is a test! damn, text rendering is annoying... :'[",
-        .position = {0.0F, 0.0F},
-        .color = White(0.8F),
-        .scale = 0.1F,
-        .texture_unit = 0
-      }, *glyphs_or_error);
-    }
+    // if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, text_resources); render_pass_or_error.has_value())
+    // {
+    //   render_pass_or_error->submit(Text{
+    //     .text="This is a test! damn, text rendering is annoying... :'[",
+    //     .position = {0.0F, 0.0F},
+    //     .color = White(0.8F),
+    //     .scale = 0.1F,
+    //     .texture_unit = 0
+    //   }, *glyphs_or_error);
+    // }
 
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, lighting_resources); render_pass_or_error.has_value())
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, lighting_resources); render_pass_or_error.has_value())
     {
       render_pass_or_error->submit(sde::make_const_view(layer_lighting_circles));
     }

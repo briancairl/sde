@@ -14,8 +14,9 @@
 
 // SDE
 #include "sde/geometry_types.hpp"
-#include "sde/graphics/texture_fwd.hpp"
+#include "sde/graphics/texture.hpp"
 #include "sde/graphics/texture_handle.hpp"
+#include "sde/graphics/tile_set_fwd.hpp"
 #include "sde/graphics/tile_set_handle.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/view.hpp"
@@ -26,7 +27,6 @@ namespace sde::graphics
 enum TileSetError
 {
   kElementAlreadyExists,
-  kInvalidAtlasTexture,
   kInvalidTileSize,
   kInvalidSlicingBounds,
 };
@@ -44,8 +44,6 @@ struct TileSetInfo
 };
 
 std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info);
-
-class TileSetCache;
 
 }  // namespace sde::graphics
 
@@ -68,20 +66,9 @@ class TileSetCache : public ResourceCache<TileSetCache>
 {
   friend class ResourceCache<TileSetCache>;
 
-public:
-  TileSetCache() = default;
-  ~TileSetCache() = default;
-
 private:
   expected<TileSetInfo, TileSetError> generate(
-    const TextureHandle& texture,
-    const TextureInfo& texture_info,
-    const Vec2i tile_size,
-    const Bounds2i& tile_slice_bounds = Bounds2i{});
-
-  expected<TileSetInfo, TileSetError> generate(
-    const TextureHandle& texture,
-    const TextureCache& texture_cache,
+    const element_t<TextureCache>& texture,
     const Vec2i tile_size,
     const Bounds2i& tile_slice_bounds = Bounds2i{});
 };

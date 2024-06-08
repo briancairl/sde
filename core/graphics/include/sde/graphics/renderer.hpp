@@ -12,24 +12,18 @@
 #include <string_view>
 
 // SDE
+
 #include "sde/expected.hpp"
+#include "sde/graphics/assets_fwd.hpp"
 #include "sde/graphics/render_target.hpp"
-#include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
-#include "sde/graphics/shapes.hpp"
-#include "sde/graphics/text_fwd.hpp"
-#include "sde/graphics/texture_fwd.hpp"
-#include "sde/graphics/texture_handle.hpp"
+#include "sde/graphics/shapes_fwd.hpp"
 #include "sde/graphics/texture_units.hpp"
-#include "sde/graphics/tile_set_fwd.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
 {
-class TileSet;
-struct TileMap;
-
 /**
  * @brief Resources used during a render pass
  */
@@ -105,15 +99,15 @@ public:
 
   Renderer2D(Renderer2D&&);
 
-  static expected<Renderer2D, RendererError>
-  create(const ShaderCache* shader_cache, const TextureCache* texture_cache, const Renderer2DOptions& options = {});
-
-  void rebind(const ShaderCache* shader_cache) { shader_cache_ = shader_cache; }
-  void rebind(const TextureCache* texture_cache) { texture_cache_ = texture_cache; }
+  static expected<Renderer2D, RendererError> create(const Renderer2DOptions& options = {});
 
   void flush();
 
-  Mat3f refresh(RenderTarget& target, const RenderAttributes& attributes, const RenderResources& resources);
+  Mat3f refresh(
+    RenderTarget& target,
+    const Assets& assets,
+    const RenderAttributes& attributes,
+    const RenderResources& resources);
 
   const RenderResources& resources() { return active_resources_; }
 
@@ -121,8 +115,6 @@ private:
   Renderer2D() = default;
   Renderer2D(const Renderer2D&) = delete;
 
-  const ShaderCache* shader_cache_ = nullptr;
-  const TextureCache* texture_cache_ = nullptr;
   RenderResources active_resources_;
   RenderBackend* backend_ = nullptr;
 };
@@ -148,14 +140,16 @@ public:
   expected<void, RenderPassError> submit(View<const Quad> quads);
   expected<void, RenderPassError> submit(View<const Circle> circles);
   expected<void, RenderPassError> submit(View<const TexturedQuad> quads);
-  expected<void, RenderPassError> submit(View<const TileMap> tile_maps, const TileSetInfo& tile_set);
-  expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs);
+  // expected<void, RenderPassError> submit(View<const TileMap> tile_maps, const TileSetInfo& tile_set);
+  // expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs);
 
-  const RenderResources& resources() { return *resources_; }
+  const Assets& assets() const { return *assets_; };
+  const RenderResources& resources() const { return *resources_; }
 
   static expected<RenderPass, RenderPassError> create(
     RenderTarget& target,
     Renderer2D& renderer,
+    const Assets& assets,
     const RenderAttributes& attributes,
     const RenderResources& resources);
 
@@ -167,6 +161,7 @@ private:
   RenderPass(const RenderPass&) = delete;
 
   Renderer2D* renderer_;
+  const Assets* assets_;
   const RenderResources* resources_;
   Mat3f world_from_viewport_;
   Bounds2f viewport_in_world_bounds_;

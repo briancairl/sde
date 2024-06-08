@@ -51,6 +51,8 @@ cc_library(
 cc_library(
   name="graphics_impl__renderer__hdrs",
   hdrs=[
+    "include/sde/graphics/assets.hpp",
+    "include/sde/graphics/assets_fwd.hpp",
     "include/sde/graphics/colors.hpp",
     "include/sde/graphics/debug.hpp",
     "include/sde/graphics/render_target.hpp",
@@ -62,8 +64,13 @@ cc_library(
     "include/sde/graphics/shader_fwd.hpp",
     "include/sde/graphics/shader_handle.hpp",
     "include/sde/graphics/shapes.hpp",
-    "include/sde/graphics/text.hpp",
-    "include/sde/graphics/text_fwd.hpp",
+    "include/sde/graphics/shapes_fwd.hpp",
+    "include/sde/graphics/font.hpp",
+    "include/sde/graphics/font_fwd.hpp",
+    "include/sde/graphics/font_handle.hpp",
+    "include/sde/graphics/glyph_set.hpp",
+    "include/sde/graphics/glyph_set_fwd.hpp",
+    "include/sde/graphics/glyph_set_handle.hpp",
     "include/sde/graphics/texture.hpp",
     "include/sde/graphics/texture_fwd.hpp",
     "include/sde/graphics/texture_handle.hpp",
@@ -115,6 +122,8 @@ graphics_impl__renderer__opengl_debug_selector = select({
 cc_library(
   name="graphics_impl__renderer__opengl",
   srcs=[
+    "src/font.cpp",
+    "src/glyph_set.cpp",
     "src/renderer.cpp",
     "src/render_target.cpp",
     "src/shader.cpp",
@@ -124,7 +133,6 @@ cc_library(
     "src/texture_units.cpp",
     "src/tile_set.cpp",
     "src/tile_map.cpp",
-    "src/text.cpp",
   ] + graphics_impl__renderer__opengl_debug_selector,
   deps=[
     ":graphics_impl__renderer__opengl_internal",

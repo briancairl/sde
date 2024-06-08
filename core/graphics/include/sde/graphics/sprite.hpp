@@ -7,6 +7,7 @@
 
 // SDE
 #include "sde/geometry_types.hpp"
+#include "sde/graphics/assets_fwd.hpp"
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/tile_set.hpp"
@@ -47,8 +48,7 @@ public:
     float frames_per_second,
     AnimatedSpriteMode looped = AnimatedSpriteMode::kLooped);
 
-  void draw(RenderPass& rp, const TileSetCache& tileset_cache, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones())
-    const;
+  void draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones()) const;
 
   void update(float t);
 

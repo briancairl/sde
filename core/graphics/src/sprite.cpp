@@ -3,7 +3,9 @@
 #include <iostream>
 
 // SDE
+#include "sde/graphics/assets.hpp"
 #include "sde/graphics/renderer.hpp"
+#include "sde/graphics/shapes.hpp"
 #include "sde/graphics/sprite.hpp"
 
 namespace sde::graphics
@@ -31,10 +33,14 @@ AnimatedSprite::AnimatedSprite(const TileSetHandle& frames_handle, float frames_
 
 void AnimatedSprite::update(float t) { frame_ = static_cast<std::size_t>(t * frames_per_second_); }
 
-void AnimatedSprite::draw(RenderPass& rp, const TileSetCache& tileset_cache, const Bounds2f& rect, const Vec4f& tint)
-  const
+void AnimatedSprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
 {
-  const auto* frames = tileset_cache.get_if(frames_handle_);
+  const auto* frames = rp.assets().tile_sets.get_if(frames_handle_);
+  if (frames == nullptr)
+  {
+    return;
+  }
+
   const auto frame_idx_saturated = (mode_ == Mode::kLooped) ? (frame_ % frames->tile_bounds.size())
                                                             : std::min(frame_, frames->tile_bounds.size() - 1UL);
 
