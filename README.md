@@ -38,6 +38,7 @@ sudo apt install           \
 - [ ] Stream-style logging
 - [ ] Camera zoom to focus
 - [ ] Cleanup graphics build targets
+- [ ] Add drawable base and common on-draw errors
 
 ## Audio
 - [ ] Add basic audio facilities
