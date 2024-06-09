@@ -42,8 +42,6 @@ template <typename T, int Dim> decltype(auto) toExtents(const Bounds<T, Dim>& bo
   return bounds.max() - bounds.min();
 }
 
-template <typename T, int Dim> bool isEmpty(const Bounds<T, Dim>& bounds) { return bounds.volume() == 0; }
-
 template <typename T, int Dim> Bounds<T, Dim> operator&(const Bounds<T, Dim>& lhs, const Bounds<T, Dim>& rhs)
 {
   return lhs.intersection(rhs);

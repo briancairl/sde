@@ -11,7 +11,7 @@
 namespace sde::graphics
 {
 
-Sprite::Sprite(TextureHandle tile_atlas, const Bounds2f& tile_bounds) :
+Sprite::Sprite(const TextureHandle& tile_atlas, const Bounds2f& tile_bounds) :
     tile_atlas_{tile_atlas}, tile_bounds_{tile_bounds}
 {}
 
@@ -32,7 +32,7 @@ void Sprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
   }
 }
 
-AnimatedSprite::AnimatedSprite(TileSetHandle frames_handle, float frames_per_second, Mode mode) :
+AnimatedSprite::AnimatedSprite(const TileSetHandle& frames_handle, float frames_per_second, Mode mode) :
     frames_handle_{frames_handle}, frames_per_second_{frames_per_second}, frame_{0}, mode_{mode}
 {}
 

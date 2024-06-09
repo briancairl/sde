@@ -62,15 +62,39 @@ template <> struct ResourceCacheTypes<graphics::TileSetCache>
 namespace sde::graphics
 {
 
+enum class TileSliceDirection
+{
+  kColWise,
+  kRowWise,
+};
+
+enum class TileOrientation
+{
+  kNormal,
+  kFlipped,
+};
+
+
+struct TileSetSliceUniform
+{
+  Vec2i tile_size_px = {};
+  TileOrientation tile_orientation_x = TileOrientation::kNormal;
+  TileOrientation tile_orientation_y = TileOrientation::kNormal;
+  TileSliceDirection direction = TileSliceDirection::kColWise;
+  std::size_t start_offset = 0UL;
+  std::size_t stop_after = 0UL;
+  Bounds2i bounds_px = {};
+  Vec2i offset_px = Vec2i::Zero();
+  Vec2i skip_px = Vec2i::Zero();
+};
+
 class TileSetCache : public ResourceCache<TileSetCache>
 {
   friend class ResourceCache<TileSetCache>;
 
 private:
-  expected<TileSetInfo, TileSetError> generate(
-    const element_t<TextureCache>& texture,
-    const Vec2i tile_size,
-    const Bounds2i& tile_slice_bounds = Bounds2i{});
+  expected<TileSetInfo, TileSetError>
+  generate(const element_t<TextureCache>& texture, const TileSetSliceUniform& slice);
 };
 
 }  // namespace sde::graphics

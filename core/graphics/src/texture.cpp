@@ -459,7 +459,7 @@ template expected<TextureInfo, TextureError> TextureCache::generate(
 template <typename DataT>
 expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data, const Bounds2i& area)
 {
-  if (isEmpty(area))
+  if (area.isEmpty())
   {
     SDE_LOG_DEBUG("ReplaceAreaEmpty");
     return make_unexpected(TextureError::kReplaceAreaEmpty);

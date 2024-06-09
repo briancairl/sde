@@ -17,7 +17,7 @@ namespace sde::graphics
 class Sprite
 {
 public:
-  Sprite(TextureHandle tile_atlas, const Bounds2f& tile_bounds);
+  Sprite(const TextureHandle& tile_atlas, const Bounds2f& tile_bounds);
 
   void draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones()) const;
 
@@ -42,7 +42,7 @@ public:
   using Mode = AnimatedSpriteMode;
 
   AnimatedSprite(
-    TileSetHandle frames_handle,
+    const TileSetHandle& frames_handle,
     float frames_per_second,
     AnimatedSpriteMode looped = AnimatedSpriteMode::kLooped);
 

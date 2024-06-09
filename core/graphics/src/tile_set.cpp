@@ -6,6 +6,7 @@
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_set.hpp"
+#include "sde/logging.hpp"
 
 namespace sde::graphics
 {
@@ -40,31 +41,112 @@ std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info)
 }
 
 expected<TileSetInfo, TileSetError>
-TileSetCache::generate(const element_t<TextureCache>& texture, const Vec2i tile_size, const Bounds2i& tile_slice_bounds)
+TileSetCache::generate(const element_t<TextureCache>& texture, const TileSetSliceUniform& slice)
 {
   const Bounds2i texture_bounds{Vec2i::Zero(), texture.value->shape.value};
-  const Bounds2i sliced_region = isEmpty(tile_slice_bounds) ? texture_bounds : (tile_slice_bounds & texture_bounds);
+  const Bounds2i sliced_region = slice.bounds_px.isEmpty() ? texture_bounds : (slice.bounds_px & texture_bounds);
 
-  const Vec2i tile_count = toExtents(sliced_region).array() / tile_size.array();
+  const std::size_t tile_count_max = (toExtents(sliced_region).array() / slice.tile_size_px.array()).prod();
 
-  if (tile_count.prod() == 0)
+  if (tile_count_max == 0)
   {
+    SDE_LOG_DEBUG_FMT(
+      "InvalidTileSize: sliced_region=(%d,%d,%d,%d)",
+      sliced_region.min().x(),
+      sliced_region.min().y(),
+      sliced_region.max().x(),
+      sliced_region.max().y());
     return make_unexpected(TileSetError::kInvalidTileSize);
   }
 
   const Vec2f axis_rates{1.0F / texture.value->shape.value.array().cast<float>()};
 
-  std::vector<Bounds2f> tile_bounds;
-  tile_bounds.reserve(static_cast<std::size_t>(tile_count.prod()));
-  for (int x_min = sliced_region.min().x(); x_min < sliced_region.max().x(); x_min += tile_size.x())
-  {
-    const int x_max = x_min + tile_size.x();
-    for (int y_min = sliced_region.min().y(); y_min < sliced_region.max().y(); y_min += tile_size.y())
+  const auto toTileBounds = [&slice, &axis_rates](int x_lb, int y_lb, int x_ub, int y_ub) -> Bounds2f {
+    if (
+      (slice.tile_orientation_x == TileOrientation::kFlipped) and
+      (slice.tile_orientation_y == TileOrientation::kFlipped))
     {
-      const int y_max = y_min + tile_size.y();
-      tile_bounds.emplace_back(
-        Vec2f{static_cast<float>(x_min), static_cast<float>(y_min)}.array() * axis_rates.array(),
-        Vec2f{static_cast<float>(x_max), static_cast<float>(y_max)}.array() * axis_rates.array());
+      return Bounds2f{
+        Vec2f{static_cast<float>(x_ub), static_cast<float>(y_ub)}.array() * axis_rates.array(),
+        Vec2f{static_cast<float>(x_lb), static_cast<float>(y_lb)}.array() * axis_rates.array()};
+    }
+    else if (slice.tile_orientation_x == TileOrientation::kFlipped)
+    {
+      return Bounds2f{
+        Vec2f{static_cast<float>(x_ub), static_cast<float>(y_lb)}.array() * axis_rates.array(),
+        Vec2f{static_cast<float>(x_lb), static_cast<float>(y_ub)}.array() * axis_rates.array()};
+    }
+    else if (slice.tile_orientation_y == TileOrientation::kFlipped)
+    {
+      return Bounds2f{
+        Vec2f{static_cast<float>(x_lb), static_cast<float>(y_ub)}.array() * axis_rates.array(),
+        Vec2f{static_cast<float>(x_ub), static_cast<float>(y_lb)}.array() * axis_rates.array()};
+    }
+    else
+    {
+      return Bounds2f{
+        Vec2f{static_cast<float>(x_lb), static_cast<float>(y_lb)}.array() * axis_rates.array(),
+        Vec2f{static_cast<float>(x_ub), static_cast<float>(y_ub)}.array() * axis_rates.array()};
+    }
+  };
+
+  const int x_min = sliced_region.min().x() + slice.offset_px.x();
+  const int y_min = sliced_region.min().y() + slice.offset_px.y();
+  const int x_step = slice.tile_size_px.x() + slice.skip_px.x();
+  const int y_step = slice.tile_size_px.y() + slice.skip_px.y();
+
+  std::size_t skip_countdown = slice.start_offset;
+
+  std::vector<Bounds2f> tile_bounds;
+  tile_bounds.reserve(tile_count_max);
+  if (slice.direction == TileSliceDirection::kColWise)
+  {
+    for (int x_lb = x_min; x_lb < sliced_region.max().x(); x_lb += x_step)
+    {
+      const int x_ub = x_lb + slice.tile_size_px.x();
+      for (int y_lb = y_min; y_lb < sliced_region.max().y(); y_lb += y_step)
+      {
+        const int y_ub = y_lb + slice.tile_size_px.y();
+        if (skip_countdown == 0UL)
+        {
+          tile_bounds.emplace_back(toTileBounds(x_lb, y_lb, x_ub, y_ub));
+        }
+        else
+        {
+          --skip_countdown;
+          continue;
+        }
+
+        if ((slice.stop_after > 0UL) and (tile_bounds.size() == slice.stop_after))
+        {
+          return TileSetInfo{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
+        }
+      }
+    }
+  }
+  else
+  {
+    for (int y_lb = y_min; y_lb < sliced_region.max().y(); y_lb += y_step)
+    {
+      const int y_ub = y_lb + slice.tile_size_px.y();
+      for (int x_lb = x_min; x_lb < sliced_region.max().x(); x_lb += x_step)
+      {
+        const int x_ub = x_lb + slice.tile_size_px.x();
+        if (skip_countdown == 0UL)
+        {
+          tile_bounds.emplace_back(toTileBounds(x_lb, y_lb, x_ub, y_ub));
+        }
+        else
+        {
+          --skip_countdown;
+          continue;
+        }
+
+        if ((slice.stop_after > 0UL) and (tile_bounds.size() == slice.stop_after))
+        {
+          return TileSetInfo{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
+        }
+      }
     }
   }
 
