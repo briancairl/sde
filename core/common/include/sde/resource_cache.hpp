@@ -7,24 +7,22 @@
 
 // C++ Standard Library
 #include <cstdint>
-#include <iosfwd>
 #include <unordered_map>
 
 // SDE
 #include "sde/crtp.hpp"
 #include "sde/expected.hpp"
 #include "sde/resource_handle.hpp"
-#include "sde/type.hpp"
 
 namespace sde
 {
 
-template <typename DerivedT> struct ResourceCacheTypes;
+template <typename ResourceCacheT> struct ResourceCacheTypes;
 
-template <typename DerivedT> class ResourceCache : public crtp_base<ResourceCache<DerivedT>>
+template <typename ResourceCacheT> class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>
 {
 public:
-  using type_info = ResourceCacheTypes<DerivedT>;
+  using type_info = ResourceCacheTypes<ResourceCacheT>;
   using error_type = typename type_info::error_type;
   using handle_type = typename type_info::handle_type;
   using value_type = typename type_info::value_type;
@@ -98,18 +96,24 @@ public:
 private:
   ResourceCache(const ResourceCache&) = delete;
   ResourceCache& operator=(const ResourceCache&) = delete;
-
   /// Last used resource handle
   handle_type handle_lower_bound_ = handle_type::null();
   /// Map of {resource_handle, resource_value} objects
   CacheMap handle_to_value_cache_;
 };
 
-template <typename DerivedT> struct ElementType
+template <typename ResourceCacheT> struct ElementType
 {
-  using type = typename ResourceCache<DerivedT>::element_type;
+  using type = typename ResourceCache<ResourceCacheT>::element_type;
 };
 
-template <typename DerivedT> using element_t = typename ElementType<DerivedT>::type;
+template <typename ResourceCacheT> using element_t = typename ElementType<ResourceCacheT>::type;
+
+template <typename ResourceCacheT>
+struct is_resource_cache
+    : std::integral_constant<bool, std::is_base_of_v<ResourceCache<ResourceCacheT>, ResourceCacheT>>
+{};
+
+template <typename ResourceCacheT> constexpr bool is_resource_cache_v = is_resource_cache<ResourceCacheT>::value;
 
 }  // namespace sde

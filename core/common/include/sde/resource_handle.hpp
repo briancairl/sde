@@ -92,28 +92,4 @@ template <typename T> inline std::ostream& operator<<(std::ostream& os, const Re
   }
 }
 
-namespace detail
-{
-
-template <typename T> struct ResourceIsSlotMappable : std::false_type
-{};
-
-template <typename T, typename IdentifierT, IdentifierT kNullValue>
-struct ResourceIsSlotMappable<ResourceHandle<T, IdentifierT, kNullValue>>
-    : std::integral_constant<bool, std::is_integral_v<IdentifierT>>
-{};
-
-template <typename T, typename IdentifierT, IdentifierT kNullValue>
-constexpr bool is_slot_mappable([[maybe_unused]] const ResourceHandle<T, IdentifierT, kNullValue>& handle)
-{
-  using handle_type = ResourceHandle<T, IdentifierT, kNullValue>;
-  return ResourceIsSlotMappable<handle_type>();
-}
-
-}  // namespace detail
-
-template <typename T>
-struct ResourceIsSlotMappable : std::integral_constant<bool, detail::is_slot_mappable(std::declval<T>)>
-{};
-
 }  // namespace sde

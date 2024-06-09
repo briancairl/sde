@@ -19,6 +19,7 @@
 #include "sde/graphics/type_setter.hpp"
 #include "sde/graphics/window.hpp"
 #include "sde/logging.hpp"
+#include "sde/resource_cache_from_disk.hpp"
 #include "sde/view.hpp"
 
 // clang-format off
@@ -125,7 +126,22 @@ int main(int argc, char** argv)
 
   Assets assets;
 
-  auto player_font_or_error = assets.fonts.create("/home/brian/dev/assets/fonts/white_rabbit.ttf");
+  auto textures_from_disk = from_disk(assets.textures, [](auto& cache, const asset::path& path)
+  {
+    auto texture_source_image = Image::load(path, {.flags = {.flip_vertically = true}});
+    SDE_ASSERT_TRUE(texture_source_image.has_value());
+    SDE_LOG_INFO_FMT("texture loaded from disk: %s", path.string().c_str());
+    return cache.create(*texture_source_image);
+  });
+
+  auto fonts_from_disk = from_disk(assets.fonts, [](auto& cache, const asset::path& path)
+  {
+    SDE_LOG_INFO_FMT("font loaded from disk: %s", path.string().c_str());
+    return cache.create(path);
+  });
+
+
+  auto player_font_or_error = fonts_from_disk.create("/home/brian/dev/assets/fonts/white_rabbit.ttf");
   SDE_ASSERT_TRUE(player_font_or_error.has_value());
   auto player_typeset_or_error = assets.type_sets.create(assets.textures, *player_font_or_error, TypeSetOptions{.height_px = 20});
   SDE_ASSERT_TRUE(player_typeset_or_error.has_value());
@@ -142,27 +158,13 @@ int main(int argc, char** argv)
   auto sprite_shader_or_error = assets.shaders.create(kSpriteShader);
   SDE_ASSERT_TRUE(sprite_shader_or_error.has_value());
 
-  const auto loadTexture = [&assets](const auto& path)
-  {
-    // Load all texture source image
-    auto texture_source_image = Image::load(path, {.flags = {.flip_vertically = true}});
-    SDE_ASSERT_TRUE(texture_source_image.has_value());
-
-    // Create atlas textures from image
-    auto texture = assets.textures.create(*texture_source_image);
-    SDE_ASSERT_TRUE(texture.has_value());
-
-    return std::move(texture).value();
-  };
-
-
   // Load all textures
 
-  auto movement_front_atlas = loadTexture("/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png");
-  auto movement_back_atlas = loadTexture("/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png");
-  auto movement_side_atlas = loadTexture("/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png");
-  auto movement_back_side_atlas = loadTexture("/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png");
-  auto movement_front_side_atlas = loadTexture("/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png");
+  auto movement_front_atlas = textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png");
+  auto movement_back_atlas = textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png");
+  auto movement_side_atlas = textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png");
+  auto movement_back_side_atlas = textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png");
+  auto movement_front_side_atlas = textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png");
 
 
   // Create animation frame
@@ -170,7 +172,7 @@ int main(int argc, char** argv)
   // IDLE ------------------------------------------
 
   auto idle_front_frames = assets.tile_sets.create(
-    movement_front_atlas,
+    *movement_front_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -182,7 +184,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(idle_front_frames.has_value());
 
   auto idle_back_frames = assets.tile_sets.create(
-    movement_back_atlas,
+    *movement_back_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -194,7 +196,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(idle_back_frames.has_value());
 
   auto idle_right_frames = assets.tile_sets.create(
-    movement_side_atlas,
+    *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -206,7 +208,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(idle_right_frames.has_value());
 
   auto idle_left_frames = assets.tile_sets.create(
-    movement_side_atlas,
+    *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kFlipped,
@@ -218,7 +220,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(idle_left_frames.has_value());
 
   auto idle_front_right_frames = assets.tile_sets.create(
-    movement_front_side_atlas,
+    *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -230,7 +232,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(idle_front_right_frames.has_value());
 
   auto idle_front_left_frames = assets.tile_sets.create(
-    movement_front_side_atlas,
+    *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kFlipped,
@@ -242,7 +244,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(idle_front_left_frames.has_value());
 
   auto idle_back_right_frames = assets.tile_sets.create(
-    movement_back_side_atlas,
+    *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -254,7 +256,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(idle_back_right_frames.has_value());
 
   auto idle_back_left_frames = assets.tile_sets.create(
-    movement_back_side_atlas,
+    *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kFlipped,
@@ -269,7 +271,7 @@ int main(int argc, char** argv)
   // RUNNING ----------------------------------------
 
   auto walking_front_frames = assets.tile_sets.create(
-    movement_front_atlas,
+    *movement_front_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -281,7 +283,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(walking_front_frames.has_value());
 
   auto walking_back_frames = assets.tile_sets.create(
-    movement_back_atlas,
+    *movement_back_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -293,7 +295,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(walking_back_frames.has_value());
 
   auto walking_right_frames = assets.tile_sets.create(
-    movement_side_atlas,
+    *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -305,7 +307,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(walking_right_frames.has_value());
 
   auto walking_left_frames = assets.tile_sets.create(
-    movement_side_atlas,
+    *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kFlipped,
@@ -317,7 +319,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(walking_left_frames.has_value());
 
   auto walking_front_right_frames = assets.tile_sets.create(
-    movement_front_side_atlas,
+    *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -329,7 +331,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(walking_front_right_frames.has_value());
 
   auto walking_front_left_frames = assets.tile_sets.create(
-    movement_front_side_atlas,
+    *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kFlipped,
@@ -341,7 +343,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(walking_front_left_frames.has_value());
 
   auto walking_back_right_frames = assets.tile_sets.create(
-    movement_back_side_atlas,
+    *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -353,7 +355,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(walking_back_right_frames.has_value());
 
   auto walking_back_left_frames = assets.tile_sets.create(
-    movement_back_side_atlas,
+    *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kFlipped,
@@ -369,7 +371,7 @@ int main(int argc, char** argv)
   // RUNNING ----------------------------------------
 
   auto running_front_frames = assets.tile_sets.create(
-    movement_front_atlas,
+    *movement_front_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -381,7 +383,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(running_front_frames.has_value());
 
   auto running_back_frames = assets.tile_sets.create(
-    movement_back_atlas,
+    *movement_back_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -393,7 +395,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(running_back_frames.has_value());
 
   auto running_right_frames = assets.tile_sets.create(
-    movement_side_atlas,
+    *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -405,7 +407,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(running_right_frames.has_value());
 
   auto running_left_frames = assets.tile_sets.create(
-    movement_side_atlas,
+    *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kFlipped,
@@ -417,7 +419,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(running_left_frames.has_value());
 
   auto running_front_right_frames = assets.tile_sets.create(
-    movement_front_side_atlas,
+    *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -429,7 +431,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(running_front_right_frames.has_value());
 
   auto running_front_left_frames = assets.tile_sets.create(
-    movement_front_side_atlas,
+    *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kFlipped,
@@ -441,7 +443,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(running_front_left_frames.has_value());
 
   auto running_back_right_frames = assets.tile_sets.create(
-    movement_back_side_atlas,
+    *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kNormal,
@@ -453,7 +455,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(running_back_right_frames.has_value());
 
   auto running_back_left_frames = assets.tile_sets.create(
-    movement_back_side_atlas,
+    *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
       .tile_orientation_x = TileOrientation::kFlipped,

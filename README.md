@@ -39,6 +39,7 @@ sudo apt install           \
 - [x] Rendering text
 - [ ] Debug render layer (wire-frame boxes; times)
 - [ ] Stream-style logging
+- [ ] Add static text entity with pre-computed bounds
 - [ ] Camera zoom to focus
 - [ ] Cleanup graphics build targets
 - [ ] Add drawable base and common on-draw errors
