@@ -23,6 +23,7 @@ sudo apt install           \
 
 ## Common
 - [ ] Cleanup core utility targets
+- [ ] Replace unordered_map with flat_map where possible
 - [ ] Replace float times with `Time` / `Duration` nanosecond time objects
 
 ## 2D rendering
