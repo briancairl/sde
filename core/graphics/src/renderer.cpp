@@ -27,8 +27,6 @@
 #include "sde/graphics/typedef.hpp"
 #include "sde/logging.hpp"
 
-#include <iostream>
-
 namespace sde::graphics
 {
 

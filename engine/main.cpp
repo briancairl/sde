@@ -1,6 +1,6 @@
 // C++ Standard Library
 #include <cmath>
-#include <iostream>
+#include <ostream>
 
 // SDE
 #include "sde/app.hpp"
