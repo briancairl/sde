@@ -1,9 +1,12 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file geometry.hpp
+ * @file geometry_types.hpp
  */
 #pragma once
+
+// C++ Standard Library
+#include <iosfwd>
 
 // Eigen
 #include <Eigen/Dense>
@@ -45,3 +48,10 @@ using Bounds2i = Bounds<int, 2>;
 using Bounds2f = Bounds<float, 2>;
 
 }  // namespace sde
+
+namespace Eigen
+{
+
+template <typename T, int Dim> std::ostream& operator<<(std::ostream& os, const AlignedBox<T, Dim>& bounds);
+
+}  // namespace Eigen

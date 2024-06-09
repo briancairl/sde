@@ -19,6 +19,7 @@ cc_library(
 cc_library(
   name="geometry",
   hdrs=["include/sde/geometry_types.hpp", "include/sde/geometry_utils.hpp"],
+  srcs=["src/geometry_types.cpp"],
   strip_include_prefix="include",
   deps=["@eigen//:eigen"],
   visibility=["//visibility:public"]
@@ -43,11 +44,12 @@ cc_library(
 cc_library(
   name="resource",
   hdrs=[
-    "include/sde/resource.hpp",
-    "include/sde/resource_handle.hpp"
+    "include/sde/resource_cache.hpp",
+    "include/sde/resource_handle.hpp",
+    "include/sde/resource_wrapper.hpp",
   ],
   strip_include_prefix="include",
-  deps=[],
+  deps=[":core"],
   visibility=["//visibility:public"]
 )
 
@@ -57,6 +59,7 @@ cc_library(
     "include/sde/crtp.hpp",
     "include/sde/view.hpp",
     "include/sde/format.hpp",
+    "include/sde/type.hpp",
   ],
   strip_include_prefix="include",
   deps=[":build", ":logging"],

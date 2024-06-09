@@ -14,6 +14,7 @@
 #include "sde/expected.hpp"
 #include "sde/geometry_types.hpp"
 #include "sde/graphics/typecode.hpp"
+#include "sde/view.hpp"
 
 namespace sde::graphics
 {
@@ -184,7 +185,10 @@ public:
   /**
    * @brief Returns pointer to image data
    */
-  [[nodiscard]] constexpr void* data() const { return data_; }
+  [[nodiscard]] auto data() const
+  {
+    return View<const std::uint8_t>{reinterpret_cast<const std::uint8_t*>(data_), total_size_in_bytes()};
+  }
 
 private:
   Image(const ImageShape& shape, ImageChannels channels, TypeCode bit_depth, void* data);

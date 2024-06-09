@@ -8,6 +8,8 @@
 #else
 #define SDE_COMMON_LOG
 
+#include "sde/format.hpp"
+
 namespace sde
 {
 
@@ -34,16 +36,16 @@ enum class LogSeverity
 #include <iosfwd>
 
 #define SDE_LOG_FMT(severity, fmt, ...)                                                                                \
-  std::fprintf(stderr, "[SDE LOG] (%s:%d) " fmt "\n", __FILE__, __LINE__, __VA_ARGS__)
+  std::fprintf(stderr, sde::format("[SDE LOG] (%%s:%%d) %s\n", fmt), __FILE__, __LINE__, __VA_ARGS__)
 
 #define SDE_LOG(severity, text) SDE_LOG_FMT(severity, "%s", text)
 
 #endif  // SDE_LOGGING_DISABLED
 
-#if SDE_DEBUG_ENABLED
-#define SDE_LOG_DEBUG_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kDebug, fmt, __VA_ARGS__)
-#else
+#if defined(NDEBUG) || defined(_NDEBUG)
 #define SDE_LOG_DEBUG_FMT(fmt, ...) (void)0
+#else
+#define SDE_LOG_DEBUG_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kDebug, fmt, __VA_ARGS__)
 #endif
 
 #define SDE_LOG_INFO_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kInfo, fmt, __VA_ARGS__)
@@ -56,9 +58,9 @@ enum class LogSeverity
   }
 
 #if defined(NDEBUG) || defined(_NDEBUG)
-#define SDE_LOG_DEBUG(text) SDE_LOG(::sde::LogSeverity::kDebug, text)
-#else
 #define SDE_LOG_DEBUG(text) (void)0
+#else
+#define SDE_LOG_DEBUG(text) SDE_LOG(::sde::LogSeverity::kDebug, text)
 #endif
 
 #define SDE_LOG_INFO(text) SDE_LOG(::sde::LogSeverity::kInfo, text)
@@ -66,18 +68,6 @@ enum class LogSeverity
 #define SDE_LOG_ERROR(text) SDE_LOG(::sde::LogSeverity::kError, text)
 #define SDE_LOG_FATAL(text) SDE_LOG(::sde::LogSeverity::kError, text);
 
-
-#if defined(NDEBUG) || defined(_NDEBUG)
-
-#define SDE_ASSERT_MSG(fmt, ...) (void)0
-#define SDE_ASSERT_MSG_COND(cond, fmt, ...) (void)0
-#define SDE_ASSERT(cond, message)                                                                                      \
-  if (!(cond))                                                                                                         \
-  {                                                                                                                    \
-    std::abort();                                                                                                      \
-  }
-
-#else
 
 #define SDE_ASSERT_MSG(fmt, ...) std::fprintf(stderr, fmt, __VA_ARGS__)
 #define SDE_ASSERT_MSG_COND(cond, fmt, ...)                                                                            \
@@ -96,8 +86,6 @@ enum class LogSeverity
       __LINE__);                                                                                                       \
     std::abort();                                                                                                      \
   }
-
-#endif  // NDEBUG
 
 #define SDE_ASSERT_NULL_MSG(val_ptr, msg) SDE_ASSERT(val_ptr == nullptr, msg)
 #define SDE_ASSERT_NON_NULL_MSG(val_ptr, msg) SDE_ASSERT(val_ptr != nullptr, msg)

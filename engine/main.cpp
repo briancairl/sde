@@ -4,22 +4,25 @@
 
 // SDE
 #include "sde/geometry_utils.hpp"
+#include "sde/graphics/assets.hpp"
 #include "sde/graphics/colors.hpp"
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/platform.hpp"
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
-#include "sde/graphics/text.hpp"
+#include "sde/graphics/shapes.hpp"
+#include "sde/graphics/sprite.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/tile_set.hpp"
+#include "sde/graphics/type_setter.hpp"
 #include "sde/logging.hpp"
 #include "sde/view.hpp"
 
 // clang-format off
 
-static const auto* kShader1 = R"Shader1(
+static const auto* kSpriteShader = R"SpriteShader(
 
   layout (location = 0) in vec2 vPosition;
   layout (location = 1) in vec2 vTexCoord;
@@ -57,45 +60,8 @@ static const auto* kShader1 = R"Shader1(
     vec4 texture_color_sampled = texture2D(uTexture[texture_unit], fTexCoord);
     FragColor = (float(!texture_enabled) * fTintColor) + float(texture_enabled) * (fTintColor * texture_color_sampled);
   }
-)Shader1";
+)SpriteShader";
 
-static const auto* kShader2 = R"Shader2(
-
-  layout (location = 0) in vec2 vPosition;
-  layout (location = 1) in vec2 vTexCoord;
-  layout (location = 2) in float vTexUnit;
-  layout (location = 3) in vec4 vTintColor;
-
-  out vec2 fTexCoord;
-  out vec4 fTintColor;
-
-  uniform mat3 uCameraTransform;
-  uniform float uTime;
-  uniform float uTimeDelta;
-
-  void main()
-  {
-    gl_Position = vec4(uCameraTransform * vec3(vPosition, 1), 1);
-
-    float w = (2000.0 * (uTimeDelta + 0.01) + 200.0) * uTime;
-
-    fTexCoord = vTexCoord * (1 + 5e-2 * sin(w));
-    fTintColor = vTintColor;
-  }
-
-  ---
-
-  out vec4 FragColor;
-
-  in vec2 fTexCoord;
-  in vec4 fTintColor;
-
-  void main()
-  {
-    float fade = pow(1.0 - sqrt(pow(fTexCoord[0], 2) + pow(fTexCoord[1], 2)), 2);
-    FragColor = fade * fTintColor;
-  }
-)Shader2";
 
 static const auto* kTextShader = R"TextShader(
 
@@ -131,11 +97,12 @@ static const auto* kTextShader = R"TextShader(
   {
     int u = int(fTexUnit);
     vec4 s = texture2D(uTexture[u], fTexCoord);
-    vec4 c = vec4(sin(3.0 * fTexCoord[0]), cos(3.0 * fTexCoord[1]), fTintColor[2], fTintColor[3]) * s[0];
-    FragColor = c;
+    FragColor = s[0] * fTintColor;
   }
 
 )TextShader";
+
+
 
 int main(int argc, char** argv)
 {
@@ -147,156 +114,409 @@ int main(int argc, char** argv)
 
   using namespace sde::graphics;
 
-  auto image_or_error = Image::load("/home/brian/Pictures/nokron_background.png", {.flags = {.flip_vertically = true}});
+  Assets assets;
 
-  SDE_ASSERT_TRUE(image_or_error.has_value());
+  auto player_font_or_error = assets.fonts.create("/home/brian/dev/assets/fonts/white_rabbit.ttf");
+  SDE_ASSERT_TRUE(player_font_or_error.has_value());
+  auto player_typeset_or_error = assets.type_sets.create(assets.textures, *player_font_or_error, TypeSetOptions{.height_px = 20});
+  SDE_ASSERT_TRUE(player_typeset_or_error.has_value());
 
-  ShaderCache shader_cache;
-
-  auto shader1_or_error = shader_cache.create(kShader1);
-  SDE_ASSERT_TRUE(shader1_or_error.has_value());
-
-  auto shader2_or_error = shader_cache.create(kShader2);
-  SDE_ASSERT_TRUE(shader2_or_error.has_value());
-
-  auto text_shader_or_error = shader_cache.create(kTextShader);
+  auto text_shader_or_error = assets.shaders.create(kTextShader);
   SDE_ASSERT_TRUE(text_shader_or_error.has_value());
 
-  TextureCache texture_cache;
+  TypeSetter type_setter{*player_typeset_or_error};
+  RenderResources text_rendering_resources;
+  text_rendering_resources.shader = (*text_shader_or_error);
+  text_rendering_resources.buffer_group = 1;
 
-  auto texture_or_error = texture_cache.upload(*image_or_error);
 
-  SDE_ASSERT_TRUE(texture_or_error.has_value());
+  auto sprite_shader_or_error = assets.shaders.create(kSpriteShader);
+  SDE_ASSERT_TRUE(sprite_shader_or_error.has_value());
 
-  auto tile_set_or_error =
-    TileSet::slice(*texture_or_error, texture_cache, {64, 64}, sde::toBounds(sde::Vec2i{8 * 64, 8 * 64}));
+  const auto loadTexture = [&assets](const auto& path)
+  {
+    // Load all texture source image
+    auto texture_source_image = Image::load(path, {.flags = {.flip_vertically = true}});
+    SDE_ASSERT_TRUE(texture_source_image.has_value());
 
-  SDE_ASSERT_TRUE(tile_set_or_error.has_value());
+    // Create atlas textures from image
+    auto texture = assets.textures.create(*texture_source_image);
+    SDE_ASSERT_TRUE(texture.has_value());
 
-  auto draw_texture_or_error = texture_cache.create<std::uint8_t>(TextureShape{{500, 500}}, TextureLayout::kRGB);
+    return std::move(texture).value();
+  };
 
-  auto renderer_or_error = Renderer2D::create(&shader_cache, &texture_cache);
-  SDE_ASSERT_TRUE(renderer_or_error.has_value());
 
-  auto font_or_error = Font::load("/home/brian/Downloads/coffee_fills/font.ttf");
-  SDE_ASSERT_TRUE(font_or_error.has_value());
+  // Load all textures
 
-  auto glyphs_or_error = font_or_error->glyphs(texture_cache, {.height_px = 100});
-  SDE_ASSERT_TRUE(glyphs_or_error.has_value());
+  auto movement_front_atlas = loadTexture("/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png");
+  auto movement_back_atlas = loadTexture("/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png");
+  auto movement_side_atlas = loadTexture("/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png");
+  auto movement_back_side_atlas = loadTexture("/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png");
+  auto movement_front_side_atlas = loadTexture("/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png");
 
-  RenderResources default_resources;
-  default_resources.shader = *shader1_or_error;
-  default_resources.textures[0] = (*texture_or_error);
-  default_resources.textures[1] = (*draw_texture_or_error);
-  default_resources.textures[4] = (*texture_or_error);
 
-  std::vector<Quad> layer_base_quads;
-  std::vector<TileMap> layer_base_tile_maps;
-  std::vector<TexturedQuad> layer_base_textured_quads;
+  // Create animation frame
 
-  layer_base_quads.push_back({
-    .rect = Rect{Point{0.7F, 0.7F}, Point{0.8F, 0.8F}},
-    .color = Magenta()
-  });
+  // IDLE ------------------------------------------
 
-  layer_base_quads.push_back({
-    .rect = Rect{Point{0.0F, 0.0F}, Point{0.5F, 0.5F}},
-    .color = Red()
-  });
+  auto idle_front_frames = assets.tile_sets.create(
+    movement_front_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 18,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(idle_front_frames.has_value());
 
-  layer_base_textured_quads.push_back({
-    .rect = Rect{Point{ 0.8F, 0.8F}, Point{ 1.8F, 1.8F }},
-    .rect_texture = Rect{Point{0.0F, 0.0F}, Point{1.0F, 1.0F}},
-    .color = Cyan(0.5F),
-    .texture_unit = 0
-  });
+  auto idle_back_frames = assets.tile_sets.create(
+    movement_back_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 18,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(idle_back_frames.has_value());
 
-  layer_base_tile_maps.push_back(
-    []
-    {
-      TileMap tile_map;
-      tile_map.position = {0.7F, -0.8F};
-      tile_map.tile_size = {0.25F, 0.25F};
-      tile_map.texture_unit = 0;
-      tile_map.color = White();
-      tile_map.tiles <<
-        0, 1, 2, 3, 4, 5, 6,24,
-        8, 9,10,11,12,13,14,15,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7;
-      return tile_map;
-    }()
-  );
+  auto idle_right_frames = assets.tile_sets.create(
+    movement_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 18,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(idle_right_frames.has_value());
 
-  layer_base_tile_maps.push_back(
-    [position = getNextRightPosition(layer_base_tile_maps.back())]
-    {
-      TileMap tile_map;
-      tile_map.position = position;
-      tile_map.tile_size = {0.25F, 0.25F};
-      tile_map.texture_unit = 4;
-      tile_map.color = Yellow(0.4F);
-      tile_map.tiles <<
-        0, 1, 2, 3, 4, 5, 6,24,
-        8, 9,10,11,12,13,14,15,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7,
-        0, 1, 2, 3, 4,55, 6, 7,
-        0, 1, 2, 3, 4, 5, 6, 7;
-      return tile_map;
-    }()
-  );
+  auto idle_left_frames = assets.tile_sets.create(
+    movement_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kFlipped,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 18,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(idle_left_frames.has_value());
 
-  RenderResources text_resources;
-  text_resources.shader = *text_shader_or_error;
-  text_resources.textures[0] = glyphs_or_error->atlas();
+  auto idle_front_right_frames = assets.tile_sets.create(
+    movement_front_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(idle_front_right_frames.has_value());
 
-  RenderResources lighting_resources;
-  lighting_resources.shader = *shader2_or_error;
+  auto idle_front_left_frames = assets.tile_sets.create(
+    movement_front_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kFlipped,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(idle_front_left_frames.has_value());
 
-  auto texture_target_or_error = RenderTarget::create(*draw_texture_or_error, texture_cache);
-  SDE_ASSERT_TRUE(texture_target_or_error.has_value());
+  auto idle_back_right_frames = assets.tile_sets.create(
+    movement_back_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(idle_back_right_frames.has_value());
+
+  auto idle_back_left_frames = assets.tile_sets.create(
+    movement_back_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kFlipped,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(idle_back_left_frames.has_value());
+
+
+  // RUNNING ----------------------------------------
+
+  auto walking_front_frames = assets.tile_sets.create(
+    movement_front_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(walking_front_frames.has_value());
+
+  auto walking_back_frames = assets.tile_sets.create(
+    movement_back_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(walking_back_frames.has_value());
+
+  auto walking_right_frames = assets.tile_sets.create(
+    movement_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(walking_right_frames.has_value());
+
+  auto walking_left_frames = assets.tile_sets.create(
+    movement_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kFlipped,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(walking_left_frames.has_value());
+
+  auto walking_front_right_frames = assets.tile_sets.create(
+    movement_front_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(walking_front_right_frames.has_value());
+
+  auto walking_front_left_frames = assets.tile_sets.create(
+    movement_front_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kFlipped,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(walking_front_left_frames.has_value());
+
+  auto walking_back_right_frames = assets.tile_sets.create(
+    movement_back_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(walking_back_right_frames.has_value());
+
+  auto walking_back_left_frames = assets.tile_sets.create(
+    movement_back_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kFlipped,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 12,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(walking_back_left_frames.has_value());
+
+
+
+  // RUNNING ----------------------------------------
+
+  auto running_front_frames = assets.tile_sets.create(
+    movement_front_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 6,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(running_front_frames.has_value());
+
+  auto running_back_frames = assets.tile_sets.create(
+    movement_back_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 6,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(running_back_frames.has_value());
+
+  auto running_right_frames = assets.tile_sets.create(
+    movement_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 6,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(running_right_frames.has_value());
+
+  auto running_left_frames = assets.tile_sets.create(
+    movement_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kFlipped,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 6,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(running_left_frames.has_value());
+
+  auto running_front_right_frames = assets.tile_sets.create(
+    movement_front_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 6,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(running_front_right_frames.has_value());
+
+  auto running_front_left_frames = assets.tile_sets.create(
+    movement_front_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kFlipped,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 6,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(running_front_left_frames.has_value());
+
+  auto running_back_right_frames = assets.tile_sets.create(
+    movement_back_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kNormal,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 6,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(running_back_right_frames.has_value());
+
+  auto running_back_left_frames = assets.tile_sets.create(
+    movement_back_side_atlas,
+    TileSetSliceUniform{
+      .tile_size_px = {64, 64},
+      .tile_orientation_x = TileOrientation::kFlipped,
+      .tile_orientation_y = TileOrientation::kNormal,
+      .direction = TileSliceDirection::kRowWise,
+      .start_offset = 6,
+      .stop_after = 6,
+    });
+  SDE_ASSERT_TRUE(running_back_left_frames.has_value());
+
+
 
   auto window_target_or_error = RenderTarget::create(app.handle());
   SDE_ASSERT_TRUE(window_target_or_error.has_value());
 
-  std::vector<Circle> layer_lighting_circles;
+
+  auto renderer_or_error = Renderer2D::create();
+  SDE_ASSERT_TRUE(renderer_or_error.has_value());
+
+
+  RenderResources sprite_rendering_resources;
+  sprite_rendering_resources.shader = (*sprite_shader_or_error);
+  sprite_rendering_resources.buffer_group = 0;
 
   RenderAttributes attributes;
+
+  sde::Vec2f position{0, 0};
+  sde::Vec2f direction{0, -1};
+  sde::Vec2f direction_looking{0, -1};
+
+
+
+  AnimatedSprite idle_front_animated_sprite{*idle_front_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite idle_back_animated_sprite{*idle_back_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite idle_right_animated_sprite{*idle_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite idle_left_animated_sprite{*idle_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+
+  AnimatedSprite idle_front_right_animated_sprite{*idle_front_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite idle_front_left_animated_sprite{*idle_front_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite idle_back_right_animated_sprite{*idle_back_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite idle_back_left_animated_sprite{*idle_back_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+
+  AnimatedSprite walking_front_animated_sprite{*walking_front_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite walking_back_animated_sprite{*walking_back_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite walking_left_animated_sprite{*walking_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite walking_right_animated_sprite{*walking_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+
+  AnimatedSprite walking_front_right_animated_sprite{*walking_front_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite walking_front_left_animated_sprite{*walking_front_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite walking_back_right_animated_sprite{*walking_back_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite walking_back_left_animated_sprite{*walking_back_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+
+  AnimatedSprite running_front_animated_sprite{*running_front_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite running_back_animated_sprite{*running_back_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite running_left_animated_sprite{*running_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite running_right_animated_sprite{*running_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+
+  AnimatedSprite running_front_right_animated_sprite{*running_front_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite running_front_left_animated_sprite{*running_front_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite running_back_right_animated_sprite{*running_back_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite running_back_left_animated_sprite{*running_back_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+
+  AnimatedSprite* prev_animation = &running_front_animated_sprite;
+  AnimatedSprite* next_animation = &running_front_animated_sprite;
 
   app.spin([&](const auto& window)
   {
     const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window.time).count();
     const auto time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window.time_delta).count();
 
-    static constexpr float kMoveRate = 0.5;
 
-    if (window.keys.isDown(KeyCode::kA))
-    {
-      attributes.world_from_camera(0, 2) -= time_delta * kMoveRate;
-    }
-
-    if (window.keys.isDown(KeyCode::kD))
-    {
-      attributes.world_from_camera(0, 2) += time_delta * kMoveRate;
-    }
-
-    if (window.keys.isDown(KeyCode::kS))
-    {
-      attributes.world_from_camera(1, 2) -= time_delta * kMoveRate;
-    }
-
-    if (window.keys.isDown(KeyCode::kW))
-    {
-      attributes.world_from_camera(1, 2) += time_delta * kMoveRate;
-    }
-
+    // Handle screen zoom
     static constexpr float kScaleRate = 1.5;
     const float scroll_sensitivity = std::clamp(attributes.scaling, 1e-4F, 1e-2F);
     if (window.mouse_scroll.y() > 0)
@@ -308,49 +528,133 @@ int main(int argc, char** argv)
       attributes.scaling += scroll_sensitivity * kScaleRate * time;
     }
     attributes.scaling = std::max(attributes.scaling, 1e-3F);
-
     attributes.time = time;
     attributes.time_delta = time_delta;
 
 
-    layer_lighting_circles.push_back({
-      .center = sde::transform(attributes.getWorldFromViewportMatrix(*window_target_or_error), window.getMousePositionViewport(window_target_or_error->getLastSize())), 
-      .radius = 1.5F,
-      .color = Yellow()
-    });
 
-    if (auto render_pass_or_error = RenderPass::create(*texture_target_or_error, *renderer_or_error, attributes, lighting_resources, Black()); render_pass_or_error.has_value())
+    direction.setZero();
+
+    static constexpr float kSpeedWalking = 0.5;
+    static constexpr float kSpeedRunning = 1.0;
+
+    // Handle character speed
+    const float next_speed =
+      window.keys.isDown(KeyCode::kLShift) ? kSpeedRunning : kSpeedWalking;
+
+
+    // Handle movement controls
+    if (window.keys.isDown(KeyCode::kA))
     {
-      render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
-      render_pass_or_error->submit(sde::make_const_view(layer_lighting_circles));
+      direction.x() = -next_speed;
+    }
+    if (window.keys.isDown(KeyCode::kD))
+    {
+      direction.x() = +next_speed;
+    }
+    if (window.keys.isDown(KeyCode::kS))
+    {
+      direction.y() = -next_speed;
+    }
+    if (window.keys.isDown(KeyCode::kW))
+    {
+      direction.y() = +next_speed;
     }
 
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, default_resources, Black()); render_pass_or_error.has_value())
+
+    // Handle next animation
+    if ((direction.x() > 0) and (direction.y() > 0))
     {
-      render_pass_or_error->submit(sde::make_const_view(layer_base_quads));
-      render_pass_or_error->submit(sde::make_const_view(layer_base_textured_quads));
-      render_pass_or_error->submit(sde::make_const_view(layer_base_tile_maps), *tile_set_or_error);
+      next_animation = (next_speed == kSpeedWalking) ? &walking_back_right_animated_sprite : &running_back_right_animated_sprite;
+    }
+    else if ((direction.x() < 0) and (direction.y() > 0))
+    {
+      next_animation = (next_speed == kSpeedWalking) ? &walking_back_left_animated_sprite : &running_back_left_animated_sprite;
+    }
+    else if ((direction.x() > 0) and (direction.y() < 0))
+    {
+      next_animation = (next_speed == kSpeedWalking) ? &walking_front_right_animated_sprite : &running_front_right_animated_sprite;
+    }
+    else if ((direction.x() < 0) and (direction.y() < 0))
+    {
+      next_animation = (next_speed == kSpeedWalking) ? &walking_front_left_animated_sprite : &running_front_left_animated_sprite;
+    }
+    else if (direction.x() > 0)
+    {
+      next_animation = (next_speed == kSpeedWalking) ? &walking_right_animated_sprite : &running_right_animated_sprite;
+    }
+    else if (direction.x() < 0)
+    {
+      next_animation = (next_speed == kSpeedWalking) ? &walking_left_animated_sprite : &running_left_animated_sprite;
+    }
+    else if (direction.y() < 0)
+    {
+      next_animation = (next_speed == kSpeedWalking) ? &walking_front_animated_sprite : &running_front_animated_sprite;
+    }
+    else if (direction.y() > 0)
+    {
+      next_animation = (next_speed == kSpeedWalking) ? &walking_back_animated_sprite : &running_back_animated_sprite;
+    }
+    else if ((direction_looking.x() > 0) and (direction_looking.y() > 0))
+    {
+      next_animation = &idle_back_right_animated_sprite;
+    }
+    else if ((direction_looking.x() < 0) and (direction_looking.y() > 0))
+    {
+      next_animation = &idle_back_left_animated_sprite;
+    }
+    else if ((direction_looking.x() > 0) and (direction_looking.y() < 0))
+    {
+      next_animation = &idle_front_right_animated_sprite;
+    }
+    else if ((direction_looking.x() < 0) and (direction_looking.y() < 0))
+    {
+      next_animation = &idle_front_left_animated_sprite;
+    }
+    else if (direction_looking.x() > 0)
+    {
+      next_animation = &idle_right_animated_sprite;
+    }
+    else if (direction_looking.x() < 0)
+    {
+      next_animation = &idle_left_animated_sprite;
+    }
+    else if (direction_looking.y() < 0)
+    {
+      next_animation = &idle_front_animated_sprite;
+    }
+    else if (direction_looking.y() > 0)
+    {
+      next_animation = &idle_back_animated_sprite;
     }
 
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, text_resources); render_pass_or_error.has_value())
+    if ((direction.array() != 0.0F).any())
     {
-      render_pass_or_error->submit(Text{
-        .text="This is a test! damn, text rendering is annoying... :'[",
-        .position = {0.0F, 0.0F},
-        .color = White(0.8F),
-        .scale = 0.1F,
-        .texture_unit = 0
-      }, *glyphs_or_error);
+      direction_looking = direction;
+      next_animation->setRate(next_speed * 15.0F);
+    }
+    else
+    {
+      next_animation->setRate(kSpeedWalking * 15.0F);
     }
 
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, attributes, lighting_resources); render_pass_or_error.has_value())
+    next_animation->update(attributes.time);
+
+    position += direction * time_delta;
+
+
+    window_target_or_error->refresh(Black());
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, sprite_rendering_resources); render_pass_or_error.has_value())
     {
-      render_pass_or_error->submit(sde::make_const_view(layer_lighting_circles));
+      next_animation->draw(*render_pass_or_error, {position - sde::Vec2f{0.5, 0.5}, position + sde::Vec2f{0.5, 0.5}});
     }
-
-    SDE_LOG_DEBUG_FMT("%f : %f", attributes.time, attributes.time_delta);
-
-    layer_lighting_circles.clear();
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets, attributes, text_rendering_resources); render_pass_or_error.has_value())
+    {
+      type_setter.draw(*render_pass_or_error, "bob", position + sde::Vec2f{0.0, 0.35}, {0.075F});
+      type_setter.draw(*render_pass_or_error, sde::format("pos: (%.3f, %.3f)", position.x(),  position.y()),  position + sde::Vec2f{0.0, -0.30}, {0.025F}, Yellow(0.8));
+      type_setter.draw(*render_pass_or_error, sde::format("vel: (%.3f, %.3f)", direction.x(), direction.y()), position + sde::Vec2f{0.0, -0.35}, {0.025F}, Yellow(0.8));
+    }
+    prev_animation = next_animation;
 
     return WindowDirective::kContinue;
   });

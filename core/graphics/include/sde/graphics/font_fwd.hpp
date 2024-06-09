@@ -7,9 +7,6 @@
 
 namespace sde::graphics
 {
-struct Glyph;
-class GlyphSet;
-struct GlyphOptions;
-class Font;
-struct Text;
+struct FontInfo;
+class FontCache;
 }  // namespace sde::graphics

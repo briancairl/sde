@@ -60,7 +60,7 @@ RenderTarget::create(const TextureHandle& texture, const TextureCache& texture_c
     return unexpected<RenderTargetError>{RenderTargetError::kInvalidTexture};
   }
 
-  const auto* texture_info = texture_cache.get(texture);
+  const auto* texture_info = texture_cache.get_if(texture);
 
   if (texture_info == nullptr)
   {

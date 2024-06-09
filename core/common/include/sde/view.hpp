@@ -50,7 +50,7 @@ template <typename T> class View<T, 0> : public BasicView<View<T, 0>>
 public:
   explicit View([[maybe_unused]] std::nullptr_t _) : data_{nullptr}, size_{0} {};
 
-  View(T* data, std::size_t size) : data_{data}, size_{size} {};
+  explicit View(T* data = nullptr, std::size_t size = 0UL) : data_{data}, size_{size} {};
 
   constexpr T* data() { return data_; }
   constexpr const T* data() const { return data_; }

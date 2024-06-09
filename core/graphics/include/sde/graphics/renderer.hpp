@@ -6,35 +6,31 @@
 #pragma once
 
 // C++ Standard Library
+#include <array>
 #include <cstdint>
 #include <iosfwd>
 #include <string_view>
 
 // SDE
+
 #include "sde/expected.hpp"
+#include "sde/graphics/assets_fwd.hpp"
 #include "sde/graphics/render_target.hpp"
-#include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
-#include "sde/graphics/shapes.hpp"
-#include "sde/graphics/text_fwd.hpp"
-#include "sde/graphics/texture_fwd.hpp"
-#include "sde/graphics/texture_handle.hpp"
+#include "sde/graphics/shapes_fwd.hpp"
 #include "sde/graphics/texture_units.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
 {
-class TileSet;
-struct TileMap;
-
 /**
  * @brief Resources used during a render pass
  */
 struct RenderResources
 {
   ShaderHandle shader = ShaderHandle::null();
-  TextureUnits textures = {};
+  std::size_t buffer_group = 0UL;
   bool isValid() const { return shader.isValid(); }
 };
 
@@ -56,7 +52,23 @@ struct RenderAttributes
 std::ostream& operator<<(std::ostream& os, const RenderAttributes& attributes);
 
 
-struct RenderPass;
+/**
+ * @brief Buffer mode
+ */
+enum class RenderBufferMode
+{
+  kStatic,
+  kDynamic
+};
+
+/**
+ * @brief Texture creation options
+ */
+struct RenderBufferOptions
+{
+  std::size_t max_triangle_count_per_render_pass = 10000UL;
+  RenderBufferMode mode = RenderBufferMode::kDynamic;
+};
 
 
 /**
@@ -64,7 +76,8 @@ struct RenderPass;
  */
 struct Renderer2DOptions
 {
-  std::size_t max_triangle_count_per_render_pass = 10000UL;
+  static constexpr std::size_t kVetexArrayCount = 4;
+  std::array<RenderBufferOptions, kVetexArrayCount> buffers;
 };
 
 struct RenderBackend
@@ -85,23 +98,24 @@ public:
 
   Renderer2D(Renderer2D&&);
 
-  static expected<Renderer2D, RendererError>
-  create(const ShaderCache* shader_cache, const TextureCache* texture_cache, const Renderer2DOptions& options = {});
+  static expected<Renderer2D, RendererError> create(const Renderer2DOptions& options = {});
 
-  void rebind(const ShaderCache* shader_cache) { shader_cache_ = shader_cache; }
-  void rebind(const TextureCache* texture_cache) { texture_cache_ = texture_cache; }
+  void flush(const Assets& assets, const RenderAttributes& attributes, const Mat3f& viewport_from_world);
 
-  void flush();
+  void refresh(const RenderResources& resources);
 
-  Mat3f refresh(RenderTarget& target, const RenderAttributes& attributes, const RenderResources& resources);
+  void assign(std::size_t unit, const TextureHandle& texture) { next_active_textures_[unit] = texture; }
+
+  std::optional<std::size_t> assign(const TextureHandle& texture);
 
 private:
   Renderer2D() = default;
   Renderer2D(const Renderer2D&) = delete;
 
-  const ShaderCache* shader_cache_ = nullptr;
-  const TextureCache* texture_cache_ = nullptr;
-  RenderResources active_resources_;
+  RenderResources last_active_resources_;
+  RenderResources next_active_resources_;
+  TextureUnits last_active_textures_;
+  TextureUnits next_active_textures_;
   RenderBackend* backend_ = nullptr;
 };
 
@@ -116,7 +130,7 @@ enum class RenderPassError
 /**
  * @brief Encapsulates a single render pass
  */
-struct RenderPass
+class RenderPass
 {
 public:
   ~RenderPass();
@@ -126,23 +140,19 @@ public:
   expected<void, RenderPassError> submit(View<const Quad> quads);
   expected<void, RenderPassError> submit(View<const Circle> circles);
   expected<void, RenderPassError> submit(View<const TexturedQuad> quads);
-  expected<void, RenderPassError> submit(View<const TileMap> tile_maps, const TileSet& tile_set);
-  expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs);
+
+  const Assets& assets() const { return *assets_; };
+  std::optional<std::size_t> assign(const TextureHandle& texture) { return renderer_->assign(texture); }
 
   static expected<RenderPass, RenderPassError> create(
     RenderTarget& target,
     Renderer2D& renderer,
+    const Assets& assets,
     const RenderAttributes& attributes,
     const RenderResources& resources);
 
-  static expected<RenderPass, RenderPassError> create(
-    RenderTarget& target,
-    Renderer2D& renderer,
-    const RenderAttributes& attributes,
-    const RenderResources& resources,
-    const Vec4f& clear_color);
-
   const Mat3f& getWorldFromViewportMatrix() const { return world_from_viewport_; };
+  const Mat3f& getViewportFromWorldMatrix() const { return viewport_from_world_; };
   const Bounds2f& getViewportInWorldBounds() const { return viewport_in_world_bounds_; };
 
 private:
@@ -150,7 +160,10 @@ private:
   RenderPass(const RenderPass&) = delete;
 
   Renderer2D* renderer_;
+  const Assets* assets_;
+  const RenderAttributes* attributes_;
   Mat3f world_from_viewport_;
+  Mat3f viewport_from_world_;
   Bounds2f viewport_in_world_bounds_;
 };
 
