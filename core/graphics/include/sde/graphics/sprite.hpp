@@ -52,6 +52,8 @@ public:
 
   void setMode(Mode mode) { mode_ = mode; }
 
+  void setRate(float rate) { frames_per_second_ = rate; }
+
 private:
   TileSetHandle frames_handle_;
   float frames_per_second_;

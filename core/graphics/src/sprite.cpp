@@ -23,8 +23,7 @@ void Sprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
     return;
   }
 
-  const auto& textures = rp.resources().textures;
-  if (const auto texture_unit_opt = textures(tile_atlas_); texture_unit_opt.has_value())
+  if (const auto texture_unit_opt = rp.assign(tile_atlas_); texture_unit_opt.has_value())
   {
     const TexturedQuad texture_quad{
       .rect = rect, .rect_texture = tile_bounds_, .color = tint, .texture_unit = (*texture_unit_opt)};
@@ -54,8 +53,7 @@ void AnimatedSprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tin
   const auto frame_idx_saturated = (mode_ == Mode::kLooped) ? (frame_ % frames->tile_bounds.size())
                                                             : std::min(frame_, frames->tile_bounds.size() - 1UL);
 
-  const auto& textures = rp.resources().textures;
-  if (const auto texture_unit_opt = textures(frames->tile_atlas); texture_unit_opt.has_value())
+  if (const auto texture_unit_opt = rp.assign(frames->tile_atlas); texture_unit_opt.has_value())
   {
     const TexturedQuad texture_quad{
       .rect = rect,

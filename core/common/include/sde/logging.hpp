@@ -69,18 +69,6 @@ enum class LogSeverity
 #define SDE_LOG_FATAL(text) SDE_LOG(::sde::LogSeverity::kError, text);
 
 
-#if defined(NDEBUG) || defined(_NDEBUG)
-
-#define SDE_ASSERT_MSG(fmt, ...) (void)0
-#define SDE_ASSERT_MSG_COND(cond, fmt, ...) (void)0
-#define SDE_ASSERT(cond, message)                                                                                      \
-  if (!(cond))                                                                                                         \
-  {                                                                                                                    \
-    std::abort();                                                                                                      \
-  }
-
-#else
-
 #define SDE_ASSERT_MSG(fmt, ...) std::fprintf(stderr, fmt, __VA_ARGS__)
 #define SDE_ASSERT_MSG_COND(cond, fmt, ...)                                                                            \
   if (!(cond))                                                                                                         \
@@ -98,8 +86,6 @@ enum class LogSeverity
       __LINE__);                                                                                                       \
     std::abort();                                                                                                      \
   }
-
-#endif  // NDEBUG
 
 #define SDE_ASSERT_NULL_MSG(val_ptr, msg) SDE_ASSERT(val_ptr == nullptr, msg)
 #define SDE_ASSERT_NON_NULL_MSG(val_ptr, msg) SDE_ASSERT(val_ptr != nullptr, msg)

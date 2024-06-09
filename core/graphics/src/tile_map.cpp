@@ -64,7 +64,7 @@ void TileMap::draw(RenderPass& rp, const Vec4f& tint) const
     return;
   }
 
-  const auto texture_unit_opt = rp.resources().textures(tile_set->tile_atlas);
+  const auto texture_unit_opt = rp.assign(tile_set->tile_atlas);
   if (!texture_unit_opt.has_value())
   {
     return;

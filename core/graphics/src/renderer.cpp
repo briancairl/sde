@@ -594,37 +594,70 @@ Renderer2D::~Renderer2D()
 }
 
 Renderer2D::Renderer2D(Renderer2D&& other) :
-    active_resources_{std::move(other.active_resources_)}, backend_{other.backend_}
+    last_active_resources_{std::move(other.last_active_resources_)},
+    next_active_resources_{std::move(other.next_active_resources_)},
+    last_active_textures_{std::move(other.last_active_textures_)},
+    next_active_textures_{std::move(other.next_active_textures_)},
+    backend_{other.backend_}
 {
   other.backend_ = nullptr;
 }
 
-Mat3f Renderer2D::refresh(
-  RenderTarget& target,
-  const Assets& assets,
-  const RenderAttributes& attributes,
-  const RenderResources& resources)
+
+std::optional<std::size_t> Renderer2D::assign(const TextureHandle& texture)
+{
+  std::size_t first_inactive_unit = TextureUnits::kAvailable;
+  for (std::size_t unit = 0; unit < TextureUnits::kAvailable; ++unit)
+  {
+    // Texture is already assigned to a unit
+    if (next_active_textures_[unit] == texture)
+    {
+      return unit;
+    }
+    // Find the first unassigned unit
+    else if (next_active_textures_[unit].isNull() and (first_inactive_unit == TextureUnits::kAvailable))
+    {
+      first_inactive_unit = unit;
+    }
+  }
+  // Assign texture to the first unassigned unit
+  if (first_inactive_unit != TextureUnits::kAvailable)
+  {
+    assign(first_inactive_unit, texture);
+    return first_inactive_unit;
+  }
+  // All unit in use
+  return std::nullopt;
+}
+
+void Renderer2D::refresh(const RenderResources& resources)
 {
   SDE_ASSERT_TRUE(resources.isValid());
+  last_active_resources_ = next_active_resources_;
+  next_active_resources_ = resources;
+  backend__opengl->start(next_active_resources_.buffer_group);
+}
 
-  const auto* shader = assets.shaders(resources.shader);
-
+void Renderer2D::flush(const Assets& assets, const RenderAttributes& attributes, const Mat3f& viewport_from_world)
+{
+  const auto* shader = assets.shaders(next_active_resources_.shader);
   SDE_ASSERT_NE(shader, nullptr);
 
   // Set active shader
-  if (resources.shader != active_resources_.shader)
+  if (next_active_resources_.shader != last_active_resources_.shader)
   {
     SDE_ASSERT_NE(shader, nullptr);
     glUseProgram(shader->native_id);
-    active_resources_.textures.reset();
+    // Make sure all texture units are set ???
+    // last_active_texture_units_.reset();
   }
 
   // Set active texture units
   for (std::size_t u = 0; u < TextureUnits::kAvailable; ++u)
   {
-    if (resources.textures[u] and resources.textures[u] != active_resources_.textures[u])
+    if (next_active_textures_[u] and next_active_textures_[u] != last_active_textures_[u])
     {
-      const auto* texture = assets.textures(resources.textures[u]);
+      const auto* texture = assets.textures(next_active_textures_[u]);
       SDE_ASSERT_NE(texture, nullptr);
 
       glActiveTexture(GL_TEXTURE0 + u);
@@ -633,22 +666,15 @@ Mat3f Renderer2D::refresh(
     }
   }
 
+  // clang-format off
   // Apply other variables
   glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), attributes.time);
   glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), attributes.time_delta);
+  glUniformMatrix3fv(glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, viewport_from_world.data());
+  // clang-format on
 
-  const Mat3f world_from_viewport = attributes.getWorldFromViewportMatrix(target);
-  const Mat3f viewport_from_world = world_from_viewport.inverse();
-
-  glUniformMatrix3fv(
-    glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, viewport_from_world.data());
-
-  backend__opengl->start(resources.buffer_group);
-
-  return world_from_viewport;
+  backend__opengl->finish();
 }
-
-void Renderer2D::flush() { backend__opengl->finish(); }
 
 expected<void, RenderPassError> RenderPass::submit(View<const Quad> quads) { return backend__opengl->submit(quads); }
 
@@ -665,8 +691,9 @@ expected<void, RenderPassError> RenderPass::submit(View<const TexturedQuad> quad
 RenderPass::RenderPass(RenderPass&& other) :
     renderer_{other.renderer_},
     assets_{other.assets_},
-    resources_{other.resources_},
+    attributes_{other.attributes_},
     world_from_viewport_{other.world_from_viewport_},
+    viewport_from_world_{other.viewport_from_world_},
     viewport_in_world_bounds_{other.viewport_in_world_bounds_}
 {
   other.renderer_ = nullptr;
@@ -678,7 +705,7 @@ RenderPass::~RenderPass()
   {
     return;
   }
-  backend__opengl->finish();
+  renderer_->flush(*assets_, *attributes_, viewport_from_world_);
   backend__render_pass_active.clear();
 }
 
@@ -694,11 +721,15 @@ expected<RenderPass, RenderPassError> RenderPass::create(
     return make_unexpected(RenderPassError::kRenderPassActive);
   }
 
+
+  renderer.refresh(resources);
+
   RenderPass render_pass;
   render_pass.renderer_ = std::addressof(renderer);
   render_pass.assets_ = std::addressof(assets);
-  render_pass.resources_ = std::addressof(resources);
-  render_pass.world_from_viewport_ = renderer.refresh(target, assets, attributes, resources);
+  render_pass.attributes_ = std::addressof(attributes);
+  render_pass.world_from_viewport_ = attributes.getWorldFromViewportMatrix(target);
+  render_pass.viewport_from_world_ = render_pass.world_from_viewport_.inverse();
   render_pass.viewport_in_world_bounds_ =
     transform(render_pass.world_from_viewport_, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
 
@@ -707,7 +738,7 @@ expected<RenderPass, RenderPassError> RenderPass::create(
 
 std::ostream& operator<<(std::ostream& os, const RenderResources& resources)
 {
-  return os << "shader: " << resources.shader << "\ntexture-units:\n" << resources.textures;
+  return os << "shader: " << resources.shader;
 }
 
 std::ostream& operator<<(std::ostream& os, const RenderAttributes& attributes)

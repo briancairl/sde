@@ -1,7 +1,7 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file type_set_handle.hpp
+ * @file glyph_set_handle.hpp
  */
 #pragma once
 

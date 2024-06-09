@@ -8,7 +8,6 @@
 // C++ Standard Library
 #include <cstdint>
 #include <iosfwd>
-#include <unordered_map>
 
 // SDE
 #include "sde/expected.hpp"

@@ -31,6 +31,7 @@ sudo apt install           \
 - [x] Rendering text
 - [ ] Debug render layer (wire-frame boxes; times)
 - [ ] Stream-style logging
+- [ ] Camera zoom to focus
 
 ## Systems
 

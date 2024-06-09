@@ -11,8 +11,8 @@
 
 // SDE
 #include "sde/graphics/font.hpp"
-#include "sde/graphics/glyph_set.hpp"
 #include "sde/graphics/texture.hpp"
+#include "sde/graphics/type_set.hpp"
 #include "sde/logging.hpp"
 #include "sde/view.hpp"
 
@@ -21,7 +21,7 @@ namespace sde::graphics
 namespace
 {
 
-using GlyphLookup = std::array<Glyph, GlyphSetInfo::kGlyphCount>;
+using GlyphLookup = std::array<Glyph, TypeSetInfo::kGlyphCount>;
 
 constexpr int kFreeTypeSuccess = 0;
 
@@ -37,17 +37,17 @@ UniqueResource<FT_Library, FreeTypeRelease> FreeType{[] {
 }()};
 
 const auto kDefaultGlyphs{[] {
-  std::array<char, GlyphSetInfo::kGlyphCount> glyphs;
+  std::array<char, TypeSetInfo::kGlyphCount> glyphs;
   std::iota(std::begin(glyphs), std::end(glyphs), 0);
   return glyphs;
 }()};
 
-expected<void, GlyphSetError> loadGlyphsFromFont(GlyphLookup& glyph_lut, const FontInfo& font, int glyph_height)
+expected<void, TypeSetError> loadGlyphsFromFont(GlyphLookup& glyph_lut, const FontInfo& font, int glyph_height)
 {
   if (glyph_height == 0)
   {
     SDE_LOG_DEBUG("GlyphSizeInvalid");
-    return make_unexpected(GlyphSetError::kGlyphSizeInvalid);
+    return make_unexpected(TypeSetError::kGlyphSizeInvalid);
   }
 
   const auto face = reinterpret_cast<FT_Face>(font.native_id.value());
@@ -56,14 +56,14 @@ expected<void, GlyphSetError> loadGlyphsFromFont(GlyphLookup& glyph_lut, const F
   if (FT_Set_Pixel_Sizes(face, kWidthFromHeight, glyph_height) != kFreeTypeSuccess)
   {
     SDE_LOG_DEBUG("GlyphSizeInvalid");
-    return make_unexpected(GlyphSetError::kGlyphSizeInvalid);
+    return make_unexpected(TypeSetError::kGlyphSizeInvalid);
   }
   for (std::size_t char_index = 0; char_index < kDefaultGlyphs.size(); ++char_index)
   {
     if (FT_Load_Char(face, kDefaultGlyphs[char_index], FT_LOAD_RENDER) != kFreeTypeSuccess)
     {
       SDE_LOG_DEBUG("GlyphMissing");
-      return make_unexpected(GlyphSetError::kGlyphDataMissing);
+      return make_unexpected(TypeSetError::kGlyphDataMissing);
     }
     else
     {
@@ -79,8 +79,11 @@ expected<void, GlyphSetError> loadGlyphsFromFont(GlyphLookup& glyph_lut, const F
   return {};
 }
 
-expected<TextureHandle, GlyphSetError>
-sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const FontInfo& font)
+expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
+  TextureCache& texture_cache,
+  GlyphLookup& glyph_lut,
+  const FontInfo& font,
+  const TypeSetOptions& options)
 {
   // Compute required texture dimensions
   Vec2i texture_dimensions{0, 0};
@@ -93,7 +96,7 @@ sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const F
   if (texture_dimensions.prod() == 0)
   {
     SDE_LOG_DEBUG("GlyphAtlasTextureCreationFailed");
-    return make_unexpected(GlyphSetError::kGlyphAtlasTextureCreationFailed);
+    return make_unexpected(TypeSetError::kGlyphAtlasTextureCreationFailed);
   }
 
   // clang-format off
@@ -104,8 +107,8 @@ sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const F
     TextureOptions{
       .u_wrapping = TextureWrapping::kClampToEdge,
       .v_wrapping = TextureWrapping::kClampToEdge,
-      .min_sampling = TextureSampling::kLinear,
-      .mag_sampling = TextureSampling::kLinear,
+      .min_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
+      .mag_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
       .flags = {
         .unpack_alignment = true
       }
@@ -115,7 +118,7 @@ sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const F
   if (!atlas_texture_or_error.has_value())
   {
     SDE_LOG_DEBUG("GlyphAtlasTextureCreationFailed");
-    return make_unexpected(GlyphSetError::kGlyphAtlasTextureCreationFailed);
+    return make_unexpected(TypeSetError::kGlyphAtlasTextureCreationFailed);
   }
 
   const auto face = reinterpret_cast<FT_Face>(font.native_id.value());
@@ -128,10 +131,11 @@ sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const F
       continue;
     }
 
+    // TODO(bcairl) is there anyway to prevent rendering twice?
     if (FT_Load_Char(face, g.character, FT_LOAD_RENDER) != kFreeTypeSuccess)
     {
       SDE_LOG_DEBUG("GlyphMissing");
-      return make_unexpected(GlyphSetError::kGlyphDataMissing);
+      return make_unexpected(TypeSetError::kGlyphDataMissing);
     }
 
     const auto* buffer_ptr = reinterpret_cast<std::uint8_t*>(face->glyph->bitmap.buffer);
@@ -148,7 +152,7 @@ sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const F
         !ok_or_error.has_value())
     {
       SDE_LOG_DEBUG("GlyphRenderingFailure");
-      return make_unexpected(GlyphSetError::kGlyphRenderingFailure);
+      return make_unexpected(TypeSetError::kGlyphRenderingFailure);
     }
 
     const Vec2f tex_coord_min{tex_coord_min_px.array().cast<float>() / texture_dimensions.array().cast<float>()};
@@ -164,7 +168,7 @@ sendGlyphsToTexture(TextureCache& texture_cache, GlyphLookup& glyph_lut, const F
 
 }  // namespace
 
-const Bounds2i GlyphSetInfo::getTextBounds(std::string_view text) const
+const Bounds2i TypeSetInfo::getTextBounds(std::string_view text) const
 {
   Bounds2i text_bounds;
 
@@ -183,8 +187,8 @@ const Bounds2i GlyphSetInfo::getTextBounds(std::string_view text) const
   return text_bounds;
 }
 
-expected<GlyphSetInfo, GlyphSetError>
-GlyphSetCache::generate(TextureCache& texture_cache, const element_t<FontCache>& font, const GlyphSetOptions& options)
+expected<TypeSetInfo, TypeSetError>
+TypeSetCache::generate(TextureCache& texture_cache, const element_t<FontCache>& font, const TypeSetOptions& options)
 {
   GlyphLookup glyph_lut;
   if (auto ok_or_error = loadGlyphsFromFont(glyph_lut, font, static_cast<int>(options.height_px));
@@ -193,14 +197,14 @@ GlyphSetCache::generate(TextureCache& texture_cache, const element_t<FontCache>&
     return make_unexpected(ok_or_error.error());
   }
 
-  auto glyph_atlas_texture_or_error = sendGlyphsToTexture(texture_cache, glyph_lut, font);
+  auto glyph_atlas_texture_or_error = sendGlyphsToTexture(texture_cache, glyph_lut, font, options);
   if (!glyph_atlas_texture_or_error.has_value())
   {
     SDE_LOG_DEBUG("GlyphTextureInvalid");
     return make_unexpected(glyph_atlas_texture_or_error.error());
   }
 
-  return GlyphSetInfo{
+  return TypeSetInfo{
     .options = options,
     .font = font,
     .glyph_atlas = std::move(glyph_atlas_texture_or_error).value(),

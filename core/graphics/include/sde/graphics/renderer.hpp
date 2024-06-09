@@ -30,7 +30,6 @@ namespace sde::graphics
 struct RenderResources
 {
   ShaderHandle shader = ShaderHandle::null();
-  TextureUnits textures = {};
   std::size_t buffer_group = 0UL;
   bool isValid() const { return shader.isValid(); }
 };
@@ -101,21 +100,22 @@ public:
 
   static expected<Renderer2D, RendererError> create(const Renderer2DOptions& options = {});
 
-  void flush();
+  void flush(const Assets& assets, const RenderAttributes& attributes, const Mat3f& viewport_from_world);
 
-  Mat3f refresh(
-    RenderTarget& target,
-    const Assets& assets,
-    const RenderAttributes& attributes,
-    const RenderResources& resources);
+  void refresh(const RenderResources& resources);
 
-  const RenderResources& resources() { return active_resources_; }
+  void assign(std::size_t unit, const TextureHandle& texture) { next_active_textures_[unit] = texture; }
+
+  std::optional<std::size_t> assign(const TextureHandle& texture);
 
 private:
   Renderer2D() = default;
   Renderer2D(const Renderer2D&) = delete;
 
-  RenderResources active_resources_;
+  RenderResources last_active_resources_;
+  RenderResources next_active_resources_;
+  TextureUnits last_active_textures_;
+  TextureUnits next_active_textures_;
   RenderBackend* backend_ = nullptr;
 };
 
@@ -140,11 +140,9 @@ public:
   expected<void, RenderPassError> submit(View<const Quad> quads);
   expected<void, RenderPassError> submit(View<const Circle> circles);
   expected<void, RenderPassError> submit(View<const TexturedQuad> quads);
-  // expected<void, RenderPassError> submit(View<const TileMap> tile_maps, const TileSetInfo& tile_set);
-  // expected<void, RenderPassError> submit(const Text& text, const GlyphSet& glyphs);
 
   const Assets& assets() const { return *assets_; };
-  const RenderResources& resources() const { return *resources_; }
+  std::optional<std::size_t> assign(const TextureHandle& texture) { return renderer_->assign(texture); }
 
   static expected<RenderPass, RenderPassError> create(
     RenderTarget& target,
@@ -154,6 +152,7 @@ public:
     const RenderResources& resources);
 
   const Mat3f& getWorldFromViewportMatrix() const { return world_from_viewport_; };
+  const Mat3f& getViewportFromWorldMatrix() const { return viewport_from_world_; };
   const Bounds2f& getViewportInWorldBounds() const { return viewport_in_world_bounds_; };
 
 private:
@@ -162,8 +161,9 @@ private:
 
   Renderer2D* renderer_;
   const Assets* assets_;
-  const RenderResources* resources_;
+  const RenderAttributes* attributes_;
   Mat3f world_from_viewport_;
+  Mat3f viewport_from_world_;
   Bounds2f viewport_in_world_bounds_;
 };
 
