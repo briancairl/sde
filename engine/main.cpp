@@ -115,7 +115,7 @@ int main(int argc, char** argv)
   auto icon_or_error = Image::load("/home/brian/dev/assets/icons/red.png");
   SDE_ASSERT_TRUE(icon_or_error.has_value());
 
-  auto app_or_error = sde::App::create(
+  auto app_or_error = App::create(
     {
       .initial_size = {1000, 500},
       .icon = std::addressof(*icon_or_error),

@@ -47,7 +47,7 @@ constexpr std::array<std::pair<int, std::size_t>, static_cast<size_t>(KeyCode::_
   {GLFW_KEY_RIGHT_ALT, static_cast<std::size_t>(KeyCode::kRAlt)},
 }};
 
-void glfwScanKeyStates(GLFWwindow* glfw_window, AppKeyStates& curr)
+void glfwScanKeyStates(GLFWwindow* glfw_window, KeyStates& curr)
 {
   auto prev_down = curr.down;
   for (const auto& [keycode, index] : kKeyScanPattern)

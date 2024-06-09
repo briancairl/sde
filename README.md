@@ -21,6 +21,10 @@ sudo apt install           \
 
 # Todo
 
+## Common
+- [ ] Cleanup core utility targets
+- [ ] Replace float times with `Time` / `Duration` nanosecond time objects
+
 ## 2D rendering
 
 - [ ] Fix test assets
@@ -32,6 +36,10 @@ sudo apt install           \
 - [ ] Debug render layer (wire-frame boxes; times)
 - [ ] Stream-style logging
 - [ ] Camera zoom to focus
+- [ ] Cleanup graphics build targets
+
+## Audio
+- [ ] Add basic audio facilities
 
 ## Systems
 
