@@ -80,7 +80,8 @@ cc_library(
     "include/sde/graphics/tile_set_fwd.hpp",
     "include/sde/graphics/tile_set_handle.hpp",
     "include/sde/graphics/tile_map.hpp",
-    "include/sde/graphics/window_handle.hpp",
+    "include/sde/graphics/window.hpp",
+    "include/sde/graphics/window_fwd.hpp",
   ],
   strip_include_prefix="include",
   deps=[
@@ -159,9 +160,9 @@ platform_glfw_debug_selector = select({
 })
 
 cc_library(
-  name="platform",
-  hdrs=["include/sde/graphics/platform.hpp"],
-  srcs=["src/platform.cpp"],
+  name="window",
+  hdrs=["include/sde/graphics/window.hpp"],
+  srcs=["src/window.cpp"],
   defines=platform_glfw_debug_selector,
   strip_include_prefix="include",
   deps=[

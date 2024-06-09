@@ -11,10 +11,11 @@
 #include <functional>
 
 // SDE
+#include "sde/expected.hpp"
 #include "sde/geometry_types.hpp"
-#include "sde/graphics/window_handle.hpp"
+#include "sde/graphics/window.hpp"
 
-namespace sde::graphics
+namespace sde
 {
 
 enum class KeyCode : std::size_t
@@ -50,7 +51,7 @@ enum class KeyCode : std::size_t
 
 static const auto kKeyCount = static_cast<std::size_t>(KeyCode::_Count_);
 
-struct WindowKeyStates
+struct AppKeyStates
 {
   std::bitset<kKeyCount> down{0};
   std::bitset<kKeyCount> pressed{0};
@@ -61,14 +62,7 @@ struct WindowKeyStates
   constexpr bool isReleased(KeyCode code) const { return released[static_cast<std::size_t>(code)]; }
 };
 
-// TODO() move to window module
-struct WindowOptions
-{
-  const char* title = "sde";
-  Vec2i initial_size = {640, 480};
-};
-
-struct WindowProperties
+struct AppProperties
 {
   using Clock = std::chrono::steady_clock;
   using Duration = Clock::duration;
@@ -80,7 +74,7 @@ struct WindowProperties
   Vec2d mouse_position_px = {0.0, 0.0};
   Vec2d mouse_scroll = {0.0, 0.0};
 
-  WindowKeyStates keys;
+  AppKeyStates keys;
 
   Vec2f getMousePositionViewport(Vec2i viewport_size) const
   {
@@ -90,32 +84,39 @@ struct WindowProperties
   }
 };
 
-enum class WindowDirective
+enum class AppDirective
 {
   kContinue,
   kReset,
   kClose
 };
 
-// TODO() move to window module
-class Window
+enum class AppError
 {
-public:
-  ~Window();
-
-  Window(Window&&) = default;
-
-  void spin(std::function<WindowDirective(const WindowProperties&)> on_update);
-
-  WindowHandle handle() const { return handle_; }
-
-  // TODO() move to window module; pass in window as target (fwd decl)
-  static Window initialize(const WindowOptions& options = {});
-
-private:
-  explicit Window(WindowHandle handle) : handle_{handle} {}
-  Window(const Window&) = delete;
-  WindowHandle handle_;
+  kWindowInvalid,
+  kWindowCreationFailure,
 };
 
-}  // namespace sde::graphics
+class App
+{
+public:
+  using Window = graphics::Window;
+  using WindowOptions = graphics::WindowOptions;
+
+  App(App&&) = default;
+
+  void spin(std::function<AppDirective(const AppProperties&)> on_update);
+
+  const Window& window() const { return window_; }
+
+  static expected<App, AppError> create(Window&& window);
+
+  static expected<App, AppError> create(const WindowOptions& window_options);
+
+private:
+  explicit App(Window&& window);
+  App(const App&) = delete;
+  Window window_;
+};
+
+}  // namespace sde

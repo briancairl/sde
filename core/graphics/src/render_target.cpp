@@ -10,6 +10,8 @@
 // SDE
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/texture.hpp"
+#include "sde/graphics/window.hpp"
+#include "sde/logging.hpp"
 
 namespace sde::graphics
 {
@@ -30,7 +32,7 @@ RenderTarget::RenderTarget(RenderTarget&& other) :
     target_{std::move(other.target_)}, viewport_size_{std::move(other.viewport_size_)}
 {}
 
-RenderTarget::RenderTarget(WindowHandle window) : target_{window}, viewport_size_{Vec2i::Zero()} {}
+RenderTarget::RenderTarget(WindowNativeHandle window) : target_{window}, viewport_size_{Vec2i::Zero()} {}
 
 RenderTarget::RenderTarget(RenderTargetHandle frame_buffer, Vec2i size) : target_{frame_buffer}, viewport_size_{size} {}
 
@@ -43,13 +45,13 @@ RenderTarget::~RenderTarget()
   }
 }
 
-expected<RenderTarget, RenderTargetError> RenderTarget::create(const WindowHandle& window)
+expected<RenderTarget, RenderTargetError> RenderTarget::create(const Window& window)
 {
   if (window.isNull())
   {
     return unexpected<RenderTargetError>{RenderTargetError::kInvalidWindow};
   }
-  return RenderTarget{window};
+  return RenderTarget{window.value()};
 }
 
 expected<RenderTarget, RenderTargetError>
@@ -80,10 +82,11 @@ void RenderTarget::activate() { glBindFramebuffer(GL_FRAMEBUFFER, handle().id())
 
 void RenderTarget::refresh()
 {
-  if (const WindowHandle* window_handle = std::get_if<WindowHandle>(&target_); window_handle != nullptr)
+  if (const WindowNativeHandle* window_handle_native = std::get_if<WindowNativeHandle>(&target_);
+      window_handle_native != nullptr)
   {
     glfwGetFramebufferSize(
-      reinterpret_cast<GLFWwindow*>(window_handle->id()), (viewport_size_.data() + 0), (viewport_size_.data() + 1));
+      reinterpret_cast<GLFWwindow*>(*window_handle_native), (viewport_size_.data() + 0), (viewport_size_.data() + 1));
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
   }
   else

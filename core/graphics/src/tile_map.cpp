@@ -70,7 +70,7 @@ void TileMap::draw(RenderPass& rp, const Vec4f& tint) const
     return;
   }
 
-  static std::vector<TexturedQuad> s__textured_quad_buffer;
+  static std::vector<TexturedQuad> STATIC__textured_quad_buffer;
 
   const Vec2i min_indices = ((aabb_clipped.min() - origin_).array() / tile_size_.array()).floor().cast<int>();
   const Vec2i max_indices = ((aabb_clipped.max() - origin_).array() / tile_size_.array()).ceil().cast<int>();
@@ -84,7 +84,7 @@ void TileMap::draw(RenderPass& rp, const Vec4f& tint) const
       const Vec2f rect_min{origin_ + Vec2f{x * tile_size_.x(), y * tile_size_.y()}};
       const Vec2f rect_max{rect_min + tile_size_};
 
-      s__textured_quad_buffer.push_back(
+      STATIC__textured_quad_buffer.push_back(
         {.rect = Bounds2f{rect_min, rect_max},
          .rect_texture = tile_set->tile_bounds[tile_index],
          .color = tint,
@@ -92,8 +92,8 @@ void TileMap::draw(RenderPass& rp, const Vec4f& tint) const
     }
   }
 
-  rp.submit(make_const_view(s__textured_quad_buffer));
-  s__textured_quad_buffer.clear();
+  rp.submit(make_const_view(STATIC__textured_quad_buffer));
+  STATIC__textured_quad_buffer.clear();
 }
 
 std::ostream& operator<<(std::ostream& os, const TileMap& tile_map)

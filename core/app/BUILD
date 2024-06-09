@@ -1,0 +1,13 @@
+cc_library(
+  name="app",
+  hdrs=["include/sde/app.hpp"],
+  srcs=["src/app.cpp"],
+  strip_include_prefix="include",
+  deps=[
+    "//core/common:expected",
+    "//core/graphics:graphics",
+    "//core/graphics:window",
+    "@glfw//:glfw",
+  ],
+  visibility=["//visibility:public"]
+)

@@ -3,11 +3,11 @@
 #include <iostream>
 
 // SDE
+#include "sde/app.hpp"
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/assets.hpp"
 #include "sde/graphics/colors.hpp"
 #include "sde/graphics/image.hpp"
-#include "sde/graphics/platform.hpp"
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
@@ -17,6 +17,7 @@
 #include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/tile_set.hpp"
 #include "sde/graphics/type_setter.hpp"
+#include "sde/graphics/window.hpp"
 #include "sde/logging.hpp"
 #include "sde/view.hpp"
 
@@ -106,13 +107,21 @@ static const auto* kTextShader = R"TextShader(
 
 int main(int argc, char** argv)
 {
+  using namespace sde;
+  using namespace sde::graphics;
+
   SDE_LOG_INFO("starting...");
 
-  auto app = sde::graphics::Window::initialize({
-    .initial_size = {1000, 500},
-  });
+  auto icon_or_error = Image::load("/home/brian/dev/assets/icons/red.png");
+  SDE_ASSERT_TRUE(icon_or_error.has_value());
 
-  using namespace sde::graphics;
+  auto app_or_error = sde::App::create(
+    {
+      .initial_size = {1000, 500},
+      .icon = std::addressof(*icon_or_error),
+      //.cursor = std::addressof(*icon_or_error),
+    });
+  SDE_ASSERT_TRUE(app_or_error.has_value());
 
   Assets assets;
 
@@ -457,7 +466,7 @@ int main(int argc, char** argv)
 
 
 
-  auto window_target_or_error = RenderTarget::create(app.handle());
+  auto window_target_or_error = RenderTarget::create(app_or_error->window());
   SDE_ASSERT_TRUE(window_target_or_error.has_value());
 
 
@@ -510,7 +519,7 @@ int main(int argc, char** argv)
   AnimatedSprite* prev_animation = &running_front_animated_sprite;
   AnimatedSprite* next_animation = &running_front_animated_sprite;
 
-  app.spin([&](const auto& window)
+  app_or_error->spin([&](const auto& window)
   {
     const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window.time).count();
     const auto time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window.time_delta).count();
@@ -656,7 +665,7 @@ int main(int argc, char** argv)
     }
     prev_animation = next_animation;
 
-    return WindowDirective::kContinue;
+    return AppDirective::kContinue;
   });
 
   SDE_LOG_INFO("done.");

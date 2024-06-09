@@ -14,7 +14,7 @@
 #include "sde/geometry_types.hpp"
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/typedef.hpp"
-#include "sde/graphics/window_handle.hpp"
+#include "sde/graphics/window_fwd.hpp"
 #include "sde/resource_handle.hpp"
 
 namespace sde::graphics
@@ -42,7 +42,7 @@ public:
 
   RenderTarget(RenderTarget&& other);
 
-  static expected<RenderTarget, RenderTargetError> create(const WindowHandle& window);
+  static expected<RenderTarget, RenderTargetError> create(const Window& window);
 
   static expected<RenderTarget, RenderTargetError>
   create(const TextureHandle& texture, const TextureCache& texture_cache);
@@ -71,10 +71,10 @@ private:
 
   friend class RenderTargetActive;
 
-  explicit RenderTarget(WindowHandle window);
+  explicit RenderTarget(WindowNativeHandle window);
   RenderTarget(RenderTargetHandle frame_buffer, Vec2i size);
 
-  std::variant<WindowHandle, RenderTargetHandle> target_;
+  std::variant<WindowNativeHandle, RenderTargetHandle> target_;
 
   Vec2i viewport_size_;
 };
