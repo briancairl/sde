@@ -7,6 +7,7 @@
 
 // C++ Standard Library
 #include <cstdio>
+#include <cwchar>
 #include <type_traits>
 #include <utility>
 

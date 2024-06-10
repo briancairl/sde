@@ -1,0 +1,47 @@
+### Audio declarations ###
+
+cc_library(
+  name="audio_hdrs",
+  hdrs=[
+    "include/sde/audio/player.hpp",
+  ],
+  strip_include_prefix="include",
+  visibility=["//visibility:private"]
+)
+
+### OpenAL implemenatation ###
+
+cc_library(
+  name="audio_impl__openal_user_types",
+  hdrs=["include/sde/audio/typedef.hpp"],
+  strip_include_prefix="include",
+  visibility=["//visibility:private"]
+)
+
+cc_library(
+  name="audio_impl__openal_internal",
+  hdrs=["src/openal.inl"],
+  strip_include_prefix="src",
+  deps=[
+    "//core/common:core",
+    "//core/common:expected",
+    ":audio_impl__openal_user_types",
+  ],
+  visibility=["//visibility:private"]
+)
+
+cc_library(
+  name="audio",
+  srcs=[
+    "src/player.cpp"
+  ],
+  deps=[
+    "@openal//:openal",
+    "//core/common:core",
+    "//core/common:expected",
+    "//core/common:resource",
+    ":audio_hdrs",
+    ":audio_impl__openal_internal"
+  ],
+  visibility=["//visibility:public"]
+)
