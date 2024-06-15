@@ -4,6 +4,8 @@ cc_library(
   name="audio_hdrs",
   hdrs=[
     "include/sde/audio/player.hpp",
+    "include/sde/audio/sound_data.hpp",
+    "include/sde/audio/sound_channel_format.hpp",
   ],
   strip_include_prefix="include",
   visibility=["//visibility:private"]
@@ -33,10 +35,13 @@ cc_library(
 cc_library(
   name="audio",
   srcs=[
-    "src/player.cpp"
+    "src/player.cpp",
+    "src/sound_data.cpp",
+    "src/sound_channel_format.cpp"
   ],
   deps=[
     "@openal//:openal",
+    "//core/common:asset",
     "//core/common:core",
     "//core/common:expected",
     "//core/common:resource",

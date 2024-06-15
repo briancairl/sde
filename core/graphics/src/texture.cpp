@@ -418,7 +418,7 @@ template expected<TextureInfo, TextureError> TextureCache::generate(
 expected<TextureInfo, TextureError> TextureCache::generate(const Image& image, const TextureOptions& options)
 {
   return TextureCache::generate(
-    image.data(), TextureShape{image.shape().value}, layout_from_channel_count(image.channel_count()), options);
+    image.data(), TextureShape{image.shape().value}, layout_from_channel_count(image.getChannelCount()), options);
 }
 
 template <typename DataT>
