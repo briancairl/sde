@@ -43,6 +43,8 @@ sudo apt install           \
 - [ ] Camera zoom to focus
 - [ ] Cleanup graphics build targets
 - [ ] Add drawable base and common on-draw errors
+  + [ ] Add draw-layer argument
+  + [ ] Add debug draw-layer
 
 ## Audio
 - [ ] Add basic audio facilities

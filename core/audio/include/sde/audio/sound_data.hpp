@@ -71,7 +71,7 @@ public:
   /**
    * @brief Intended sound channel format
    */
-  [[nodiscard]] constexpr const SoundChannelFormat& getSoundChannelFormat() { return channel_format_; };
+  [[nodiscard]] constexpr const SoundChannelFormat& getChannelFormat() const { return channel_format_; };
 
   /**
    * @brief Returns pointer to sound data
@@ -100,7 +100,7 @@ private:
     const std::size_t bits_per_second,
     const SoundChannelFormat& channel_format);
 
-  /// Sound data buffer
+  /// Sound samples
   std::byte* data_ = nullptr;
   /// Length of buffer, in bytes
   std::size_t buffer_length_ = 0;

@@ -37,7 +37,7 @@ public:
 
   ResourceHandle& operator++()
   {
-    ++id_;
+    id_ = T::next_unique(id_);
     return *this;
   }
 
@@ -52,6 +52,7 @@ public:
   static constexpr T null() { return T{kNullValue}; }
 
 private:
+  static constexpr IdentifierT next_unique(IdentifierT prev) { return prev + 1; }
   IdentifierT id_ = kNullValue;
 };
 

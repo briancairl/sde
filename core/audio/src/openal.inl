@@ -16,7 +16,6 @@
 #include <type_traits>
 
 // SDE
-#include "sde/logging.hpp"
 #include "sde/audio/typedef.hpp"
 
 namespace sde::audio
@@ -41,17 +40,3 @@ static inline const char* al_error_to_str(const ALenum error)
 }
 
 }  // sde::audio
-
-#ifndef NDEBUG
-    #define SDE_AL_CHECK_LAST_ERROR(statement) \
-    {\
-        const ALenum __last_openal_err = alGetError();\
-        SDE_ASSERT_MSG_COND(__last_openal_err == AL_NO_ERROR, ">>>   %s   <<<\n", statement);\
-        SDE_ASSERT(__last_openal_err == AL_NO_ERROR, al_error_to_str(__last_openal_err));\
-    }
-#else
-    #define SDE_AL_CHECK_LAST_ERROR(statement)
-#endif // NDEBUG
-
-#define SDE_AL_TEST_ERROR_STATEMENT_STR(x) #x
-#define SDE_AL_TEST_ERROR(statement) (statement); SDE_AL_CHECK_LAST_ERROR(SDE_AL_TEST_ERROR_STATEMENT_STR(statement));

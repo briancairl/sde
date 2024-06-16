@@ -121,12 +121,12 @@ expected<SoundData, SoundDataError> SoundData::load(const asset::path& path)
     return make_unexpected(SoundDataError::kInvalidSoundFileBitDepth);
   }
 
-  return SoundData::create(
+  return SoundData{
     reinterpret_cast<std::byte*>(wave_data),
-    wave->dataSize,
-    wave->sampleRate,
+    static_cast<std::size_t>(wave->dataSize),
+    static_cast<std::size_t>(wave->sampleRate),
     SoundChannelFormat{
-      .count = std::move(channel_count_opt).value(), .bit_depth = std::move(channel_bit_depth_opt).value()});
+      .count = std::move(channel_count_opt).value(), .bit_depth = std::move(channel_bit_depth_opt).value()}};
 }
 
 void SoundData::swap(SoundData& other)

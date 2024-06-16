@@ -3,9 +3,15 @@
 cc_library(
   name="audio_hdrs",
   hdrs=[
+    "include/sde/audio/assets.hpp",
+    "include/sde/audio/assets_fwd.hpp",
     "include/sde/audio/player.hpp",
-    "include/sde/audio/sound_data.hpp",
+    "include/sde/audio/player_fwd.hpp",
     "include/sde/audio/sound_channel_format.hpp",
+    "include/sde/audio/sound_data.hpp",
+    "include/sde/audio/sound_fwd.hpp",
+    "include/sde/audio/sound.hpp",
+    "include/sde/audio/sound_handle.hpp",
   ],
   strip_include_prefix="include",
   visibility=["//visibility:private"]
@@ -36,6 +42,7 @@ cc_library(
   name="audio",
   srcs=[
     "src/player.cpp",
+    "src/sound.cpp",
     "src/sound_data.cpp",
     "src/sound_channel_format.cpp"
   ],

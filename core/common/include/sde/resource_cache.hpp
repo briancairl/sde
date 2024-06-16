@@ -40,8 +40,7 @@ public:
 
   template <typename... CreateArgTs> [[nodiscard]] expected<element_type, error_type> create(CreateArgTs&&... args)
   {
-    auto h = handle_lower_bound_;
-    ++h;
+    auto h = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);
     return this->add(h, std::forward<CreateArgTs>(args)...);
   }
 
@@ -94,6 +93,12 @@ public:
   ResourceCache& operator=(ResourceCache&&) = default;
 
 private:
+  [[nodiscard]] static handle_type next_unique_id([[maybe_unused]] const CacheMap& map, handle_type lower_bound)
+  {
+    ++lower_bound;
+    return lower_bound;
+  }
+
   ResourceCache(const ResourceCache&) = delete;
   ResourceCache& operator=(const ResourceCache&) = delete;
   /// Last used resource handle

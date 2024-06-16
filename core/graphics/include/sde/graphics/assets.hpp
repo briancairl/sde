@@ -5,9 +5,6 @@
  */
 #pragma once
 
-// C++ Standard Library
-#include <iosfwd>
-
 // SDE
 #include "sde/graphics/font.hpp"
 #include "sde/graphics/shader.hpp"
