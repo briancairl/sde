@@ -12,6 +12,7 @@ cc_library(
     "include/sde/audio/sound_fwd.hpp",
     "include/sde/audio/sound.hpp",
     "include/sde/audio/sound_handle.hpp",
+    "include/sde/audio/sound_source.hpp",
   ],
   strip_include_prefix="include",
   visibility=["//visibility:private"]
@@ -44,13 +45,15 @@ cc_library(
     "src/player.cpp",
     "src/sound.cpp",
     "src/sound_data.cpp",
-    "src/sound_channel_format.cpp"
+    "src/sound_channel_format.cpp",
+    "src/sound_source.cpp",
   ],
   deps=[
     "@openal//:openal",
     "//core/common:asset",
     "//core/common:core",
     "//core/common:expected",
+    "//core/common:geometry",
     "//core/common:resource",
     ":audio_hdrs",
     ":audio_impl__openal_internal"

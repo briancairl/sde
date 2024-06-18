@@ -32,6 +32,7 @@ public:
     handle_type handle;
     const value_type* value;
 
+    constexpr bool valid() const { return handle.isValid(); }
     operator handle_type() const { return handle; }
     operator const value_type&() const { return (*value); }
   };

@@ -5,8 +5,6 @@
  */
 #pragma once
 
-// C++ Standard Library
-
 // SDE
 #include "sde/audio/player_fwd.hpp"
 #include "sde/audio/typedef.hpp"
@@ -58,8 +56,6 @@ public:
   [[nodiscard]] static expected<Player, PlayerError> create(const PlayerOptions& options = {});
 
   constexpr const PlayerContext& context() const { return context_; }
-
-  constexpr operator const PlayerContext&() const { return context(); }
 
 private:
   Player(NativeDevice&& device, PlayerContext&& context);

@@ -12,7 +12,11 @@
 namespace sde::audio
 {
 
-void NativeDeviceDeleter::operator()(device_handle_t id) const { alcCloseDevice(reinterpret_cast<ALCdevice*>(id)); }
+void NativeDeviceDeleter::operator()(device_handle_t id) const
+{
+  SDE_LOG_DEBUG_FMT("device closed: %p", id);
+  alcCloseDevice(reinterpret_cast<ALCdevice*>(id));
+}
 
 void NativeContextDeleter::operator()(context_handle_t id) const
 {
@@ -36,7 +40,8 @@ expected<Player, PlayerError> Player::create(const PlayerOptions& options)
   const auto native_device_handle = [&options] {
     if (options.device_name == nullptr)
     {
-      const char* default_device_name = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+      const char* default_device_name = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
+      SDE_LOG_DEBUG_FMT("alcOpenDevice: %s", default_device_name);
       return alcOpenDevice(default_device_name);
     }
     else
@@ -44,18 +49,18 @@ expected<Player, PlayerError> Player::create(const PlayerOptions& options)
       return alcOpenDevice(options.device_name);
     }
   }();
-  if (const auto error = alGetError(); error != ALC_NO_ERROR)
+  if (native_device_handle == nullptr)
   {
-    SDE_LOG_DEBUG_FMT("error: %s", al_error_to_str(error));
+    SDE_LOG_DEBUG_FMT("alcOpenDevice: %p", native_device_handle);
     return make_unexpected(PlayerError::kBackendCannotOpenDevice);
   }
 
   NativeDevice device{reinterpret_cast<void*>(native_device_handle)};
 
   const auto native_context_handle = alcCreateContext(native_device_handle, NULL);
-  if (const auto error = alGetError(); error != ALC_NO_ERROR)
+  if (native_context_handle == nullptr)
   {
-    SDE_LOG_DEBUG_FMT("error: %s", al_error_to_str(error));
+    SDE_LOG_DEBUG_FMT("alcCreateContext: %p", native_context_handle);
     return make_unexpected(PlayerError::kBackendFailedContextCreation);
   }
 

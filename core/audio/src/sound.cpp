@@ -76,6 +76,8 @@ SoundCache::generate(const PlayerContext& context, const SoundData& sound, const
 
   return SoundInfo{
     .options = options,
+    .buffer_length = sound.data().size(),
+    .bit_rate = sound.getBitRate(),
     .native_id = std::move(native_id),
   };
 }

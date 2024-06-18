@@ -1,7 +1,7 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file player.hpp
+ * @file sound.hpp
  */
 #pragma once
 
@@ -41,6 +41,8 @@ using NativeBufferID = UniqueResource<buffer_handle_t, NativeBufferDeleter>;
 struct SoundInfo
 {
   SoundOptions options;
+  std::size_t buffer_length;
+  std::size_t bit_rate;
   NativeBufferID native_id;
 };
 
