@@ -8,7 +8,6 @@
 // C++ Standard Library
 
 // SDE
-#include "sde/audio/player_fwd.hpp"
 #include "sde/audio/sound_channel_format.hpp"
 #include "sde/audio/sound_fwd.hpp"
 #include "sde/audio/sound_handle.hpp"
@@ -68,8 +67,7 @@ class SoundCache : public ResourceCache<SoundCache>
   friend class ResourceCache<SoundCache>;
 
 private:
-  expected<SoundInfo, SoundError>
-  generate(const PlayerContext& context, const SoundData& sound, const SoundOptions& options = {});
+  expected<SoundInfo, SoundError> generate(const SoundData& sound, const SoundOptions& options = {});
 };
 
 }  // namespace sde::audio

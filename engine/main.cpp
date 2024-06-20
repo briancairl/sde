@@ -5,10 +5,9 @@
 // SDE
 #include "sde/app.hpp"
 #include "sde/audio/assets.hpp"
-#include "sde/audio/player.hpp"
+#include "sde/audio/mixer.hpp"
 #include "sde/audio/sound.hpp"
 #include "sde/audio/sound_data.hpp"
-#include "sde/audio/sound_source.hpp"
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/assets.hpp"
 #include "sde/graphics/colors.hpp"
@@ -133,23 +132,19 @@ int main(int argc, char** argv)
 
   audio::Assets audio_assets;
 
-  auto audio_player_or_error = audio::Player::create();
-  SDE_ASSERT_TRUE(audio_player_or_error.has_value());
+  auto audio_mixer_or_error = audio::Mixer::create();
+  SDE_ASSERT_TRUE(audio_mixer_or_error.has_value());
 
-  auto sounds_from_disk = from_disk(audio_assets.sounds, [&audio_player_or_error](auto& cache, const asset::path& path)
+  auto sounds_from_disk = from_disk(audio_assets.sounds, [](auto& cache, const asset::path& path)
   {
     auto sound_data_or_error = SoundData::load(path);
     SDE_ASSERT_TRUE(sound_data_or_error.has_value());
     SDE_LOG_INFO_FMT("sound loaded from disk: %s", path.string().c_str());
-    return cache.create(audio_player_or_error->context(), *sound_data_or_error);
+    return cache.create(*sound_data_or_error);
   });
 
   auto background_track_or_error = sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/CantinaBand3.wav");
   (void)background_track_or_error;
-
-  auto background_track_source_or_error = SoundSource::create(audio_player_or_error->context());
-  background_track_source_or_error->setLooped(true);
-  background_track_source_or_error->play(*background_track_or_error);
 
   graphics::Assets graphics_assets;
 

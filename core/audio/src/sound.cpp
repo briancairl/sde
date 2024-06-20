@@ -6,7 +6,6 @@
 #include "openal.inl"
 
 // SDE
-#include "sde/audio/player.hpp"
 #include "sde/audio/sound.hpp"
 #include "sde/audio/sound_data.hpp"
 
@@ -43,14 +42,8 @@ inline ALenum toALChannelFormat(const SoundChannelFormat& format)
 
 void NativeBufferDeleter::operator()(buffer_handle_t id) const { alDeleteBuffers(1, &id); }
 
-expected<SoundInfo, SoundError>
-SoundCache::generate(const PlayerContext& context, const SoundData& sound, const SoundOptions& options)
+expected<SoundInfo, SoundError> SoundCache::generate(const SoundData& sound, const SoundOptions& options)
 {
-  if (!context.setActive())
-  {
-    return make_unexpected(SoundError::kInvalidPlayerContext);
-  }
-
   NativeBufferID native_id{[] {
     buffer_handle_t id;
     alGenBuffers(1, &id);
