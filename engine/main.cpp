@@ -144,7 +144,10 @@ int main(int argc, char** argv)
   });
 
   auto background_track_or_error = sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/CantinaBand3.wav");
-  (void)background_track_or_error;
+  if (auto listener_or_err = ListenerTarget::create(*audio_mixer_or_error, 0UL); listener_or_err.has_value())
+  {
+    listener_or_err->set(*background_track_or_error, TrackOptions{.gain=3.0F, .looped=true});
+  }
 
   graphics::Assets graphics_assets;
 
@@ -547,7 +550,6 @@ int main(int argc, char** argv)
   {
     const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window.time).count();
     const auto time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window.time_delta).count();
-
 
     // Handle screen zoom
     static constexpr float kScaleRate = 1.5;
