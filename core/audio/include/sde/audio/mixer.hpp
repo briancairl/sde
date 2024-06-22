@@ -60,6 +60,7 @@ class Track
 public:
   explicit Track(NativeSource&& source);
 
+  bool queued() const { return playback_queued_; };
   bool stopped() const;
   bool playing() const;
   float progress() const;
@@ -154,7 +155,7 @@ private:
 struct MixerOptions
 {
   const char* device_name = nullptr;
-  std::vector<ListenerOptions> listener_options = {ListenerOptions{1}, ListenerOptions{16}};
+  std::vector<ListenerOptions> listener_options = {ListenerOptions{2}, ListenerOptions{16}};
 };
 
 enum class MixerError

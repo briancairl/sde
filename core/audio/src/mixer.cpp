@@ -45,14 +45,14 @@ bool Track::stopped() const
 {
   ALint source_state;
   alGetSourcei(source_, AL_SOURCE_STATE, &source_state);
-  return source_state == AL_STOPPED;
+  return (source_state == AL_STOPPED) or (source_state == AL_INITIAL);
 }
 
 bool Track::playing() const
 {
   ALint source_state;
   alGetSourcei(source_, AL_SOURCE_STATE, &source_state);
-  return (source_state == AL_PLAYING);
+  return (source_state == AL_PLAYING) or (source_state == AL_LOOPING);
 }
 
 float Track::progress() const
@@ -148,8 +148,8 @@ void Listener::set(const ListenerState& state) const
 
 bool Listener::set(const SoundInfo& sound, const TrackOptions& options)
 {
-  const auto track_itr =
-    std::find_if(std::begin(tracks_), std::end(tracks_), [](const auto& track) { return !track.playing(); });
+  const auto track_itr = std::find_if(
+    std::begin(tracks_), std::end(tracks_), [](const auto& track) { return !track.queued() and track.stopped(); });
   if (track_itr == std::end(tracks_))
   {
     SDE_LOG_DEBUG_FMT(
@@ -165,10 +165,6 @@ void Listener::play()
   alcMakeContextCurrent(reinterpret_cast<ALCcontext*>(context_.value()));
   for (auto& track : tracks_)
   {
-    if (track.playing())
-    {
-      SDE_LOG_DEBUG_FMT("%f", track.progress());
-    }
     if (auto playback_source = track.pop(); playback_source != 0)
     {
       source_buffer_.push_back(playback_source);

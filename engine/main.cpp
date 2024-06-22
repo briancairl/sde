@@ -143,10 +143,12 @@ int main(int argc, char** argv)
     return cache.create(*sound_data_or_error);
   });
 
-  auto background_track_or_error = sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/CantinaBand3.wav");
+  auto background_track_1_or_error = sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/CantinaBand3.wav");
+  auto background_track_2_or_error = sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/forest.wav");
   if (auto listener_or_err = ListenerTarget::create(*audio_mixer_or_error, 0UL); listener_or_err.has_value())
   {
-    listener_or_err->set(*background_track_or_error, TrackOptions{.gain=3.0F, .looped=true});
+    listener_or_err->set(*background_track_1_or_error, TrackOptions{.gain=3.0F, .looped=true});
+    listener_or_err->set(*background_track_2_or_error, TrackOptions{.pitch=3.0F, .looped=true});
   }
 
   graphics::Assets graphics_assets;
