@@ -21,6 +21,14 @@ sudo apt install           \
 
 # Todo
 
+## App
+- [ ] Add controller support
+
+## Common
+- [ ] Cleanup core utility targets
+- [ ] Replace unordered_map with flat_map where possible
+- [ ] Replace float times with `Time` / `Duration` nanosecond time objects
+
 ## 2D rendering
 
 - [ ] Fix test assets
@@ -31,7 +39,15 @@ sudo apt install           \
 - [x] Rendering text
 - [ ] Debug render layer (wire-frame boxes; times)
 - [ ] Stream-style logging
+- [ ] Add static text entity with pre-computed bounds
 - [ ] Camera zoom to focus
+- [ ] Cleanup graphics build targets
+- [ ] Add drawable base and common on-draw errors
+  + [ ] Add draw-layer argument
+  + [ ] Add debug draw-layer
+
+## Audio
+- [ ] Add basic audio facilities
 
 ## Systems
 

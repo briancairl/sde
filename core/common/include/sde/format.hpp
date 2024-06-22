@@ -7,6 +7,7 @@
 
 // C++ Standard Library
 #include <cstdio>
+#include <cwchar>
 #include <type_traits>
 #include <utility>
 
@@ -15,7 +16,7 @@ namespace sde
 
 /// C-string returned when <code>format</code> fails
 template <typename CharT>
-constexpr const CharT* kFormatErrorString = "::sde::format failed (formatted_len >= BufferLen)";
+constexpr const CharT* kFormatErrorString = "::sde::format failed (formatted_len >= BufferLen)\n";
 
 /**
  * @brief Formats a string in a static buffer and returns a char pointer to the formated buffer
@@ -28,7 +29,7 @@ constexpr const CharT* kFormatErrorString = "::sde::format failed (formatted_len
  *
  * @warning holding on to the returned pointer will result in weirdness
  */
-template <std::size_t BufferLen = 64UL, typename CharT, typename... FormatArgTs>
+template <std::size_t BufferLen = 128UL, typename CharT, typename... FormatArgTs>
 const CharT* format(const CharT* fmt_str, FormatArgTs&&... fmt_args)
 {
   thread_local static CharT STATIC__fmt_buffer[BufferLen];

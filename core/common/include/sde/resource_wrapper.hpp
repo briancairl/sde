@@ -49,6 +49,18 @@ public:
     std::swap(exchanger_, other.exchanger_);
   }
 
+  [[nodiscard]] constexpr const T operator->() const
+  {
+    static_assert(std::is_pointer_v<T>);
+    return value_;
+  }
+
+  [[nodiscard]] constexpr const T& operator*() const
+  {
+    static_assert(std::is_pointer_v<T>);
+    return *value_;
+  }
+
   [[nodiscard]] constexpr const T& value() const { return value_; }
 
   [[nodiscard]] constexpr operator const T&() const { return value_; }
@@ -108,6 +120,17 @@ constexpr bool
 operator!=(const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& lhs, [[maybe_unused]] std::nullptr_t _)
 {
   return lhs.isValid();
+}
+
+template <typename T, typename DeleterT> UniqueResource<T, DeleterT> make_unique_resource(T p, DeleterT deleter)
+{
+  return UniqueResource{p, std::move(deleter)};
+}
+
+template <typename T, typename DeleterT, typename ExchangerT>
+UniqueResource<T, DeleterT, ExchangerT> make_unique_resource(T p, DeleterT deleter, ExchangerT exchanger)
+{
+  return UniqueResource{p, std::move(deleter), std::move(exchanger)};
 }
 
 }  // namespace sde

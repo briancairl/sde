@@ -170,24 +170,24 @@ public:
   /**
    * @brief Returns image channel count
    */
-  [[nodiscard]] constexpr std::size_t channel_count() const { return to_channel_count(channels_); }
+  [[nodiscard]] constexpr std::size_t getChannelCount() const { return to_channel_count(channels_); }
 
   /**
    * @brief Returns size of single pixel, in bytes
    */
-  [[nodiscard]] constexpr std::size_t pixel_size_in_bytes() const { return channel_count() * byte_count(bit_depth_); }
+  [[nodiscard]] constexpr std::size_t getPixelSizeInBytes() const { return getChannelCount() * byte_count(bit_depth_); }
 
   /**
    * @brief Returns total size of image in bytes
    */
-  [[nodiscard]] constexpr std::size_t total_size_in_bytes() const { return shape_.pixels() * pixel_size_in_bytes(); }
+  [[nodiscard]] constexpr std::size_t getTotalSizeInBytes() const { return shape_.pixels() * getPixelSizeInBytes(); }
 
   /**
    * @brief Returns pointer to image data
    */
   [[nodiscard]] auto data() const
   {
-    return View<const std::uint8_t>{reinterpret_cast<const std::uint8_t*>(data_), total_size_in_bytes()};
+    return View<const std::uint8_t>{reinterpret_cast<const std::uint8_t*>(data_), getTotalSizeInBytes()};
   }
 
 private:

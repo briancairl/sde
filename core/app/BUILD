@@ -1,6 +1,9 @@
 cc_library(
   name="app",
-  hdrs=["include/sde/app.hpp"],
+  hdrs=[
+    "include/sde/app.hpp",
+    "include/sde/keyboard.hpp"
+  ],
   srcs=["src/app.cpp"],
   strip_include_prefix="include",
   deps=[

@@ -7,6 +7,7 @@
 
 // C++ Standard Library
 #include <string_view>
+#include <vector>
 
 // SDE
 #include "sde/graphics/renderer_fwd.hpp"
@@ -47,10 +48,11 @@ public:
     std::string_view text,
     const Vec2f& pos,
     const TextOptions& options,
-    const Vec4f& color = Vec4f::Ones()) const;
+    const Vec4f& color = Vec4f::Ones());
 
 private:
   TypeSetHandle type_set_handle_;
+  std::vector<TexturedQuad> quad_buffer_;
 };
 
 }  // namespace sde::graphics
