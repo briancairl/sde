@@ -61,6 +61,10 @@ float Track::progress() const
   {
     return -1.0F;
   }
+  else if (queued())
+  {
+    return 0.0F;
+  }
   ALint byte_offset;
   alGetSourcei(source_, AL_BYTE_OFFSET, &byte_offset);
   return static_cast<float>(byte_offset) / static_cast<float>(playback_buffer_length_);
