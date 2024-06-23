@@ -1,0 +1,14 @@
+cc_library(
+  name="red",
+  hdrs=[
+    "include/red/player_character.hpp",
+  ],
+  srcs=[
+    "src/player_character.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    "//core/game"
+  ],
+  visibility=["//visibility:public"]
+)

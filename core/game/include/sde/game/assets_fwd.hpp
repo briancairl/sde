@@ -5,9 +5,9 @@
  */
 #pragma once
 
-namespace sde
+namespace sde::game
 {
 
 struct Assets;
 
-}  // namespace sde
+}  // namespace sde::game

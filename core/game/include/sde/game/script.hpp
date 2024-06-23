@@ -12,10 +12,11 @@
 #include <entt/fwd.hpp>
 
 // SDE
-#include "sde/app_fwd.hpp"
+#include "sde/app_properties.hpp"
 #include "sde/crtp.hpp"
 #include "sde/expected.hpp"
 #include "sde/game/assets_fwd.hpp"
+#include "sde/time.hpp"
 
 namespace sde::game
 {
