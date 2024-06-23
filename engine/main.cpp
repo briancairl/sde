@@ -518,38 +518,12 @@ int main(int argc, char** argv)
 
 
 
-  AnimatedSprite idle_front_animated_sprite{{*idle_front_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite idle_back_animated_sprite{{*idle_back_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite idle_right_animated_sprite{{*idle_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite idle_left_animated_sprite{{*idle_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite animated_sprite;
+  animated_sprite.setFrameRate(Hertz(5.0F));
+  animated_sprite.setMode(AnimatedSprite::Mode::kLooped);
 
-  AnimatedSprite idle_front_right_animated_sprite{{*idle_front_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite idle_front_left_animated_sprite{{*idle_front_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite idle_back_right_animated_sprite{{*idle_back_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite idle_back_left_animated_sprite{{*idle_back_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-
-  AnimatedSprite walking_front_animated_sprite{{*walking_front_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite walking_back_animated_sprite{{*walking_back_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite walking_left_animated_sprite{{*walking_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite walking_right_animated_sprite{{*walking_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-
-  AnimatedSprite walking_front_right_animated_sprite{{*walking_front_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite walking_front_left_animated_sprite{{*walking_front_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite walking_back_right_animated_sprite{{*walking_back_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite walking_back_left_animated_sprite{{*walking_back_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-
-  AnimatedSprite running_front_animated_sprite{{*running_front_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite running_back_animated_sprite{{*running_back_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite running_left_animated_sprite{{*running_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite running_right_animated_sprite{{*running_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-
-  AnimatedSprite running_front_right_animated_sprite{{*running_front_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite running_front_left_animated_sprite{{*running_front_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite running_back_right_animated_sprite{{*running_back_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-  AnimatedSprite running_back_left_animated_sprite{{*running_back_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
-
-  AnimatedSprite* prev_animation = &running_front_animated_sprite;
-  AnimatedSprite* next_animation = &running_front_animated_sprite;
+  auto animation_frames_prev = idle_front_frames->handle;
+  auto animation_frames_next = idle_front_frames->handle;
 
   app_or_error->spin([&](const auto& window)
   {
@@ -602,77 +576,79 @@ int main(int argc, char** argv)
     // Handle next animation
     if ((direction.x() > 0) and (direction.y() > 0))
     {
-      next_animation = (next_speed == kSpeedWalking) ? &walking_back_right_animated_sprite : &running_back_right_animated_sprite;
+      animation_frames_next = (next_speed == kSpeedWalking) ? walking_back_right_frames->handle : running_back_right_frames->handle;
     }
     else if ((direction.x() < 0) and (direction.y() > 0))
     {
-      next_animation = (next_speed == kSpeedWalking) ? &walking_back_left_animated_sprite : &running_back_left_animated_sprite;
+      animation_frames_next = (next_speed == kSpeedWalking) ? walking_back_left_frames->handle : running_back_left_frames->handle;
     }
     else if ((direction.x() > 0) and (direction.y() < 0))
     {
-      next_animation = (next_speed == kSpeedWalking) ? &walking_front_right_animated_sprite : &running_front_right_animated_sprite;
+      animation_frames_next = (next_speed == kSpeedWalking) ? walking_front_right_frames->handle : running_front_right_frames->handle;
     }
     else if ((direction.x() < 0) and (direction.y() < 0))
     {
-      next_animation = (next_speed == kSpeedWalking) ? &walking_front_left_animated_sprite : &running_front_left_animated_sprite;
+      animation_frames_next = (next_speed == kSpeedWalking) ? walking_front_left_frames->handle : running_front_left_frames->handle;
     }
     else if (direction.x() > 0)
     {
-      next_animation = (next_speed == kSpeedWalking) ? &walking_right_animated_sprite : &running_right_animated_sprite;
+      animation_frames_next = (next_speed == kSpeedWalking) ? walking_right_frames->handle : running_right_frames->handle;
     }
     else if (direction.x() < 0)
     {
-      next_animation = (next_speed == kSpeedWalking) ? &walking_left_animated_sprite : &running_left_animated_sprite;
+      animation_frames_next = (next_speed == kSpeedWalking) ? walking_left_frames->handle : running_left_frames->handle;
     }
     else if (direction.y() < 0)
     {
-      next_animation = (next_speed == kSpeedWalking) ? &walking_front_animated_sprite : &running_front_animated_sprite;
+      animation_frames_next = (next_speed == kSpeedWalking) ? walking_front_frames->handle : running_front_frames->handle;
     }
     else if (direction.y() > 0)
     {
-      next_animation = (next_speed == kSpeedWalking) ? &walking_back_animated_sprite : &running_back_animated_sprite;
+      animation_frames_next = (next_speed == kSpeedWalking) ? walking_back_frames->handle : running_back_frames->handle;
     }
     else if ((direction_looking.x() > 0) and (direction_looking.y() > 0))
     {
-      next_animation = &idle_back_right_animated_sprite;
+      animation_frames_next = idle_back_right_frames->handle;
     }
     else if ((direction_looking.x() < 0) and (direction_looking.y() > 0))
     {
-      next_animation = &idle_back_left_animated_sprite;
+      animation_frames_next = idle_back_left_frames->handle;
     }
     else if ((direction_looking.x() > 0) and (direction_looking.y() < 0))
     {
-      next_animation = &idle_front_right_animated_sprite;
+      animation_frames_next = idle_front_right_frames->handle;
     }
     else if ((direction_looking.x() < 0) and (direction_looking.y() < 0))
     {
-      next_animation = &idle_front_left_animated_sprite;
+      animation_frames_next = idle_front_left_frames->handle;
     }
     else if (direction_looking.x() > 0)
     {
-      next_animation = &idle_right_animated_sprite;
+      animation_frames_next = idle_right_frames->handle;
     }
     else if (direction_looking.x() < 0)
     {
-      next_animation = &idle_left_animated_sprite;
+      animation_frames_next = idle_left_frames->handle;
     }
     else if (direction_looking.y() < 0)
     {
-      next_animation = &idle_front_animated_sprite;
+      animation_frames_next = idle_front_frames->handle;
     }
     else if (direction_looking.y() > 0)
     {
-      next_animation = &idle_back_animated_sprite;
+      animation_frames_next = idle_back_frames->handle;;
     }
+
+    animated_sprite.setFrames(animation_frames_next);
 
     if ((direction.array() != 0.0F).any())
     {
       direction_looking = direction;
-      next_animation->setFrameRate(Hertz(next_speed * 15.0F));
+      animated_sprite.setFrameRate(Hertz(next_speed * 15.0F));
     }
     else
     {
-      next_animation->setFrameRate(Hertz(kSpeedWalking * 15.0F));
+      animated_sprite.setFrameRate(Hertz(kSpeedWalking * 15.0F));
     }
 
     position += direction * toSeconds(attributes.time_delta);
@@ -681,7 +657,7 @@ int main(int argc, char** argv)
     window_target_or_error->refresh(Black());
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, graphics_assets, attributes, sprite_rendering_resources); render_pass_or_error.has_value())
     {
-      next_animation->draw(*render_pass_or_error, attributes.time, {position - sde::Vec2f{0.5, 0.5}, position + sde::Vec2f{0.5, 0.5}});
+      animated_sprite.draw(*render_pass_or_error, attributes.time, {position - sde::Vec2f{0.5, 0.5}, position + sde::Vec2f{0.5, 0.5}});
     }
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, graphics_assets, attributes, text_rendering_resources); render_pass_or_error.has_value())
     {
@@ -689,7 +665,7 @@ int main(int argc, char** argv)
       type_setter.draw(*render_pass_or_error, sde::format("pos: (%.3f, %.3f)", position.x(),  position.y()),  position + sde::Vec2f{0.0, -0.30}, {0.025F}, Yellow(0.8));
       type_setter.draw(*render_pass_or_error, sde::format("vel: (%.3f, %.3f)", direction.x(), direction.y()), position + sde::Vec2f{0.0, -0.35}, {0.025F}, Yellow(0.8));
     }
-    prev_animation = next_animation;
+    animation_frames_prev = animation_frames_next;
 
     return AppDirective::kContinue;
   });
