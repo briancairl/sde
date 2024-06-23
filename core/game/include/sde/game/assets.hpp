@@ -13,25 +13,12 @@
 namespace sde::game
 {
 
-struct LoadFontFromDisk
+template <typename CacheT> struct OnDiskLoader
 {
-  graphics::FontCache::result_type operator()(graphics::FontCache& cache, const asset::path& path) const;
+  typename CacheT::result_type operator()(CacheT& cache, const asset::path& path) const;
 };
 
-struct LoadTextureFromDisk
-{
-  graphics::TextureCache::result_type operator()(graphics::TextureCache& cache, const asset::path& path) const;
-};
-
-struct LoadShaderFromDisk
-{
-  graphics::ShaderCache::result_type operator()(graphics::ShaderCache& cache, const asset::path& path) const;
-};
-
-struct LoadSoundFromDisk
-{
-  audio::SoundCache::result_type operator()(audio::SoundCache& cache, const asset::path& path) const;
-};
+template <typename CacheT> using OnDisk = ResourceCacheFromDisk<CacheT, OnDiskLoader<CacheT>>;
 
 /**
  * @brief Collection of active game assets
@@ -43,13 +30,13 @@ struct Assets
   /// Collection of graphics audio assets
   graphics::Assets graphics;
   /// Font-from-disk resource loading wrapper
-  ResourceCacheFromDisk<graphics::FontCache, LoadFontFromDisk> fonts_from_disk;
+  OnDisk<graphics::FontCache> fonts_from_disk;
   /// Shader-from-disk resource loading wrapper
-  ResourceCacheFromDisk<graphics::ShaderCache, LoadShaderFromDisk> shaders_from_disk;
+  OnDisk<graphics::ShaderCache> shaders_from_disk;
   /// Texture-from-disk resource loading wrapper
-  ResourceCacheFromDisk<graphics::TextureCache, LoadTextureFromDisk> textures_from_disk;
+  OnDisk<graphics::TextureCache> textures_from_disk;
   /// Sound-from-disk resource loading wrapper
-  ResourceCacheFromDisk<audio::SoundCache, LoadSoundFromDisk> sounds_from_disk;
+  OnDisk<audio::SoundCache> sounds_from_disk;
 
   Assets();
 };
