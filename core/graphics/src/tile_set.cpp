@@ -17,6 +17,8 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 {
   switch (error)
   {
+  case TileSetError::kAssetNotFound:
+    return os << "AssetNotFound";
   case TileSetError::kElementAlreadyExists:
     return os << "ElementAlreadyExists";
   case TileSetError::kInvalidTileSize:
@@ -38,6 +40,14 @@ std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info)
   }
   os << '}';
   return os;
+}
+
+expected<TileSetInfo, TileSetError> TileSetCache::generate(
+  const TextureCache& texture_cache,
+  const TextureHandle& texture,
+  const TileSetSliceUniform& slice)
+{
+  return generate(texture_cache.find(texture), slice);
 }
 
 expected<TileSetInfo, TileSetError>

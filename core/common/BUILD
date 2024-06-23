@@ -61,6 +61,8 @@ cc_library(
     "include/sde/view.hpp",
     "include/sde/format.hpp",
     "include/sde/type.hpp",
+    "include/sde/time.hpp",
+    "include/sde/time_ostream.hpp",
   ],
   strip_include_prefix="include",
   deps=[":build", ":logging"],

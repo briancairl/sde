@@ -98,20 +98,15 @@ expected<App, AppError> App::create(const WindowOptions& options)
 
 App::App(Window&& window) : window_{std::move(window)} {}
 
-void App::spin(std::function<AppDirective(const AppProperties&)> on_update)
+void App::spin(std::function<AppDirective(const AppProperties&)> on_update, const Rate spin_rate)
 {
-  static constexpr double kLoopRate = 60.0;
-
   AppProperties window_properties;
 
   auto* glfw_window = reinterpret_cast<GLFWwindow*>(window_.value());
 
-  const auto t_advance =
-    std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(1.0 / kLoopRate));
-
-  auto t_start = std::chrono::steady_clock::now();
+  auto t_start = Clock::now();
   auto t_prev = t_start;
-  auto t_next = t_start + t_advance;
+  auto t_next = t_start + spin_rate.period();
 
   glfwSetWindowUserPointer(glfw_window, reinterpret_cast<void*>(&window_properties));
   glfwSetScrollCallback(glfw_window, glfwScrollEventHandler);
@@ -130,7 +125,7 @@ void App::spin(std::function<AppDirective(const AppProperties&)> on_update)
     case AppDirective::kContinue:
       break;
     case AppDirective::kReset:
-      t_start = std::chrono::steady_clock::now();
+      t_start = Clock::now();
       t_prev = t_start;
       break;
     case AppDirective::kClose:
@@ -139,16 +134,16 @@ void App::spin(std::function<AppDirective(const AppProperties&)> on_update)
 
     glfwSwapBuffers(glfw_window);
 
-    const auto t_now = std::chrono::steady_clock::now();
+    const auto t_now = Clock::now();
     if (t_now > t_next)
     {
-      SDE_LOG_WARN_FMT("loop rate %e Hz not met", kLoopRate);
-      t_next = t_now + t_advance;
+      SDE_LOG_WARN_FMT("loop rate %e Hz not met", toSeconds(spin_rate.period()));
+      t_next = t_now + spin_rate.period();
     }
     else
     {
       std::this_thread::sleep_until(t_next);
-      t_next += t_advance;
+      t_next += spin_rate.period();
     }
 
     window_properties.mouse_scroll.setZero();

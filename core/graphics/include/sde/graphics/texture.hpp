@@ -112,6 +112,7 @@ std::ostream& operator<<(std::ostream& os, const TextureInfo& info);
 
 enum class TextureError
 {
+  kAssetNotFound,
   kElementAlreadyExists,
   kInvalidHandle,
   kInvalidDimensions,

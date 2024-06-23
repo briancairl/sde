@@ -27,7 +27,7 @@ sudo apt install           \
 ## Common
 - [ ] Cleanup core utility targets
 - [ ] Replace unordered_map with flat_map where possible
-- [ ] Replace float times with `Time` / `Duration` nanosecond time objects
+- [x] Replace float times with `Time` / `Duration` nanosecond time objects
 
 ## 2D rendering
 
@@ -43,11 +43,12 @@ sudo apt install           \
 - [ ] Camera zoom to focus
 - [ ] Cleanup graphics build targets
 - [ ] Add drawable base and common on-draw errors
-  + [ ] Add draw-layer argument
-  + [ ] Add debug draw-layer
++ [ ] Add draw-layer argument
++ [ ] Add debug draw-layer
 
 ## Audio
-- [ ] Add basic audio facilities
+- [x] Add basic audio facilities
+- [ ] Add audio effects chains
 
 ## Systems
 

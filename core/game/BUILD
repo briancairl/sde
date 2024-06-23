@@ -1,0 +1,19 @@
+cc_library(
+  name="game",
+  hdrs=[
+    "include/sde/game/assets.hpp",
+    "include/sde/game/assets_fwd.hpp",
+    "include/sde/game/script.hpp",
+  ],
+  srcs=[
+    "src/assets.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    "//core/app",
+    "//core/audio",
+    "//core/graphics",
+    "@entt//:entt",
+  ],
+  visibility=["//visibility:public"]
+)
