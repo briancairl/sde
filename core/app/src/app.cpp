@@ -137,7 +137,7 @@ void App::spin(std::function<AppDirective(const AppProperties&)> on_update, cons
     const auto t_now = Clock::now();
     if (t_now > t_next)
     {
-      SDE_LOG_WARN_FMT("loop rate %e Hz not met", toSeconds(spin_rate.period()));
+      SDE_LOG_WARN_FMT("loop rate %e Hz not met (behind by %e s)", toHertz(spin_rate), toSeconds(t_now - t_next));
       t_next = t_now + spin_rate.period();
     }
     else
