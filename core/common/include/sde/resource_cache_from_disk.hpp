@@ -22,18 +22,13 @@ namespace sde
 
 template <typename ResourceCacheT, typename LoadFromDiskT> class ResourceCacheFromDisk;
 
-enum class ResourceLoadError
-{
-  kResourceUnavailable,
-  kResourceAlreadyLoaded,
-};
 
 template <typename ResourceCacheT, typename LoadFromDiskT> class ResourceCacheFromDisk
 {
   static_assert(is_resource_cache_v<ResourceCacheT>);
 
 public:
-  using error_type = std::variant<ResourceLoadError, typename ResourceCacheTypes<ResourceCacheT>::error_type>;
+  using error_type = typename ResourceCacheTypes<ResourceCacheT>::error_type;
   using handle_type = typename ResourceCacheTypes<ResourceCacheT>::handle_type;
   using value_type = typename ResourceCacheTypes<ResourceCacheT>::value_type;
   using PathList = std::vector<std::pair<handle_type, asset::path>>;
@@ -42,24 +37,27 @@ public:
       cache_{std::addressof(cache)}, load_fn_{std::move(load_fn)}
   {}
 
-  bool isLoaded(const asset::path& query_path) const
+  handle_type get(const asset::path& query_path) const
   {
-    return std::any_of(
-      std::begin(path_list_), std::end(path_list_), [&query_path](const auto& handle_and_path) -> bool {
+    auto handle_and_path_itr =
+      std::find_if(std::begin(path_list_), std::end(path_list_), [&query_path](const auto& handle_and_path) -> bool {
         return query_path == std::get<1>(handle_and_path);
       });
+    return (handle_and_path_itr == std::end(path_list_)) ? handle_type::null() : std::get<0>(*handle_and_path_itr);
   }
+
+  bool isLoaded(const asset::path& query_path) const { return get(query_path).isValid(); }
 
   expected<element_t<ResourceCacheT>, error_type> create(const asset::path& path)
   {
-    if (isLoaded(path))
+    if (auto existing_handle = this->get(path); existing_handle)
     {
-      return make_unexpected(ResourceLoadError::kResourceAlreadyLoaded);
+      return cache_->find(existing_handle);
     }
 
     if (!asset::exists(path))
     {
-      return make_unexpected(ResourceLoadError::kResourceUnavailable);
+      return make_unexpected(error_type::kAssetNotFound);
     }
 
     auto element_or_error = load_fn_(*cache_, path);

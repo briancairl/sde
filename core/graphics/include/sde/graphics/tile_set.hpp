@@ -26,6 +26,7 @@ namespace sde::graphics
 
 enum TileSetError
 {
+  kAssetNotFound,
   kElementAlreadyExists,
   kInvalidTileSize,
   kInvalidSlicingBounds,

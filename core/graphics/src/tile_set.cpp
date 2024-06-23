@@ -17,6 +17,8 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 {
   switch (error)
   {
+  case TileSetError::kAssetNotFound:
+    return os << "AssetNotFound";
   case TileSetError::kElementAlreadyExists:
     return os << "ElementAlreadyExists";
   case TileSetError::kInvalidTileSize:
