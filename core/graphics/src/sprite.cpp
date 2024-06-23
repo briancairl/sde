@@ -17,7 +17,7 @@ Sprite::Sprite(const TextureHandle& tile_atlas, const Bounds2f& tile_bounds) :
 
 void Sprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
 {
-  if (!rp.getViewportInWorldBounds().intersects(rect))
+  if (!rp.visible(rect))
   {
     return;
   }
@@ -34,7 +34,7 @@ AnimatedSprite::AnimatedSprite(const Options&& options) : options_{options} {}
 
 void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect, const Vec4f& tint) const
 {
-  if (!rp.getViewportInWorldBounds().intersects(rect))
+  if (!rp.visible(rect))
   {
     return;
   }

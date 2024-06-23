@@ -155,6 +155,7 @@ public:
   const Mat3f& getWorldFromViewportMatrix() const { return world_from_viewport_; };
   const Mat3f& getViewportFromWorldMatrix() const { return viewport_from_world_; };
   const Bounds2f& getViewportInWorldBounds() const { return viewport_in_world_bounds_; };
+  bool visible(const Bounds2f& query_aabb) const { return getViewportInWorldBounds().intersects(query_aabb); }
 
 private:
   RenderPass() = default;

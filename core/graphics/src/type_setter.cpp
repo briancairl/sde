@@ -53,7 +53,7 @@ void TypeSetter::draw(
 
   const Bounds2f text_aabb{text_pos + text_bounds.min().cast<float>(), text_pos + text_bounds.max().cast<float>()};
 
-  if (!rp.getViewportInWorldBounds().intersects(text_aabb))
+  if (!rp.visible(text_aabb))
   {
     return;
   }
