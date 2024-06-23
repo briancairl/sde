@@ -2,6 +2,9 @@
 #include <cmath>
 #include <ostream>
 
+// EnTT
+#include <entt/entt.hpp>
+
 // SDE
 #include "sde/app.hpp"
 #include "sde/audio/assets.hpp"
@@ -9,6 +12,7 @@
 #include "sde/audio/sound.hpp"
 #include "sde/audio/sound_data.hpp"
 #include "sde/game/assets.hpp"
+#include "sde/game/script.hpp"
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/assets.hpp"
 #include "sde/graphics/colors.hpp"
@@ -29,9 +33,365 @@
 
 // clang-format off
 
+using namespace sde;
+
+struct Info
+{
+  std::string name;
+};
+
+struct Size
+{
+  Vec2f extent;
+};
+
+struct State
+{
+  Vec2f position;
+  Vec2f velocity;
+  Vec2f looking;
+};
+
+struct Direction
+{
+  Vec2f looking;
+};
+
+class Character : public game::Script<Character>
+{
+  friend script;
+private:
+  static constexpr std::size_t kFront{0};
+  static constexpr std::size_t kBack{1};
+  static constexpr std::size_t kRight{2};
+  static constexpr std::size_t kLeft{3};
+  static constexpr std::size_t kFrontRight{4};
+  static constexpr std::size_t kFrontLeft{5};
+  static constexpr std::size_t kBackRight{6};
+  static constexpr std::size_t kBackLeft{7};
+
+  struct CharacterTextures
+  {
+    graphics::TextureHandle front_atlas;
+    graphics::TextureHandle back_atlas;
+    graphics::TextureHandle side_atlas;
+    graphics::TextureHandle front_side_atlas;
+    graphics::TextureHandle back_side_atlas;
+  };
+
+  void createMovementTileSets(game::Assets& assets, graphics::TileSetHandle* movement_tilsets, const CharacterTextures& character_textures, std::size_t cardinal_start_offset, std::size_t ordinal_start_offset)
+  {
+    using namespace sde::graphics;
+
+    movement_tilsets[kFront] = [&]
+    {
+      auto frames_or_error = assets.graphics.tile_sets.create(
+        assets.graphics.textures,
+        character_textures.front_atlas,
+        TileSetSliceUniform{
+          .tile_size_px = {64, 64},
+          .tile_orientation_x = TileOrientation::kNormal,
+          .tile_orientation_y = TileOrientation::kNormal,
+          .direction = TileSliceDirection::kRowWise,
+          .start_offset = cardinal_start_offset,
+          .stop_after = 6,
+        });
+      SDE_ASSERT_TRUE(frames_or_error.has_value());
+      return frames_or_error->handle;
+    }();
+
+    movement_tilsets[kBack] = [&]
+    {
+      auto frames_or_error = assets.graphics.tile_sets.create(
+        assets.graphics.textures,
+        character_textures.back_atlas,
+        TileSetSliceUniform{
+          .tile_size_px = {64, 64},
+          .tile_orientation_x = TileOrientation::kNormal,
+          .tile_orientation_y = TileOrientation::kNormal,
+          .direction = TileSliceDirection::kRowWise,
+          .start_offset = cardinal_start_offset,
+          .stop_after = 6,
+        });
+      SDE_ASSERT_TRUE(frames_or_error.has_value());
+      return frames_or_error->handle;
+    }();
+
+    movement_tilsets[kRight] = [&]
+    {
+      auto frames_or_error = assets.graphics.tile_sets.create(
+        assets.graphics.textures,
+        character_textures.side_atlas,
+        TileSetSliceUniform{
+          .tile_size_px = {64, 64},
+          .tile_orientation_x = TileOrientation::kNormal,
+          .tile_orientation_y = TileOrientation::kNormal,
+          .direction = TileSliceDirection::kRowWise,
+          .start_offset = cardinal_start_offset,
+          .stop_after = 6,
+        });
+      SDE_ASSERT_TRUE(frames_or_error.has_value());
+      return frames_or_error->handle;
+    }();
+
+    movement_tilsets[kLeft] = [&]
+    {
+      auto frames_or_error = assets.graphics.tile_sets.create(
+        assets.graphics.textures,
+        character_textures.side_atlas,
+        TileSetSliceUniform{
+          .tile_size_px = {64, 64},
+          .tile_orientation_x = TileOrientation::kFlipped,
+          .tile_orientation_y = TileOrientation::kNormal,
+          .direction = TileSliceDirection::kRowWise,
+          .start_offset = cardinal_start_offset,
+          .stop_after = 6,
+        });
+      SDE_ASSERT_TRUE(frames_or_error.has_value());
+      return frames_or_error->handle;
+    }();
+
+    movement_tilsets[kFrontRight] = [&]
+    {
+      auto frames_or_error = assets.graphics.tile_sets.create(
+        assets.graphics.textures,
+        character_textures.front_side_atlas,
+        TileSetSliceUniform{
+          .tile_size_px = {64, 64},
+          .tile_orientation_x = TileOrientation::kNormal,
+          .tile_orientation_y = TileOrientation::kNormal,
+          .direction = TileSliceDirection::kRowWise,
+          .start_offset = ordinal_start_offset,
+          .stop_after = 6,
+        });
+      SDE_ASSERT_TRUE(frames_or_error.has_value());
+      return frames_or_error->handle;
+    }();
+
+    movement_tilsets[kFrontLeft] = [&]
+    {
+      auto frames_or_error = assets.graphics.tile_sets.create(
+        assets.graphics.textures,
+        character_textures.front_side_atlas,
+        TileSetSliceUniform{
+          .tile_size_px = {64, 64},
+          .tile_orientation_x = TileOrientation::kFlipped,
+          .tile_orientation_y = TileOrientation::kNormal,
+          .direction = TileSliceDirection::kRowWise,
+          .start_offset = ordinal_start_offset,
+          .stop_after = 6,
+        });
+      SDE_ASSERT_TRUE(frames_or_error.has_value());
+      return frames_or_error->handle;
+    }();
+
+    movement_tilsets[kBackRight] = [&]
+    {
+      auto frames_or_error = assets.graphics.tile_sets.create(
+        assets.graphics.textures,
+        character_textures.back_side_atlas,
+        TileSetSliceUniform{
+          .tile_size_px = {64, 64},
+          .tile_orientation_x = TileOrientation::kNormal,
+          .tile_orientation_y = TileOrientation::kNormal,
+          .direction = TileSliceDirection::kRowWise,
+          .start_offset = ordinal_start_offset,
+          .stop_after = 6,
+        });
+      SDE_ASSERT_TRUE(frames_or_error.has_value());
+      return frames_or_error->handle;
+    }();
+
+    movement_tilsets[kBackLeft] = [&]
+    {
+      auto frames_or_error = assets.graphics.tile_sets.create(
+        assets.graphics.textures,
+        character_textures.back_side_atlas,
+        TileSetSliceUniform{
+          .tile_size_px = {64, 64},
+          .tile_orientation_x = TileOrientation::kFlipped,
+          .tile_orientation_y = TileOrientation::kNormal,
+          .direction = TileSliceDirection::kRowWise,
+          .start_offset = ordinal_start_offset,
+          .stop_after = 6,
+        });
+      SDE_ASSERT_TRUE(frames_or_error.has_value());
+      return frames_or_error->handle;
+    }();
+  }
+
+  bool onInitialize(entt::registry& registry, game::Assets& assets)
+  {
+    const CharacterTextures character_textures{
+      .front_atlas = [&]
+      {
+        auto atlas_or_error = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png");
+        SDE_ASSERT_TRUE(atlas_or_error.has_value());
+        return atlas_or_error->handle;
+      }(),
+      .back_atlas = [&]
+      {
+        auto atlas_or_error = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png");
+        SDE_ASSERT_TRUE(atlas_or_error.has_value());
+        return atlas_or_error->handle;
+      }(),
+      .side_atlas = [&]
+      {
+        auto atlas_or_error = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png");
+        SDE_ASSERT_TRUE(atlas_or_error.has_value());
+        return atlas_or_error->handle;
+      }(),
+      .front_side_atlas = [&]
+      {
+        auto atlas_or_error = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png");
+        SDE_ASSERT_TRUE(atlas_or_error.has_value());
+        return atlas_or_error->handle;
+      }(),
+      .back_side_atlas = [&]
+      {
+        auto atlas_or_error = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png");
+        SDE_ASSERT_TRUE(atlas_or_error.has_value());
+        return atlas_or_error->handle;
+      }()
+    };
+
+    createMovementTileSets(assets, idle_, character_textures, 18UL, 12UL);
+    createMovementTileSets(assets, walk_, character_textures, 12UL, 12UL);
+    createMovementTileSets(assets, run_, character_textures, 6UL, 6UL);
+
+    id_ = registry.create();
+    registry.emplace<Info>(id_, Info{{"bob"}});
+    registry.emplace<Size>(id_, Size{{1.5F, 1.5F}});
+    registry.emplace<State>(id_, State{Vec2f::Zero(), Vec2f::Zero(), {0, -1}});
+    registry.emplace<graphics::AnimatedSprite>(id_).setMode(graphics::AnimatedSprite::Mode::kLooped);
+
+    return true;
+  }
+
+  expected<void, game::ScriptError> onUpdate(entt::registry& registry, const game::Assets& assets, const AppProperties& app)
+  {
+    auto [size, state, sprite] = registry.get<Size, State, graphics::AnimatedSprite>(id_);
+
+    static constexpr float kSpeedWalking = 0.5;
+    static constexpr float kSpeedRunning = 1.0;
+
+    // Handle character speed
+    const float next_speed =
+      app.keys.isDown(KeyCode::kLShift) ? kSpeedRunning : kSpeedWalking;
+
+    state.velocity.setZero();
+
+    // Handle movement controls
+    if (app.keys.isDown(KeyCode::kA))
+    {
+      state.velocity.x() = -next_speed;
+    }
+    if (app.keys.isDown(KeyCode::kD))
+    {
+      state.velocity.x() = +next_speed;
+    }
+    if (app.keys.isDown(KeyCode::kS))
+    {
+      state.velocity.y() = -next_speed;
+    }
+    if (app.keys.isDown(KeyCode::kW))
+    {
+      state.velocity.y() = +next_speed;
+    }
+
+    graphics::TileSetHandle frames;
+
+    // Handle next animation
+    if ((state.velocity.x() > 0) and (state.velocity.y() > 0))
+    {
+      sprite.setFrames((next_speed == kSpeedWalking) ? walk_[kBackRight] : run_[kBackRight]);
+    }
+    else if ((state.velocity.x() < 0) and (state.velocity.y() > 0))
+    {
+      sprite.setFrames((next_speed == kSpeedWalking) ? walk_[kBackLeft] : run_[kBackLeft]);
+    }
+    else if ((state.velocity.x() > 0) and (state.velocity.y() < 0))
+    {
+      sprite.setFrames((next_speed == kSpeedWalking) ? walk_[kFrontRight] : run_[kFrontRight]);
+    }
+    else if ((state.velocity.x() < 0) and (state.velocity.y() < 0))
+    {
+      sprite.setFrames((next_speed == kSpeedWalking) ? walk_[kFrontLeft] : run_[kFrontLeft]);
+    }
+    else if (state.velocity.x() > 0)
+    {
+      sprite.setFrames((next_speed == kSpeedWalking) ? walk_[kRight] : run_[kRight]);
+    }
+    else if (state.velocity.x() < 0)
+    {
+      sprite.setFrames((next_speed == kSpeedWalking) ? walk_[kLeft] : run_[kLeft]);
+    }
+    else if (state.velocity.y() < 0)
+    {
+      sprite.setFrames((next_speed == kSpeedWalking) ? walk_[kFront] : run_[kFront]);
+    }
+    else if (state.velocity.y() > 0)
+    {
+      sprite.setFrames((next_speed == kSpeedWalking) ? walk_[kBack] : run_[kBack]);
+    }
+    else if ((state.looking.x() > 0) and (state.looking.y() > 0))
+    {
+      sprite.setFrames(idle_[kBackRight]);
+    }
+    else if ((state.looking.x() < 0) and (state.looking.y() > 0))
+    {
+      sprite.setFrames(idle_[kBackLeft]);
+    }
+    else if ((state.looking.x() > 0) and (state.looking.y() < 0))
+    {
+      sprite.setFrames(idle_[kFrontRight]);
+    }
+    else if ((state.looking.x() < 0) and (state.looking.y() < 0))
+    {
+      sprite.setFrames(idle_[kBackLeft]);
+    }
+    else if (state.looking.x() > 0)
+    {
+      sprite.setFrames(idle_[kRight]);
+    }
+    else if (state.looking.x() < 0)
+    {
+      sprite.setFrames(idle_[kLeft]);
+    }
+    else if (state.looking.y() < 0)
+    {
+      sprite.setFrames(idle_[kFront]);
+    }
+    else if (state.looking.y() > 0)
+    {
+      sprite.setFrames(idle_[kBack]);
+    }
+
+    // Set sprite stuff
+    if ((state.velocity.array() != 0.0F).any())
+    {
+      state.looking = state.velocity;
+      sprite.setFrameRate(Hertz(next_speed * 15.0F));
+    }
+    else
+    {
+      sprite.setFrameRate(Hertz(kSpeedWalking * 15.0F));
+    }
+
+    // Update position
+    state.position += state.velocity * toSeconds(app.time_delta);
+
+    return {};
+  }
+
+  entt::entity id_;
+  graphics::TileSetHandle idle_[8UL];
+  graphics::TileSetHandle walk_[8UL];
+  graphics::TileSetHandle run_[8UL];
+};
+
 int main(int argc, char** argv)
 {
-  using namespace sde;
   using namespace sde::audio;
   using namespace sde::graphics;
 
@@ -82,314 +442,6 @@ int main(int argc, char** argv)
   auto sprite_shader_or_error = assets.shaders_from_disk.create("/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl");
   SDE_ASSERT_TRUE(sprite_shader_or_error.has_value());
 
-  // Load all textures
-
-  auto movement_front_atlas = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png");
-  auto movement_back_atlas = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png");
-  auto movement_side_atlas = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png");
-  auto movement_back_side_atlas = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png");
-  auto movement_front_side_atlas = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png");
-
-
-  // Create animation frame
-
-  // IDLE ------------------------------------------
-
-  auto idle_front_frames = assets.graphics.tile_sets.create(
-    *movement_front_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 18,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(idle_front_frames.has_value());
-
-  auto idle_back_frames = assets.graphics.tile_sets.create(
-    *movement_back_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 18,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(idle_back_frames.has_value());
-
-  auto idle_right_frames = assets.graphics.tile_sets.create(
-    *movement_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 18,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(idle_right_frames.has_value());
-
-  auto idle_left_frames = assets.graphics.tile_sets.create(
-    *movement_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kFlipped,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 18,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(idle_left_frames.has_value());
-
-  auto idle_front_right_frames = assets.graphics.tile_sets.create(
-    *movement_front_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(idle_front_right_frames.has_value());
-
-  auto idle_front_left_frames = assets.graphics.tile_sets.create(
-    *movement_front_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kFlipped,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(idle_front_left_frames.has_value());
-
-  auto idle_back_right_frames = assets.graphics.tile_sets.create(
-    *movement_back_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(idle_back_right_frames.has_value());
-
-  auto idle_back_left_frames = assets.graphics.tile_sets.create(
-    *movement_back_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kFlipped,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(idle_back_left_frames.has_value());
-
-
-  // RUNNING ----------------------------------------
-
-  auto walking_front_frames = assets.graphics.tile_sets.create(
-    *movement_front_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(walking_front_frames.has_value());
-
-  auto walking_back_frames = assets.graphics.tile_sets.create(
-    *movement_back_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(walking_back_frames.has_value());
-
-  auto walking_right_frames = assets.graphics.tile_sets.create(
-    *movement_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(walking_right_frames.has_value());
-
-  auto walking_left_frames = assets.graphics.tile_sets.create(
-    *movement_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kFlipped,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(walking_left_frames.has_value());
-
-  auto walking_front_right_frames = assets.graphics.tile_sets.create(
-    *movement_front_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(walking_front_right_frames.has_value());
-
-  auto walking_front_left_frames = assets.graphics.tile_sets.create(
-    *movement_front_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kFlipped,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(walking_front_left_frames.has_value());
-
-  auto walking_back_right_frames = assets.graphics.tile_sets.create(
-    *movement_back_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(walking_back_right_frames.has_value());
-
-  auto walking_back_left_frames = assets.graphics.tile_sets.create(
-    *movement_back_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kFlipped,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 12,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(walking_back_left_frames.has_value());
-
-
-
-  // RUNNING ----------------------------------------
-
-  auto running_front_frames = assets.graphics.tile_sets.create(
-    *movement_front_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 6,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(running_front_frames.has_value());
-
-  auto running_back_frames = assets.graphics.tile_sets.create(
-    *movement_back_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 6,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(running_back_frames.has_value());
-
-  auto running_right_frames = assets.graphics.tile_sets.create(
-    *movement_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 6,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(running_right_frames.has_value());
-
-  auto running_left_frames = assets.graphics.tile_sets.create(
-    *movement_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kFlipped,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 6,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(running_left_frames.has_value());
-
-  auto running_front_right_frames = assets.graphics.tile_sets.create(
-    *movement_front_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 6,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(running_front_right_frames.has_value());
-
-  auto running_front_left_frames = assets.graphics.tile_sets.create(
-    *movement_front_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kFlipped,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 6,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(running_front_left_frames.has_value());
-
-  auto running_back_right_frames = assets.graphics.tile_sets.create(
-    *movement_back_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kNormal,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 6,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(running_back_right_frames.has_value());
-
-  auto running_back_left_frames = assets.graphics.tile_sets.create(
-    *movement_back_side_atlas,
-    TileSetSliceUniform{
-      .tile_size_px = {64, 64},
-      .tile_orientation_x = TileOrientation::kFlipped,
-      .tile_orientation_y = TileOrientation::kNormal,
-      .direction = TileSliceDirection::kRowWise,
-      .start_offset = 6,
-      .stop_after = 6,
-    });
-  SDE_ASSERT_TRUE(running_back_left_frames.has_value());
-
 
 
   auto window_target_or_error = RenderTarget::create(app_or_error->window());
@@ -416,8 +468,8 @@ int main(int argc, char** argv)
   animated_sprite.setFrameRate(Hertz(5.0F));
   animated_sprite.setMode(AnimatedSprite::Mode::kLooped);
 
-  auto animation_frames_prev = idle_front_frames->handle;
-  auto animation_frames_next = idle_front_frames->handle;
+  entt::registry reg;
+  Character character_script;
 
   app_or_error->spin([&](const auto& window)
   {
@@ -437,129 +489,30 @@ int main(int argc, char** argv)
     attributes.time_delta = window.time_delta;
 
 
-
-    direction.setZero();
-
-    static constexpr float kSpeedWalking = 0.5;
-    static constexpr float kSpeedRunning = 1.0;
-
-    // Handle character speed
-    const float next_speed =
-      window.keys.isDown(KeyCode::kLShift) ? kSpeedRunning : kSpeedWalking;
-
-
-    // Handle movement controls
-    if (window.keys.isDown(KeyCode::kA))
-    {
-      direction.x() = -next_speed;
-    }
-    if (window.keys.isDown(KeyCode::kD))
-    {
-      direction.x() = +next_speed;
-    }
-    if (window.keys.isDown(KeyCode::kS))
-    {
-      direction.y() = -next_speed;
-    }
-    if (window.keys.isDown(KeyCode::kW))
-    {
-      direction.y() = +next_speed;
-    }
-
-
-    // Handle next animation
-    if ((direction.x() > 0) and (direction.y() > 0))
-    {
-      animation_frames_next = (next_speed == kSpeedWalking) ? walking_back_right_frames->handle : running_back_right_frames->handle;
-    }
-    else if ((direction.x() < 0) and (direction.y() > 0))
-    {
-      animation_frames_next = (next_speed == kSpeedWalking) ? walking_back_left_frames->handle : running_back_left_frames->handle;
-    }
-    else if ((direction.x() > 0) and (direction.y() < 0))
-    {
-      animation_frames_next = (next_speed == kSpeedWalking) ? walking_front_right_frames->handle : running_front_right_frames->handle;
-    }
-    else if ((direction.x() < 0) and (direction.y() < 0))
-    {
-      animation_frames_next = (next_speed == kSpeedWalking) ? walking_front_left_frames->handle : running_front_left_frames->handle;
-    }
-    else if (direction.x() > 0)
-    {
-      animation_frames_next = (next_speed == kSpeedWalking) ? walking_right_frames->handle : running_right_frames->handle;
-    }
-    else if (direction.x() < 0)
-    {
-      animation_frames_next = (next_speed == kSpeedWalking) ? walking_left_frames->handle : running_left_frames->handle;
-    }
-    else if (direction.y() < 0)
-    {
-      animation_frames_next = (next_speed == kSpeedWalking) ? walking_front_frames->handle : running_front_frames->handle;
-    }
-    else if (direction.y() > 0)
-    {
-      animation_frames_next = (next_speed == kSpeedWalking) ? walking_back_frames->handle : running_back_frames->handle;
-    }
-    else if ((direction_looking.x() > 0) and (direction_looking.y() > 0))
-    {
-      animation_frames_next = idle_back_right_frames->handle;
-    }
-    else if ((direction_looking.x() < 0) and (direction_looking.y() > 0))
-    {
-      animation_frames_next = idle_back_left_frames->handle;
-    }
-    else if ((direction_looking.x() > 0) and (direction_looking.y() < 0))
-    {
-      animation_frames_next = idle_front_right_frames->handle;
-    }
-    else if ((direction_looking.x() < 0) and (direction_looking.y() < 0))
-    {
-      animation_frames_next = idle_front_left_frames->handle;
-    }
-    else if (direction_looking.x() > 0)
-    {
-      animation_frames_next = idle_right_frames->handle;
-    }
-    else if (direction_looking.x() < 0)
-    {
-      animation_frames_next = idle_left_frames->handle;
-    }
-    else if (direction_looking.y() < 0)
-    {
-      animation_frames_next = idle_front_frames->handle;
-    }
-    else if (direction_looking.y() > 0)
-    {
-      animation_frames_next = idle_back_frames->handle;;
-    }
-
-    animated_sprite.setFrames(animation_frames_next);
-
-    if ((direction.array() != 0.0F).any())
-    {
-      direction_looking = direction;
-      animated_sprite.setFrameRate(Hertz(next_speed * 15.0F));
-    }
-    else
-    {
-      animated_sprite.setFrameRate(Hertz(kSpeedWalking * 15.0F));
-    }
-
-    position += direction * toSeconds(attributes.time_delta);
-
+    character_script.update(reg, assets, window);
 
     window_target_or_error->refresh(Black());
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets.graphics, attributes, sprite_rendering_resources); render_pass_or_error.has_value())
     {
-      animated_sprite.draw(*render_pass_or_error, attributes.time, {position - sde::Vec2f{0.5, 0.5}, position + sde::Vec2f{0.5, 0.5}});
+      reg.view<Size, State, graphics::AnimatedSprite>().each(
+        [&](const Size& size, const State& state, const graphics::AnimatedSprite& sprite)
+        {
+          const Vec2f min_corner{state.position - 0.5F * size.extent};
+          const Vec2f max_corner{state.position + 0.5F * size.extent};
+          sprite.draw(*render_pass_or_error, window.time, {min_corner, max_corner});
+        });
     }
+
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets.graphics, attributes, text_rendering_resources); render_pass_or_error.has_value())
     {
-      type_setter.draw(*render_pass_or_error, "bob", position + sde::Vec2f{0.0, 0.35}, {0.075F});
-      type_setter.draw(*render_pass_or_error, sde::format("pos: (%.3f, %.3f)", position.x(),  position.y()),  position + sde::Vec2f{0.0, -0.30}, {0.025F}, Yellow(0.8));
-      type_setter.draw(*render_pass_or_error, sde::format("vel: (%.3f, %.3f)", direction.x(), direction.y()), position + sde::Vec2f{0.0, -0.35}, {0.025F}, Yellow(0.8));
+      reg.view<Info, Size, State>().each(
+        [&](const Info& info, const Size& size, const State& state)
+        {
+          type_setter.draw(*render_pass_or_error, info.name, state.position + sde::Vec2f{0.0, 0.3F}, {0.075F});
+          type_setter.draw(*render_pass_or_error, sde::format("pos: (%.3f, %.3f)", state.position.x(),  state.position.y()),  state.position + sde::Vec2f{0.0, -0.3F}, {0.025F}, Yellow(0.8));
+          type_setter.draw(*render_pass_or_error, sde::format("vel: (%.3f, %.3f)", state.velocity.x(), state.velocity.y()), state.position + sde::Vec2f{0.0, -0.3F - 0.05}, {0.025F}, Yellow(0.8));
+        });
     }
-    animation_frames_prev = animation_frames_next;
 
     return AppDirective::kContinue;
   });

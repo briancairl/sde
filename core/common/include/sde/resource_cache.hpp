@@ -80,6 +80,8 @@ public:
 
   [[nodiscard]] const value_type* operator()(const handle_type& handle) const { return get_if(handle); }
 
+  [[nodiscard]] element_type find(const handle_type& handle) const { return {handle, get_if(handle)}; }
+
   [[nodiscard]] const bool exists(handle_type handle) const { return handle_to_value_cache_.count(handle) != 0; }
 
   void remove(handle_type handle) { handle_to_value_cache_.erase(handle); }
