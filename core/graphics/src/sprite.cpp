@@ -30,27 +30,24 @@ void Sprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
   }
 }
 
-AnimatedSprite::AnimatedSprite(const TileSetHandle& frames_handle, float frames_per_second, Mode mode) :
-    frames_handle_{frames_handle}, frames_per_second_{frames_per_second}, frame_{0}, mode_{mode}
-{}
+AnimatedSprite::AnimatedSprite(const AnimatedSpriteOptions&& options) : options_{options} {}
 
-void AnimatedSprite::update(float t) { frame_ = static_cast<std::size_t>(t * frames_per_second_); }
-
-void AnimatedSprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
+void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect, const Vec4f& tint) const
 {
   if (!rp.getViewportInWorldBounds().intersects(rect))
   {
     return;
   }
 
-  const auto* frames = rp.assets().tile_sets(frames_handle_);
+  const auto* frames = rp.assets().tile_sets(options_.frames);
   if (frames == nullptr)
   {
     return;
   }
 
-  const auto frame_idx_saturated = (mode_ == Mode::kLooped) ? (frame_ % frames->tile_bounds.size())
-                                                            : std::min(frame_, frames->tile_bounds.size() - 1UL);
+  const auto frame = static_cast<std::size_t>(t * options_.frames_per_second);
+  const auto frame_idx_saturated = (options_.mode == Mode::kLooped) ? (frame % frames->tile_bounds.size())
+                                                                    : std::min(frame, frames->tile_bounds.size() - 1UL);
 
   if (const auto texture_unit_opt = rp.assign(frames->tile_atlas); texture_unit_opt.has_value())
   {

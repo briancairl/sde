@@ -20,6 +20,7 @@
 #include "sde/graphics/shapes_fwd.hpp"
 #include "sde/graphics/texture_units.hpp"
 #include "sde/graphics/typedef.hpp"
+#include "sde/time.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
@@ -44,8 +45,8 @@ struct RenderAttributes
 {
   Mat3f world_from_camera = Mat3f::Identity();
   float scaling = 1.0F;
-  float time = 0.0F;
-  float time_delta = 0.0F;
+  TimeOffset time = TimeOffset::zero();
+  TimeOffset time_delta = TimeOffset::zero();
   Mat3f getWorldFromViewportMatrix(const RenderTarget& target) const;
 };
 

@@ -10,6 +10,7 @@
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/tile_set_handle.hpp"
+#include "sde/time.hpp"
 
 namespace sde::graphics
 {
@@ -36,29 +37,30 @@ enum class AnimatedSpriteMode
   kOneShot
 };
 
+struct AnimatedSpriteOptions
+{
+  TileSetHandle frames;
+  Rate frames_per_second = Hertz(5.0);
+  AnimatedSpriteMode mode = AnimatedSpriteMode::kOneShot;
+};
+
 class AnimatedSprite
 {
 public:
   using Mode = AnimatedSpriteMode;
 
-  AnimatedSprite(
-    const TileSetHandle& frames_handle,
-    float frames_per_second,
-    AnimatedSpriteMode looped = AnimatedSpriteMode::kLooped);
+  explicit AnimatedSprite(const AnimatedSpriteOptions&& options);
 
-  void draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones()) const;
+  void draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones()) const;
 
-  void update(float t);
+  void setFrames(TileSetHandle frames) { options_.frames = frames; }
 
-  void setMode(Mode mode) { mode_ = mode; }
+  void setFrameRate(Rate rate) { options_.frames_per_second = rate; }
 
-  void setRate(float rate) { frames_per_second_ = rate; }
+  void setMode(Mode mode) { options_.mode = mode; }
 
 private:
-  TileSetHandle frames_handle_;
-  float frames_per_second_;
-  std::size_t frame_ = 0UL;
-  Mode mode_ = Mode::kLooped;
+  AnimatedSpriteOptions options_;
 };
 
 

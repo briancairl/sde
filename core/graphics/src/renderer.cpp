@@ -26,6 +26,7 @@
 #include "sde/graphics/tile_set.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/logging.hpp"
+#include "sde/time_ostream.hpp"
 
 namespace sde::graphics
 {
@@ -666,8 +667,8 @@ void Renderer2D::flush(const Assets& assets, const RenderAttributes& attributes,
 
   // clang-format off
   // Apply other variables
-  glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), attributes.time);
-  glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), attributes.time_delta);
+  glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), toSeconds(attributes.time));
+  glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), toSeconds(attributes.time_delta));
   glUniformMatrix3fv(glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, viewport_from_world.data());
   // clang-format on
 

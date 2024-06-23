@@ -518,58 +518,55 @@ int main(int argc, char** argv)
 
 
 
-  AnimatedSprite idle_front_animated_sprite{*idle_front_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite idle_back_animated_sprite{*idle_back_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite idle_right_animated_sprite{*idle_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite idle_left_animated_sprite{*idle_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite idle_front_animated_sprite{{*idle_front_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite idle_back_animated_sprite{{*idle_back_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite idle_right_animated_sprite{{*idle_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite idle_left_animated_sprite{{*idle_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
 
-  AnimatedSprite idle_front_right_animated_sprite{*idle_front_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite idle_front_left_animated_sprite{*idle_front_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite idle_back_right_animated_sprite{*idle_back_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite idle_back_left_animated_sprite{*idle_back_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite idle_front_right_animated_sprite{{*idle_front_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite idle_front_left_animated_sprite{{*idle_front_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite idle_back_right_animated_sprite{{*idle_back_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite idle_back_left_animated_sprite{{*idle_back_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
 
-  AnimatedSprite walking_front_animated_sprite{*walking_front_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite walking_back_animated_sprite{*walking_back_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite walking_left_animated_sprite{*walking_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite walking_right_animated_sprite{*walking_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite walking_front_animated_sprite{{*walking_front_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite walking_back_animated_sprite{{*walking_back_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite walking_left_animated_sprite{{*walking_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite walking_right_animated_sprite{{*walking_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
 
-  AnimatedSprite walking_front_right_animated_sprite{*walking_front_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite walking_front_left_animated_sprite{*walking_front_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite walking_back_right_animated_sprite{*walking_back_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite walking_back_left_animated_sprite{*walking_back_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite walking_front_right_animated_sprite{{*walking_front_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite walking_front_left_animated_sprite{{*walking_front_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite walking_back_right_animated_sprite{{*walking_back_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite walking_back_left_animated_sprite{{*walking_back_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
 
-  AnimatedSprite running_front_animated_sprite{*running_front_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite running_back_animated_sprite{*running_back_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite running_left_animated_sprite{*running_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite running_right_animated_sprite{*running_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite running_front_animated_sprite{{*running_front_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite running_back_animated_sprite{{*running_back_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite running_left_animated_sprite{{*running_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite running_right_animated_sprite{{*running_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
 
-  AnimatedSprite running_front_right_animated_sprite{*running_front_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite running_front_left_animated_sprite{*running_front_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite running_back_right_animated_sprite{*running_back_right_frames, 5.0F, AnimatedSprite::Mode::kLooped};
-  AnimatedSprite running_back_left_animated_sprite{*running_back_left_frames, 5.0F, AnimatedSprite::Mode::kLooped};
+  AnimatedSprite running_front_right_animated_sprite{{*running_front_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite running_front_left_animated_sprite{{*running_front_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite running_back_right_animated_sprite{{*running_back_right_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
+  AnimatedSprite running_back_left_animated_sprite{{*running_back_left_frames, Hertz(5.0F), AnimatedSprite::Mode::kLooped}};
 
   AnimatedSprite* prev_animation = &running_front_animated_sprite;
   AnimatedSprite* next_animation = &running_front_animated_sprite;
 
   app_or_error->spin([&](const auto& window)
   {
-    const auto time = std::chrono::duration_cast<std::chrono::duration<float>>(window.time).count();
-    const auto time_delta = std::chrono::duration_cast<std::chrono::duration<float>>(window.time_delta).count();
-
     // Handle screen zoom
     static constexpr float kScaleRate = 1.5;
     const float scroll_sensitivity = std::clamp(attributes.scaling, 1e-4F, 1e-2F);
     if (window.mouse_scroll.y() > 0)
     {
-      attributes.scaling -= scroll_sensitivity * kScaleRate * time;
+      attributes.scaling -= scroll_sensitivity * kScaleRate * sde::toSeconds(window.time_delta);
     }
     else if (window.mouse_scroll.y() < 0)
     {
-      attributes.scaling += scroll_sensitivity * kScaleRate * time;
+      attributes.scaling += scroll_sensitivity * kScaleRate * sde::toSeconds(window.time_delta);
     }
     attributes.scaling = std::max(attributes.scaling, 1e-3F);
-    attributes.time = time;
-    attributes.time_delta = time_delta;
+    attributes.time = window.time;
+    attributes.time_delta = window.time_delta;
 
 
 
@@ -671,22 +668,20 @@ int main(int argc, char** argv)
     if ((direction.array() != 0.0F).any())
     {
       direction_looking = direction;
-      next_animation->setRate(next_speed * 15.0F);
+      next_animation->setFrameRate(Hertz(next_speed * 15.0F));
     }
     else
     {
-      next_animation->setRate(kSpeedWalking * 15.0F);
+      next_animation->setFrameRate(Hertz(kSpeedWalking * 15.0F));
     }
 
-    next_animation->update(attributes.time);
-
-    position += direction * time_delta;
+    position += direction * toSeconds(attributes.time_delta);
 
 
     window_target_or_error->refresh(Black());
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, graphics_assets, attributes, sprite_rendering_resources); render_pass_or_error.has_value())
     {
-      next_animation->draw(*render_pass_or_error, {position - sde::Vec2f{0.5, 0.5}, position + sde::Vec2f{0.5, 0.5}});
+      next_animation->draw(*render_pass_or_error, attributes.time, {position - sde::Vec2f{0.5, 0.5}, position + sde::Vec2f{0.5, 0.5}});
     }
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, graphics_assets, attributes, text_rendering_resources); render_pass_or_error.has_value())
     {

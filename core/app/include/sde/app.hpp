@@ -14,17 +14,15 @@
 #include "sde/geometry_types.hpp"
 #include "sde/graphics/window.hpp"
 #include "sde/keyboard.hpp"
+#include "sde/time.hpp"
 
 namespace sde
 {
 
 struct AppProperties
 {
-  using Clock = std::chrono::steady_clock;
-  using Duration = Clock::duration;
-
-  Duration time = Duration::zero();
-  Duration time_delta = Duration::zero();
+  TimeOffset time = TimeOffset::zero();
+  TimeOffset time_delta = TimeOffset::zero();
 
   Vec2i size = {640, 480};
   Vec2d mouse_position_px = {0.0, 0.0};
@@ -61,7 +59,7 @@ public:
 
   App(App&&) = default;
 
-  void spin(std::function<AppDirective(const AppProperties&)> on_update);
+  void spin(std::function<AppDirective(const AppProperties&)> on_update, const Rate spin_rate = Hertz(60.0F));
 
   const Window& window() const { return window_; }
 
