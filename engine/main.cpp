@@ -8,6 +8,7 @@
 #include "sde/audio/mixer.hpp"
 #include "sde/audio/sound.hpp"
 #include "sde/audio/sound_data.hpp"
+#include "sde/game/assets.hpp"
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/assets.hpp"
 #include "sde/graphics/colors.hpp"
@@ -130,22 +131,15 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(app_or_error.has_value());
 
 
-  audio::Assets audio_assets;
+  game::Assets assets;
 
   auto audio_mixer_or_error = audio::Mixer::create();
   SDE_ASSERT_TRUE(audio_mixer_or_error.has_value());
 
-  auto sounds_from_disk = from_disk(audio_assets.sounds, [](auto& cache, const asset::path& path)
-  {
-    auto sound_data_or_error = SoundData::load(path);
-    SDE_ASSERT_TRUE(sound_data_or_error.has_value());
-    SDE_LOG_INFO_FMT("sound loaded from disk: %s", path.string().c_str());
-    return cache.create(*sound_data_or_error);
-  });
 
-  auto background_track_1_or_error = sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav");
+  auto background_track_1_or_error = assets.sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav");
   SDE_ASSERT_TRUE(background_track_1_or_error.has_value());
-  auto background_track_2_or_error = sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/forest.wav");
+  auto background_track_2_or_error = assets.sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/forest.wav");
   SDE_ASSERT_TRUE(background_track_2_or_error.has_value());
   if (auto listener_or_err = ListenerTarget::create(*audio_mixer_or_error, 0UL); listener_or_err.has_value())
   {
@@ -153,29 +147,12 @@ int main(int argc, char** argv)
     listener_or_err->set(*background_track_2_or_error, TrackOptions{.gain=1.0F, .looped=true});
   }
 
-  graphics::Assets graphics_assets;
-
-  auto textures_from_disk = from_disk(graphics_assets.textures, [](auto& cache, const asset::path& path)
-  {
-    auto texture_source_image = Image::load(path, {.flags = {.flip_vertically = true}});
-    SDE_ASSERT_TRUE(texture_source_image.has_value());
-    SDE_LOG_INFO_FMT("texture loaded from disk: %s", path.string().c_str());
-    return cache.create(*texture_source_image);
-  });
-
-  auto fonts_from_disk = from_disk(graphics_assets.fonts, [](auto& cache, const asset::path& path)
-  {
-    SDE_LOG_INFO_FMT("font loaded from disk: %s", path.string().c_str());
-    return cache.create(path);
-  });
-
-
-  auto player_font_or_error = fonts_from_disk.create("/home/brian/dev/assets/fonts/white_rabbit.ttf");
+  auto player_font_or_error = assets.fonts_from_disk.create("/home/brian/dev/assets/fonts/white_rabbit.ttf");
   SDE_ASSERT_TRUE(player_font_or_error.has_value());
-  auto player_typeset_or_error = graphics_assets.type_sets.create(graphics_assets.textures, *player_font_or_error, TypeSetOptions{.height_px = 20});
+  auto player_typeset_or_error = assets.graphics.type_sets.create(assets.graphics.textures, *player_font_or_error, TypeSetOptions{.height_px = 20});
   SDE_ASSERT_TRUE(player_typeset_or_error.has_value());
 
-  auto text_shader_or_error = graphics_assets.shaders.create(kTextShader);
+  auto text_shader_or_error = assets.graphics.shaders.create(kTextShader);
   SDE_ASSERT_TRUE(text_shader_or_error.has_value());
 
   TypeSetter type_setter{*player_typeset_or_error};
@@ -184,23 +161,23 @@ int main(int argc, char** argv)
   text_rendering_resources.buffer_group = 1;
 
 
-  auto sprite_shader_or_error = graphics_assets.shaders.create(kSpriteShader);
+  auto sprite_shader_or_error = assets.graphics.shaders.create(kSpriteShader);
   SDE_ASSERT_TRUE(sprite_shader_or_error.has_value());
 
   // Load all textures
 
-  auto movement_front_atlas = textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png");
-  auto movement_back_atlas = textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png");
-  auto movement_side_atlas = textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png");
-  auto movement_back_side_atlas = textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png");
-  auto movement_front_side_atlas = textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png");
+  auto movement_front_atlas = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png");
+  auto movement_back_atlas = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png");
+  auto movement_side_atlas = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png");
+  auto movement_back_side_atlas = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png");
+  auto movement_front_side_atlas = assets.textures_from_disk.create("/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png");
 
 
   // Create animation frame
 
   // IDLE ------------------------------------------
 
-  auto idle_front_frames = graphics_assets.tile_sets.create(
+  auto idle_front_frames = assets.graphics.tile_sets.create(
     *movement_front_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -212,7 +189,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(idle_front_frames.has_value());
 
-  auto idle_back_frames = graphics_assets.tile_sets.create(
+  auto idle_back_frames = assets.graphics.tile_sets.create(
     *movement_back_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -224,7 +201,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(idle_back_frames.has_value());
 
-  auto idle_right_frames = graphics_assets.tile_sets.create(
+  auto idle_right_frames = assets.graphics.tile_sets.create(
     *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -236,7 +213,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(idle_right_frames.has_value());
 
-  auto idle_left_frames = graphics_assets.tile_sets.create(
+  auto idle_left_frames = assets.graphics.tile_sets.create(
     *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -248,7 +225,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(idle_left_frames.has_value());
 
-  auto idle_front_right_frames = graphics_assets.tile_sets.create(
+  auto idle_front_right_frames = assets.graphics.tile_sets.create(
     *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -260,7 +237,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(idle_front_right_frames.has_value());
 
-  auto idle_front_left_frames = graphics_assets.tile_sets.create(
+  auto idle_front_left_frames = assets.graphics.tile_sets.create(
     *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -272,7 +249,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(idle_front_left_frames.has_value());
 
-  auto idle_back_right_frames = graphics_assets.tile_sets.create(
+  auto idle_back_right_frames = assets.graphics.tile_sets.create(
     *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -284,7 +261,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(idle_back_right_frames.has_value());
 
-  auto idle_back_left_frames = graphics_assets.tile_sets.create(
+  auto idle_back_left_frames = assets.graphics.tile_sets.create(
     *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -299,7 +276,7 @@ int main(int argc, char** argv)
 
   // RUNNING ----------------------------------------
 
-  auto walking_front_frames = graphics_assets.tile_sets.create(
+  auto walking_front_frames = assets.graphics.tile_sets.create(
     *movement_front_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -311,7 +288,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(walking_front_frames.has_value());
 
-  auto walking_back_frames = graphics_assets.tile_sets.create(
+  auto walking_back_frames = assets.graphics.tile_sets.create(
     *movement_back_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -323,7 +300,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(walking_back_frames.has_value());
 
-  auto walking_right_frames = graphics_assets.tile_sets.create(
+  auto walking_right_frames = assets.graphics.tile_sets.create(
     *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -335,7 +312,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(walking_right_frames.has_value());
 
-  auto walking_left_frames = graphics_assets.tile_sets.create(
+  auto walking_left_frames = assets.graphics.tile_sets.create(
     *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -347,7 +324,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(walking_left_frames.has_value());
 
-  auto walking_front_right_frames = graphics_assets.tile_sets.create(
+  auto walking_front_right_frames = assets.graphics.tile_sets.create(
     *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -359,7 +336,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(walking_front_right_frames.has_value());
 
-  auto walking_front_left_frames = graphics_assets.tile_sets.create(
+  auto walking_front_left_frames = assets.graphics.tile_sets.create(
     *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -371,7 +348,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(walking_front_left_frames.has_value());
 
-  auto walking_back_right_frames = graphics_assets.tile_sets.create(
+  auto walking_back_right_frames = assets.graphics.tile_sets.create(
     *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -383,7 +360,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(walking_back_right_frames.has_value());
 
-  auto walking_back_left_frames = graphics_assets.tile_sets.create(
+  auto walking_back_left_frames = assets.graphics.tile_sets.create(
     *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -399,7 +376,7 @@ int main(int argc, char** argv)
 
   // RUNNING ----------------------------------------
 
-  auto running_front_frames = graphics_assets.tile_sets.create(
+  auto running_front_frames = assets.graphics.tile_sets.create(
     *movement_front_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -411,7 +388,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(running_front_frames.has_value());
 
-  auto running_back_frames = graphics_assets.tile_sets.create(
+  auto running_back_frames = assets.graphics.tile_sets.create(
     *movement_back_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -423,7 +400,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(running_back_frames.has_value());
 
-  auto running_right_frames = graphics_assets.tile_sets.create(
+  auto running_right_frames = assets.graphics.tile_sets.create(
     *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -435,7 +412,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(running_right_frames.has_value());
 
-  auto running_left_frames = graphics_assets.tile_sets.create(
+  auto running_left_frames = assets.graphics.tile_sets.create(
     *movement_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -447,7 +424,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(running_left_frames.has_value());
 
-  auto running_front_right_frames = graphics_assets.tile_sets.create(
+  auto running_front_right_frames = assets.graphics.tile_sets.create(
     *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -459,7 +436,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(running_front_right_frames.has_value());
 
-  auto running_front_left_frames = graphics_assets.tile_sets.create(
+  auto running_front_left_frames = assets.graphics.tile_sets.create(
     *movement_front_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -471,7 +448,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(running_front_left_frames.has_value());
 
-  auto running_back_right_frames = graphics_assets.tile_sets.create(
+  auto running_back_right_frames = assets.graphics.tile_sets.create(
     *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -483,7 +460,7 @@ int main(int argc, char** argv)
     });
   SDE_ASSERT_TRUE(running_back_right_frames.has_value());
 
-  auto running_back_left_frames = graphics_assets.tile_sets.create(
+  auto running_back_left_frames = assets.graphics.tile_sets.create(
     *movement_back_side_atlas,
     TileSetSliceUniform{
       .tile_size_px = {64, 64},
@@ -654,11 +631,11 @@ int main(int argc, char** argv)
 
 
     window_target_or_error->refresh(Black());
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, graphics_assets, attributes, sprite_rendering_resources); render_pass_or_error.has_value())
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets.graphics, attributes, sprite_rendering_resources); render_pass_or_error.has_value())
     {
       animated_sprite.draw(*render_pass_or_error, attributes.time, {position - sde::Vec2f{0.5, 0.5}, position + sde::Vec2f{0.5, 0.5}});
     }
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, graphics_assets, attributes, text_rendering_resources); render_pass_or_error.has_value())
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets.graphics, attributes, text_rendering_resources); render_pass_or_error.has_value())
     {
       type_setter.draw(*render_pass_or_error, "bob", position + sde::Vec2f{0.0, 0.35}, {0.075F});
       type_setter.draw(*render_pass_or_error, sde::format("pos: (%.3f, %.3f)", position.x(),  position.y()),  position + sde::Vec2f{0.0, -0.30}, {0.025F}, Yellow(0.8));

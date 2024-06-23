@@ -39,6 +39,8 @@ public:
 
   using CacheMap = std::unordered_map<handle_type, value_type, ResourceHandleHash>;
 
+  using result_type = expected<element_type, error_type>;
+
   template <typename... CreateArgTs> [[nodiscard]] expected<element_type, error_type> create(CreateArgTs&&... args)
   {
     auto h = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);
