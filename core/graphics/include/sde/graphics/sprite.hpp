@@ -48,8 +48,10 @@ class AnimatedSprite
 {
 public:
   using Mode = AnimatedSpriteMode;
+  using Options = AnimatedSpriteOptions;
 
-  explicit AnimatedSprite(const AnimatedSpriteOptions&& options);
+  AnimatedSprite() = default;
+  explicit AnimatedSprite(const Options&& options);
 
   void draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones()) const;
 
@@ -60,7 +62,7 @@ public:
   void setMode(Mode mode) { options_.mode = mode; }
 
 private:
-  AnimatedSpriteOptions options_;
+  Options options_;
 };
 
 

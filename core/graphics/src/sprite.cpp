@@ -30,7 +30,7 @@ void Sprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
   }
 }
 
-AnimatedSprite::AnimatedSprite(const AnimatedSpriteOptions&& options) : options_{options} {}
+AnimatedSprite::AnimatedSprite(const Options&& options) : options_{options} {}
 
 void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect, const Vec4f& tint) const
 {
