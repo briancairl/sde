@@ -29,88 +29,6 @@
 
 // clang-format off
 
-static const auto* kSpriteShader = R"SpriteShader(
-
-  layout (location = 0) in vec2 vPosition;
-  layout (location = 1) in vec2 vTexCoord;
-  layout (location = 2) in float vTexUnit;
-  layout (location = 3) in vec4 vTintColor;
-
-  out vec2 fTexCoord;
-  out vec4 fTintColor;
-  out float fTexUnit;
-
-  uniform mat3 uCameraTransform;
-
-  void main()
-  {
-    gl_Position = vec4(uCameraTransform * vec3(vPosition, 1), 1);
-    fTexUnit = vTexUnit;
-    fTexCoord = vTexCoord;
-    fTintColor = vTintColor;
-  }
-
-  ---
-
-  out vec4 FragColor;
-
-  in float fTexUnit;
-  in vec2 fTexCoord;
-  in vec4 fTintColor;
-
-  uniform sampler2D[16] uTexture;
-
-  void main()
-  {
-    int texture_unit = int(fTexUnit);
-    bool texture_enabled = bool(texture_unit >= 0);
-    vec4 texture_color_sampled = texture2D(uTexture[texture_unit], fTexCoord);
-    FragColor = (float(!texture_enabled) * fTintColor) + float(texture_enabled) * (fTintColor * texture_color_sampled);
-  }
-)SpriteShader";
-
-
-static const auto* kTextShader = R"TextShader(
-
-  layout (location = 0) in vec2 vPosition;
-  layout (location = 1) in vec2 vTexCoord;
-  layout (location = 2) in float vTexUnit;
-  layout (location = 3) in vec4 vTintColor;
-
-  out vec2 fTexCoord;
-  out vec4 fTintColor;
-  out float fTexUnit;
-
-  uniform mat3 uCameraTransform;
-
-  void main()
-  {
-    gl_Position = vec4(uCameraTransform * vec3(vPosition, 1), 1);
-    fTexCoord = vTexCoord;
-    fTintColor = vTintColor;
-    fTexUnit = vTexUnit;
-  }
-
-  ---
-  out vec4 FragColor;
-
-  in float fTexUnit;
-  in vec2 fTexCoord;
-  in vec4 fTintColor;
-
-  uniform sampler2D[16] uTexture;
-
-  void main()
-  {
-    int u = int(fTexUnit);
-    vec4 s = texture2D(uTexture[u], fTexCoord);
-    FragColor = s[0] * fTintColor;
-  }
-
-)TextShader";
-
-
-
 int main(int argc, char** argv)
 {
   using namespace sde;
@@ -152,7 +70,7 @@ int main(int argc, char** argv)
   auto player_typeset_or_error = assets.graphics.type_sets.create(assets.graphics.textures, *player_font_or_error, TypeSetOptions{.height_px = 20});
   SDE_ASSERT_TRUE(player_typeset_or_error.has_value());
 
-  auto text_shader_or_error = assets.graphics.shaders.create(kTextShader);
+  auto text_shader_or_error = assets.shaders_from_disk.create("/home/brian/dev/assets/shaders/glsl/simple_text.glsl");
   SDE_ASSERT_TRUE(text_shader_or_error.has_value());
 
   TypeSetter type_setter{*player_typeset_or_error};
@@ -161,7 +79,7 @@ int main(int argc, char** argv)
   text_rendering_resources.buffer_group = 1;
 
 
-  auto sprite_shader_or_error = assets.graphics.shaders.create(kSpriteShader);
+  auto sprite_shader_or_error = assets.shaders_from_disk.create("/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl");
   SDE_ASSERT_TRUE(sprite_shader_or_error.has_value());
 
   // Load all textures

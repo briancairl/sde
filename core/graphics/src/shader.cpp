@@ -409,8 +409,8 @@ std::ostream& operator<<(std::ostream& os, ShaderError error)
   {
   case ShaderError::kElementAlreadyExists:
     return os << "ElementAlreadyExists";
-  case ShaderError::kLoadFailure:
-    return os << "LoadFailure";
+  case ShaderError::kAssetNotFound:
+    return os << "AssetNotFound";
   case ShaderError::kLinkageFailure:
     return os << "LinkageFailure";
   case ShaderError::kVertShaderCompilationFailure:

@@ -23,6 +23,11 @@ struct LoadTextureFromDisk
   graphics::TextureCache::result_type operator()(graphics::TextureCache& cache, const asset::path& path) const;
 };
 
+struct LoadShaderFromDisk
+{
+  graphics::ShaderCache::result_type operator()(graphics::ShaderCache& cache, const asset::path& path) const;
+};
+
 struct LoadSoundFromDisk
 {
   audio::SoundCache::result_type operator()(audio::SoundCache& cache, const asset::path& path) const;
@@ -39,6 +44,8 @@ struct Assets
   graphics::Assets graphics;
   /// Font-from-disk resource loading wrapper
   ResourceCacheFromDisk<graphics::FontCache, LoadFontFromDisk> fonts_from_disk;
+  /// Shader-from-disk resource loading wrapper
+  ResourceCacheFromDisk<graphics::ShaderCache, LoadShaderFromDisk> shaders_from_disk;
   /// Texture-from-disk resource loading wrapper
   ResourceCacheFromDisk<graphics::TextureCache, LoadTextureFromDisk> textures_from_disk;
   /// Sound-from-disk resource loading wrapper
