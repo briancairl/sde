@@ -149,9 +149,8 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(background_track_2_or_error.has_value());
   if (auto listener_or_err = ListenerTarget::create(*audio_mixer_or_error, 0UL); listener_or_err.has_value())
   {
-    listener_or_err->set(*background_track_1_or_error, TrackOptions{.gain=3.0F, .looped=true});
-    listener_or_err->set(*background_track_1_or_error, TrackOptions{.pitch=2.0F, .looped=true});
-    listener_or_err->set(*background_track_2_or_error, TrackOptions{.gain=3.0F, .looped=true});
+    listener_or_err->set(*background_track_1_or_error, TrackOptions{.gain=0.3F, .looped=true});
+    listener_or_err->set(*background_track_2_or_error, TrackOptions{.gain=1.0F, .looped=true});
   }
 
   graphics::Assets graphics_assets;
@@ -528,7 +527,7 @@ int main(int argc, char** argv)
   app_or_error->spin([&](const auto& window)
   {
     // Handle screen zoom
-    static constexpr float kScaleRate = 1.5;
+    static constexpr float kScaleRate = 100.0;
     const float scroll_sensitivity = std::clamp(attributes.scaling, 1e-4F, 1e-2F);
     if (window.mouse_scroll.y() > 0)
     {
