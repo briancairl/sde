@@ -378,9 +378,6 @@ private:
       sprite.setFrameRate(Hertz(kSpeedWalking * 15.0F));
     }
 
-    // Update position
-    state.position += state.velocity * toSeconds(app.time_delta);
-
     return {};
   }
 
@@ -414,11 +411,12 @@ int main(int argc, char** argv)
   auto audio_mixer_or_error = audio::Mixer::create();
   SDE_ASSERT_TRUE(audio_mixer_or_error.has_value());
 
-
   auto background_track_1_or_error = assets.sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav");
   SDE_ASSERT_TRUE(background_track_1_or_error.has_value());
+
   auto background_track_2_or_error = assets.sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/forest.wav");
   SDE_ASSERT_TRUE(background_track_2_or_error.has_value());
+
   if (auto listener_or_err = ListenerTarget::create(*audio_mixer_or_error, 0UL); listener_or_err.has_value())
   {
     listener_or_err->set(*background_track_1_or_error, TrackOptions{.gain=0.3F, .looped=true});
@@ -434,6 +432,7 @@ int main(int argc, char** argv)
   SDE_ASSERT_TRUE(text_shader_or_error.has_value());
 
   TypeSetter type_setter{*player_typeset_or_error};
+
   RenderResources text_rendering_resources;
   text_rendering_resources.shader = (*text_shader_or_error);
   text_rendering_resources.buffer_group = 1;
@@ -442,11 +441,8 @@ int main(int argc, char** argv)
   auto sprite_shader_or_error = assets.shaders_from_disk.create("/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl");
   SDE_ASSERT_TRUE(sprite_shader_or_error.has_value());
 
-
-
   auto window_target_or_error = RenderTarget::create(app_or_error->window());
   SDE_ASSERT_TRUE(window_target_or_error.has_value());
-
 
   auto renderer_or_error = Renderer2D::create();
   SDE_ASSERT_TRUE(renderer_or_error.has_value());
@@ -457,12 +453,6 @@ int main(int argc, char** argv)
   sprite_rendering_resources.buffer_group = 0;
 
   RenderAttributes attributes;
-
-  sde::Vec2f position{0, 0};
-  sde::Vec2f direction{0, -1};
-  sde::Vec2f direction_looking{0, -1};
-
-
 
   AnimatedSprite animated_sprite;
   animated_sprite.setFrameRate(Hertz(5.0F));
@@ -491,6 +481,8 @@ int main(int argc, char** argv)
 
     character_script.update(reg, assets, window);
 
+    reg.view<State>().each([dt = toSeconds(window.time_delta)](State& state) { state.position += state.velocity * dt; });
+
     window_target_or_error->refresh(Black());
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets.graphics, attributes, sprite_rendering_resources); render_pass_or_error.has_value())
     {
@@ -508,7 +500,12 @@ int main(int argc, char** argv)
       reg.view<Info, Size, State>().each(
         [&](const Info& info, const Size& size, const State& state)
         {
-          type_setter.draw(*render_pass_or_error, info.name, state.position + sde::Vec2f{0.0, 0.3F}, {0.075F});
+          if ((state.velocity.array() == 0.0F).all())
+          {
+            const float t = toSeconds(window.time);
+            const Vec4f color{std::abs(std::cos(t * 3.0F)), std::abs(std::sin(t * 3.0F)), std::abs(std::cos(t * 2.0F)), 1.0F};
+            type_setter.draw(*render_pass_or_error, info.name, state.position + sde::Vec2f{0.0, 0.45F + std::sin(5.0F * t) * 0.05F}, {0.075F}, color);
+          }
           type_setter.draw(*render_pass_or_error, sde::format("pos: (%.3f, %.3f)", state.position.x(),  state.position.y()),  state.position + sde::Vec2f{0.0, -0.3F}, {0.025F}, Yellow(0.8));
           type_setter.draw(*render_pass_or_error, sde::format("vel: (%.3f, %.3f)", state.velocity.x(), state.velocity.y()), state.position + sde::Vec2f{0.0, -0.3F - 0.05}, {0.025F}, Yellow(0.8));
         });
