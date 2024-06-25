@@ -5,6 +5,7 @@
 // SDE
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/assets.hpp"
+#include "sde/graphics/render_buffer.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shapes.hpp"
 #include "sde/graphics/tile_map.hpp"
@@ -48,7 +49,7 @@ TileMap TileMap::create(const TileSetHandle& tile_set, const Vec2i& shape, const
   return tm;
 }
 
-void TileMap::draw(RenderPass& rp, const Vec4f& tint) const
+void TileMap::draw(RenderBuffer& rb, RenderPass& rp, const Vec4f& tint) const
 {
   const Bounds2f aabb_clipped{
     rp.getViewportInWorldBounds() &
@@ -70,8 +71,6 @@ void TileMap::draw(RenderPass& rp, const Vec4f& tint) const
     return;
   }
 
-  static std::vector<TexturedQuad> STATIC__textured_quad_buffer;
-
   const Vec2i min_indices = ((aabb_clipped.min() - origin_).array() / tile_size_.array()).floor().cast<int>();
   const Vec2i max_indices = ((aabb_clipped.max() - origin_).array() / tile_size_.array()).ceil().cast<int>();
 
@@ -84,16 +83,13 @@ void TileMap::draw(RenderPass& rp, const Vec4f& tint) const
       const Vec2f rect_min{origin_ + Vec2f{x * tile_size_.x(), y * tile_size_.y()}};
       const Vec2f rect_max{rect_min + tile_size_};
 
-      STATIC__textured_quad_buffer.push_back(
+      rb.textured_quads.push_back(
         {.rect = Bounds2f{rect_min, rect_max},
          .rect_texture = tile_set->tile_bounds[tile_index],
          .color = tint,
          .texture_unit = (*texture_unit_opt)});
     }
   }
-
-  rp.submit(make_const_view(STATIC__textured_quad_buffer));
-  STATIC__textured_quad_buffer.clear();
 }
 
 std::ostream& operator<<(std::ostream& os, const TileMap& tile_map)

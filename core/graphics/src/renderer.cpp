@@ -17,6 +17,7 @@
 #include "sde/geometry_types.hpp"
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/assets.hpp"
+#include "sde/graphics/render_buffer.hpp"
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
@@ -451,7 +452,7 @@ public:
     for (auto va_itr = std::begin(va_); va_itr != std::end(va_); ++va_itr, ++va_opt_itr)
     {
       va_itr->emplace(
-        3UL * va_opt_itr->max_triangle_count_per_render_pass, va_opt_itr->mode == RenderBufferMode::kStatic);
+        3UL * va_opt_itr->max_triangle_count_per_render_pass, va_opt_itr->mode == VertexBufferMode::kStatic);
     }
   }
 
@@ -673,6 +674,25 @@ void Renderer2D::flush(const Assets& assets, const RenderAttributes& attributes,
   // clang-format on
 
   backend__opengl->finish();
+}
+
+expected<void, RenderPassError> RenderPass::submit(const RenderBuffer& buffer)
+{
+  if (auto ok_or_error = submit(make_const_view(buffer.circles)); !ok_or_error.has_value())
+  {
+    return make_unexpected(ok_or_error.error());
+  }
+
+  if (auto ok_or_error = submit(make_const_view(buffer.quads)); !ok_or_error.has_value())
+  {
+    return make_unexpected(ok_or_error.error());
+  }
+
+  if (auto ok_or_error = submit(make_const_view(buffer.textured_quads)); !ok_or_error.has_value())
+  {
+    return make_unexpected(ok_or_error.error());
+  }
+  return {};
 }
 
 expected<void, RenderPassError> RenderPass::submit(View<const Quad> quads) { return backend__opengl->submit(quads); }

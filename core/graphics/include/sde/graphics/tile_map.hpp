@@ -10,6 +10,7 @@
 
 // SDE
 #include "sde/geometry_types.hpp"
+#include "sde/graphics/render_buffer_fwd.hpp"
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/tile_set_handle.hpp"
 #include "sde/view.hpp"
@@ -25,7 +26,7 @@ public:
   TileMap(TileMap&&);
   TileMap& operator=(TileMap&&);
 
-  void draw(RenderPass& rp, const Vec4f& tint = Vec4f::Ones()) const;
+  void draw(RenderBuffer& rb, RenderPass& rp, const Vec4f& tint = Vec4f::Ones()) const;
 
   const Vec2i shape() const { return shape_; }
 

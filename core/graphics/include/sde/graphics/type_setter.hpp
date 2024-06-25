@@ -7,9 +7,9 @@
 
 // C++ Standard Library
 #include <string_view>
-#include <vector>
 
 // SDE
+#include "sde/graphics/render_buffer_fwd.hpp"
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/shapes.hpp"
 #include "sde/graphics/type_set_fwd.hpp"
@@ -44,6 +44,7 @@ public:
   explicit TypeSetter(const TypeSetHandle& glyphs);
 
   void draw(
+    RenderBuffer& rb,
     RenderPass& rp,
     std::string_view text,
     const Vec2f& pos,
@@ -52,7 +53,6 @@ public:
 
 private:
   TypeSetHandle type_set_handle_;
-  std::vector<TexturedQuad> quad_buffer_;
 };
 
 }  // namespace sde::graphics

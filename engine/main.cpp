@@ -17,6 +17,7 @@
 // #include "sde/graphics/assets.hpp"
 #include "sde/graphics/colors.hpp"
 #include "sde/graphics/image.hpp"
+#include "sde/graphics/render_buffer.hpp"
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 // #include "sde/graphics/shader.hpp"
@@ -104,6 +105,7 @@ int main(int argc, char** argv)
   sprite_rendering_resources.shader = (*sprite_shader_or_error);
   sprite_rendering_resources.buffer_group = 0;
 
+  RenderBuffer render_buffer;
   RenderAttributes screen_attributes;
   RenderAttributes world_attributes;
 
@@ -135,17 +137,20 @@ int main(int argc, char** argv)
     window_target_or_error->refresh(Black());
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets.graphics, world_attributes, sprite_rendering_resources); render_pass_or_error.has_value())
     {
+      render_buffer.reset();
       reg.view<Size, State, graphics::AnimatedSprite>().each(
         [&](const Size& size, const State& state, const graphics::AnimatedSprite& sprite)
         {
           const Vec2f min_corner{state.position - 0.5F * size.extent};
           const Vec2f max_corner{state.position + 0.5F * size.extent};
-          sprite.draw(*render_pass_or_error, window.time, {min_corner, max_corner});
+          sprite.draw(render_buffer, *render_pass_or_error, window.time, {min_corner, max_corner});
         });
+      render_pass_or_error->submit(render_buffer);
     }
 
     if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, *renderer_or_error, assets.graphics, world_attributes, text_rendering_resources); render_pass_or_error.has_value())
     {
+      render_buffer.reset();
       reg.view<Info, Size, State>().each(
         [&](const Info& info, const Size& size, const State& state)
         {
@@ -153,11 +158,12 @@ int main(int argc, char** argv)
           {
             const float t = toSeconds(window.time);
             const Vec4f color{std::abs(std::cos(t * 3.0F)), std::abs(std::sin(t * 3.0F)), std::abs(std::cos(t * 2.0F)), 1.0F};
-            type_setter.draw(*render_pass_or_error, info.name, state.position + sde::Vec2f{0.0, 0.45F + std::sin(5.0F * t) * 0.05F}, {0.075F}, color);
+            type_setter.draw(render_buffer, *render_pass_or_error, info.name, state.position + sde::Vec2f{0.0, 0.45F + std::sin(5.0F * t) * 0.05F}, {0.075F}, color);
           }
-          type_setter.draw(*render_pass_or_error, sde::format("pos: (%.3f, %.3f)", state.position.x(),  state.position.y()),  state.position + sde::Vec2f{0.0, -0.3F}, {0.025F}, Yellow(0.8));
-          type_setter.draw(*render_pass_or_error, sde::format("vel: (%.3f, %.3f)", state.velocity.x(), state.velocity.y()), state.position + sde::Vec2f{0.0, -0.3F - 0.05}, {0.025F}, Yellow(0.8));
+          type_setter.draw(render_buffer, *render_pass_or_error, sde::format("pos: (%.3f, %.3f)", state.position.x(),  state.position.y()),  state.position + sde::Vec2f{0.0, -0.3F}, {0.025F}, Yellow(0.8));
+          type_setter.draw(render_buffer, *render_pass_or_error, sde::format("vel: (%.3f, %.3f)", state.velocity.x(), state.velocity.y()), state.position + sde::Vec2f{0.0, -0.3F - 0.05}, {0.025F}, Yellow(0.8));
         });
+      render_pass_or_error->submit(render_buffer);
     }
 
     return AppDirective::kContinue;

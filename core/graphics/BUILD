@@ -55,6 +55,8 @@ cc_library(
     "include/sde/graphics/assets_fwd.hpp",
     "include/sde/graphics/colors.hpp",
     "include/sde/graphics/debug.hpp",
+    "include/sde/graphics/render_buffer.hpp",
+    "include/sde/graphics/render_buffer_fwd.hpp",
     "include/sde/graphics/render_target.hpp",
     "include/sde/graphics/render_target_fwd.hpp",
     "include/sde/graphics/renderer.hpp",

@@ -15,6 +15,7 @@
 
 #include "sde/expected.hpp"
 #include "sde/graphics/assets_fwd.hpp"
+#include "sde/graphics/render_buffer_fwd.hpp"
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/shapes_fwd.hpp"
@@ -56,7 +57,7 @@ std::ostream& operator<<(std::ostream& os, const RenderAttributes& attributes);
 /**
  * @brief Buffer mode
  */
-enum class RenderBufferMode
+enum class VertexBufferMode
 {
   kStatic,
   kDynamic
@@ -65,10 +66,10 @@ enum class RenderBufferMode
 /**
  * @brief Texture creation options
  */
-struct RenderBufferOptions
+struct VertexBufferOptions
 {
   std::size_t max_triangle_count_per_render_pass = 10000UL;
-  RenderBufferMode mode = RenderBufferMode::kDynamic;
+  VertexBufferMode mode = VertexBufferMode::kDynamic;
 };
 
 
@@ -78,7 +79,7 @@ struct RenderBufferOptions
 struct Renderer2DOptions
 {
   static constexpr std::size_t kVetexArrayCount = 4;
-  std::array<RenderBufferOptions, kVetexArrayCount> buffers;
+  std::array<VertexBufferOptions, kVetexArrayCount> buffers;
 };
 
 struct RenderBackend
@@ -138,6 +139,7 @@ public:
 
   RenderPass(RenderPass&& other);
 
+  expected<void, RenderPassError> submit(const RenderBuffer& buffer);
   expected<void, RenderPassError> submit(View<const Quad> quads);
   expected<void, RenderPassError> submit(View<const Circle> circles);
   expected<void, RenderPassError> submit(View<const TexturedQuad> quads);

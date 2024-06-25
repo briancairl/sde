@@ -3,6 +3,7 @@
 
 // SDE
 #include "sde/graphics/assets.hpp"
+#include "sde/graphics/render_buffer.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shapes.hpp"
 #include "sde/graphics/type_setter.hpp"
@@ -12,6 +13,7 @@ namespace sde::graphics
 TypeSetter::TypeSetter(const TypeSetHandle& glyphs) : type_set_handle_{glyphs} {}
 
 void TypeSetter::draw(
+  RenderBuffer& rb,
   RenderPass& rp,
   std::string_view text,
   const Vec2f& pos,
@@ -73,16 +75,13 @@ void TypeSetter::draw(
       text_pos + Vec2f{glyph.bearing_px.x() * text_scaling, (glyph.bearing_px.y() - glyph.size_px.y()) * text_scaling};
     const Vec2f pos_rect_max = pos_rect_min + glyph.size_px.cast<float>() * text_scaling;
 
-    quad_buffer_.push_back(
+    rb.textured_quads.push_back(
       {.rect = Bounds2f{pos_rect_min, pos_rect_max},
        .rect_texture = glyph.atlas_bounds,
        .color = color,
        .texture_unit = (*texture_unit_opt)});
     text_pos.x() += glyph.advance_px * text_scaling;
   }
-
-  rp.submit(make_const_view(quad_buffer_));
-  quad_buffer_.clear();
 }
 
 }  // namespace sde::graphics
