@@ -12,6 +12,7 @@
 // #include "sde/audio/sound.hpp"
 // #include "sde/audio/sound_data.hpp"
 #include "sde/game/assets.hpp"
+#include "sde/game/resources.hpp"
 // #include "sde/game/script.hpp"
 // #include "sde/geometry_utils.hpp"
 // #include "sde/graphics/assets.hpp"
@@ -60,6 +61,7 @@ int main(int argc, char** argv)
 
 
   game::Assets assets;
+  game::Resources resources{game::Resources::create().value()};
 
   auto audio_mixer_or_error = audio::Mixer::create();
   SDE_ASSERT_TRUE(audio_mixer_or_error.has_value());
@@ -97,9 +99,6 @@ int main(int argc, char** argv)
   auto window_target_or_error = RenderTarget::create(app_or_error->window());
   SDE_ASSERT_TRUE(window_target_or_error.has_value());
 
-  auto renderer_or_error = Renderer2D::create();
-  SDE_ASSERT_TRUE(renderer_or_error.has_value());
-
 
   RenderResources sprite_rendering_resources;
   sprite_rendering_resources.shader = (*sprite_shader_or_error);
@@ -130,12 +129,12 @@ int main(int argc, char** argv)
     world_attributes.time_delta = window.time_delta;
 
 
-    character_script.update(reg, assets, window);
+    character_script.update(reg, resources, assets, window);
 
     reg.view<State>().each([dt = toSeconds(window.time_delta)](State& state) { state.position += state.velocity * dt; });
 
     window_target_or_error->refresh(Black());
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, render_buffer, *renderer_or_error, assets.graphics, world_attributes, sprite_rendering_resources); render_pass_or_error.has_value())
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, render_buffer, resources.renderer, assets.graphics, world_attributes, sprite_rendering_resources); render_pass_or_error.has_value())
     {
       reg.view<Size, State, graphics::AnimatedSprite>().each(
         [&](const Size& size, const State& state, const graphics::AnimatedSprite& sprite)
@@ -146,9 +145,8 @@ int main(int argc, char** argv)
         });
     }
 
-    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, render_buffer, *renderer_or_error, assets.graphics, world_attributes, text_rendering_resources); render_pass_or_error.has_value())
+    if (auto render_pass_or_error = RenderPass::create(*window_target_or_error, render_buffer, resources.renderer, assets.graphics, world_attributes, text_rendering_resources); render_pass_or_error.has_value())
     {
-      render_buffer.reset();
       reg.view<Info, Size, State>().each(
         [&](const Info& info, const Size& size, const State& state)
         {

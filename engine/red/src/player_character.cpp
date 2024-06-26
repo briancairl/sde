@@ -178,7 +178,7 @@ void createMovementTileSets(
 
 }  // namespace
 
-bool PlayerCharacter::onInitialize(entt::registry& registry, game::Assets& assets)
+bool PlayerCharacter::onInitialize(entt::registry& registry, sde::game::Resources& resources, game::Assets& assets)
 {
   const CharacterTextures character_textures{
     .front_atlas =
@@ -230,8 +230,11 @@ bool PlayerCharacter::onInitialize(entt::registry& registry, game::Assets& asset
   return true;
 }
 
-expected<void, game::ScriptError>
-PlayerCharacter::onUpdate(entt::registry& registry, const game::Assets& assets, const AppProperties& app)
+expected<void, game::ScriptError> PlayerCharacter::onUpdate(
+  entt::registry& registry,
+  sde::game::Resources& resources,
+  const game::Assets& assets,
+  const AppProperties& app)
 {
   auto [size, state, sprite] = registry.get<Size, State, graphics::AnimatedSprite>(id_);
 

@@ -16,6 +16,7 @@
 #include "sde/crtp.hpp"
 #include "sde/expected.hpp"
 #include "sde/game/assets_fwd.hpp"
+#include "sde/game/resources_fwd.hpp"
 #include "sde/time.hpp"
 
 namespace sde::game
@@ -36,13 +37,14 @@ public:
 
   void reset() { t_start_.reset(); }
 
-  expected<void, ScriptError> update(entt::registry& registry, Assets& assets, const AppProperties& app)
+  expected<void, ScriptError>
+  update(entt::registry& registry, Resources& resources, Assets& assets, const AppProperties& app)
   {
     if (t_start_.has_value())
     {
-      return this->derived().onUpdate(registry, assets, app);
+      return this->derived().onUpdate(registry, resources, assets, app);
     }
-    else if (this->derived().onInitialize(registry, assets))
+    else if (this->derived().onInitialize(registry, resources, assets))
     {
       t_start_ = app.time;
       return {};
@@ -58,13 +60,17 @@ protected:
   Script& operator=(const Script& other) = delete;
 
 private:
-  constexpr static bool onInitialize([[maybe_unused]] entt::registry& registry, [[maybe_unused]] Assets& assets)
+  constexpr static bool onInitialize(
+    [[maybe_unused]] entt::registry& registry,
+    [[maybe_unused]] Resources& resources,
+    [[maybe_unused]] Assets& assets)
   {
     return true;
   }
 
   constexpr static expected<void, ScriptError> onUpdate(
     [[maybe_unused]] entt::registry& registry,
+    [[maybe_unused]] Resources& resources,
     [[maybe_unused]] const Assets& assets,
     [[maybe_unused]] const AppProperties& app)
   {

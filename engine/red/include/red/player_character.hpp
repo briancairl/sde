@@ -38,10 +38,13 @@ class PlayerCharacter : public sde::game::Script<PlayerCharacter>
   friend script;
 
 private:
-  bool onInitialize(entt::registry& registry, sde::game::Assets& assets);
+  bool onInitialize(entt::registry& registry, sde::game::Resources& resources, sde::game::Assets& assets);
 
-  expected<void, sde::game::ScriptError>
-  onUpdate(entt::registry& registry, const sde::game::Assets& assets, const AppProperties& app);
+  expected<void, sde::game::ScriptError> onUpdate(
+    entt::registry& registry,
+    sde::game::Resources& resources,
+    const sde::game::Assets& assets,
+    const AppProperties& app);
 
   entt::entity id_;
   sde::graphics::TileSetHandle idle_[8UL];
