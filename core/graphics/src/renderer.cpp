@@ -676,25 +676,6 @@ void Renderer2D::flush(const Assets& assets, const RenderAttributes& attributes,
   backend__opengl->finish();
 }
 
-expected<void, RenderPassError> RenderPass::submit(const RenderBuffer& buffer)
-{
-  if (auto ok_or_error = submit(make_const_view(buffer.circles)); !ok_or_error.has_value())
-  {
-    return make_unexpected(ok_or_error.error());
-  }
-
-  if (auto ok_or_error = submit(make_const_view(buffer.quads)); !ok_or_error.has_value())
-  {
-    return make_unexpected(ok_or_error.error());
-  }
-
-  if (auto ok_or_error = submit(make_const_view(buffer.textured_quads)); !ok_or_error.has_value())
-  {
-    return make_unexpected(ok_or_error.error());
-  }
-  return {};
-}
-
 expected<void, RenderPassError> RenderPass::submit(View<const Quad> quads) { return backend__opengl->submit(quads); }
 
 expected<void, RenderPassError> RenderPass::submit(View<const Circle> circles)
@@ -709,6 +690,7 @@ expected<void, RenderPassError> RenderPass::submit(View<const TexturedQuad> quad
 
 RenderPass::RenderPass(RenderPass&& other) :
     renderer_{other.renderer_},
+    buffer_{other.buffer_},
     assets_{other.assets_},
     attributes_{other.attributes_},
     world_from_viewport_{other.world_from_viewport_},
@@ -724,12 +706,19 @@ RenderPass::~RenderPass()
   {
     return;
   }
+
+  submit(make_const_view(buffer_->circles));
+  submit(make_const_view(buffer_->quads));
+  submit(make_const_view(buffer_->textured_quads));
+  buffer_->reset();
+
   renderer_->flush(*assets_, *attributes_, viewport_from_world_);
   backend__render_pass_active.clear();
 }
 
 expected<RenderPass, RenderPassError> RenderPass::create(
   RenderTarget& target,
+  RenderBuffer& buffer,
   Renderer2D& renderer,
   const Assets& assets,
   const RenderAttributes& attributes,
@@ -745,6 +734,7 @@ expected<RenderPass, RenderPassError> RenderPass::create(
 
   RenderPass render_pass;
   render_pass.renderer_ = std::addressof(renderer);
+  render_pass.buffer_ = std::addressof(buffer);
   render_pass.assets_ = std::addressof(assets);
   render_pass.attributes_ = std::addressof(attributes);
   render_pass.world_from_viewport_ = attributes.getWorldFromViewportMatrix(target);

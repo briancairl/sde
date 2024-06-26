@@ -13,7 +13,6 @@ namespace sde::graphics
 TypeSetter::TypeSetter(const TypeSetHandle& glyphs) : type_set_handle_{glyphs} {}
 
 void TypeSetter::draw(
-  RenderBuffer& rb,
   RenderPass& rp,
   std::string_view text,
   const Vec2f& pos,
@@ -75,7 +74,7 @@ void TypeSetter::draw(
       text_pos + Vec2f{glyph.bearing_px.x() * text_scaling, (glyph.bearing_px.y() - glyph.size_px.y()) * text_scaling};
     const Vec2f pos_rect_max = pos_rect_min + glyph.size_px.cast<float>() * text_scaling;
 
-    rb.textured_quads.push_back(
+    rp->textured_quads.push_back(
       {.rect = Bounds2f{pos_rect_min, pos_rect_max},
        .rect_texture = glyph.atlas_bounds,
        .color = color,

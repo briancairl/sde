@@ -15,7 +15,7 @@ Sprite::Sprite(const TextureHandle& tile_atlas, const Bounds2f& tile_bounds) :
     tile_atlas_{tile_atlas}, tile_bounds_{tile_bounds}
 {}
 
-void Sprite::draw(RenderBuffer& rb, RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
+void Sprite::draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint) const
 {
   if (!rp.visible(rect))
   {
@@ -24,14 +24,14 @@ void Sprite::draw(RenderBuffer& rb, RenderPass& rp, const Bounds2f& rect, const 
 
   if (const auto texture_unit_opt = rp.assign(tile_atlas_); texture_unit_opt.has_value())
   {
-    rb.textured_quads.push_back(
+    rp->textured_quads.push_back(
       {.rect = rect, .rect_texture = tile_bounds_, .color = tint, .texture_unit = (*texture_unit_opt)});
   }
 }
 
 AnimatedSprite::AnimatedSprite(const Options&& options) : options_{options} {}
 
-void AnimatedSprite::draw(RenderBuffer& rb, RenderPass& rp, TimeOffset t, const Bounds2f& rect, const Vec4f& tint) const
+void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect, const Vec4f& tint) const
 {
   if (!rp.visible(rect))
   {
@@ -50,7 +50,7 @@ void AnimatedSprite::draw(RenderBuffer& rb, RenderPass& rp, TimeOffset t, const 
 
   if (const auto texture_unit_opt = rp.assign(frames->tile_atlas); texture_unit_opt.has_value())
   {
-    rb.textured_quads.push_back(
+    rp->textured_quads.push_back(
       {.rect = rect,
        .rect_texture = frames->tile_bounds[frame_idx_saturated],
        .color = tint,

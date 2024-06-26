@@ -139,7 +139,6 @@ public:
 
   RenderPass(RenderPass&& other);
 
-  expected<void, RenderPassError> submit(const RenderBuffer& buffer);
   expected<void, RenderPassError> submit(View<const Quad> quads);
   expected<void, RenderPassError> submit(View<const Circle> circles);
   expected<void, RenderPassError> submit(View<const TexturedQuad> quads);
@@ -149,6 +148,7 @@ public:
 
   static expected<RenderPass, RenderPassError> create(
     RenderTarget& target,
+    RenderBuffer& buffer,
     Renderer2D& renderer,
     const Assets& assets,
     const RenderAttributes& attributes,
@@ -157,6 +157,9 @@ public:
   const Mat3f& getWorldFromViewportMatrix() const { return world_from_viewport_; };
   const Mat3f& getViewportFromWorldMatrix() const { return viewport_from_world_; };
   const Bounds2f& getViewportInWorldBounds() const { return viewport_in_world_bounds_; };
+
+  constexpr RenderBuffer* operator->() { return buffer_; }
+
   bool visible(const Bounds2f& query_aabb) const { return getViewportInWorldBounds().intersects(query_aabb); }
 
 private:
@@ -164,6 +167,7 @@ private:
   RenderPass(const RenderPass&) = delete;
 
   Renderer2D* renderer_;
+  RenderBuffer* buffer_;
   const Assets* assets_;
   const RenderAttributes* attributes_;
   Mat3f world_from_viewport_;
