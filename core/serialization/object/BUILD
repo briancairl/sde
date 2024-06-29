@@ -1,0 +1,9 @@
+cc_library(
+  name="object",
+  hdrs=[
+    "include/sde/serial/object.hpp",
+    "include/sde/serial/object_fwd.hpp"
+  ],
+  strip_include_prefix="include",
+  visibility=["//visibility:public"]
+)

@@ -1,1 +1,1 @@
-load("@tyl//:bazel/test_rules.bzl", "gtest")
+load("@tyl//:bazel/rules.bzl", "gtest")
