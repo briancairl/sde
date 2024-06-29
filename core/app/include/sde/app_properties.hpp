@@ -7,6 +7,7 @@
 
 // SDE
 #include "sde/geometry_types.hpp"
+#include "sde/graphics/window_fwd.hpp"
 #include "sde/keyboard.hpp"
 #include "sde/time.hpp"
 
@@ -15,10 +16,12 @@ namespace sde
 
 struct AppProperties
 {
+  graphics::NativeWindowHandle window{nullptr};
+
   TimeOffset time = TimeOffset::zero();
   TimeOffset time_delta = TimeOffset::zero();
 
-  Vec2i size = {640, 480};
+  Vec2i viewport_size = {640, 480};
   Vec2d mouse_position_px = {0.0, 0.0};
   Vec2d mouse_scroll = {0.0, 0.0};
 

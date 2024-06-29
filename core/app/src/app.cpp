@@ -101,6 +101,7 @@ App::App(Window&& window) : window_{std::move(window)} {}
 void App::spin(std::function<AppDirective(const AppProperties&)> on_update, const Rate spin_rate)
 {
   AppProperties window_properties;
+  window_properties.window = window_.value();
 
   auto* glfw_window = reinterpret_cast<GLFWwindow*>(window_.value());
 
@@ -113,6 +114,9 @@ void App::spin(std::function<AppDirective(const AppProperties&)> on_update, cons
 
   while (!glfwWindowShouldClose(glfw_window))
   {
+    glfwGetFramebufferSize(
+      glfw_window, (window_properties.viewport_size.data() + 0), (window_properties.viewport_size.data() + 1));
+
     glfwGetCursorPos(
       glfw_window, (window_properties.mouse_position_px.data() + 0), (window_properties.mouse_position_px.data() + 1));
 

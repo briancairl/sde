@@ -34,10 +34,10 @@ enum class WindowError
 
 struct WindowDeleter
 {
-  void operator()(WindowNativeHandle id) const;
+  void operator()(NativeWindowHandle id) const;
 };
 
-class Window : public UniqueResource<WindowNativeHandle, WindowDeleter>
+class Window : public UniqueResource<NativeWindowHandle, WindowDeleter>
 {
 public:
   static expected<Window, WindowError> create(const WindowOptions& options);
@@ -45,7 +45,7 @@ public:
   void activate() const;
 
 private:
-  explicit Window(WindowNativeHandle native_handle);
+  explicit Window(NativeWindowHandle native_handle);
 };
 
 }  // namespace sde::graphics

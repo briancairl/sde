@@ -13,6 +13,7 @@ namespace sde::graphics
 
 struct ShaderHandle : ResourceHandle<ShaderHandle>
 {
+  ShaderHandle() = default;
   explicit ShaderHandle(id_type id) : ResourceHandle<ShaderHandle>{id} {}
 };
 

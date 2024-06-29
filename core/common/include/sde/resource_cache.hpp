@@ -22,6 +22,7 @@ template <typename ResourceCacheT> struct ResourceCacheTypes;
 template <typename ResourceCacheT> class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>
 {
 public:
+  using cache_base = ResourceCache<ResourceCacheT>;
   using type_info = ResourceCacheTypes<ResourceCacheT>;
   using error_type = typename type_info::error_type;
   using handle_type = typename type_info::handle_type;
@@ -108,6 +109,8 @@ private:
   ResourceCache& operator=(const ResourceCache&) = delete;
   /// Last used resource handle
   handle_type handle_lower_bound_ = handle_type::null();
+
+protected:
   /// Map of {resource_handle, resource_value} objects
   CacheMap handle_to_value_cache_;
 };

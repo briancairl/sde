@@ -1,10 +1,13 @@
 cc_library(
   name="red",
   hdrs=[
+    "include/red/components.hpp",
     "include/red/player_character.hpp",
+    "include/red/renderer.hpp",
   ],
   srcs=[
     "src/player_character.cpp",
+    "src/renderer.cpp",
   ],
   strip_include_prefix="include",
   deps=[

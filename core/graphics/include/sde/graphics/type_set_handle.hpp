@@ -13,6 +13,7 @@ namespace sde::graphics
 
 struct TypeSetHandle : ResourceHandle<TypeSetHandle>
 {
+  TypeSetHandle() = default;
   explicit TypeSetHandle(id_type id) : ResourceHandle<TypeSetHandle>{id} {}
 };
 

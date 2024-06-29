@@ -44,7 +44,7 @@ public:
     {
       return this->derived().onUpdate(registry, resources, assets, app);
     }
-    else if (this->derived().onInitialize(registry, resources, assets))
+    else if (this->derived().onInitialize(registry, resources, assets, app))
     {
       t_start_ = app.time;
       return {};
@@ -63,7 +63,8 @@ private:
   constexpr static bool onInitialize(
     [[maybe_unused]] entt::registry& registry,
     [[maybe_unused]] Resources& resources,
-    [[maybe_unused]] Assets& assets)
+    [[maybe_unused]] Assets& assets,
+    [[maybe_unused]] const AppProperties& app)
   {
     return true;
   }
@@ -78,6 +79,27 @@ private:
   }
 
   std::optional<TimeOffset> t_start_;
+};
+
+class ScriptRT : public Script<ScriptRT>
+{
+protected:
+  virtual ~ScriptRT() = default;
+
+  virtual bool onInitialize(
+    [[maybe_unused]] entt::registry& registry,
+    [[maybe_unused]] Resources& resources,
+    [[maybe_unused]] Assets& assets,
+    [[maybe_unused]] const AppProperties& app)
+  {
+    return true;
+  }
+
+  virtual expected<void, ScriptError> onUpdate(
+    [[maybe_unused]] entt::registry& registry,
+    [[maybe_unused]] Resources& resources,
+    [[maybe_unused]] const Assets& assets,
+    [[maybe_unused]] const AppProperties& app) = 0;
 };
 
 }  // namespace sde::game

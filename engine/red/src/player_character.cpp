@@ -178,7 +178,11 @@ void createMovementTileSets(
 
 }  // namespace
 
-bool PlayerCharacter::onInitialize(entt::registry& registry, sde::game::Resources& resources, game::Assets& assets)
+bool PlayerCharacter::onInitialize(
+  entt::registry& registry,
+  sde::game::Resources& resources,
+  game::Assets& assets,
+  const AppProperties& app)
 {
   const CharacterTextures character_textures{
     .front_atlas =

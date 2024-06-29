@@ -66,7 +66,7 @@ bool glfwTryFirstInit()
 
 }  // namespace
 
-void WindowDeleter::operator()(WindowNativeHandle native_handle) const
+void WindowDeleter::operator()(NativeWindowHandle native_handle) const
 {
   if (native_handle == nullptr)
   {
@@ -76,7 +76,7 @@ void WindowDeleter::operator()(WindowNativeHandle native_handle) const
   glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(native_handle));
 }
 
-Window::Window(WindowNativeHandle native_handle) : UniqueResource<WindowNativeHandle, WindowDeleter>{native_handle} {}
+Window::Window(NativeWindowHandle native_handle) : UniqueResource<NativeWindowHandle, WindowDeleter>{native_handle} {}
 
 void Window::activate() const { glfwMakeContextCurrent(reinterpret_cast<GLFWwindow*>(value())); }
 
@@ -94,7 +94,7 @@ expected<Window, WindowError> Window::create(const WindowOptions& options)
   }
 
   // Wrap GLFW window in resource wrapper for auto-cleanup on failure
-  Window window{reinterpret_cast<WindowNativeHandle>(glfw_window)};
+  Window window{reinterpret_cast<NativeWindowHandle>(glfw_window)};
 
   // Handle window icon setting
   if (options.icon == nullptr)

@@ -9,7 +9,7 @@ namespace sde::graphics
 {
 
 struct RenderResources;
-struct RenderAttributes;
+struct RenderUniforms;
 struct RenderBackend;
 class Renderer2D;
 class RenderPass;

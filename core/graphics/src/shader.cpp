@@ -467,7 +467,7 @@ bool hasUniform(const ShaderInfo& info, std::string_view key, ShaderVariableType
     std::end(info.variables.uniforms);
 }
 
-void ShaderNativeDeleter::operator()(native_shader_id_t id) const
+void NativeShaderDeleter::operator()(native_shader_id_t id) const
 {
   if (id != 0)
   {
@@ -532,7 +532,7 @@ expected<ShaderInfo, ShaderError> ShaderCache::generate(std::string_view source)
   return ShaderInfo{
     .components = components,
     .variables = std::move(variables),
-    .native_id = ShaderNativeID{createShaderProgram(vert_shader_id, frag_shader_id, geom_shader_id)}};
+    .native_id = NativeShaderID{createShaderProgram(vert_shader_id, frag_shader_id, geom_shader_id)}};
 }
 
 }  // namespace sde::graphics

@@ -94,12 +94,12 @@ struct ShaderVariables
 std::ostream& operator<<(std::ostream& os, const ShaderVariables& variables);
 
 
-struct ShaderNativeDeleter
+struct NativeShaderDeleter
 {
   void operator()(native_shader_id_t id) const;
 };
 
-using ShaderNativeID = UniqueResource<native_shader_id_t, ShaderNativeDeleter>;
+using NativeShaderID = UniqueResource<native_shader_id_t, NativeShaderDeleter>;
 
 /**
  * @brief Information about an active shader
@@ -108,7 +108,7 @@ struct ShaderInfo
 {
   ShaderComponents components;
   ShaderVariables variables;
-  ShaderNativeID native_id;
+  NativeShaderID native_id;
 
   [[nodiscard]] constexpr bool isValid() const { return ::sde::graphics::isValid(components); }
 };
