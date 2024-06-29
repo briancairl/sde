@@ -7,6 +7,7 @@
 
 // SDE
 #include "sde/game/assets.hpp"
+#include "sde/game/resources.hpp"
 #include "sde/game/script.hpp"
 #include "sde/graphics/sprite.hpp"
 #include "sde/graphics/texture.hpp"
@@ -243,7 +244,7 @@ expected<void, game::ScriptError> PlayerCharacter::onUpdate(
   const game::Assets& assets,
   const AppProperties& app)
 {
-  auto [size, state, sprite] = registry.get<Size, Dynamics, graphics::AnimatedSprite>(id_);
+  auto [size, position, state, sprite] = registry.get<Size, Position, Dynamics, graphics::AnimatedSprite>(id_);
 
   static constexpr float kSpeedWalking = 0.5;
   static constexpr float kSpeedRunning = 1.0;
@@ -348,6 +349,17 @@ expected<void, game::ScriptError> PlayerCharacter::onUpdate(
   else
   {
     sprite.setFrameRate(Hertz(kSpeedWalking * 15.0F));
+  }
+
+  if (auto listener_or_err = audio::ListenerTarget::create(resources.mixer, kPlayerListener);
+      listener_or_err.has_value())
+  {
+    listener_or_err->set(audio::ListenerState{
+      .position = Vec3f{position.center.x(), position.center.y(), 1.0F},
+      .velocity = Vec3f{state.velocity.x(), state.velocity.y(), 0.0F},
+      .orientation_at = Vec3f::UnitY(),
+      .orientation_up = Vec3f::UnitZ(),
+    });
   }
 
   return {};

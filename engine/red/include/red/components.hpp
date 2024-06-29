@@ -45,3 +45,6 @@ struct Midground
 
 struct Foreground
 {};
+
+static constexpr std::size_t kGlobalListener = 0;
+static constexpr std::size_t kPlayerListener = 1;

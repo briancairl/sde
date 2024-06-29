@@ -4,6 +4,7 @@
 #include <entt/entt.hpp>
 
 // SDE
+#include "sde/audio/sound_handle.hpp"
 #include "sde/game/script.hpp"
 #include "sde/graphics/tile_set_handle.hpp"
 
@@ -25,4 +26,5 @@ private:
 
   entt::entity id_;
   sde::graphics::TileSetHandle rain_;
+  sde::audio::SoundHandle rain_sound_;
 };

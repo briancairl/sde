@@ -70,8 +70,8 @@ int main(int argc, char** argv)
 
   if (auto listener_or_err = ListenerTarget::create(resources.mixer, 0UL); listener_or_err.has_value())
   {
-    listener_or_err->set(*background_track_1_or_error, TrackOptions{.gain = 0.3F, .looped = true});
-    listener_or_err->set(*background_track_2_or_error, TrackOptions{.gain = 1.0F, .looped = true});
+    listener_or_err->set(*background_track_1_or_error, TrackOptions{.volume = 0.2F, .looped = true});
+    listener_or_err->set(*background_track_2_or_error, TrackOptions{.volume = 0.4F, .looped = true});
   }
 
   entt::registry reg;

@@ -70,30 +70,123 @@ float Track::progress() const
   return static_cast<float>(byte_offset) / static_cast<float>(playback_buffer_length_);
 }
 
-void Track::set(const SoundInfo& sound, const TrackOptions& track_options)
+TrackPlayback Track::set(const SoundInfo& sound, const TrackOptions& track_options)
 {
+  ++instance_counter_;
+
   playback_queued_ = true;
   playback_buffer_length_ = sound.buffer_length;
 
-  SDE_LOG_DEBUG_FMT("alSourcei(%d, AL_BUFFER, %d)", source_.value(), static_cast<int>(sound.native_id.value()));
+  SDE_LOG_DEBUG_FMT(
+    "alSourcei(%d, AL_BUFFER, %d) : instance(%lu)",
+    source_.value(),
+    static_cast<int>(sound.native_id.value()),
+    instance_counter_);
 
   alSourcei(source_, AL_BUFFER, sound.native_id);
-  alSourcei(source_, AL_LOOPING, track_options.looped);
-  alSourcef(source_, AL_GAIN, track_options.gain);
+  alSourcei(source_, AL_LOOPING, static_cast<ALint>(track_options.looped));
+  alSourcei(source_, AL_SOURCE_RELATIVE, static_cast<ALint>(false));
+  if (track_options.cutoff_distance > 0.F)
+  {
+    alSourcef(source_, AL_REFERENCE_DISTANCE, 0.2F * track_options.cutoff_distance);
+    alSourcef(source_, AL_MAX_DISTANCE, track_options.cutoff_distance);
+  }
+  else
+  {
+    alSourcef(source_, AL_REFERENCE_DISTANCE, 1000.0F);
+    alSourcef(source_, AL_MAX_DISTANCE, 1000.0F);
+  }
+  alSourcef(source_, AL_GAIN, track_options.volume);
   alSourcef(source_, AL_PITCH, track_options.pitch);
   alSourcefv(source_, AL_POSITION, track_options.position.data());
   alSourcefv(source_, AL_VELOCITY, track_options.velocity.data());
+  alSourcefv(source_, AL_DIRECTION, track_options.orientation.data());
+
+  return TrackPlayback{instance_counter_, *this};
 }
 
-source_handle_t Track::pop()
+void Track::pop(std::vector<source_handle_t>& target)
 {
-  source_handle_t playback_source{0};
   if (playback_queued_)
   {
-    playback_source = source_.value();
+    target.push_back(source_.value());
     playback_queued_ = false;
   }
-  return playback_source;
+}
+
+TrackPlayback::TrackPlayback(std::size_t instance_id, Track& track) :
+    instance_id_{instance_id}, track_{std::addressof(track)}
+{}
+
+bool TrackPlayback::setPosition(const Vec3f& position) const
+{
+  if (!isValid())
+  {
+    return false;
+  }
+  alSourcefv(track_->source(), AL_POSITION, position.data());
+  return true;
+}
+
+bool TrackPlayback::setVelocity(const Vec3f& velocity) const
+{
+  if (!isValid())
+  {
+    return false;
+  }
+  alSourcefv(track_->source(), AL_VELOCITY, velocity.data());
+  return true;
+}
+
+bool TrackPlayback::setVolume(float level) const
+{
+  if (!isValid())
+  {
+    return false;
+  }
+  alSourcef(track_->source(), AL_GAIN, level);
+  return true;
+}
+
+bool TrackPlayback::setPitch(float level) const
+{
+  if (!isValid())
+  {
+    return false;
+  }
+  alSourcef(track_->source(), AL_PITCH, level);
+  return true;
+}
+
+bool TrackPlayback::resume() const
+{
+  if (!isValid())
+  {
+    return false;
+  }
+  alSourcePlay(track_->source());
+  return true;
+}
+
+bool TrackPlayback::pause() const
+{
+  if (!isValid())
+  {
+    return false;
+  }
+  alSourcePause(track_->source());
+  return true;
+}
+
+bool TrackPlayback::stop()
+{
+  if (!isValid())
+  {
+    return false;
+  }
+  alSourceStop(track_->source());
+  track_ = nullptr;
+  return true;
 }
 
 expected<Listener, ListenerError> Listener::create(const NativeDevice& device, const ListenerOptions& options)
@@ -114,6 +207,8 @@ expected<Listener, ListenerError> Listener::create(const NativeDevice& device, c
     SDE_LOG_DEBUG_FMT("alcMakeContextCurrent: %p", native_context_handle);
     return make_unexpected(ListenerError::kBackendContextCreationFailure);
   }
+
+  alDistanceModel(AL_LINEAR_DISTANCE_CLAMPED);
 
   // Create create sources attached to this context
   std::vector<Track> tracks;
@@ -145,12 +240,18 @@ Listener::Listener(NativeContext&& context, std::vector<Track>&& tracks) :
 void Listener::set(const ListenerState& state) const
 {
   alcMakeContextCurrent(reinterpret_cast<ALCcontext*>(context_.value()));
-  alListenerfv(AL_POSITION, state.position.data());  // centered
-  alListenerfv(AL_VELOCITY, state.velocity.data());  // stationary
-  alListenerfv(AL_ORIENTATION, state.orientation_up.data());
+  alListenerfv(AL_POSITION, state.position.data());
+  alListenerfv(AL_VELOCITY, state.velocity.data());
+  ALfloat orientation_buffer[6];
+  std::copy(
+    state.orientation_at.data(), state.orientation_at.data() + state.orientation_at.size(), (orientation_buffer + 0));
+  std::copy(
+    state.orientation_up.data(), state.orientation_up.data() + state.orientation_up.size(), (orientation_buffer + 3));
+  alListenerfv(AL_ORIENTATION, orientation_buffer);
+  alListenerf(AL_GAIN, state.gain);
 }
 
-bool Listener::set(const SoundInfo& sound, const TrackOptions& options)
+expected<TrackPlayback, TrackPlaybackError> Listener::set(const SoundInfo& sound, const TrackOptions& options)
 {
   const auto track_itr = std::find_if(
     std::begin(tracks_), std::end(tracks_), [](const auto& track) { return !track.queued() and track.stopped(); });
@@ -158,10 +259,9 @@ bool Listener::set(const SoundInfo& sound, const TrackOptions& options)
   {
     SDE_LOG_DEBUG_FMT(
       "Listener::set(SoundInfo{%d}, ...) failed; no sources free", static_cast<int>(sound.native_id.value()));
-    return false;
+    return make_unexpected(TrackPlaybackError::kNoFreeSources);
   }
-  track_itr->set(sound, options);
-  return true;
+  return track_itr->set(sound, options);
 }
 
 void Listener::play()
@@ -169,10 +269,7 @@ void Listener::play()
   alcMakeContextCurrent(reinterpret_cast<ALCcontext*>(context_.value()));
   for (auto& track : tracks_)
   {
-    if (auto playback_source = track.pop(); playback_source != 0)
-    {
-      source_buffer_.push_back(playback_source);
-    }
+    track.pop(source_buffer_);
   }
   if (source_buffer_.empty())
   {
@@ -239,9 +336,9 @@ expected<Mixer, MixerError> Mixer::create(const MixerOptions& options)
   for (const auto& options : options.listener_options)
   {
     SDE_LOG_DEBUG_FMT("Listener::create(%lu)", listeners.size());
-    if (auto groul_or_error = Listener::create(device, options); groul_or_error.has_value())
+    if (auto listener_or_error = Listener::create(device, options); listener_or_error.has_value())
     {
-      listeners.push_back(std::move(groul_or_error).value());
+      listeners.push_back(std::move(listener_or_error).value());
     }
     else
     {
