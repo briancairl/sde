@@ -226,9 +226,12 @@ bool PlayerCharacter::onInitialize(
   createMovementTileSets(assets, run_, character_textures, 6UL, 6UL);
 
   id_ = registry.create();
+  registry.emplace<Focused>(id_);
+  registry.emplace<Midground>(id_);
   registry.emplace<Info>(id_, Info{{"bob"}});
   registry.emplace<Size>(id_, Size{{1.5F, 1.5F}});
-  registry.emplace<State>(id_, State{Vec2f::Zero(), Vec2f::Zero(), {0, -1}});
+  registry.emplace<Position>(id_, Position{Vec2f::Zero()});
+  registry.emplace<Dynamics>(id_, Dynamics{Vec2f::Zero(), {0, -1}});
   registry.emplace<graphics::AnimatedSprite>(id_).setMode(graphics::AnimatedSprite::Mode::kLooped);
 
   return true;
@@ -240,7 +243,7 @@ expected<void, game::ScriptError> PlayerCharacter::onUpdate(
   const game::Assets& assets,
   const AppProperties& app)
 {
-  auto [size, state, sprite] = registry.get<Size, State, graphics::AnimatedSprite>(id_);
+  auto [size, state, sprite] = registry.get<Size, Dynamics, graphics::AnimatedSprite>(id_);
 
   static constexpr float kSpeedWalking = 0.5;
   static constexpr float kSpeedRunning = 1.0;

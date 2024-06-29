@@ -44,7 +44,7 @@ void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect, co
     return;
   }
 
-  const auto frame = static_cast<std::size_t>(t * options_.frames_per_second);
+  const auto frame = static_cast<std::size_t>((t + options_.time_offset) * options_.frames_per_second);
   const auto frame_idx_saturated = (options_.mode == Mode::kLooped) ? (frame % frames->tile_bounds.size())
                                                                     : std::min(frame, frames->tile_bounds.size() - 1UL);
 

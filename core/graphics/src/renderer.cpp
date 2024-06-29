@@ -571,7 +571,7 @@ float toAspectRatio(const Vec2i viewport_size)
 
 Mat3f RenderUniforms::getWorldFromViewportMatrix(const Vec2i& viewport_size) const
 {
-  return toInverseCameraMatrix(scaling, toAspectRatio(viewport_size)) * world_from_camera;
+  return world_from_camera * toInverseCameraMatrix(scaling, toAspectRatio(viewport_size));
 }
 
 expected<Renderer2D, RendererError> Renderer2D::create(const Renderer2DOptions& options)
@@ -773,6 +773,8 @@ expected<RenderPass, RenderPassError> RenderPass::create(
   {
     return make_unexpected(RenderPassError::kInvalidRenderTarget);
   }
+
+  glViewport(0, 0, viewport_size.x(), viewport_size.y());
 
   renderer.refresh(resources);
 

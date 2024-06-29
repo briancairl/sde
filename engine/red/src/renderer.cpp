@@ -84,15 +84,25 @@ Renderer::onUpdate(entt::registry& registry, Resources& resources, const Assets&
   uniforms.time = app.time;
   uniforms.time_delta = app.time_delta;
 
+  registry.view<Focused, Position>().each(
+    [&](const Position& pos) { uniforms.world_from_camera.block<2, 1>(0, 2) = pos.center; });
+
   if (auto render_pass_or_error = RenderPass::create(
         render_buffer_, resources.renderer, assets.graphics, uniforms, render_resources, app.viewport_size);
       render_pass_or_error.has_value())
   {
     render_pass_or_error->clear(Black());
-    registry.view<Size, State, AnimatedSprite>().each(
-      [&](const Size& size, const State& state, const AnimatedSprite& sprite) {
-        const Vec2f min_corner{state.position - 0.5F * size.extent};
-        const Vec2f max_corner{state.position + 0.5F * size.extent};
+    registry.view<Midground, Size, Position, AnimatedSprite>().each(
+      [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
+        const Vec2f min_corner{pos.center - 0.5F * size.extent};
+        const Vec2f max_corner{pos.center + 0.5F * size.extent};
+        sprite.draw(*render_pass_or_error, app.time, {min_corner, max_corner});
+      });
+
+    registry.view<Foreground, Size, Position, AnimatedSprite>().each(
+      [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
+        const Vec2f min_corner{pos.center - 0.5F * size.extent};
+        const Vec2f max_corner{pos.center + 0.5F * size.extent};
         sprite.draw(*render_pass_or_error, app.time, {min_corner, max_corner});
       });
   }
@@ -103,32 +113,33 @@ Renderer::onUpdate(entt::registry& registry, Resources& resources, const Assets&
       render_pass_or_error.has_value())
   {
     TypeSetter type_setter{player_text_type_set_};
-    registry.view<Info, Size, State>().each([&](const Info& info, const Size& size, const State& state) {
-      if ((state.velocity.array() == 0.0F).all())
-      {
-        const float t = toSeconds(app.time);
-        const Vec4f color{
-          std::abs(std::cos(t * 3.0F)), std::abs(std::sin(t * 3.0F)), std::abs(std::cos(t * 2.0F)), 1.0F};
+    registry.view<Info, Size, Position, Dynamics>().each(
+      [&](const Info& info, const Size& size, const Position& pos, const Dynamics& state) {
+        if ((state.velocity.array() == 0.0F).all())
+        {
+          const float t = toSeconds(app.time);
+          const Vec4f color{
+            std::abs(std::cos(t * 3.0F)), std::abs(std::sin(t * 3.0F)), std::abs(std::cos(t * 2.0F)), 1.0F};
+          type_setter.draw(
+            *render_pass_or_error,
+            info.name,
+            pos.center + sde::Vec2f{0.0, 0.45F + std::sin(5.0F * t) * 0.05F},
+            {0.075F},
+            color);
+        }
         type_setter.draw(
           *render_pass_or_error,
-          info.name,
-          state.position + sde::Vec2f{0.0, 0.45F + std::sin(5.0F * t) * 0.05F},
-          {0.075F},
-          color);
-      }
-      type_setter.draw(
-        *render_pass_or_error,
-        sde::format("pos: (%.3f, %.3f)", state.position.x(), state.position.y()),
-        state.position + sde::Vec2f{0.0, -0.3F},
-        {0.025F},
-        Yellow(0.8));
-      type_setter.draw(
-        *render_pass_or_error,
-        sde::format("vel: (%.3f, %.3f)", state.velocity.x(), state.velocity.y()),
-        state.position + sde::Vec2f{0.0, -0.3F - 0.05},
-        {0.025F},
-        Yellow(0.8));
-    });
+          sde::format("pos: (%.3f, %.3f)", pos.center.x(), pos.center.y()),
+          pos.center + sde::Vec2f{0.0, -0.3F},
+          {0.025F},
+          Yellow(0.8));
+        type_setter.draw(
+          *render_pass_or_error,
+          sde::format("vel: (%.3f, %.3f)", state.velocity.x(), state.velocity.y()),
+          pos.center + sde::Vec2f{0.0, -0.3F - 0.05},
+          {0.025F},
+          Yellow(0.8));
+      });
   }
 
   return {};

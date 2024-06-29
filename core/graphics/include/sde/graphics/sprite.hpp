@@ -40,6 +40,7 @@ enum class AnimatedSpriteMode
 struct AnimatedSpriteOptions
 {
   TileSetHandle frames;
+  TimeOffset time_offset = TimeOffset::zero();
   Rate frames_per_second = Hertz(5.0);
   AnimatedSpriteMode mode = AnimatedSpriteMode::kOneShot;
 };
@@ -54,6 +55,8 @@ public:
   explicit AnimatedSprite(const Options&& options);
 
   void draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones()) const;
+
+  void setTimeOffset(TimeOffset time_offset) { options_.time_offset = time_offset; }
 
   void setFrames(TileSetHandle frames) { options_.frames = frames; }
 

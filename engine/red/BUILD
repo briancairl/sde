@@ -4,10 +4,12 @@ cc_library(
     "include/red/components.hpp",
     "include/red/player_character.hpp",
     "include/red/renderer.hpp",
+    "include/red/weather.hpp",
   ],
   srcs=[
     "src/player_character.cpp",
     "src/renderer.cpp",
+    "src/weather.cpp",
   ],
   strip_include_prefix="include",
   deps=[

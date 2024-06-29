@@ -91,4 +91,9 @@ template <typename TimeOffsetT = TimeOffset, typename ScalarT> constexpr auto He
   return BasicRate<TimeOffsetT>::fromHertz(hz);
 }
 
+template <typename TimeOffsetT = TimeOffset, typename ScalarT> constexpr auto Seconds(ScalarT seconds)
+{
+  return toTimeOffset<TimeOffsetT>(seconds);
+}
+
 }  // namespace sde

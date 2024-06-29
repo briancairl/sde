@@ -18,9 +18,13 @@ struct Size
   Vec2f extent;
 };
 
-struct State
+struct Position
 {
-  Vec2f position;
+  Vec2f center;
+};
+
+struct Dynamics
+{
   Vec2f velocity;
   Vec2f looking;
 };
@@ -29,3 +33,15 @@ struct Direction
 {
   Vec2f looking;
 };
+
+struct Focused
+{};
+
+struct Background
+{};
+
+struct Midground
+{};
+
+struct Foreground
+{};
