@@ -15,20 +15,29 @@
 namespace sde::graphics
 {
 
+struct SpriteOptions
+{
+  Vec4f tint_color = Vec4f::Ones();
+  TileSetHandle frames;
+  std::size_t frame_index = 0;
+};
+
 class Sprite
 {
 public:
-  Sprite(const TextureHandle& tile_atlas, const Bounds2f& tile_bounds);
+  using Options = SpriteOptions;
 
-  void draw(RenderPass& rp, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones()) const;
+  Sprite() = default;
+  explicit Sprite(const Options& options);
 
-  TextureHandle atlas() const { return tile_atlas_; }
+  void draw(RenderPass& rp, const Bounds2f& rect) const;
 
-  const Bounds2f& texbounds() const { return tile_bounds_; }
+  void setTintColor(const Vec4f& color) { options_.tint_color = color; }
+  void setFrames(TileSetHandle frames) { options_.frames = frames; }
+  void setFrameIndex(std::size_t frame_index) { options_.frame_index = frame_index; }
 
 private:
-  TextureHandle tile_atlas_;
-  Bounds2f tile_bounds_;
+  Options options_;
 };
 
 enum class AnimatedSpriteMode
@@ -39,6 +48,7 @@ enum class AnimatedSpriteMode
 
 struct AnimatedSpriteOptions
 {
+  Vec4f tint_color = Vec4f::Ones();
   TileSetHandle frames;
   TimeOffset time_offset = TimeOffset::zero();
   Rate frames_per_second = Hertz(5.0);
@@ -52,16 +62,14 @@ public:
   using Options = AnimatedSpriteOptions;
 
   AnimatedSprite() = default;
-  explicit AnimatedSprite(const Options&& options);
+  explicit AnimatedSprite(const Options& options);
 
-  void draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect, const Vec4f& tint = Vec4f::Ones()) const;
+  void draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect) const;
 
-  void setTimeOffset(TimeOffset time_offset) { options_.time_offset = time_offset; }
-
+  void setTintColor(const Vec4f& color) { options_.tint_color = color; }
   void setFrames(TileSetHandle frames) { options_.frames = frames; }
-
+  void setTimeOffset(TimeOffset time_offset) { options_.time_offset = time_offset; }
   void setFrameRate(Rate rate) { options_.frames_per_second = rate; }
-
   void setMode(Mode mode) { options_.mode = mode; }
 
 private:
