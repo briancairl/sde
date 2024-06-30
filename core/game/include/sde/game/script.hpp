@@ -16,7 +16,7 @@
 #include "sde/crtp.hpp"
 #include "sde/expected.hpp"
 #include "sde/game/assets_fwd.hpp"
-#include "sde/game/resources_fwd.hpp"
+#include "sde/game/systems_fwd.hpp"
 #include "sde/time.hpp"
 
 namespace sde::game
@@ -38,13 +38,13 @@ public:
   void reset() { t_start_.reset(); }
 
   expected<void, ScriptError>
-  update(entt::registry& registry, Resources& resources, Assets& assets, const AppProperties& app)
+  update(entt::registry& registry, Systems& systems, Assets& assets, const AppProperties& app)
   {
     if (t_start_.has_value())
     {
-      return this->derived().onUpdate(registry, resources, assets, app);
+      return this->derived().onUpdate(registry, systems, assets, app);
     }
-    else if (this->derived().onInitialize(registry, resources, assets, app))
+    else if (this->derived().onInitialize(registry, systems, assets, app))
     {
       t_start_ = app.time;
       return {};
@@ -62,7 +62,7 @@ protected:
 private:
   constexpr static bool onInitialize(
     [[maybe_unused]] entt::registry& registry,
-    [[maybe_unused]] Resources& resources,
+    [[maybe_unused]] Systems& systems,
     [[maybe_unused]] Assets& assets,
     [[maybe_unused]] const AppProperties& app)
   {
@@ -71,7 +71,7 @@ private:
 
   constexpr static expected<void, ScriptError> onUpdate(
     [[maybe_unused]] entt::registry& registry,
-    [[maybe_unused]] Resources& resources,
+    [[maybe_unused]] Systems& systems,
     [[maybe_unused]] const Assets& assets,
     [[maybe_unused]] const AppProperties& app)
   {
@@ -88,7 +88,7 @@ protected:
 
   virtual bool onInitialize(
     [[maybe_unused]] entt::registry& registry,
-    [[maybe_unused]] Resources& resources,
+    [[maybe_unused]] Systems& systems,
     [[maybe_unused]] Assets& assets,
     [[maybe_unused]] const AppProperties& app)
   {
@@ -97,7 +97,7 @@ protected:
 
   virtual expected<void, ScriptError> onUpdate(
     [[maybe_unused]] entt::registry& registry,
-    [[maybe_unused]] Resources& resources,
+    [[maybe_unused]] Systems& systems,
     [[maybe_unused]] const Assets& assets,
     [[maybe_unused]] const AppProperties& app) = 0;
 };

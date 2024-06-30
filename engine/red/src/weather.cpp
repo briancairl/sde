@@ -7,8 +7,8 @@
 
 // SDE
 #include "sde/game/assets.hpp"
-#include "sde/game/resources.hpp"
 #include "sde/game/script.hpp"
+#include "sde/game/systems.hpp"
 #include "sde/graphics/sprite.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_set.hpp"
@@ -23,7 +23,7 @@ using namespace sde::graphics;
 
 bool Weather::onInitialize(
   entt::registry& registry,
-  sde::game::Resources& resources,
+  game::Systems& systems,
   game::Assets& assets,
   const AppProperties& app)
 {
@@ -82,8 +82,7 @@ bool Weather::onInitialize(
     x_start += 0.25F;
   }
 
-  if (auto listener_or_err = audio::ListenerTarget::create(resources.mixer, kPlayerListener);
-      listener_or_err.has_value())
+  if (auto listener_or_err = audio::ListenerTarget::create(systems.mixer, kPlayerListener); listener_or_err.has_value())
   {
     listener_or_err->set(
       *sound_or_error->value,
@@ -101,7 +100,7 @@ bool Weather::onInitialize(
 
 expected<void, game::ScriptError> Weather::onUpdate(
   entt::registry& registry,
-  sde::game::Resources& resources,
+  game::Systems& systems,
   const game::Assets& assets,
   const AppProperties& app)
 {

@@ -3,12 +3,12 @@ cc_library(
   hdrs=[
     "include/sde/game/assets.hpp",
     "include/sde/game/assets_fwd.hpp",
-    "include/sde/game/resources.hpp",
-    "include/sde/game/resources_fwd.hpp",
+    "include/sde/game/systems.hpp",
+    "include/sde/game/systems_fwd.hpp",
     "include/sde/game/script.hpp",
   ],
   srcs=[
-    "src/resources.cpp",
+    "src/systems.cpp",
   ],
   strip_include_prefix="include",
   deps=[

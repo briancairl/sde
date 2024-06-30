@@ -3,7 +3,7 @@
 
 // SDE
 #include "sde/game/assets.hpp"
-#include "sde/game/resources.hpp"
+#include "sde/game/systems.hpp"
 #include "sde/graphics/colors.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/sprite.hpp"
@@ -16,7 +16,7 @@
 
 using namespace sde;
 
-bool Renderer::onInitialize(entt::registry& registry, Resources& resources, Assets& assets, const AppProperties& app)
+bool Renderer::onInitialize(entt::registry& registry, Systems& systems, Assets& assets, const AppProperties& app)
 {
   auto sprite_shader_or_error = assets.graphics.shaders.load("/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl");
   if (!sprite_shader_or_error.has_value())
@@ -57,7 +57,7 @@ bool Renderer::onInitialize(entt::registry& registry, Resources& resources, Asse
 }
 
 expected<void, ScriptError>
-Renderer::onUpdate(entt::registry& registry, Resources& resources, const Assets& assets, const AppProperties& app)
+Renderer::onUpdate(entt::registry& registry, Systems& systems, const Assets& assets, const AppProperties& app)
 {
   // Handle screen zoom
   static constexpr float kScaleRate = 500.0;
@@ -87,7 +87,7 @@ Renderer::onUpdate(entt::registry& registry, Resources& resources, const Assets&
     [&](const Position& pos) { uniforms.world_from_camera.block<2, 1>(0, 2) = pos.center; });
 
   if (auto render_pass_or_error = RenderPass::create(
-        render_buffer_, resources.renderer, assets.graphics, uniforms, render_resources, app.viewport_size);
+        render_buffer_, systems.renderer, assets.graphics, uniforms, render_resources, app.viewport_size);
       render_pass_or_error.has_value())
   {
     render_pass_or_error->clear(Black());
@@ -108,7 +108,7 @@ Renderer::onUpdate(entt::registry& registry, Resources& resources, const Assets&
 
   render_resources.shader = player_text_shader_;
   if (auto render_pass_or_error = RenderPass::create(
-        render_buffer_, resources.renderer, assets.graphics, uniforms, render_resources, app.viewport_size);
+        render_buffer_, systems.renderer, assets.graphics, uniforms, render_resources, app.viewport_size);
       render_pass_or_error.has_value())
   {
     TypeSetter type_setter{player_text_type_set_};

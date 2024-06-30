@@ -7,8 +7,8 @@
 
 // SDE
 #include "sde/game/assets.hpp"
-#include "sde/game/resources.hpp"
 #include "sde/game/script.hpp"
+#include "sde/game/systems.hpp"
 #include "sde/graphics/sprite.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_set.hpp"
@@ -181,7 +181,7 @@ void createMovementTileSets(
 
 bool PlayerCharacter::onInitialize(
   entt::registry& registry,
-  sde::game::Resources& resources,
+  game::Systems& systems,
   game::Assets& assets,
   const AppProperties& app)
 {
@@ -240,7 +240,7 @@ bool PlayerCharacter::onInitialize(
 
 expected<void, game::ScriptError> PlayerCharacter::onUpdate(
   entt::registry& registry,
-  sde::game::Resources& resources,
+  game::Systems& systems,
   const game::Assets& assets,
   const AppProperties& app)
 {
@@ -351,8 +351,7 @@ expected<void, game::ScriptError> PlayerCharacter::onUpdate(
     sprite.setFrameRate(Hertz(kSpeedWalking * 15.0F));
   }
 
-  if (auto listener_or_err = audio::ListenerTarget::create(resources.mixer, kPlayerListener);
-      listener_or_err.has_value())
+  if (auto listener_or_err = audio::ListenerTarget::create(systems.mixer, kPlayerListener); listener_or_err.has_value())
   {
     listener_or_err->set(audio::ListenerState{
       .position = Vec3f{position.center.x(), position.center.y(), 1.0F},

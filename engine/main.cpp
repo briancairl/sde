@@ -10,7 +10,7 @@
 #include "sde/audio/assets.hpp"
 #include "sde/audio/mixer.hpp"
 #include "sde/game/assets.hpp"
-#include "sde/game/resources.hpp"
+#include "sde/game/systems.hpp"
 #include "sde/graphics/image.hpp"
 #include "sde/logging.hpp"
 // #include "sde/view.hpp"
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 
 
   game::Assets assets;
-  game::Resources resources{game::Resources::create().value()};
+  game::Systems systems{game::Systems::create().value()};
 
   auto background_track_1_or_error = assets.audio.sounds.load("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav");
   SDE_ASSERT_TRUE(background_track_1_or_error.has_value());
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
   auto background_track_2_or_error = assets.audio.sounds.load("/home/brian/dev/assets/sounds/tracks/forest.wav");
   SDE_ASSERT_TRUE(background_track_2_or_error.has_value());
 
-  if (auto listener_or_err = ListenerTarget::create(resources.mixer, 0UL); listener_or_err.has_value())
+  if (auto listener_or_err = ListenerTarget::create(systems.mixer, 0UL); listener_or_err.has_value())
   {
     listener_or_err->set(*background_track_1_or_error, TrackOptions{.volume = 0.2F, .looped = true});
     listener_or_err->set(*background_track_2_or_error, TrackOptions{.volume = 0.4F, .looped = true});
@@ -61,11 +61,11 @@ int main(int argc, char** argv)
   Weather weather_script;
 
   app_or_error->spin([&](const auto& window) {
-    character_script.update(reg, resources, assets, window);
+    character_script.update(reg, systems, assets, window);
     reg.view<Position, Dynamics>().each(
       [dt = toSeconds(window.time_delta)](Position& pos, const Dynamics& state) { pos.center += state.velocity * dt; });
-    renderer_script.update(reg, resources, assets, window);
-    weather_script.update(reg, resources, assets, window);
+    renderer_script.update(reg, systems, assets, window);
+    weather_script.update(reg, systems, assets, window);
     return AppDirective::kContinue;
   });
 

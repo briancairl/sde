@@ -21,10 +21,10 @@ class Renderer : public Script<Renderer>
   friend script;
 
 private:
-  bool onInitialize(entt::registry& registry, Resources& resources, Assets& assets, const AppProperties& app);
+  bool onInitialize(entt::registry& registry, Systems& systems, Assets& assets, const AppProperties& app);
 
   expected<void, ScriptError>
-  onUpdate(entt::registry& registry, Resources& resources, const Assets& assets, const AppProperties& app);
+  onUpdate(entt::registry& registry, Systems& systems, const Assets& assets, const AppProperties& app);
 
   float scaling_ = 0.0F;
   graphics::RenderBuffer render_buffer_;

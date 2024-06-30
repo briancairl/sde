@@ -13,13 +13,13 @@
 namespace sde::game
 {
 
-struct ResourceOptions
+struct SystemOptions
 {
   audio::MixerOptions mixer;
   graphics::Renderer2DOptions renderer;
 };
 
-enum class ResourceError
+enum class SystemError
 {
   kMixerCreationFailure,
   kRendererCreationFailure
@@ -28,7 +28,7 @@ enum class ResourceError
 /**
  * @brief Collection of active game assets
  */
-class Resources
+class Systems
 {
 public:
   /// Audio mixer
@@ -36,10 +36,10 @@ public:
   /// Rendering facilities
   graphics::Renderer2D renderer;
 
-  static expected<Resources, ResourceError> create(const ResourceOptions& options = {});
+  static expected<Systems, SystemError> create(const SystemOptions& options = {});
 
 private:
-  explicit Resources(audio::Mixer&& _mixer, graphics::Renderer2D&& _renderer);
+  explicit Systems(audio::Mixer&& _mixer, graphics::Renderer2D&& _renderer);
 };
 
 }  // namespace sde::game
