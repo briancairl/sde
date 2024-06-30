@@ -66,7 +66,9 @@ public:
   void swap(TileMap& other);
 
   void setup(const TileMapOptions& options);
+
   void setTileSize(const Vec2f& tile_size) { options_.tile_size = tile_size; }
+
   void setTileSet(TileSetHandle tile_set) { options_.tile_set = tile_set; }
 
 private:

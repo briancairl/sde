@@ -30,7 +30,7 @@ bool Weather::onInitialize(
   using namespace sde::graphics;
 
   auto atlas_or_error =
-    assets.textures_from_disk.create("/home/brian/dev/assets/sprites/weather/weather_effects/light_rain.png");
+    assets.graphics.textures.load("/home/brian/dev/assets/sprites/weather/weather_effects/light_rain.png");
   if (!atlas_or_error.has_value())
   {
     return false;
@@ -50,7 +50,7 @@ bool Weather::onInitialize(
   }
   rain_ = rain_frames_or_error->handle;
 
-  auto sound_or_error = assets.sounds_from_disk.create("/home/brian/dev/assets/sounds/fx/rain1_mono.wav");
+  auto sound_or_error = assets.audio.sounds.load("/home/brian/dev/assets/sounds/fx/rain1_mono.wav");
   if (!sound_or_error.has_value())
   {
     return false;
@@ -88,10 +88,10 @@ bool Weather::onInitialize(
     listener_or_err->set(
       *sound_or_error->value,
       audio::TrackOptions{
-        .volume = 0.5F,
         .position = Vec3f{0.0F, 0.0F, -0.5F},
         .velocity = Vec3f::Zero(),
         .orientation = Vec3f::UnitZ(),
+        .volume = 0.5F,
         .cutoff_distance = 8.0F,
         .looped = true});
   }

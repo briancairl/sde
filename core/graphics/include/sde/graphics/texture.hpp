@@ -19,6 +19,7 @@
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/resource_cache.hpp"
+#include "sde/resource_cache_with_assets.hpp"
 #include "sde/resource_wrapper.hpp"
 #include "sde/type.hpp"
 #include "sde/view.hpp"
@@ -119,6 +120,7 @@ bool operator==(const TextureInfo& lhs, const TextureInfo& rhs);
 enum class TextureError
 {
   kAssetNotFound,
+  kAssetLoadingFailed,
   kElementAlreadyExists,
   kInvalidHandle,
   kInvalidDimensions,
@@ -150,9 +152,17 @@ template <> struct ResourceCacheTypes<graphics::TextureCache>
 namespace sde::graphics
 {
 
+template <typename DataT>
+expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data, const Bounds2i& area);
+
+template <typename DataT> expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data)
+{
+  return replace(texture_info, data, Bounds2i{Vec2i{0, 0}, texture_info.shape.value});
+}
+
 class TextureCache : public ResourceCache<TextureCache>
 {
-  friend class ResourceCache<TextureCache>;
+  friend cache_base;
 
 private:
   expected<TextureInfo, TextureError> generate(const Image& image, const TextureOptions& options = {});
@@ -169,13 +179,18 @@ private:
     const TextureOptions& options = {});
 };
 
-
-template <typename DataT>
-expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data, const Bounds2i& area);
-
-template <typename DataT> expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data)
+struct TextureCacheLoader
 {
-  return replace(texture_info, data, Bounds2i{Vec2i{0, 0}, texture_info.shape.value});
-}
+  TextureCache::result_type
+  operator()(TextureCache& cache, const asset::path& path, const TextureOptions& options = {}) const;
+  TextureCache::result_type operator()(
+    TextureCache& cache,
+    const asset::path& path,
+    const ImageOptions& image_options,
+    const TextureOptions& texture_options = {}) const;
+};
+
+class TextureCacheWithAssets : public ResourceCacheWithAssets<TextureCache, TextureCacheLoader>
+{};
 
 }  // namespace sde::graphics

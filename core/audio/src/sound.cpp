@@ -8,6 +8,7 @@
 // SDE
 #include "sde/audio/sound.hpp"
 #include "sde/audio/sound_data.hpp"
+#include "sde/logging.hpp"
 
 namespace sde::audio
 {
@@ -73,6 +74,18 @@ expected<SoundInfo, SoundError> SoundCache::generate(const SoundData& sound, con
     .bit_rate = sound.getBitRate(),
     .native_id = std::move(native_id),
   };
+}
+
+SoundCache::result_type
+SoundCacheLoader::operator()(SoundCache& cache, const asset::path& path, const SoundOptions& options) const
+{
+  if (auto sound_data_or_error = SoundData::load(path); sound_data_or_error.has_value())
+  {
+    SDE_LOG_INFO_FMT("sound loaded from disk: %s", path.string().c_str());
+    return cache.create(*sound_data_or_error, options);
+  }
+  SDE_LOG_DEBUG("AssetLoadingFailed");
+  return make_unexpected(SoundError::kAssetLoadingFailed);
 }
 
 }  // namespace sde::audio

@@ -14,7 +14,7 @@ namespace sde::audio
 struct Assets
 {
   /// Sound cache
-  SoundCache sounds;
+  SoundCacheWithAssets sounds;
 };
 
 }  // namespace sde::audio

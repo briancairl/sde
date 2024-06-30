@@ -346,6 +346,8 @@ std::ostream& operator<<(std::ostream& os, TextureError error)
   {
   case TextureError::kAssetNotFound:
     return os << "AssetNotFound";
+  case TextureError::kAssetLoadingFailed:
+    return os << "AssetLoadingFailed";
   case TextureError::kElementAlreadyExists:
     return os << "ElementAlreadyExists";
   case TextureError::kInvalidHandle:
@@ -396,6 +398,45 @@ bool operator==(const TextureInfo& lhs, const TextureInfo& rhs)
 {
   return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(TextureInfo)) == 0;
 }
+
+template <typename DataT>
+expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data, const Bounds2i& area)
+{
+  if (area.isEmpty())
+  {
+    SDE_LOG_DEBUG("ReplaceAreaEmpty");
+    return make_unexpected(TextureError::kReplaceAreaEmpty);
+  }
+
+  const std::size_t required_size = size_in_bytes(area.max() - area.min(), texture_info.layout);
+  const std::size_t actual_size = sizeof(DataT) * data.size();
+  if (actual_size != required_size)
+  {
+    SDE_LOG_DEBUG("InvalidDataLength");
+    return make_unexpected(TextureError::kInvalidDataLength);
+  }
+
+  if (Bounds2i{Vec2i::Zero(), texture_info.shape.value}.contains(area))
+  {
+    glBindTexture(GL_TEXTURE_2D, texture_info.native_id);
+    return upload_texture_2D(data.data(), texture_info.layout, typecode<DataT>(), area.min(), area.max() - area.min());
+  }
+
+  SDE_LOG_DEBUG("ReplaceAreaOutOfBounds");
+  return make_unexpected(TextureError::kReplaceAreaOutOfBounds);
+}
+
+template expected<void, TextureError>
+replace(const TextureInfo& texture_info, View<const std::uint8_t> data, const Bounds2i& area);
+
+template expected<void, TextureError>
+replace(const TextureInfo& texture_info, View<const std::uint16_t> data, const Bounds2i& area);
+
+template expected<void, TextureError>
+replace(const TextureInfo& texture_info, View<const std::uint32_t> data, const Bounds2i& area);
+
+template expected<void, TextureError>
+replace(const TextureInfo& texture_info, View<const float> data, const Bounds2i& area);
 
 template <typename DataT>
 expected<TextureInfo, TextureError> TextureCache::generate(
@@ -472,44 +513,28 @@ template expected<TextureInfo, TextureError> TextureCache::generate(
   const TextureLayout layout,
   const TextureOptions& options);
 
-
-template <typename DataT>
-expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data, const Bounds2i& area)
+TextureCache::result_type TextureCacheLoader::operator()(
+  TextureCache& cache,
+  const asset::path& path,
+  const ImageOptions& image_options,
+  const TextureOptions& texture_options) const
 {
-  if (area.isEmpty())
+  if (auto texture_source_image = Image::load(path, image_options); texture_source_image.has_value())
   {
-    SDE_LOG_DEBUG("ReplaceAreaEmpty");
-    return make_unexpected(TextureError::kReplaceAreaEmpty);
+    SDE_LOG_INFO_FMT("texture data loaded from disk: %s", path.string().c_str());
+    return cache.create(*texture_source_image, texture_options);
   }
-
-  const std::size_t required_size = size_in_bytes(area.max() - area.min(), texture_info.layout);
-  const std::size_t actual_size = sizeof(DataT) * data.size();
-  if (actual_size != required_size)
-  {
-    SDE_LOG_DEBUG("InvalidDataLength");
-    return make_unexpected(TextureError::kInvalidDataLength);
-  }
-
-  if (Bounds2i{Vec2i::Zero(), texture_info.shape.value}.contains(area))
-  {
-    glBindTexture(GL_TEXTURE_2D, texture_info.native_id);
-    return upload_texture_2D(data.data(), texture_info.layout, typecode<DataT>(), area.min(), area.max() - area.min());
-  }
-
-  SDE_LOG_DEBUG("ReplaceAreaOutOfBounds");
-  return make_unexpected(TextureError::kReplaceAreaOutOfBounds);
+  SDE_LOG_DEBUG("AssetLoadingFailed");
+  return make_unexpected(TextureError::kAssetLoadingFailed);
 }
 
-template expected<void, TextureError>
-replace(const TextureInfo& texture_info, View<const std::uint8_t> data, const Bounds2i& area);
-
-template expected<void, TextureError>
-replace(const TextureInfo& texture_info, View<const std::uint16_t> data, const Bounds2i& area);
-
-template expected<void, TextureError>
-replace(const TextureInfo& texture_info, View<const std::uint32_t> data, const Bounds2i& area);
-
-template expected<void, TextureError>
-replace(const TextureInfo& texture_info, View<const float> data, const Bounds2i& area);
+TextureCache::result_type TextureCacheLoader::operator()(
+  TextureCache& cache,
+  const asset::path& path,
+  const TextureOptions& texture_options) const
+{
+  static constexpr ImageOptions kImageOptions{.flags = {.flip_vertically = true}};
+  return this->operator()(cache, path, kImageOptions, texture_options);
+}
 
 }  // namespace sde::graphics

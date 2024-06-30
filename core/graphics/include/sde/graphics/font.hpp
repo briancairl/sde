@@ -1,7 +1,7 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file text.hpp
+ * @file font.hpp
  */
 #pragma once
 
@@ -9,7 +9,7 @@
 #include "sde/asset.hpp"
 #include "sde/expected.hpp"
 #include "sde/graphics/font_handle.hpp"
-#include "sde/resource_cache.hpp"
+#include "sde/resource_cache_with_assets.hpp"
 #include "sde/resource_wrapper.hpp"
 
 namespace sde::graphics
@@ -55,10 +55,13 @@ namespace sde::graphics
 
 class FontCache : public ResourceCache<FontCache>
 {
-  friend class ResourceCache<FontCache>;
+  friend cache_base;
 
 private:
   expected<FontInfo, FontError> generate(const asset::path& font_path);
 };
+
+class FontCacheWithAssets : public ResourceCacheWithAssets<FontCache>
+{};
 
 }  // namespace sde::graphics

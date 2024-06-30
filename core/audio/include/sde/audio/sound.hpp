@@ -13,7 +13,7 @@
 #include "sde/audio/sound_handle.hpp"
 #include "sde/audio/typedef.hpp"
 #include "sde/expected.hpp"
-#include "sde/resource_cache.hpp"
+#include "sde/resource_cache_with_assets.hpp"
 #include "sde/resource_wrapper.hpp"
 
 namespace sde::audio
@@ -22,6 +22,7 @@ namespace sde::audio
 enum struct SoundError
 {
   kAssetNotFound,
+  kAssetLoadingFailed,
   kElementAlreadyExists,
   kInvalidPlayerContext,
   kBackendBufferCreationFailure,
@@ -65,7 +66,22 @@ namespace sde::audio
 
 class SoundCache : public ResourceCache<SoundCache>
 {
-  friend class ResourceCache<SoundCache>;
+  friend cache_base;
+
+private:
+  expected<SoundInfo, SoundError> generate(const SoundData& sound, const SoundOptions& options = {});
+};
+
+
+struct SoundCacheLoader
+{
+  SoundCache::result_type
+  operator()(SoundCache& cache, const asset::path& path, const SoundOptions& options = {}) const;
+};
+
+class SoundCacheWithAssets : public ResourceCacheWithAssets<SoundCache, SoundCacheLoader>
+{
+  friend cache_base;
 
 private:
   expected<SoundInfo, SoundError> generate(const SoundData& sound, const SoundOptions& options = {});

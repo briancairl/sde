@@ -81,7 +81,7 @@ namespace sde::graphics
 
 class TypeSetCache : public ResourceCache<TypeSetCache>
 {
-  friend class ResourceCache<TypeSetCache>;
+  friend cache_base;
 
 private:
   expected<TypeSetInfo, TypeSetError>

@@ -19,16 +19,16 @@ namespace sde::graphics
 struct Assets
 {
   /// Font cache
-  FontCache fonts;
+  FontCacheWithAssets fonts;
 
   /// Shader asset cache
-  ShaderCache shaders;
+  ShaderCacheWithAssets shaders;
 
   /// Glyph-set cache
   TypeSetCache type_sets;
 
   /// Texture asset cache
-  TextureCache textures;
+  TextureCacheWithAssets textures;
 
   /// Tile set asset cache
   TileSetCache tile_sets;

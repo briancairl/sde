@@ -8,7 +8,6 @@ cc_library(
     "include/sde/game/script.hpp",
   ],
   srcs=[
-    "src/assets.cpp",
     "src/resources.cpp",
   ],
   strip_include_prefix="include",

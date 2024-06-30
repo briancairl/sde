@@ -91,7 +91,7 @@ struct TileSetSliceUniform
 
 class TileSetCache : public ResourceCache<TileSetCache>
 {
-  friend class ResourceCache<TileSetCache>;
+  friend cache_base;
 
 private:
   expected<TileSetInfo, TileSetError>

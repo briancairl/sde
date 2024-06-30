@@ -9,28 +9,10 @@
 #include "sde/app.hpp"
 #include "sde/audio/assets.hpp"
 #include "sde/audio/mixer.hpp"
-// #include "sde/audio/sound.hpp"
-// #include "sde/audio/sound_data.hpp"
 #include "sde/game/assets.hpp"
 #include "sde/game/resources.hpp"
-// #include "sde/game/script.hpp"
-// #include "sde/geometry_utils.hpp"
-// #include "sde/graphics/assets.hpp"
-#include "sde/graphics/colors.hpp"
 #include "sde/graphics/image.hpp"
-#include "sde/graphics/render_buffer.hpp"
-#include "sde/graphics/render_target.hpp"
-#include "sde/graphics/renderer.hpp"
-// #include "sde/graphics/shader.hpp"
-// #include "sde/graphics/shapes.hpp"
-#include "sde/graphics/sprite.hpp"
-// #include "sde/graphics/texture.hpp"
-// #include "sde/graphics/tile_map.hpp"
-// #include "sde/graphics/tile_set.hpp"
-#include "sde/graphics/type_setter.hpp"
-// #include "sde/graphics/window.hpp"
 #include "sde/logging.hpp"
-// #include "sde/resource_cache_from_disk.hpp"
 // #include "sde/view.hpp"
 
 // RED
@@ -61,11 +43,10 @@ int main(int argc, char** argv)
   game::Assets assets;
   game::Resources resources{game::Resources::create().value()};
 
-  auto background_track_1_or_error =
-    assets.sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav");
+  auto background_track_1_or_error = assets.audio.sounds.load("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav");
   SDE_ASSERT_TRUE(background_track_1_or_error.has_value());
 
-  auto background_track_2_or_error = assets.sounds_from_disk.create("/home/brian/dev/assets/sounds/tracks/forest.wav");
+  auto background_track_2_or_error = assets.audio.sounds.load("/home/brian/dev/assets/sounds/tracks/forest.wav");
   SDE_ASSERT_TRUE(background_track_2_or_error.has_value());
 
   if (auto listener_or_err = ListenerTarget::create(resources.mixer, 0UL); listener_or_err.has_value())

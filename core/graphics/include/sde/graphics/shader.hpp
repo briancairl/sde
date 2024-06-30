@@ -18,7 +18,7 @@
 #include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/typedef.hpp"
-#include "sde/resource_cache.hpp"
+#include "sde/resource_cache_with_assets.hpp"
 #include "sde/resource_wrapper.hpp"
 
 namespace sde::graphics
@@ -138,10 +138,18 @@ namespace sde::graphics
 
 class ShaderCache : public ResourceCache<ShaderCache>
 {
-  friend class ResourceCache<ShaderCache>;
+  friend cache_base;
 
 private:
   expected<ShaderInfo, ShaderError> generate(std::string_view source);
 };
+
+struct ShaderCacheLoader
+{
+  ShaderCache::result_type operator()(ShaderCache& cache, const asset::path& path) const;
+};
+
+class ShaderCacheWithAssets : public ResourceCacheWithAssets<ShaderCache, ShaderCacheLoader>
+{};
 
 }  // namespace sde::graphics

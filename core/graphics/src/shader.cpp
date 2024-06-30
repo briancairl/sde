@@ -1,6 +1,7 @@
 // C++ Standard Library
 #include <algorithm>
 #include <charconv>
+#include <fstream>
 #include <iomanip>
 #include <iterator>
 #include <ostream>
@@ -533,6 +534,16 @@ expected<ShaderInfo, ShaderError> ShaderCache::generate(std::string_view source)
     .components = components,
     .variables = std::move(variables),
     .native_id = NativeShaderID{createShaderProgram(vert_shader_id, frag_shader_id, geom_shader_id)}};
+}
+
+
+ShaderCache::result_type ShaderCacheLoader::operator()(ShaderCache& cache, const asset::path& path) const
+{
+  std::ifstream ifs{path};
+  std::stringstream ioss;
+  ioss << ifs.rdbuf();
+  SDE_LOG_INFO_FMT("shader loaded from disk: %s", path.string().c_str());
+  return cache.create(ioss.str());
 }
 
 }  // namespace sde::graphics
