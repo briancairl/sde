@@ -147,6 +147,7 @@ private:
 struct ShaderCacheLoader
 {
   ShaderCache::result_type operator()(ShaderCache& cache, const asset::path& path) const;
+  ShaderCache::result_type operator()(ShaderCache& cache, const ShaderHandle& handle, const asset::path& path) const;
 };
 
 class ShaderCacheWithAssets : public ResourceCacheWithAssets<ShaderCache, ShaderCacheLoader>

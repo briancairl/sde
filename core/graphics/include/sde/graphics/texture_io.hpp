@@ -47,4 +47,14 @@ template <typename Archive> struct serialize<Archive, graphics::TextureShape>
   void operator()(Archive& ar, graphics::TextureShape& shape) const { ar& named{"value", shape.value}; }
 };
 
+template <typename Archive> struct save<Archive, graphics::TextureCacheWithAssets>
+{
+  void operator()(Archive& ar, const graphics::TextureCacheWithAssets& cache) const;
+};
+
+template <typename Archive> struct load<Archive, graphics::TextureCacheWithAssets>
+{
+  void operator()(Archive& ar, graphics::TextureCacheWithAssets& cache) const;
+};
+
 }  // namespace sde::serial

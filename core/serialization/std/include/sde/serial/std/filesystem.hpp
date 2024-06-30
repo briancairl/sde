@@ -16,14 +16,14 @@
 namespace sde::serial
 {
 
-template <typename OArchiveT> struct save<OArchiveT, std::filesystem::path>
+template <typename ArchiveT> struct save<ArchiveT, std::filesystem::path>
 {
-  void operator()(OArchiveT& oar, const std::filesystem::path& path) { oar << named{"path", path.string()}; }
+  void operator()(ArchiveT& oar, const std::filesystem::path& path) { oar << named{"path", path.string()}; }
 };
 
-template <typename IArchiveT> struct load<IArchiveT, std::filesystem::path>
+template <typename ArchiveT> struct load<ArchiveT, std::filesystem::path>
 {
-  void operator()(IArchiveT& iar, std::filesystem::path& path)
+  void operator()(ArchiveT& iar, std::filesystem::path& path)
   {
     std::string path_str;
     iar >> named{"path", path_str};

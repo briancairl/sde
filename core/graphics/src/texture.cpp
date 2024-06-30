@@ -513,16 +513,15 @@ template expected<TextureInfo, TextureError> TextureCache::generate(
   const TextureLayout layout,
   const TextureOptions& options);
 
-TextureCache::result_type TextureCacheLoader::operator()(
-  TextureCache& cache,
-  const asset::path& path,
-  const ImageOptions& image_options,
-  const TextureOptions& texture_options) const
+
+TextureCache::result_type
+TextureCacheLoader::operator()(TextureCache& cache, const asset::path& path, const TextureOptions& options) const
 {
-  if (auto texture_source_image = Image::load(path, image_options); texture_source_image.has_value())
+  static constexpr ImageOptions kImageOptions{.flags = {.flip_vertically = true}};
+  if (auto texture_source_image = Image::load(path, kImageOptions); texture_source_image.has_value())
   {
     SDE_LOG_INFO_FMT("texture data loaded from disk: %s", path.string().c_str());
-    return cache.create(*texture_source_image, texture_options);
+    return cache.create(*texture_source_image, options);
   }
   SDE_LOG_DEBUG("AssetLoadingFailed");
   return make_unexpected(TextureError::kAssetLoadingFailed);
@@ -530,11 +529,18 @@ TextureCache::result_type TextureCacheLoader::operator()(
 
 TextureCache::result_type TextureCacheLoader::operator()(
   TextureCache& cache,
+  const TextureHandle& handle,
   const asset::path& path,
-  const TextureOptions& texture_options) const
+  const TextureOptions& options) const
 {
   static constexpr ImageOptions kImageOptions{.flags = {.flip_vertically = true}};
-  return this->operator()(cache, path, kImageOptions, texture_options);
+  if (auto texture_source_image = Image::load(path, kImageOptions); texture_source_image.has_value())
+  {
+    SDE_LOG_INFO_FMT("texture data loaded from disk: %s", path.string().c_str());
+    return cache.insert(handle, *texture_source_image, options);
+  }
+  SDE_LOG_DEBUG("AssetLoadingFailed");
+  return make_unexpected(TextureError::kAssetLoadingFailed);
 }
 
 }  // namespace sde::graphics

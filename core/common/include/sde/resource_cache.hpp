@@ -33,7 +33,7 @@ public:
     handle_type handle;
     const value_type* value;
 
-    constexpr bool valid() const { return handle.isValid(); }
+    constexpr bool isValid() const { return handle.isValid(); }
     operator handle_type() const { return handle; }
     operator const value_type&() const { return (*value); }
   };
@@ -45,11 +45,11 @@ public:
   template <typename... CreateArgTs> [[nodiscard]] expected<element_type, error_type> create(CreateArgTs&&... args)
   {
     auto h = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);
-    return this->add(h, std::forward<CreateArgTs>(args)...);
+    return this->insert(h, std::forward<CreateArgTs>(args)...);
   }
 
   template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_type, error_type> add(const handle_type& handle, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_type, error_type> insert(const handle_type& handle, CreateArgTs&&... args)
   {
     // Create a new element
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);

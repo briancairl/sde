@@ -10,7 +10,7 @@ using namespace sde::serial;
 using namespace sde::graphics;
 
 
-TEST(TextureIO, TileMapOptions)
+TEST(TileMapIO, TileMapOptions)
 {
   const TileMapOptions target_value;
 
@@ -38,7 +38,7 @@ TEST(TextureIO, TileMapOptions)
   }
 }
 
-TEST(TextureIO, TileMap)
+TEST(TileMapIO, TileMap)
 {
   const TileMap target_value{TileMapOptions{
     .tint_color = Vec4f::Ones(),

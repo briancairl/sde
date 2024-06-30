@@ -13,3 +13,11 @@
 #include "sde/serial/file_istream.hpp"
 #include "sde/serial/file_ostream.hpp"
 #include "sde/serialization.hpp"
+
+namespace sde::serial
+{
+
+using binary_ofarchive = binary_oarchive<file_ostream>;
+using binary_ifarchive = binary_iarchive<file_istream>;
+
+}  // namespace sde::serial

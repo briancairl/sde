@@ -26,6 +26,12 @@ template <typename ResourceCacheT> struct LoadAssetPassthrough
   {
     return cache.create(path);
   }
+
+  typename ResourceCacheT::result_type
+  operator()(ResourceCacheT& cache, const typename ResourceCacheT::handle_type& handle, const asset::path& path) const
+  {
+    return cache.create(handle, path);
+  }
 };
 
 template <typename ResourceCacheT, typename LoadAssetT = LoadAssetPassthrough<ResourceCacheT>>
@@ -76,6 +82,31 @@ public:
     return make_unexpected(element_or_error.error());
   }
 
+  template <typename... LoadAssetArgTs>
+  expected<element_t<ResourceCacheT>, error_type>
+  load(const handle_type& handle, const asset::path& path, LoadAssetArgTs&&... args)
+  {
+    if (auto existing_handle = ResourceCacheT::find(handle); existing_handle.isValid())
+    {
+      return make_unexpected(error_type::kElementAlreadyExists);
+    }
+
+    if (!asset::exists(path))
+    {
+      return make_unexpected(error_type::kAssetNotFound);
+    }
+
+    auto element_or_error =
+      load_asset_(static_cast<ResourceCacheT&>(*this), handle, path, std::forward<LoadAssetArgTs>(args)...);
+    if (element_or_error.has_value())
+    {
+      asset_to_handle_.emplace(path, element_or_error->handle);
+      handle_to_asset_.emplace(element_or_error->handle, path);
+      return std::move(element_or_error).value();
+    }
+    return make_unexpected(element_or_error.error());
+  }
+
   void remove(const handle_type& handle) const
   {
     if (const auto itr = handle_to_asset_.find(handle); itr != std::end(handle_to_asset_))
@@ -85,6 +116,10 @@ public:
     }
     ResourceCacheT::remove(handle);
   }
+
+  const HandleToAsset& handles() const { return handle_to_asset_; }
+
+  const AssetToHandle& assets() const { return asset_to_handle_; }
 
 private:
   using ResourceCacheT::remove;

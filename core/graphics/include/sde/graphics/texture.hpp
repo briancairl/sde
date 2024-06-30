@@ -183,11 +183,12 @@ struct TextureCacheLoader
 {
   TextureCache::result_type
   operator()(TextureCache& cache, const asset::path& path, const TextureOptions& options = {}) const;
+
   TextureCache::result_type operator()(
     TextureCache& cache,
+    const TextureHandle& handle,
     const asset::path& path,
-    const ImageOptions& image_options,
-    const TextureOptions& texture_options = {}) const;
+    const TextureOptions& options = {}) const;
 };
 
 class TextureCacheWithAssets : public ResourceCacheWithAssets<TextureCache, TextureCacheLoader>

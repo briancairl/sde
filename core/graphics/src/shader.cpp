@@ -536,7 +536,6 @@ expected<ShaderInfo, ShaderError> ShaderCache::generate(std::string_view source)
     .native_id = NativeShaderID{createShaderProgram(vert_shader_id, frag_shader_id, geom_shader_id)}};
 }
 
-
 ShaderCache::result_type ShaderCacheLoader::operator()(ShaderCache& cache, const asset::path& path) const
 {
   std::ifstream ifs{path};
@@ -544,6 +543,16 @@ ShaderCache::result_type ShaderCacheLoader::operator()(ShaderCache& cache, const
   ioss << ifs.rdbuf();
   SDE_LOG_INFO_FMT("shader loaded from disk: %s", path.string().c_str());
   return cache.create(ioss.str());
+}
+
+ShaderCache::result_type
+ShaderCacheLoader::operator()(ShaderCache& cache, const ShaderHandle& handle, const asset::path& path) const
+{
+  std::ifstream ifs{path};
+  std::stringstream ioss;
+  ioss << ifs.rdbuf();
+  SDE_LOG_INFO_FMT("shader loaded from disk: %s", path.string().c_str());
+  return cache.insert(handle, ioss.str());
 }
 
 }  // namespace sde::graphics

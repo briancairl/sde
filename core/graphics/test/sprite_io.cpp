@@ -10,7 +10,7 @@ using namespace sde::serial;
 using namespace sde::graphics;
 
 
-TEST(TextureIO, SpriteOptions)
+TEST(SpriteIO, SpriteOptions)
 {
   const SpriteOptions target_value;
 
@@ -38,7 +38,7 @@ TEST(TextureIO, SpriteOptions)
   }
 }
 
-TEST(TextureIO, AnimatedSpriteOptions)
+TEST(SpriteIO, AnimatedSpriteOptions)
 {
   const AnimatedSpriteOptions target_value;
 
@@ -66,7 +66,7 @@ TEST(TextureIO, AnimatedSpriteOptions)
   }
 }
 
-TEST(TextureIO, Sprite)
+TEST(SpriteIO, Sprite)
 {
   const Sprite target_value;
 
@@ -94,7 +94,7 @@ TEST(TextureIO, Sprite)
   }
 }
 
-TEST(TextureIO, AnimatedSprite)
+TEST(SpriteIO, AnimatedSprite)
 {
   const AnimatedSprite target_value;
 
