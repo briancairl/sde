@@ -6,7 +6,7 @@
 #pragma once
 
 // C++ Standard Library
-#include <array>
+#include <algorithm>
 #include <cstdint>
 
 // SDE
@@ -21,16 +21,22 @@ public:
   constexpr bool isValid() const { return this->derived().data() != nullptr; }
   constexpr operator bool() const { return isValid(); }
 
+  constexpr std::size_t size() const { return this->derived().length(); }
   constexpr auto* begin() { return this->derived().data(); }
-  constexpr auto* end() { return this->derived().data() + this->derived().size(); }
+  constexpr auto* end() { return this->derived().data() + this->size(); }
   constexpr const auto* begin() const { return this->derived().data(); }
-  constexpr const auto* end() const { return this->derived().data() + this->derived().size(); }
+  constexpr const auto* end() const { return this->derived().data() + this->size(); }
 
   constexpr bool empty() const { return begin() == end(); }
 
 private:
   // BasicView() = delete;
 };
+
+template <typename ViewT> bool operator==(const BasicView<ViewT>& lhs, const BasicView<ViewT>& rhs)
+{
+  return (lhs.size() == rhs.size()) && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+}
 
 template <typename T, std::size_t Len = 0UL> class View : public BasicView<View<T, Len>>
 {
@@ -39,7 +45,7 @@ public:
 
   constexpr T* data() { return data_; }
   constexpr const T* data() const { return data_; }
-  static constexpr std::size_t size() { return Len; }
+  static constexpr std::size_t length() { return Len; }
 
 private:
   T* data_;
@@ -54,7 +60,7 @@ public:
 
   constexpr T* data() { return data_; }
   constexpr const T* data() const { return data_; }
-  constexpr std::size_t size() const { return size_; }
+  constexpr std::size_t length() const { return size_; }
 
 private:
   T* data_;

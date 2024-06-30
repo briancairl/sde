@@ -165,18 +165,26 @@ TEST(JSONIArchive, Primitive)
 {
   const float target = 0.1f;
 
+  if (auto ofs_or_error = file_ostream::create("Primitive.json"); ofs_or_error.has_value())
   {
-    file_ostream ofs{"Primitive.json"};
-    json_oarchive oar{ofs};
+    json_oarchive oar{*ofs_or_error};
     ASSERT_NO_THROW((oar << named{"primitive", target}));
   }
-
+  else
   {
-    file_istream ifs{"Primitive.json"};
-    json_iarchive iar{ifs};
+    FAIL() << ofs_or_error.error();
+  }
+
+  if (auto ifs_or_error = file_istream::create("Primitive.json"); ifs_or_error.has_value())
+  {
+    json_iarchive iar{*ifs_or_error};
     float read_value;
     ASSERT_NO_THROW((iar >> named{"primitive", read_value}));
     ASSERT_EQ(target, read_value);
+  }
+  else
+  {
+    FAIL() << ifs_or_error.error();
   }
 }
 
@@ -186,13 +194,13 @@ TEST(JSONIArchive, BoolTrue)
   const bool target = true;
 
   {
-    file_ostream ofs{"BoolTrue.json"};
+    auto ofs = file_ostream::create("BoolTrue.json").value();
     json_oarchive oar{ofs};
     ASSERT_NO_THROW((oar << named{"bool", target}));
   }
 
   {
-    file_istream ifs{"BoolTrue.json"};
+    auto ifs = file_istream::create("BoolTrue.json").value();
     json_iarchive iar{ifs};
     bool read_value;
     ASSERT_NO_THROW((iar >> named{"bool", read_value}));
@@ -206,13 +214,13 @@ TEST(JSONIArchive, BoolFalse)
   const bool target = false;
 
   {
-    file_ostream ofs{"BoolFalse.json"};
+    auto ofs = file_ostream::create("BoolFalse.json").value();
     json_oarchive oar{ofs};
     ASSERT_NO_THROW((oar << named{"bool", target}));
   }
 
   {
-    file_istream ifs{"BoolFalse.json"};
+    auto ifs = file_istream::create("BoolFalse.json").value();
     json_iarchive iar{ifs};
     bool read_value;
     ASSERT_NO_THROW((iar >> named{"bool", read_value}));
@@ -225,13 +233,13 @@ TEST(JSONIArchive, TrivialStruct)
   const TrivialStruct target = {5, 123.f, 321.0};
 
   {
-    file_ostream ofs{"TrivialStruct.json"};
+    auto ofs = file_ostream::create("TrivialStruct.json").value();
     json_oarchive oar{ofs};
     ASSERT_NO_THROW((oar << named{"trivial", target}));
   }
 
   {
-    file_istream ifs{"TrivialStruct.json"};
+    auto ifs = file_istream::create("TrivialStruct.json").value();
     json_iarchive iar{ifs};
     TrivialStruct read_value;
     ASSERT_NO_THROW((iar >> named{"trivial", read_value}));
@@ -247,13 +255,13 @@ TEST(JSONIArchive, TrivialNestedStruct)
   ;
 
   {
-    file_ostream ofs{"TrivialNestedStruct.json"};
+    auto ofs = file_ostream::create("TrivialNestedStruct.json").value();
     json_oarchive oar{ofs};
     ASSERT_NO_THROW((oar << named{"trivial_nested", target}));
   }
 
   {
-    file_istream ifs{"TrivialNestedStruct.json"};
+    auto ifs = file_istream::create("TrivialNestedStruct.json").value();
     json_iarchive iar{ifs};
     TrivialNestedStruct read_value;
     ASSERT_NO_THROW((iar >> named{"trivial_nested", read_value}));
@@ -267,13 +275,13 @@ TEST(JSONIArchive, ArrayOfPrimitives)
   const std::vector<float> target = {1.f, 2.f, 3.f, 4.f, 5.f};
 
   {
-    file_ostream ofs{"ArrayOfPrimitives.json"};
+    auto ofs = file_ostream::create("ArrayOfPrimitives.json").value();
     json_oarchive oar{ofs};
     ASSERT_NO_THROW((oar << named{"array", target}));
   }
 
   {
-    file_istream ifs{"ArrayOfPrimitives.json"};
+    auto ifs = file_istream::create("ArrayOfPrimitives.json").value();
     json_iarchive iar{ifs};
     std::vector<float> read_value;
     ASSERT_NO_THROW((iar >> named{"array", read_value}));
@@ -288,13 +296,13 @@ TEST(JSONIArchive, ArrayOfTrivialStructs)
   const std::vector<TrivialStruct> target = {target_element, target_element, target_element};
 
   {
-    file_ostream ofs{"ArrayOfTrivialStructs.json"};
+    auto ofs = file_ostream::create("ArrayOfTrivialStructs.json").value();
     json_oarchive oar{ofs};
     ASSERT_NO_THROW((oar << named{"array", target}));
   }
 
   {
-    file_istream ifs{"ArrayOfTrivialStructs.json"};
+    auto ifs = file_istream::create("ArrayOfTrivialStructs.json").value();
     json_iarchive iar{ifs};
     std::vector<TrivialStruct> read_value;
     ASSERT_NO_THROW((iar >> named{"array", read_value}));

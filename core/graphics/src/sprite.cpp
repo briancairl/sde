@@ -41,6 +41,14 @@ void Sprite::draw(RenderPass& rp, const Bounds2f& rect) const
   }
 }
 
+bool operator==(const SpriteOptions& lhs, const SpriteOptions& rhs)
+{
+  return lhs.tint_color == rhs.tint_color && lhs.frames == rhs.frames && lhs.frame_index == rhs.frame_index;
+}
+
+bool operator==(const Sprite& lhs, const Sprite& rhs) { return lhs.options() == rhs.options(); }
+
+
 AnimatedSprite::AnimatedSprite(const Options& options) : options_{options} {}
 
 void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect) const
@@ -69,5 +77,14 @@ void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect) co
        .texture_unit = (*texture_unit_opt)});
   }
 }
+
+
+bool operator==(const AnimatedSpriteOptions& lhs, const AnimatedSpriteOptions& rhs)
+{
+  return lhs.tint_color == rhs.tint_color && lhs.frames == rhs.frames && lhs.time_offset == rhs.time_offset &&
+    lhs.frames_per_second == rhs.frames_per_second && lhs.mode == rhs.mode;
+}
+
+bool operator==(const AnimatedSprite& lhs, const AnimatedSprite& rhs) { return lhs.options() == rhs.options(); }
 
 }  // namespace sde::graphics

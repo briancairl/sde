@@ -63,6 +63,7 @@ cc_library(
     "include/sde/graphics/renderer.hpp",
     "include/sde/graphics/renderer_fwd.hpp",
     "include/sde/graphics/sprite.hpp",
+    "include/sde/graphics/sprite_io.hpp",
     "include/sde/graphics/shader.hpp",
     "include/sde/graphics/shader_fwd.hpp",
     "include/sde/graphics/shader_handle.hpp",
@@ -76,13 +77,16 @@ cc_library(
     "include/sde/graphics/type_set_handle.hpp",
     "include/sde/graphics/type_setter.hpp",
     "include/sde/graphics/texture.hpp",
+    "include/sde/graphics/texture_io.hpp",
     "include/sde/graphics/texture_fwd.hpp",
     "include/sde/graphics/texture_handle.hpp",
     "include/sde/graphics/texture_units.hpp",
     "include/sde/graphics/tile_set.hpp",
     "include/sde/graphics/tile_set_fwd.hpp",
+    "include/sde/graphics/tile_set_io.hpp",
     "include/sde/graphics/tile_set_handle.hpp",
     "include/sde/graphics/tile_map.hpp",
+    "include/sde/graphics/tile_map_io.hpp",
     "include/sde/graphics/window.hpp",
     "include/sde/graphics/window_fwd.hpp",
   ],
@@ -141,11 +145,13 @@ cc_library(
     "src/tile_map.cpp",
   ] + graphics_impl__renderer__opengl_debug_selector,
   deps=[
+    "//core/serialization",
     ":graphics_impl__renderer__opengl_internal",
     ":graphics_impl__renderer__hdrs",
     ":graphics_impl__common",
     ":graphics_impl__opengl",
-    "@freetype2//:freetype2",],
+    "@freetype2//:freetype2"
+  ],
   visibility=["//visibility:private"]
 )
 

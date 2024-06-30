@@ -14,9 +14,9 @@
 namespace sde
 {
 
-template <typename T, std::size_t N> using Vec = Eigen::Matrix<T, N, 1, Eigen::ColMajor>;
-
-template <typename T, std::size_t N, std::size_t M = N> using Mat = Eigen::Matrix<T, N, M, Eigen::ColMajor>;
+template <typename T, int N> using Vec = Eigen::Matrix<T, N, 1, Eigen::ColMajor>;
+template <typename T, int N, int M = N> using Mat = Eigen::Matrix<T, N, M, Eigen::ColMajor>;
+template <typename T, int Dim> using Bounds = Eigen::AlignedBox<T, Dim>;
 
 using Vec2i = Vec<int, 2>;
 using Vec2f = Vec<float, 2>;
@@ -42,10 +42,18 @@ using Mat4i = Mat<int, 4>;
 using Mat4f = Mat<float, 4>;
 using Mat4d = Mat<double, 4>;
 
-template <typename T, std::size_t Dim> using Bounds = Eigen::AlignedBox<T, Dim>;
-
 using Bounds2i = Bounds<int, 2>;
 using Bounds2f = Bounds<float, 2>;
+
+template <typename T, int N, int M> inline bool operator==(const Mat<T, N, M>& lhs, const Mat<T, N, M>& rhs)
+{
+  return (lhs.array() == rhs.array()).all();
+}
+
+template <typename T, int D> inline bool operator==(const Bounds<T, D>& lhs, const Bounds<T, D>& rhs)
+{
+  return (lhs.min() == rhs.min()) && (lhs.max() == rhs.max());
+}
 
 }  // namespace sde
 

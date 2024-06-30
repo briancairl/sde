@@ -12,6 +12,8 @@
 #include <filesystem>
 
 // SDE
+#include "sde/expected.hpp"
+#include "sde/serial/file_stream_error.hpp"
 #include "sde/serial/istream.hpp"
 
 namespace sde::serial
@@ -24,12 +26,7 @@ class file_handle_istream : public istream<file_handle_istream>
 public:
   explicit file_handle_istream(std::FILE* file_handle);
 
-  file_handle_istream(file_handle_istream&& other) :
-      file_bytes_remaining_{other.file_bytes_remaining_}, file_handle_{other.file_handle_}
-  {
-    other.file_handle_ = nullptr;
-  }
-
+  file_handle_istream(file_handle_istream&& other);
   ~file_handle_istream() = default;
 
 private:
@@ -77,15 +74,15 @@ public:
 
   static constexpr flags default_flags{.nobuf = true, .binary = true};
 
-  explicit file_istream(const char* filename, const flags fileopt = default_flags);
-
-  explicit file_istream(const std::filesystem::path& path, const flags fileopt = default_flags) :
-      file_istream{path.c_str(), fileopt}
-  {}
+  static expected<file_istream, FileStreamError>
+  create(const std::filesystem::path& path, const flags fileopt = default_flags);
 
   file_istream(file_istream&& other) = default;
 
   ~file_istream();
+
+private:
+  explicit file_istream(std::FILE* file_handle);
 };
 
 }  // namespace sde::serial

@@ -64,7 +64,7 @@ template <typename IArchive> struct load<IArchive, ::NonTrivialStruct>
 
 TEST(BinaryOArchive, PrimitiveValue)
 {
-  file_ostream ofs{"BinaryOArchive.PrimitiveValue.bin"};
+  auto ofs = file_ostream::create("BinaryOArchive.PrimitiveValue.bin").value();
   binary_oarchive oar{ofs};
 
   float primitive = 123.f;
@@ -73,7 +73,7 @@ TEST(BinaryOArchive, PrimitiveValue)
 
 TEST(BinaryOArchive, TrivialValue)
 {
-  file_ostream ofs{"BinaryOArchive.TrivialValue.bin"};
+  auto ofs = file_ostream::create("BinaryOArchive.TrivialValue.bin").value();
   binary_oarchive oar{ofs};
 
   TrivialStruct trivial_value;
@@ -82,7 +82,7 @@ TEST(BinaryOArchive, TrivialValue)
 
 TEST(BinaryOArchive, NonTrivialStruct)
 {
-  file_ostream ofs{"BinaryOArchive.NonTrivialStruct.bin"};
+  auto ofs = file_ostream::create("BinaryOArchive.NonTrivialStruct.bin").value();
   binary_oarchive oar{ofs};
 
   NonTrivialStruct non_trivial_value;
@@ -95,13 +95,13 @@ TEST(BinaryIArchive, ReadbackTrivialStruct)
   const TrivialStruct target_trivial_value{1, 2, 3};
 
   {
-    file_ostream ofs{"BinaryOArchive.ReadbackTrivialStruct.bin"};
+    auto ofs = file_ostream::create("BinaryOArchive.ReadbackTrivialStruct.bin").value();
     binary_oarchive oar{ofs};
     ASSERT_NO_THROW(oar << target_trivial_value);
   }
 
   {
-    file_istream ifs{"BinaryOArchive.ReadbackTrivialStruct.bin"};
+    auto ifs = file_istream::create("BinaryOArchive.ReadbackTrivialStruct.bin").value();
     binary_iarchive iar{ifs};
 
     TrivialStruct read_trivial_value;
@@ -120,13 +120,13 @@ TEST(BinaryIArchive, ReadbackNonTrivialStruct)
   ASSERT_GT(target_non_trivial_value.values.size(), 0UL);
 
   {
-    file_ostream ofs{"BinaryOArchive.ReadbackNonTrivialStruct.bin"};
+    auto ofs = file_ostream::create("BinaryOArchive.ReadbackNonTrivialStruct.bin").value();
     binary_oarchive oar{ofs};
     ASSERT_NO_THROW(oar << target_non_trivial_value);
   }
 
   {
-    file_istream ifs{"BinaryOArchive.ReadbackNonTrivialStruct.bin"};
+    auto ifs = file_istream::create("BinaryOArchive.ReadbackNonTrivialStruct.bin").value();
     binary_iarchive iar{ifs};
 
     NonTrivialStruct read_non_trivial_value;

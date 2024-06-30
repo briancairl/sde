@@ -12,6 +12,8 @@
 #include <filesystem>
 
 // SDE
+#include "sde/expected.hpp"
+#include "sde/serial/file_stream_error.hpp"
 #include "sde/serial/ostream.hpp"
 
 namespace sde::serial
@@ -58,15 +60,15 @@ public:
 
   static constexpr flags default_flags{.nobuf = true, .append = false, .binary = true};
 
-  explicit file_ostream(const char* filename, const flags fileopt = default_flags);
-
-  explicit file_ostream(const std::filesystem::path& path, const flags fileopt = default_flags) :
-      file_ostream{path.c_str(), fileopt}
-  {}
+  static expected<file_ostream, FileStreamError>
+  create(const std::filesystem::path& path, const flags fileopt = default_flags);
 
   file_ostream(file_ostream&& other) = default;
 
   ~file_ostream();
+
+private:
+  explicit file_ostream(std::FILE* file_handle);
 };
 
 }  // namespace sde::serial

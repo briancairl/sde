@@ -22,6 +22,8 @@ struct SpriteOptions
   std::size_t frame_index = 0;
 };
 
+bool operator==(const SpriteOptions& lhs, const SpriteOptions& rhs);
+
 class Sprite
 {
 public:
@@ -32,13 +34,18 @@ public:
 
   void draw(RenderPass& rp, const Bounds2f& rect) const;
 
+  void setup(const Options& options) { options_ = options; }
   void setTintColor(const Vec4f& color) { options_.tint_color = color; }
   void setFrames(TileSetHandle frames) { options_.frames = frames; }
   void setFrameIndex(std::size_t frame_index) { options_.frame_index = frame_index; }
 
+  const Options& options() const { return options_; }
+
 private:
   Options options_;
 };
+
+bool operator==(const Sprite& lhs, const Sprite& rhs);
 
 enum class AnimatedSpriteMode
 {
@@ -55,6 +62,8 @@ struct AnimatedSpriteOptions
   AnimatedSpriteMode mode = AnimatedSpriteMode::kOneShot;
 };
 
+bool operator==(const AnimatedSpriteOptions& lhs, const AnimatedSpriteOptions& rhs);
+
 class AnimatedSprite
 {
 public:
@@ -66,15 +75,19 @@ public:
 
   void draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect) const;
 
+  void setup(const Options& options) { options_ = options; }
   void setTintColor(const Vec4f& color) { options_.tint_color = color; }
   void setFrames(TileSetHandle frames) { options_.frames = frames; }
   void setTimeOffset(TimeOffset time_offset) { options_.time_offset = time_offset; }
   void setFrameRate(Rate rate) { options_.frames_per_second = rate; }
   void setMode(Mode mode) { options_.mode = mode; }
 
+  const Options& options() const { return options_; }
+
 private:
   Options options_;
 };
 
+bool operator==(const AnimatedSprite& lhs, const AnimatedSprite& rhs);
 
 }  // namespace sde::graphics

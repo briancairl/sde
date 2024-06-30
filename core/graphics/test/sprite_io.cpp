@@ -1,0 +1,123 @@
+// GTest
+#include <gtest/gtest.h>
+
+// SDE
+#include "sde/graphics/sprite_io.hpp"
+#include "sde/serialization_binary_file.hpp"
+
+using namespace sde;
+using namespace sde::serial;
+using namespace sde::graphics;
+
+
+TEST(TextureIO, SpriteOptions)
+{
+  const SpriteOptions target_value;
+
+  if (auto ofs_or_error = file_ostream::create("SpriteOptions.bin"); ofs_or_error.has_value())
+  {
+    binary_oarchive oar{*ofs_or_error};
+    ASSERT_NO_THROW((oar << named{"sprite_options", target_value}));
+  }
+  else
+  {
+    FAIL() << ofs_or_error.error();
+  }
+
+  if (auto ifs_or_error = file_istream::create("SpriteOptions.bin"); ifs_or_error.has_value())
+  {
+    binary_iarchive iar{*ifs_or_error};
+    SpriteOptions read_value;
+    ASSERT_NO_THROW((iar >> named{"sprite_options", read_value}));
+
+    ASSERT_EQ(read_value, target_value);
+  }
+  else
+  {
+    FAIL() << ifs_or_error.error();
+  }
+}
+
+TEST(TextureIO, AnimatedSpriteOptions)
+{
+  const AnimatedSpriteOptions target_value;
+
+  if (auto ofs_or_error = file_ostream::create("AnimatedSpriteOptions.bin"); ofs_or_error.has_value())
+  {
+    binary_oarchive oar{*ofs_or_error};
+    ASSERT_NO_THROW((oar << named{"animated_sprite_options", target_value}));
+  }
+  else
+  {
+    FAIL() << ofs_or_error.error();
+  }
+
+  if (auto ifs_or_error = file_istream::create("AnimatedSpriteOptions.bin"); ifs_or_error.has_value())
+  {
+    binary_iarchive iar{*ifs_or_error};
+    AnimatedSpriteOptions read_value;
+    ASSERT_NO_THROW((iar >> named{"animated_sprite_options", read_value}));
+
+    ASSERT_EQ(read_value, target_value);
+  }
+  else
+  {
+    FAIL() << ifs_or_error.error();
+  }
+}
+
+TEST(TextureIO, Sprite)
+{
+  const Sprite target_value;
+
+  if (auto ofs_or_error = file_ostream::create("Sprite.bin"); ofs_or_error.has_value())
+  {
+    binary_oarchive oar{*ofs_or_error};
+    ASSERT_NO_THROW((oar << named{"sprite", target_value}));
+  }
+  else
+  {
+    FAIL() << ofs_or_error.error();
+  }
+
+  if (auto ifs_or_error = file_istream::create("Sprite.bin"); ifs_or_error.has_value())
+  {
+    binary_iarchive iar{*ifs_or_error};
+    Sprite read_value;
+    ASSERT_NO_THROW((iar >> named{"sprite", read_value}));
+
+    ASSERT_EQ(read_value, target_value);
+  }
+  else
+  {
+    FAIL() << ifs_or_error.error();
+  }
+}
+
+TEST(TextureIO, AnimatedSprite)
+{
+  const AnimatedSprite target_value;
+
+  if (auto ofs_or_error = file_ostream::create("AnimatedSprite.bin"); ofs_or_error.has_value())
+  {
+    binary_oarchive oar{*ofs_or_error};
+    ASSERT_NO_THROW((oar << named{"animated_sprite", target_value}));
+  }
+  else
+  {
+    FAIL() << ofs_or_error.error();
+  }
+
+  if (auto ifs_or_error = file_istream::create("AnimatedSprite.bin"); ifs_or_error.has_value())
+  {
+    binary_iarchive iar{*ifs_or_error};
+    AnimatedSprite read_value;
+    ASSERT_NO_THROW((iar >> named{"animated_sprite", read_value}));
+
+    ASSERT_EQ(read_value, target_value);
+  }
+  else
+  {
+    FAIL() << ifs_or_error.error();
+  }
+}

@@ -11,14 +11,16 @@ cc_library(
   hdrs=[
     "include/sde/serial/file_istream.hpp",
     "include/sde/serial/file_ostream.hpp",
-    "include/sde/serial/file_stream.hpp"
+    "include/sde/serial/file_stream.hpp",
+    "include/sde/serial/file_stream_error.hpp"
   ],
   srcs=[
     "src/file_istream.cpp",
-    "src/file_ostream.cpp"
+    "src/file_ostream.cpp",
+    "src/file_stream_error.cpp",
   ],
   strip_include_prefix="include",
-  deps=[":stream"],
+  deps=[":stream", "//core/common:expected"],
   visibility=["//visibility:public"]
 )
 

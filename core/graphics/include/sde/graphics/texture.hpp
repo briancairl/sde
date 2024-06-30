@@ -50,6 +50,8 @@ struct TextureFlags
 
 std::ostream& operator<<(std::ostream& os, TextureFlags flags);
 
+bool operator==(const TextureFlags& lhs, const TextureFlags& rhs);
+
 enum class TextureWrapping : std::uint8_t
 {
   kClampToBorder,
@@ -83,6 +85,8 @@ struct TextureOptions
 
 std::ostream& operator<<(std::ostream& os, const TextureOptions& options);
 
+bool operator==(const TextureOptions& lhs, const TextureOptions& rhs);
+
 struct TextureShape
 {
   Vec2i value = {};
@@ -109,6 +113,8 @@ struct TextureInfo
 };
 
 std::ostream& operator<<(std::ostream& os, const TextureInfo& info);
+
+bool operator==(const TextureInfo& lhs, const TextureInfo& rhs);
 
 enum class TextureError
 {

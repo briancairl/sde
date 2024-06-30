@@ -18,10 +18,19 @@ cc_library(
 
 cc_library(
   name="geometry",
-  hdrs=["include/sde/geometry_types.hpp", "include/sde/geometry_utils.hpp"],
-  srcs=["src/geometry_types.cpp"],
+  hdrs=[
+    "include/sde/geometry_types.hpp",
+    "include/sde/geometry_utils.hpp",
+    "include/sde/geometry_io.hpp"
+  ],
+  srcs=[
+    "src/geometry_types.cpp",
+  ],
   strip_include_prefix="include",
-  deps=["@eigen//:eigen"],
+  deps=[
+    "//core/serialization",
+    "@eigen//:eigen",
+  ],
   visibility=["//visibility:public"]
 )
 
@@ -47,10 +56,14 @@ cc_library(
     "include/sde/resource_cache.hpp",
     "include/sde/resource_cache_from_disk.hpp",
     "include/sde/resource_handle.hpp",
+    "include/sde/resource_handle_io.hpp",
     "include/sde/resource_wrapper.hpp",
   ],
   strip_include_prefix="include",
-  deps=[":core"],
+  deps=[
+    "//core/serialization",
+    ":core"
+  ],
   visibility=["//visibility:public"]
 )
 
@@ -62,6 +75,7 @@ cc_library(
     "include/sde/format.hpp",
     "include/sde/type.hpp",
     "include/sde/time.hpp",
+    "include/sde/time_io.hpp",
     "include/sde/time_ostream.hpp",
   ],
   strip_include_prefix="include",

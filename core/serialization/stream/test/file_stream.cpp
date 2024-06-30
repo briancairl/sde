@@ -17,13 +17,17 @@
 
 TEST(FileInputStream, CannotOpenFile)
 {
-  ASSERT_THROW((sde::serial::file_istream{"not-a-file.bin", {.nobuf = true}}), std::runtime_error);
+  auto ifs_or_error = sde::serial::file_istream::create("not-a-file.bin", {.nobuf = true});
+  ASSERT_FALSE(ifs_or_error.has_value());
+  ASSERT_EQ(ifs_or_error.error(), sde::serial::FileStreamError::kFileDoesNotExist);
 }
 
 
 TEST(FileInputStream, MoveCTor)
 {
-  sde::serial::file_istream ifs{"core/serialization/stream/test/resources/file_stream.dat", {.nobuf = true}};
+  auto ifs =
+    sde::serial::file_istream::create("core/serialization/stream/test/resources/file_stream.dat", {.nobuf = true})
+      .value();
 
   ASSERT_EQ(ifs.available(), 22UL);
 
@@ -35,7 +39,9 @@ TEST(FileInputStream, MoveCTor)
 
 TEST(FileInputStream, ReadAll)
 {
-  sde::serial::file_istream ifs{"core/serialization/stream/test/resources/file_stream.dat", {.nobuf = true}};
+  auto ifs =
+    sde::serial::file_istream::create("core/serialization/stream/test/resources/file_stream.dat", {.nobuf = true})
+      .value();
 
   char buf[23];
   ifs.read(buf, sizeof(buf));
@@ -49,7 +55,9 @@ TEST(FileInputStream, ReadAll)
 
 TEST(FileInputStream, ReadTooMany)
 {
-  sde::serial::file_istream ifs{"core/serialization/stream/test/resources/file_stream.dat", {.nobuf = true}};
+  auto ifs =
+    sde::serial::file_istream::create("core/serialization/stream/test/resources/file_stream.dat", {.nobuf = true})
+      .value();
 
   char buf[23];
   ifs.read(buf, sizeof(buf) + 10);
@@ -64,31 +72,33 @@ TEST(FileInputStream, ReadTooMany)
 
 TEST(FileOutputStream, CreateFileOnAppend)
 {
-  ASSERT_NO_THROW((sde::serial::file_ostream{"ostream-append-not-a-file.bin", {.append = true}}));
+  auto ofs_or_error = sde::serial::file_ostream::create("ostream-append-not-a-file.bin", {.append = true});
+  ASSERT_TRUE(ofs_or_error.has_value()) << ofs_or_error.error();
 }
 
 
 TEST(FileOutputStream, CreateFileOnWrite)
 {
-  ASSERT_NO_THROW((sde::serial::file_ostream{"ostream-write-not-a-file.bin", {.append = false}}));
+  auto ofs_or_error = sde::serial::file_ostream::create("ostream-write-not-a-file.bin", {.append = false});
+  ASSERT_TRUE(ofs_or_error.has_value()) << ofs_or_error.error();
 }
 
 
 TEST(FileOutputStream, Write)
 {
   char buf[] = "this is a sample payload for write";
-  sde::serial::file_ostream ofs{"write.bin"};
+  auto ofs = sde::serial::file_ostream::create("write.bin").value();
   ASSERT_EQ(sizeof(buf), ofs.write(buf));
 }
 
 TEST(FileStream, WriteThenRead)
 {
   char write_buf[] = "this is a sample payload for readback";
-  sde::serial::file_ostream ofs{"readback.bin"};
+  auto ofs = sde::serial::file_ostream::create("readback.bin").value();
   ASSERT_EQ(sizeof(write_buf), ofs.write(write_buf));
 
   char read_buf[sizeof(write_buf) * 2];
-  sde::serial::file_istream ifs{"readback.bin"};
+  auto ifs = sde::serial::file_istream::create("readback.bin").value();
   ASSERT_EQ(ifs.read(read_buf), sizeof(write_buf));
 
   ASSERT_EQ(std::memcmp(write_buf, read_buf, sizeof(write_buf)), 0);

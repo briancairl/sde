@@ -12,6 +12,25 @@
 
 namespace sde::graphics
 {
+
+std::ostream& operator<<(std::ostream& os, const TileMapOptions& options)
+{
+  os << "{ ";
+  os << "tint_color: " << options.tint_color.transpose() << ", ";
+  os << "shape: " << options.shape.transpose() << ", ";
+  os << "tile_size: " << options.tile_size.transpose() << ", ";
+  os << "tile_set: " << options.tile_set << " }";
+  return os;
+}
+
+bool operator==(const TileMapOptions& lhs, const TileMapOptions& rhs)
+{
+  return (lhs.tint_color == rhs.tint_color) && (lhs.shape == rhs.shape) && (lhs.tile_size == rhs.tile_size) &&
+    (lhs.tile_set == rhs.tile_set);
+}
+
+TileMap::TileMap(const TileMapOptions& options) { this->setup(options); }
+
 TileMap::TileMap(TileMap&& other) : tile_indices_{nullptr} { this->swap(other); }
 
 TileMap& TileMap::operator=(TileMap&& other)
@@ -22,14 +41,13 @@ TileMap& TileMap::operator=(TileMap&& other)
 
 void TileMap::swap(TileMap& other)
 {
-  std::swap(shape_, other.shape_);
-  std::swap(origin_, other.origin_);
-  std::swap(tile_size_, other.tile_size_);
-  std::swap(tile_set_handle_, other.tile_set_handle_);
+  std::swap(options_, other.options_);
   std::swap(tile_indices_, other.tile_indices_);
 }
 
-TileMap::~TileMap()
+TileMap::~TileMap() { release(); }
+
+void TileMap::release()
 {
   if (tile_indices_ == nullptr)
   {
@@ -38,28 +56,27 @@ TileMap::~TileMap()
   delete[] tile_indices_;
 }
 
-TileMap TileMap::create(const TileSetHandle& tile_set, const Vec2i& shape, const Vec2f& origin, const Vec2f& tile_size)
+void TileMap::setup(const TileMapOptions& options)
 {
-  TileMap tm;
-  tm.shape_ = shape;
-  tm.origin_ = origin;
-  tm.tile_size_ = tile_size;
-  tm.tile_set_handle_ = tile_set;
-  tm.tile_indices_ = new std::size_t[static_cast<std::size_t>(tm.shape_.prod())];
-  return tm;
+  release();
+  options_ = options;
+  if (const std::size_t new_tile_count = static_cast<std::size_t>(options_.shape.prod()); new_tile_count > 0UL)
+  {
+    tile_indices_ = new TileIndex[new_tile_count];
+  }
 }
 
-void TileMap::draw(RenderBuffer& rb, RenderPass& rp, const Vec4f& tint) const
+void TileMap::draw(RenderPass& rp, const Vec2f& origin) const
 {
   const Bounds2f aabb_clipped{
     rp.getViewportInWorldBounds() &
-    Bounds2f{origin_, origin_ + Vec2f{shape_.cast<float>().array() * tile_size_.array()}}};
+    Bounds2f{origin, origin + Vec2f{options_.shape.cast<float>().array() * options_.tile_size.array()}}};
   if (aabb_clipped.volume() == 0)
   {
     return;
   }
 
-  const auto* tile_set = rp.assets().tile_sets(tile_set_handle_);
+  const auto* tile_set = rp.assets().tile_sets(options_.tile_set);
   if (tile_set == nullptr)
   {
     return;
@@ -71,33 +88,32 @@ void TileMap::draw(RenderBuffer& rb, RenderPass& rp, const Vec4f& tint) const
     return;
   }
 
-  const Vec2i min_indices = ((aabb_clipped.min() - origin_).array() / tile_size_.array()).floor().cast<int>();
-  const Vec2i max_indices = ((aabb_clipped.max() - origin_).array() / tile_size_.array()).ceil().cast<int>();
+  const Vec2i min_indices = ((aabb_clipped.min() - origin).array() / options_.tile_size.array()).floor().cast<int>();
+  const Vec2i max_indices = ((aabb_clipped.max() - origin).array() / options_.tile_size.array()).ceil().cast<int>();
 
   for (int y = min_indices.y(); y < max_indices.y(); ++y)
   {
     for (int x = min_indices.x(); x < max_indices.x(); ++x)
     {
-      const std::size_t tile_index = (*this)[Vec2i{x, y}];
+      const TileIndex tile_index = (*this)[Vec2i{x, y}];
 
-      const Vec2f rect_min{origin_ + Vec2f{x * tile_size_.x(), y * tile_size_.y()}};
-      const Vec2f rect_max{rect_min + tile_size_};
+      const Vec2f rect_min{origin + Vec2f{x * options_.tile_size.x(), y * options_.tile_size.y()}};
+      const Vec2f rect_max{rect_min + options_.tile_size};
 
-      rb.textured_quads.push_back(
+      rp->textured_quads.push_back(
         {.rect = Bounds2f{rect_min, rect_max},
          .rect_texture = tile_set->tile_bounds[tile_index],
-         .color = tint,
+         .color = options_.tint_color,
          .texture_unit = (*texture_unit_opt)});
     }
   }
 }
 
-std::ostream& operator<<(std::ostream& os, const TileMap& tile_map)
+std::ostream& operator<<(std::ostream& os, const TileMap& tile_map) { return os << tile_map.options(); }
+
+bool operator==(const TileMap& lhs, const TileMap& rhs)
 {
-  // os << "position: " << tile_map.position.transpose() << '\n';
-  // os << "tile-size: " << tile_map.tile_size.transpose() << '\n';
-  // os << "tiles:\n" << tile_map.tiles;
-  return os;
+  return (lhs.options() == rhs.options()) && (lhs.data() == rhs.data());
 }
 
 }  // namespace sde::graphics

@@ -16,6 +16,7 @@ namespace sde
 template <typename T, typename IdentifierT = std::size_t, IdentifierT kNullValue = 0> struct ResourceHandle
 {
 public:
+  using rh_type = ResourceHandle<T, IdentifierT, kNullValue>;
   using id_type = IdentifierT;
 
   explicit ResourceHandle(IdentifierT id) : id_{id} {}

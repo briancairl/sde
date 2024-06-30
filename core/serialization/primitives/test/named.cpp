@@ -25,14 +25,14 @@ TEST(Named, PrimitiveElementValue)
   static const float TARGET_VALUE = 123.f;
 
   {
-    file_ostream ofs{"Named.PrimitiveElementValue.bin"};
+    auto ofs = file_ostream::create("Named.PrimitiveElementValue.bin").value();
     binary_oarchive oar{ofs};
     const float v = TARGET_VALUE;
     ASSERT_NO_THROW((oar << named{"value", v}));
   }
 
   {
-    file_istream ifs{"Named.PrimitiveElementValue.bin"};
+    auto ifs = file_istream::create("Named.PrimitiveElementValue.bin").value();
     binary_iarchive iar{ifs};
     float v;
     ASSERT_NO_THROW((iar >> named{"value", v}));
@@ -51,14 +51,14 @@ TEST(Named, TrivialValue)
   static const Trivial TARGET_VALUE = {1, 123.f, 321.f};
 
   {
-    file_ostream ofs{"Named.TrivialValue.bin"};
+    auto ofs = file_ostream::create("Named.TrivialValue.bin").value();
     binary_oarchive oar{ofs};
     const Trivial v = TARGET_VALUE;
     ASSERT_NO_THROW((oar << named{"value", v}));
   }
 
   {
-    file_istream ifs{"Named.TrivialValue.bin"};
+    auto ifs = file_istream::create("Named.TrivialValue.bin").value();
     binary_iarchive iar{ifs};
     Trivial v;
     ASSERT_NO_THROW((iar >> named{"value", v}));

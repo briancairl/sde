@@ -382,6 +382,21 @@ std::ostream& operator<<(std::ostream& os, const TextureOptions& options)
             << ", flags: " << options.flags << " }";
 }
 
+bool operator==(const TextureFlags& lhs, const TextureFlags& rhs)
+{
+  return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(TextureFlags)) == 0;
+}
+
+bool operator==(const TextureOptions& lhs, const TextureOptions& rhs)
+{
+  return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(TextureOptions)) == 0;
+}
+
+bool operator==(const TextureInfo& lhs, const TextureInfo& rhs)
+{
+  return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(TextureInfo)) == 0;
+}
+
 template <typename DataT>
 expected<TextureInfo, TextureError> TextureCache::generate(
   View<const DataT> data,

@@ -90,6 +90,11 @@ template <std::size_t N, typename PointerT> auto make_packet_fixed_size(PointerT
   }
 }
 
+template <typename V> auto make_packet_from_pod(V& value)
+{
+  return make_packet_fixed_size<sizeof(V), V*>(std::addressof(value));
+}
+
 template <typename T> struct is_packet : std::false_type
 {};
 
