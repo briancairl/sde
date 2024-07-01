@@ -168,6 +168,10 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
 
 }  // namespace
 
+TypeSetCache::TypeSetCache(TextureCache& textures, FontCache& fonts) :
+    textures_{std::addressof(textures)}, fonts_{std::addressof(fonts)}
+{}
+
 const Bounds2i TypeSetInfo::getTextBounds(std::string_view text) const
 {
   Bounds2i text_bounds;
@@ -187,17 +191,22 @@ const Bounds2i TypeSetInfo::getTextBounds(std::string_view text) const
   return text_bounds;
 }
 
-expected<TypeSetInfo, TypeSetError>
-TypeSetCache::generate(TextureCache& texture_cache, const element_t<FontCache>& font, const TypeSetOptions& options)
+expected<TypeSetInfo, TypeSetError> TypeSetCache::generate(FontHandle font, const TypeSetOptions& options)
 {
+  const auto* font_info = fonts_->get_if(font);
+  if (font_info == nullptr)
+  {
+    return make_unexpected(TypeSetError::kInvalidFont);
+  }
+
   GlyphLookup glyph_lut;
-  if (auto ok_or_error = loadGlyphsFromFont(glyph_lut, font, static_cast<int>(options.height_px));
+  if (auto ok_or_error = loadGlyphsFromFont(glyph_lut, *font_info, static_cast<int>(options.height_px));
       !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }
 
-  auto glyph_atlas_texture_or_error = sendGlyphsToTexture(texture_cache, glyph_lut, font, options);
+  auto glyph_atlas_texture_or_error = sendGlyphsToTexture(*textures_, glyph_lut, *font_info, options);
   if (!glyph_atlas_texture_or_error.has_value())
   {
     SDE_LOG_DEBUG("GlyphTextureInvalid");

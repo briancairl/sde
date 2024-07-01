@@ -54,6 +54,7 @@ struct TypeSetInfo
 enum class TypeSetError
 {
   kElementAlreadyExists,
+  kInvalidFont,
   kGlyphSizeInvalid,
   kGlyphDataMissing,
   kGlyphRenderingFailure,
@@ -83,9 +84,14 @@ class TypeSetCache : public ResourceCache<TypeSetCache>
 {
   friend cache_base;
 
+public:
+  TypeSetCache(TextureCache& texture, FontCache& fonts);
+
 private:
-  expected<TypeSetInfo, TypeSetError>
-  generate(TextureCache& texture_cache, const element_t<FontCache>& font, const TypeSetOptions& options = {});
+  TextureCache* textures_;
+  FontCache* fonts_;
+
+  expected<TypeSetInfo, TypeSetError> generate(FontHandle font, const TypeSetOptions& options = {});
 };
 
 }  // namespace sde::graphics

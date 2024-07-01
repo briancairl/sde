@@ -21,6 +21,8 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
     return os << "AssetNotFound";
   case TileSetError::kElementAlreadyExists:
     return os << "ElementAlreadyExists";
+  case TileSetError::kInvalidAtlasTexture:
+    return os << "InvalidAtlasTexture";
   case TileSetError::kInvalidTileSize:
     return os << "InvalidTileSize";
   case TileSetError::kInvalidSlicingBounds:
@@ -42,18 +44,28 @@ std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info)
   return os;
 }
 
-expected<TileSetInfo, TileSetError> TileSetCache::generate(
-  const TextureCache& texture_cache,
-  const TextureHandle& texture,
-  const TileSetSliceUniform& slice)
+TileSetCache::TileSetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
+
+expected<TileSetInfo, TileSetError>
+TileSetCache::generate(const TextureHandle& texture, std::vector<Bounds2f>&& tile_bounds)
 {
-  return generate(texture_cache.find(texture), slice);
+  if (!textures_->exists(texture))
+  {
+    return make_unexpected(TileSetError::kInvalidAtlasTexture);
+  }
+  return TileSetInfo{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
 }
 
 expected<TileSetInfo, TileSetError>
-TileSetCache::generate(const element_t<TextureCache>& texture, const TileSetSliceUniform& slice)
+TileSetCache::generate(const TextureHandle& texture, const TileSetSliceUniform& slice)
 {
-  const Bounds2i texture_bounds{Vec2i::Zero(), texture.value->shape.value};
+  const auto* texture_info = textures_->get_if(texture);
+  if (texture_info == nullptr)
+  {
+    return make_unexpected(TileSetError::kInvalidAtlasTexture);
+  }
+
+  const Bounds2i texture_bounds{Vec2i::Zero(), texture_info->shape.value};
   const Bounds2i sliced_region = slice.bounds_px.isEmpty() ? texture_bounds : (slice.bounds_px & texture_bounds);
 
   const std::size_t tile_count_max = (toExtents(sliced_region).array() / slice.tile_size_px.array()).prod();
@@ -69,7 +81,7 @@ TileSetCache::generate(const element_t<TextureCache>& texture, const TileSetSlic
     return make_unexpected(TileSetError::kInvalidTileSize);
   }
 
-  const Vec2f axis_rates{1.0F / texture.value->shape.value.array().cast<float>()};
+  const Vec2f axis_rates{1.0F / texture_info->shape.value.array().cast<float>()};
 
   const auto toTileBounds = [&slice, &axis_rates](int x_lb, int y_lb, int x_ub, int y_ub) -> Bounds2f {
     if (

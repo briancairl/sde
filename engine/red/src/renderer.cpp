@@ -40,8 +40,8 @@ bool Renderer::onInitialize(entt::registry& registry, Systems& systems, Assets& 
     return false;
   }
 
-  auto player_typeset_or_error = assets.graphics.type_sets.create(
-    assets.graphics.textures, *player_font_or_error, graphics::TypeSetOptions{.height_px = 20});
+  auto player_typeset_or_error =
+    assets.graphics.type_sets.create(player_font_or_error->handle, graphics::TypeSetOptions{.height_px = 20});
   if (!player_typeset_or_error.has_value())
   {
     SDE_LOG_ERROR("Failed to create player typeset");

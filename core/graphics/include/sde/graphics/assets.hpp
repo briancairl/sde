@@ -24,17 +24,19 @@ struct Assets
   /// Shader asset cache
   ShaderCacheWithAssets shaders;
 
-  /// Glyph-set cache
-  TypeSetCache type_sets;
-
   /// Texture asset cache
   TextureCacheWithAssets textures;
 
   /// Tile set asset cache
   TileSetCache tile_sets;
 
+  /// Glyph-set cache
+  TypeSetCache type_sets;
+
   /// Render target asset cache
   RenderTargetCache render_targets;
+
+  Assets() : tile_sets{textures}, type_sets{textures, fonts} {}
 };
 
 }  // namespace sde::graphics

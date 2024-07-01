@@ -50,7 +50,6 @@ void createMovementTileSets(
 {
   movement_tilsets[kFront] = [&] {
     auto frames_or_error = assets.graphics.tile_sets.create(
-      assets.graphics.textures,
       character_textures.front_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -66,7 +65,6 @@ void createMovementTileSets(
 
   movement_tilsets[kBack] = [&] {
     auto frames_or_error = assets.graphics.tile_sets.create(
-      assets.graphics.textures,
       character_textures.back_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -82,7 +80,6 @@ void createMovementTileSets(
 
   movement_tilsets[kRight] = [&] {
     auto frames_or_error = assets.graphics.tile_sets.create(
-      assets.graphics.textures,
       character_textures.side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -98,7 +95,6 @@ void createMovementTileSets(
 
   movement_tilsets[kLeft] = [&] {
     auto frames_or_error = assets.graphics.tile_sets.create(
-      assets.graphics.textures,
       character_textures.side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -114,7 +110,6 @@ void createMovementTileSets(
 
   movement_tilsets[kFrontRight] = [&] {
     auto frames_or_error = assets.graphics.tile_sets.create(
-      assets.graphics.textures,
       character_textures.front_side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -130,7 +125,6 @@ void createMovementTileSets(
 
   movement_tilsets[kFrontLeft] = [&] {
     auto frames_or_error = assets.graphics.tile_sets.create(
-      assets.graphics.textures,
       character_textures.front_side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -146,7 +140,6 @@ void createMovementTileSets(
 
   movement_tilsets[kBackRight] = [&] {
     auto frames_or_error = assets.graphics.tile_sets.create(
-      assets.graphics.textures,
       character_textures.back_side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -162,7 +155,6 @@ void createMovementTileSets(
 
   movement_tilsets[kBackLeft] = [&] {
     auto frames_or_error = assets.graphics.tile_sets.create(
-      assets.graphics.textures,
       character_textures.back_side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},

@@ -37,7 +37,6 @@ bool Weather::onInitialize(
   }
 
   auto rain_frames_or_error = assets.graphics.tile_sets.create(
-    assets.graphics.textures,
     atlas_or_error->handle,
     TileSetSliceUniform{
       .tile_size_px = {32, 128},

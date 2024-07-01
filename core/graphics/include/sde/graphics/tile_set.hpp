@@ -28,6 +28,7 @@ enum TileSetError
 {
   kAssetNotFound,
   kElementAlreadyExists,
+  kInvalidAtlasTexture,
   kInvalidTileSize,
   kInvalidSlicingBounds,
 };
@@ -93,12 +94,15 @@ class TileSetCache : public ResourceCache<TileSetCache>
 {
   friend cache_base;
 
-private:
-  expected<TileSetInfo, TileSetError>
-  generate(const TextureCache& texture_cache, const TextureHandle& texture, const TileSetSliceUniform& slice);
+public:
+  explicit TileSetCache(TextureCache& textures);
 
-  expected<TileSetInfo, TileSetError>
-  generate(const element_t<TextureCache>& texture, const TileSetSliceUniform& slice);
+private:
+  TextureCache* textures_;
+
+  expected<TileSetInfo, TileSetError> generate(const TextureHandle& texture, const TileSetSliceUniform& slice);
+
+  expected<TileSetInfo, TileSetError> generate(const TextureHandle& texture, std::vector<Bounds2f>&& tile_bounds);
 };
 
 }  // namespace sde::graphics
