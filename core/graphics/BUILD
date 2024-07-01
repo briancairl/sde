@@ -145,6 +145,7 @@ cc_library(
     "src/texture_io.cpp",
     "src/texture_units.cpp",
     "src/tile_set.cpp",
+    "src/tile_set_io.cpp",
     "src/tile_map.cpp",
   ] + graphics_impl__renderer__opengl_debug_selector,
   deps=[

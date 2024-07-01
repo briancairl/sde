@@ -49,7 +49,7 @@ public:
   }
 
   template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_type, error_type> insert(const handle_type& handle, CreateArgTs&&... args)
+  expected<element_type, error_type> insert(const handle_type& handle, CreateArgTs&&... args)
   {
     // Create a new element
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
@@ -93,6 +93,7 @@ public:
 
   [[nodiscard]] const auto end() const { return std::end(handle_to_value_cache_); }
 
+  std::size_t size() const { return handle_to_value_cache_.size(); }
 
   ResourceCache() = default;
   ResourceCache(ResourceCache&&) = default;

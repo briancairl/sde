@@ -21,4 +21,14 @@ template <typename Archive>
 struct load<Archive, graphics::TileSetHandle> : load<Archive, typename graphics::TileSetHandle::rh_type>
 {};
 
+template <typename Archive> struct save<Archive, graphics::TileSetCache>
+{
+  void operator()(Archive& ar, const graphics::TileSetCache& cache) const;
+};
+
+template <typename Archive> struct load<Archive, graphics::TileSetCache>
+{
+  void operator()(Archive& ar, graphics::TileSetCache& cache) const;
+};
+
 }  // namespace sde::serial
