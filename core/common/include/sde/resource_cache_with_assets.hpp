@@ -30,7 +30,7 @@ template <typename ResourceCacheT> struct LoadAssetPassthrough
   typename ResourceCacheT::result_type
   operator()(ResourceCacheT& cache, const typename ResourceCacheT::handle_type& handle, const asset::path& path) const
   {
-    return cache.create(handle, path);
+    return cache.insert(handle, path);
   }
 };
 

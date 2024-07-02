@@ -15,11 +15,11 @@ namespace sde::serial
 {
 
 template <typename Archive>
-struct save<Archive, graphics::TextureHandle> : save<Archive, typename graphics::TextureHandle::rh_type>
+struct save<Archive, graphics::TextureHandle> : save<Archive, typename graphics::TextureHandle::base>
 {};
 
 template <typename Archive>
-struct load<Archive, graphics::TextureHandle> : load<Archive, typename graphics::TextureHandle::rh_type>
+struct load<Archive, graphics::TextureHandle> : load<Archive, typename graphics::TextureHandle::base>
 {};
 
 template <typename Archive> struct serialize<Archive, graphics::TextureFlags>

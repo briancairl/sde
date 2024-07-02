@@ -14,11 +14,11 @@ namespace sde::serial
 {
 
 template <typename Archive>
-struct save<Archive, graphics::ShaderHandle> : save<Archive, typename graphics::ShaderHandle::rh_type>
+struct save<Archive, graphics::ShaderHandle> : save<Archive, typename graphics::ShaderHandle::base>
 {};
 
 template <typename Archive>
-struct load<Archive, graphics::ShaderHandle> : load<Archive, typename graphics::ShaderHandle::rh_type>
+struct load<Archive, graphics::ShaderHandle> : load<Archive, typename graphics::ShaderHandle::base>
 {};
 
 

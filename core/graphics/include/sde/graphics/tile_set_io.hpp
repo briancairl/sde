@@ -14,11 +14,11 @@ namespace sde::serial
 {
 
 template <typename Archive>
-struct save<Archive, graphics::TileSetHandle> : save<Archive, typename graphics::TileSetHandle::rh_type>
+struct save<Archive, graphics::TileSetHandle> : save<Archive, typename graphics::TileSetHandle::base>
 {};
 
 template <typename Archive>
-struct load<Archive, graphics::TileSetHandle> : load<Archive, typename graphics::TileSetHandle::rh_type>
+struct load<Archive, graphics::TileSetHandle> : load<Archive, typename graphics::TileSetHandle::base>
 {};
 
 template <typename Archive> struct save<Archive, graphics::TileSetCache>
