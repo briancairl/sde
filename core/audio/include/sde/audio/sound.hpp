@@ -77,6 +77,10 @@ struct SoundCacheLoader
 {
   SoundCache::result_type
   operator()(SoundCache& cache, const asset::path& path, const SoundOptions& options = {}) const;
+
+  SoundCache::result_type
+  operator()(SoundCache& cache, const SoundHandle& handle, const asset::path& path, const SoundOptions& options = {})
+    const;
 };
 
 class SoundCacheWithAssets : public ResourceCacheWithAssets<SoundCache, SoundCacheLoader>

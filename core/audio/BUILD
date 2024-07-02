@@ -11,6 +11,7 @@ cc_library(
     "include/sde/audio/sound_data.hpp",
     "include/sde/audio/sound_fwd.hpp",
     "include/sde/audio/sound.hpp",
+    "include/sde/audio/sound_io.hpp",
     "include/sde/audio/sound_handle.hpp",
   ],
   strip_include_prefix="include",
@@ -43,8 +44,9 @@ cc_library(
   srcs=[
     "src/mixer.cpp",
     "src/sound.cpp",
-    "src/sound_data.cpp",
     "src/sound_channel_format.cpp",
+    "src/sound_data.cpp",
+    "src/sound_io.cpp",
   ],
   deps=[
     "@openal//:openal",
@@ -53,6 +55,8 @@ cc_library(
     "//core/common:expected",
     "//core/common:geometry",
     "//core/common:resource",
+    "//core/serialization",
+    "//core/serialization/std",
     ":audio_hdrs",
     ":audio_impl__openal_internal"
   ],

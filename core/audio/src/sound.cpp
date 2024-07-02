@@ -88,4 +88,19 @@ SoundCacheLoader::operator()(SoundCache& cache, const asset::path& path, const S
   return make_unexpected(SoundError::kAssetLoadingFailed);
 }
 
+SoundCache::result_type SoundCacheLoader::operator()(
+  SoundCache& cache,
+  const SoundHandle& handle,
+  const asset::path& path,
+  const SoundOptions& options) const
+{
+  if (auto sound_data_or_error = SoundData::load(path); sound_data_or_error.has_value())
+  {
+    SDE_LOG_INFO_FMT("sound loaded from disk: %s", path.string().c_str());
+    return cache.insert(handle, *sound_data_or_error, options);
+  }
+  SDE_LOG_DEBUG("AssetLoadingFailed");
+  return make_unexpected(SoundError::kAssetLoadingFailed);
+}
+
 }  // namespace sde::audio
