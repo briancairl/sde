@@ -19,9 +19,9 @@ std::ostream& operator<<(std::ostream& os, SoundChannelCount count)
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, SoundChannelBitDepth bit_depth)
+std::ostream& operator<<(std::ostream& os, SoundChannelBitDepth element_type)
 {
-  switch (bit_depth)
+  switch (element_type)
   {
   // clang-format off
   case SoundChannelBitDepth::kU8: return os << "U8";
@@ -33,7 +33,8 @@ std::ostream& operator<<(std::ostream& os, SoundChannelBitDepth bit_depth)
 
 std::ostream& operator<<(std::ostream& os, const SoundChannelFormat& format)
 {
-  return os << "{ count: " << format.count << ", bit_depth: " << format.count << " }";
+  return os << "{ count: " << format.count << ", element_type: " << format.count
+            << ", bits_per_second: " << format.bits_per_second << " }";
 }
 
 }  // namespace sde::audio

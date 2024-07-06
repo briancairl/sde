@@ -6,7 +6,9 @@
 #pragma once
 
 // SDE
+#include "sde/expected.hpp"
 #include "sde/graphics/font.hpp"
+#include "sde/graphics/image.hpp"
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/texture.hpp"
@@ -16,16 +18,30 @@
 namespace sde::graphics
 {
 
+enum class AssetError
+{
+  kFailedImageLoading,
+  kFailedFontLoading,
+  kFailedShaderLoading,
+  kFailedTextureLoading,
+  kFailedTileSetLoading,
+  kFailedTypeSetLoading,
+  kFailedRenderTargetLoading,
+};
+
 struct Assets
 {
+  /// Image cache
+  ImageCache images;
+
   /// Font cache
-  FontCacheWithAssets fonts;
+  FontCache fonts;
 
   /// Shader asset cache
-  ShaderCacheWithAssets shaders;
+  ShaderCache shaders;
 
   /// Texture asset cache
-  TextureCacheWithAssets textures;
+  TextureCache textures;
 
   /// Tile set asset cache
   TileSetCache tile_sets;
@@ -36,7 +52,9 @@ struct Assets
   /// Render target asset cache
   RenderTargetCache render_targets;
 
-  Assets() : tile_sets{textures}, type_sets{textures, fonts} {}
+  Assets();
+
+  expected<void, AssetError> refresh();
 };
 
 }  // namespace sde::graphics

@@ -97,46 +97,50 @@ expected<Window, WindowError> Window::create(const WindowOptions& options)
   Window window{reinterpret_cast<NativeWindowHandle>(glfw_window)};
 
   // Handle window icon setting
-  if (options.icon == nullptr)
+  if (!options.icon.isValid())
   {
     SDE_LOG_DEBUG("No icon set to window");
   }
-  else if (options.icon->channels() != ImageChannels::kRGBA)
+  else if (options.icon.channels != ImageChannels::kRGBA)
   {
+    SDE_LOG_DEBUG("WindowIconInvalidPixelFormat");
     return make_unexpected(WindowError::kWindowIconInvalidPixelFormat);
   }
-  else if (options.icon->shape().pixels() == 0)
+  else if (options.icon.pixels() == 0)
   {
+    SDE_LOG_DEBUG("WindowIconInvalidSize");
     return make_unexpected(WindowError::kWindowIconInvalidSize);
   }
   else
   {
     const GLFWimage icon_image{
-      .width = options.icon->shape().width(),
-      .height = options.icon->shape().height(),
-      .pixels = const_cast<std::uint8_t*>(options.icon->data().data())};
+      .width = options.icon.width,
+      .height = options.icon.height,
+      .pixels = reinterpret_cast<std::uint8_t*>(options.icon.data)};
     glfwSetWindowIcon(glfw_window, 1, &icon_image);
   }
 
   // Handle window cursor setting
-  if (options.cursor == nullptr)
+  if (!options.cursor.isValid())
   {
     SDE_LOG_DEBUG("No cursor set to window");
   }
-  else if (options.cursor->channels() != ImageChannels::kRGBA)
+  else if (options.cursor.channels != ImageChannels::kRGBA)
   {
+    SDE_LOG_DEBUG("WindowCursorInvalidPixelFormat");
     return make_unexpected(WindowError::kWindowCursorInvalidPixelFormat);
   }
-  else if (options.cursor->shape().pixels() == 0)
+  else if (options.cursor.pixels() == 0)
   {
+    SDE_LOG_DEBUG("WindowCursorInvalidSize");
     return make_unexpected(WindowError::kWindowCursorInvalidSize);
   }
   else
   {
     const GLFWimage cursor_image{
-      .width = options.cursor->shape().width(),
-      .height = options.cursor->shape().height(),
-      .pixels = const_cast<std::uint8_t*>(options.cursor->data().data())};
+      .width = options.cursor.width,
+      .height = options.cursor.height,
+      .pixels = reinterpret_cast<std::uint8_t*>(options.cursor.data)};
     glfwSetCursor(glfw_window, glfwCreateCursor(&cursor_image, 0, 0));
   }
 

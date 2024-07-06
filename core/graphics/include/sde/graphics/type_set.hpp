@@ -18,6 +18,7 @@
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/type_set_handle.hpp"
 #include "sde/resource_cache.hpp"
+#include "sde/view.hpp"
 
 namespace sde::graphics
 {
@@ -88,10 +89,18 @@ public:
   TypeSetCache(TextureCache& texture, FontCache& fonts);
 
 private:
+  static constexpr auto kGlyphCount{TypeSetInfo::kGlyphCount};
+
   TextureCache* textures_;
   FontCache* fonts_;
 
   expected<TypeSetInfo, TypeSetError> generate(FontHandle font, const TypeSetOptions& options = {});
+
+  expected<TypeSetInfo, TypeSetError> generate(
+    FontHandle font,
+    const TypeSetOptions& options,
+    TextureHandle glyph_atlas,
+    View<const Glyph, kGlyphCount> glyphs);
 };
 
 }  // namespace sde::graphics

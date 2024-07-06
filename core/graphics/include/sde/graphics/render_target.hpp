@@ -37,6 +37,7 @@ struct RenderTargetInfo
 enum class RenderTargetError
 {
   kElementAlreadyExists,
+  kInvalidHandle,
   kInvalidColorAttachment,
 };
 
@@ -66,11 +67,16 @@ class RenderTargetCache : public ResourceCache<RenderTargetCache>
   friend cache_base;
 
 public:
-  RenderTargetCache();
+  explicit RenderTargetCache(TextureCache& textures);
 
 private:
+  TextureCache* textures_;
+
+  expected<void, RenderTargetError> reload(RenderTargetInfo& render_target);
+  expected<void, RenderTargetError> unload(RenderTargetInfo& render_target);
+
   expected<RenderTargetInfo, RenderTargetError>
-  generate(TextureHandle color_attachment, const TextureCache& texture_cache);
+  generate(TextureHandle color_attachment, ResourceLoading loading = ResourceLoading::kImmediate);
 };
 
 }  // namespace sde::graphics

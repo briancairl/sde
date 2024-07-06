@@ -36,9 +36,9 @@ UniqueResource<FT_Library, FreeTypeRelease> FreeType{[] {
 
 void FontNativeDeleter::operator()(void* font) const { FT_Done_Face(reinterpret_cast<FT_Face>(font)); }
 
-expected<FontInfo, FontError> FontCache::generate(const asset::path& font_path)
+expected<void, FontError> FontCache::reload(FontInfo& font)
 {
-  if (!asset::exists(font_path))
+  if (!asset::exists(font.path))
   {
     SDE_LOG_DEBUG("AssetNotFound");
     return make_unexpected(FontError::kAssetNotFound);
@@ -49,13 +49,34 @@ expected<FontInfo, FontError> FontCache::generate(const asset::path& font_path)
   FT_Face face = nullptr;
 
   static constexpr FT_Long kFontIndex = 0;
-  if (FT_New_Face(FreeType, font_path.string().c_str(), kFontIndex, &face) != kFreeTypeSuccess)
+  if (FT_New_Face(FreeType, font.path.string().c_str(), kFontIndex, &face) != kFreeTypeSuccess)
   {
     SDE_LOG_DEBUG("AssetInvalid");
     return make_unexpected(FontError::kAssetInvalid);
   }
 
-  return FontInfo{.native_id = FontNativeID{reinterpret_cast<void*>(face)}};
+  font.native_id = FontNativeID{reinterpret_cast<void*>(face)};
+  return {};
+}
+
+expected<void, FontError> FontCache::unload(FontInfo& font)
+{
+  font.native_id = FontNativeID{nullptr};
+  return {};
+}
+
+expected<FontInfo, FontError> FontCache::generate(const asset::path& font_path, ResourceLoading loading)
+{
+  FontInfo font_info{.path = font_path, .native_id = FontNativeID{nullptr}};
+  if (loading == ResourceLoading::kDeferred)
+  {
+    return font_info;
+  }
+  if (auto ok_or_error = reload(font_info); !ok_or_error.has_value())
+  {
+    return make_unexpected(ok_or_error.error());
+  }
+  return font_info;
 }
 
 }  // namespace sde::graphics

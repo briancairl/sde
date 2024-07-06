@@ -4,12 +4,28 @@
 // SDE
 #include "sde/geometry_io.hpp"
 #include "sde/graphics/font_io.hpp"
+#include "sde/graphics/type_set.hpp"
 #include "sde/graphics/type_set_io.hpp"
-#include "sde/logging.hpp"
 #include "sde/serialization_binary_file.hpp"
 
 namespace sde::serial
 {
+
+template <>
+void save<binary_ofarchive, graphics::TypeSetOptions>::operator()(
+  binary_ofarchive& ar,
+  const graphics::TypeSetOptions& options) const
+{
+  ar << named{"height_px", options.height_px};
+}
+
+template <>
+void load<binary_ifarchive, graphics::TypeSetOptions>::operator()(
+  binary_ifarchive& ar,
+  graphics::TypeSetOptions& options) const
+{
+  ar >> named{"height_px", options.height_px};
+}
 
 template <>
 void save<binary_ofarchive, graphics::TypeSetCache>::operator()(

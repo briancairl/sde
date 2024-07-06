@@ -9,6 +9,9 @@ cc_library(
     "include/sde/audio/mixer_fwd.hpp",
     "include/sde/audio/sound_channel_format.hpp",
     "include/sde/audio/sound_data.hpp",
+    "include/sde/audio/sound_data_fwd.hpp",
+    "include/sde/audio/sound_data_handle.hpp",
+    "include/sde/audio/sound_data_io.hpp",
     "include/sde/audio/sound_fwd.hpp",
     "include/sde/audio/sound.hpp",
     "include/sde/audio/sound_io.hpp",
@@ -46,6 +49,7 @@ cc_library(
     "src/sound.cpp",
     "src/sound_channel_format.cpp",
     "src/sound_data.cpp",
+    "src/sound_data_io.cpp",
     "src/sound_io.cpp",
   ],
   deps=[

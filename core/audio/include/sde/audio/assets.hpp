@@ -7,14 +7,19 @@
 
 // SDE
 #include "sde/audio/sound.hpp"
+#include "sde/audio/sound_data.hpp"
 
 namespace sde::audio
 {
 
 struct Assets
 {
+  /// Sound data cache
+  SoundDataCache sound_data;
   /// Sound cache
-  SoundCacheWithAssets sounds;
+  SoundCache sounds;
+
+  Assets() : sound_data{}, sounds{sound_data} {}
 };
 
 }  // namespace sde::audio

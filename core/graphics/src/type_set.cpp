@@ -1,4 +1,5 @@
 // C++ Standard Library
+#include <algorithm>
 #include <array>
 #include <numeric>
 #include <ostream>
@@ -101,7 +102,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
 
   // clang-format off
   auto atlas_texture_or_error = texture_cache.create(
-    Type<std::uint8_t>,
+    TypeCode::kUInt8,
     TextureShape{{texture_dimensions}},
     TextureLayout::kR,
     TextureOptions{
@@ -218,6 +219,17 @@ expected<TypeSetInfo, TypeSetError> TypeSetCache::generate(FontHandle font, cons
     .font = font,
     .glyph_atlas = std::move(glyph_atlas_texture_or_error).value(),
     .glyphs = std::move(glyph_lut)};
+}
+
+expected<TypeSetInfo, TypeSetError> TypeSetCache::generate(
+  FontHandle font,
+  const TypeSetOptions& options,
+  TextureHandle glyph_atlas,
+  View<const Glyph, kGlyphCount> glyphs)
+{
+  TypeSetInfo info{.options = options, .font = font, .glyph_atlas = glyph_atlas, .glyphs = {}};
+  std::copy(std::begin(glyphs), std::end(glyphs), std::begin(info.glyphs));
+  return info;
 }
 
 }  // namespace sde::graphics

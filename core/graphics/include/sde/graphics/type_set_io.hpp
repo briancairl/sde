@@ -6,8 +6,8 @@
 #pragma once
 
 // SDE
-#include "sde/geometry_io.hpp"
-#include "sde/graphics/type_set.hpp"
+#include "sde/graphics/type_set_fwd.hpp"
+#include "sde/graphics/type_set_handle.hpp"
 #include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
 
@@ -22,9 +22,14 @@ template <typename Archive>
 struct load<Archive, graphics::TypeSetHandle> : load<Archive, typename graphics::TypeSetHandle::base>
 {};
 
-template <typename Archive> struct serialize<Archive, graphics::TypeSetOptions>
+template <typename Archive> struct save<Archive, graphics::TypeSetOptions>
 {
-  void operator()(Archive& ar, graphics::TypeSetOptions& options) const { ar& named{"height_px", options.height_px}; }
+  void operator()(Archive& ar, const graphics::TypeSetOptions& options) const;
+};
+
+template <typename Archive> struct load<Archive, graphics::TypeSetOptions>
+{
+  void operator()(Archive& ar, graphics::TypeSetOptions& options) const;
 };
 
 template <typename Archive> struct save<Archive, graphics::TypeSetCache>

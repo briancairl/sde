@@ -9,7 +9,7 @@
 #include "sde/asset.hpp"
 #include "sde/expected.hpp"
 #include "sde/graphics/font_handle.hpp"
-#include "sde/resource_cache_with_assets.hpp"
+#include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 
 namespace sde::graphics
@@ -20,6 +20,7 @@ enum class FontError
   kElementAlreadyExists,
   kAssetNotFound,
   kAssetInvalid,
+  kFontNotFound,
 };
 
 struct FontNativeDeleter
@@ -31,6 +32,7 @@ using FontNativeID = UniqueResource<void*, FontNativeDeleter>;
 
 struct FontInfo
 {
+  asset::path path;
   FontNativeID native_id;
 };
 
@@ -58,10 +60,10 @@ class FontCache : public ResourceCache<FontCache>
   friend cache_base;
 
 private:
-  expected<FontInfo, FontError> generate(const asset::path& font_path);
+  static expected<void, FontError> reload(FontInfo& font);
+  static expected<void, FontError> unload(FontInfo& font);
+  expected<FontInfo, FontError>
+  generate(const asset::path& font_path, ResourceLoading loading = ResourceLoading::kImmediate);
 };
-
-class FontCacheWithAssets : public ResourceCacheWithAssets<FontCache>
-{};
 
 }  // namespace sde::graphics

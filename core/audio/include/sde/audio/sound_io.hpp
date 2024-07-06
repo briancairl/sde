@@ -6,7 +6,8 @@
 #pragma once
 
 // SDE
-#include "sde/audio/sound.hpp"
+#include "sde/audio/sound_fwd.hpp"
+#include "sde/audio/sound_handle.hpp"
 #include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
 
@@ -19,19 +20,14 @@ template <typename Archive> struct save<Archive, audio::SoundHandle> : save<Arch
 template <typename Archive> struct load<Archive, audio::SoundHandle> : load<Archive, typename audio::SoundHandle::base>
 {};
 
-template <typename Archive> struct serialize<Archive, audio::SoundOptions>
+template <typename Archive> struct save<Archive, audio::SoundCache>
 {
-  void operator()(Archive& ar, audio::SoundOptions& options) const { (void)options; }
+  void operator()(Archive& ar, const audio::SoundCache& cache) const;
 };
 
-template <typename Archive> struct save<Archive, audio::SoundCacheWithAssets>
+template <typename Archive> struct load<Archive, audio::SoundCache>
 {
-  void operator()(Archive& ar, const audio::SoundCacheWithAssets& cache) const;
-};
-
-template <typename Archive> struct load<Archive, audio::SoundCacheWithAssets>
-{
-  void operator()(Archive& ar, audio::SoundCacheWithAssets& cache) const;
+  void operator()(Archive& ar, audio::SoundCache& cache) const;
 };
 
 }  // namespace sde::serial

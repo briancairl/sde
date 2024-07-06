@@ -181,35 +181,35 @@ bool PlayerCharacter::onInitialize(
     .front_atlas =
       [&] {
         auto atlas_or_error =
-          assets.graphics.textures.load("/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png");
+          assets.graphics.textures.create("/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png");
         SDE_ASSERT_TRUE(atlas_or_error.has_value());
         return atlas_or_error->handle;
       }(),
     .back_atlas =
       [&] {
         auto atlas_or_error =
-          assets.graphics.textures.load("/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png");
+          assets.graphics.textures.create("/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png");
         SDE_ASSERT_TRUE(atlas_or_error.has_value());
         return atlas_or_error->handle;
       }(),
     .side_atlas =
       [&] {
         auto atlas_or_error =
-          assets.graphics.textures.load("/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png");
+          assets.graphics.textures.create("/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png");
         SDE_ASSERT_TRUE(atlas_or_error.has_value());
         return atlas_or_error->handle;
       }(),
     .front_side_atlas =
       [&] {
         auto atlas_or_error =
-          assets.graphics.textures.load("/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png");
+          assets.graphics.textures.create("/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png");
         SDE_ASSERT_TRUE(atlas_or_error.has_value());
         return atlas_or_error->handle;
       }(),
     .back_side_atlas =
       [&] {
         auto atlas_or_error =
-          assets.graphics.textures.load("/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png");
+          assets.graphics.textures.create("/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png");
         SDE_ASSERT_TRUE(atlas_or_error.has_value());
         return atlas_or_error->handle;
       }()};

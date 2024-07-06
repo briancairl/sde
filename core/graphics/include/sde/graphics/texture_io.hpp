@@ -6,8 +6,8 @@
 #pragma once
 
 // SDE
-#include "sde/geometry_io.hpp"
-#include "sde/graphics/texture.hpp"
+#include "sde/graphics/texture_fwd.hpp"
+#include "sde/graphics/texture_handle.hpp"
 #include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
 
@@ -22,39 +22,34 @@ template <typename Archive>
 struct load<Archive, graphics::TextureHandle> : load<Archive, typename graphics::TextureHandle::base>
 {};
 
-template <typename Archive> struct serialize<Archive, graphics::TextureFlags>
+template <typename Archive> struct save<Archive, graphics::TextureOptions>
 {
-  void operator()(Archive& ar, graphics::TextureFlags& flags) const
-  {
-    ar& named{"mask", reinterpret_cast<std::uint8_t&>(flags)};
-  }
+  void operator()(Archive& ar, const graphics::TextureOptions& options) const;
 };
 
-template <typename Archive> struct serialize<Archive, graphics::TextureOptions>
+template <typename Archive> struct load<Archive, graphics::TextureOptions>
 {
-  void operator()(Archive& ar, graphics::TextureOptions& options) const
-  {
-    ar& named{"u_wrapping", options.u_wrapping};
-    ar& named{"v_wrapping", options.v_wrapping};
-    ar& named{"min_sampling", options.min_sampling};
-    ar& named{"mag_sampling", options.mag_sampling};
-    ar& named{"flags", options.flags};
-  }
+  void operator()(Archive& ar, graphics::TextureOptions& options) const;
 };
 
-template <typename Archive> struct serialize<Archive, graphics::TextureShape>
+template <typename Archive> struct save<Archive, graphics::TextureShape>
 {
-  void operator()(Archive& ar, graphics::TextureShape& shape) const { ar& named{"value", shape.value}; }
+  void operator()(Archive& ar, const graphics::TextureShape& shape) const;
 };
 
-template <typename Archive> struct save<Archive, graphics::TextureCacheWithAssets>
+template <typename Archive> struct load<Archive, graphics::TextureShape>
 {
-  void operator()(Archive& ar, const graphics::TextureCacheWithAssets& cache) const;
+  void operator()(Archive& ar, graphics::TextureShape& shape) const;
 };
 
-template <typename Archive> struct load<Archive, graphics::TextureCacheWithAssets>
+template <typename Archive> struct save<Archive, graphics::TextureCache>
 {
-  void operator()(Archive& ar, graphics::TextureCacheWithAssets& cache) const;
+  void operator()(Archive& ar, const graphics::TextureCache& cache) const;
+};
+
+template <typename Archive> struct load<Archive, graphics::TextureCache>
+{
+  void operator()(Archive& ar, graphics::TextureCache& cache) const;
 };
 
 }  // namespace sde::serial

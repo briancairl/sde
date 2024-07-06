@@ -1,5 +1,6 @@
 // C++ Standard Library
 #include <algorithm>
+#include <ostream>
 
 // SDE
 #include "sde/graphics/assets.hpp"

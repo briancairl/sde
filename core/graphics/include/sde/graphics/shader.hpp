@@ -8,6 +8,7 @@
 // C++ Standard Library
 #include <cstdint>
 #include <iosfwd>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -18,7 +19,7 @@
 #include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/typedef.hpp"
-#include "sde/resource_cache_with_assets.hpp"
+#include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 
 namespace sde::graphics
@@ -106,6 +107,7 @@ using NativeShaderID = UniqueResource<native_shader_id_t, NativeShaderDeleter>;
  */
 struct ShaderInfo
 {
+  asset::path path;
   ShaderComponents components;
   ShaderVariables variables;
   NativeShaderID native_id;
@@ -141,16 +143,10 @@ class ShaderCache : public ResourceCache<ShaderCache>
   friend cache_base;
 
 private:
-  expected<ShaderInfo, ShaderError> generate(std::string_view source);
+  static expected<void, ShaderError> reload(ShaderInfo& shader);
+  static expected<void, ShaderError> unload(ShaderInfo& shader);
+  expected<ShaderInfo, ShaderError>
+  generate(const asset::path& path, ResourceLoading loading = ResourceLoading::kImmediate);
 };
-
-struct ShaderCacheLoader
-{
-  ShaderCache::result_type operator()(ShaderCache& cache, const asset::path& path) const;
-  ShaderCache::result_type operator()(ShaderCache& cache, const ShaderHandle& handle, const asset::path& path) const;
-};
-
-class ShaderCacheWithAssets : public ResourceCacheWithAssets<ShaderCache, ShaderCacheLoader>
-{};
 
 }  // namespace sde::graphics

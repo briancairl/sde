@@ -30,23 +30,25 @@ int main(int argc, char** argv)
 
   SDE_LOG_INFO("starting...");
 
-  auto icon_or_error = Image::load("/home/brian/dev/assets/icons/red.png");
+  game::Assets assets;
+
+  auto icon_or_error =
+    assets.graphics.images.create("/home/brian/dev/assets/icons/red.png", ImageOptions{ImageChannels::kRGBA});
   SDE_ASSERT_TRUE(icon_or_error.has_value());
 
   auto app_or_error = App::create({
-    .initial_size = {1000, 500}, .icon = std::addressof(*icon_or_error),
+    .initial_size = {1000, 500}, .icon = icon_or_error->value->ref(),
     //.cursor = std::addressof(*icon_or_error),  // <-- this works, but need a better image
   });
   SDE_ASSERT_TRUE(app_or_error.has_value());
 
-
-  game::Assets assets;
   game::Systems systems{game::Systems::create().value()};
 
-  auto background_track_1_or_error = assets.audio.sounds.load("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav");
+  auto background_track_1_or_error =
+    assets.audio.sounds.create("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav");
   SDE_ASSERT_TRUE(background_track_1_or_error.has_value());
 
-  auto background_track_2_or_error = assets.audio.sounds.load("/home/brian/dev/assets/sounds/tracks/forest.wav");
+  auto background_track_2_or_error = assets.audio.sounds.create("/home/brian/dev/assets/sounds/tracks/forest.wav");
   SDE_ASSERT_TRUE(background_track_2_or_error.has_value());
 
   if (auto listener_or_err = ListenerTarget::create(systems.mixer, 0UL); listener_or_err.has_value())

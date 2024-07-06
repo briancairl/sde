@@ -6,69 +6,50 @@
 #pragma once
 
 // SDE
-#include "sde/geometry_io.hpp"
-#include "sde/graphics/sprite.hpp"
-#include "sde/graphics/tile_set_io.hpp"
-#include "sde/resource_handle_io.hpp"
+#include "sde/graphics/sprite_fwd.hpp"
 #include "sde/serialization.hpp"
-#include "sde/time_io.hpp"
 
 namespace sde::serial
 {
 
-template <typename Archive> struct serialize<Archive, graphics::SpriteOptions>
+template <typename Archive> struct save<Archive, graphics::SpriteOptions>
 {
-  void operator()(Archive& ar, graphics::SpriteOptions& options) const
-  {
-    ar& named{"tint_color", options.tint_color};
-    ar& named{"frames", options.frames};
-    ar& named{"frame_index", options.frame_index};
-  }
+  void operator()(Archive& ar, const graphics::SpriteOptions& options) const;
+};
+
+template <typename Archive> struct load<Archive, graphics::SpriteOptions>
+{
+  void operator()(Archive& ar, graphics::SpriteOptions& options) const;
 };
 
 template <typename Archive> struct save<Archive, graphics::Sprite>
 {
-  void operator()(Archive& ar, const graphics::Sprite& sprite) const { ar << named{"options", sprite.options()}; }
+  void operator()(Archive& ar, const graphics::Sprite& sprite) const;
 };
 
 template <typename Archive> struct load<Archive, graphics::Sprite>
 {
-  void operator()(Archive& ar, graphics::Sprite& sprite) const
-  {
-    graphics::SpriteOptions options;
-    ar >> named{"options", options};
-    sprite.setup(options);
-  }
+  void operator()(Archive& ar, graphics::Sprite& sprite) const;
 };
 
-template <typename Archive> struct serialize<Archive, graphics::AnimatedSpriteOptions>
+template <typename Archive> struct save<Archive, graphics::AnimatedSpriteOptions>
 {
-  void operator()(Archive& ar, graphics::AnimatedSpriteOptions& options) const
-  {
-    ar& named{"tint_color", options.tint_color};
-    ar& named{"frames", options.frames};
-    ar& named{"time_offset", options.time_offset};
-    ar& named{"frames_per_second", options.frames_per_second};
-    ar& named{"mode", options.mode};
-  }
+  void operator()(Archive& ar, const graphics::AnimatedSpriteOptions& options) const;
+};
+
+template <typename Archive> struct load<Archive, graphics::AnimatedSpriteOptions>
+{
+  void operator()(Archive& ar, graphics::AnimatedSpriteOptions& options) const;
 };
 
 template <typename Archive> struct save<Archive, graphics::AnimatedSprite>
 {
-  void operator()(Archive& ar, const graphics::AnimatedSprite& sprite) const
-  {
-    ar << named{"options", sprite.options()};
-  }
+  void operator()(Archive& ar, const graphics::AnimatedSprite& sprite) const;
 };
 
 template <typename Archive> struct load<Archive, graphics::AnimatedSprite>
 {
-  void operator()(Archive& ar, graphics::AnimatedSprite& sprite) const
-  {
-    graphics::AnimatedSpriteOptions options;
-    ar >> named{"options", options};
-    sprite.setup(options);
-  }
+  void operator()(Archive& ar, graphics::AnimatedSprite& sprite) const;
 };
 
 }  // namespace sde::serial

@@ -1,15 +1,14 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file image_fwd.hpp
+ * @file sprite_fwd.hpp
  */
 #pragma once
 
 namespace sde::graphics
 {
-struct ImageHandle;
-struct ImageOptions;
-struct ImageShape;
-struct ImageRef;
-class ImageCache;
+struct SpriteOptions;
+class Sprite;
+struct AnimatedSpriteOptions;
+class AnimatedSprite;
 }  // namespace sde::graphics

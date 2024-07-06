@@ -6,7 +6,7 @@
 #pragma once
 
 // SDE
-#include "sde/graphics/tile_set.hpp"
+#include "sde/graphics/tile_set_fwd.hpp"
 #include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
 

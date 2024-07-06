@@ -13,13 +13,15 @@
 #include "sde/expected.hpp"
 
 // SDE
+#include "sde/asset.hpp"
 #include "sde/geometry_types.hpp"
 #include "sde/graphics/image_fwd.hpp"
+#include "sde/graphics/image_handle.hpp"
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
+#include "sde/graphics/typecode.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/resource_cache.hpp"
-#include "sde/resource_cache_with_assets.hpp"
 #include "sde/resource_wrapper.hpp"
 #include "sde/type.hpp"
 #include "sde/view.hpp"
@@ -107,6 +109,8 @@ using TextureNativeID = UniqueResource<native_texture_id_t, TextureNativeDeleter
 
 struct TextureInfo
 {
+  ImageHandle source_image;
+  TypeCode element_type;
   TextureLayout layout;
   TextureShape shape;
   TextureOptions options;
@@ -119,9 +123,9 @@ bool operator==(const TextureInfo& lhs, const TextureInfo& rhs);
 
 enum class TextureError
 {
-  kAssetNotFound,
-  kAssetLoadingFailed,
   kElementAlreadyExists,
+  kTextureNotFound,
+  kInvalidSourceImage,
   kInvalidHandle,
   kInvalidDimensions,
   kInvalidDataValue,
@@ -164,34 +168,32 @@ class TextureCache : public ResourceCache<TextureCache>
 {
   friend cache_base;
 
+public:
+  explicit TextureCache(ImageCache& images);
+
 private:
-  expected<TextureInfo, TextureError> generate(const Image& image, const TextureOptions& options = {});
+  ImageCache* images_;
+
+  static expected<void, TextureError> reload(TextureInfo& texture);
+  static expected<void, TextureError> unload(TextureInfo& texture);
+
+  expected<TextureInfo, TextureError> generate(const asset::path& image_path, const TextureOptions& options = {});
 
   template <typename DataT>
   expected<TextureInfo, TextureError>
   generate(View<const DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
 
-  template <typename DataT>
   expected<TextureInfo, TextureError> generate(
-    TypeTag<const DataT> /*_*/,
+    const ImageHandle& image,
+    const TextureOptions& options = {},
+    ResourceLoading loading = ResourceLoading::kImmediate);
+
+  expected<TextureInfo, TextureError> generate(
+    TypeCode type,
     const TextureShape& shape,
     TextureLayout layout,
-    const TextureOptions& options = {});
+    const TextureOptions& options = {},
+    ResourceLoading loading = ResourceLoading::kImmediate);
 };
-
-struct TextureCacheLoader
-{
-  TextureCache::result_type
-  operator()(TextureCache& cache, const asset::path& path, const TextureOptions& options = {}) const;
-
-  TextureCache::result_type operator()(
-    TextureCache& cache,
-    const TextureHandle& handle,
-    const asset::path& path,
-    const TextureOptions& options = {}) const;
-};
-
-class TextureCacheWithAssets : public ResourceCacheWithAssets<TextureCache, TextureCacheLoader>
-{};
 
 }  // namespace sde::graphics

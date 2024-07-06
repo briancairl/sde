@@ -31,7 +31,7 @@ enum struct SoundChannelBitDepth
   kU16
 };
 
-std::ostream& operator<<(std::ostream& os, SoundChannelBitDepth bit_depth);
+std::ostream& operator<<(std::ostream& os, SoundChannelBitDepth element_type);
 
 /**
  * @brief Audio channel description
@@ -41,7 +41,9 @@ struct SoundChannelFormat
   /// Number of channels (mono, stereo)
   SoundChannelCount count = SoundChannelCount::kMono;
   /// Number of bits per channel sample
-  SoundChannelBitDepth bit_depth = SoundChannelBitDepth::kU8;
+  SoundChannelBitDepth element_type = SoundChannelBitDepth::kU8;
+  /// Bit rate
+  std::size_t bits_per_second = 0;
 };
 
 std::ostream& operator<<(std::ostream& os, const SoundChannelFormat& format);

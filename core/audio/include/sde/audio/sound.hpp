@@ -8,12 +8,15 @@
 // C++ Standard Library
 
 // SDE
+#include "sde/asset.hpp"
 #include "sde/audio/sound_channel_format.hpp"
+#include "sde/audio/sound_data_fwd.hpp"
+#include "sde/audio/sound_data_handle.hpp"
 #include "sde/audio/sound_fwd.hpp"
 #include "sde/audio/sound_handle.hpp"
 #include "sde/audio/typedef.hpp"
 #include "sde/expected.hpp"
-#include "sde/resource_cache_with_assets.hpp"
+#include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 
 namespace sde::audio
@@ -23,28 +26,26 @@ enum struct SoundError
 {
   kAssetNotFound,
   kAssetLoadingFailed,
+  kInvalidHandle,
+  kInvalidSoundData,
   kElementAlreadyExists,
-  kInvalidPlayerContext,
   kBackendBufferCreationFailure,
   kBackendBufferTransferFailure,
 };
 
-struct SoundOptions
-{};
-
-struct NativeBufferDeleter
+struct NativeSoundBufferDeleter
 {
   void operator()(buffer_handle_t id) const;
 };
 
-using NativeBufferID = UniqueResource<buffer_handle_t, NativeBufferDeleter>;
+using NativeSoundBufferID = UniqueResource<buffer_handle_t, NativeSoundBufferDeleter>;
 
 struct SoundInfo
 {
-  SoundOptions options;
-  std::size_t buffer_length;
-  std::size_t bit_rate;
-  NativeBufferID native_id;
+  SoundDataHandle sound_data = SoundDataHandle{};
+  SoundChannelFormat channel_format = {};
+  std::size_t buffer_length = 0;
+  NativeSoundBufferID native_id;
 };
 
 }  // namespace sde::audio
@@ -68,27 +69,17 @@ class SoundCache : public ResourceCache<SoundCache>
 {
   friend cache_base;
 
-private:
-  expected<SoundInfo, SoundError> generate(const SoundData& sound, const SoundOptions& options = {});
-};
-
-
-struct SoundCacheLoader
-{
-  SoundCache::result_type
-  operator()(SoundCache& cache, const asset::path& path, const SoundOptions& options = {}) const;
-
-  SoundCache::result_type
-  operator()(SoundCache& cache, const SoundHandle& handle, const asset::path& path, const SoundOptions& options = {})
-    const;
-};
-
-class SoundCacheWithAssets : public ResourceCacheWithAssets<SoundCache, SoundCacheLoader>
-{
-  friend cache_base;
+public:
+  explicit SoundCache(SoundDataCache& sound_data);
+  expected<void, SoundError> reload(SoundHandle sound);
+  expected<void, SoundError> unload(SoundHandle sound);
 
 private:
-  expected<SoundInfo, SoundError> generate(const SoundData& sound, const SoundOptions& options = {});
+  SoundDataCache* sound_data_ = nullptr;
+  expected<void, SoundError> reload(SoundInfo& sound);
+  expected<SoundInfo, SoundError> generate(const asset::path& sound_data_path);
+  expected<SoundInfo, SoundError>
+  generate(SoundDataHandle sound_data, ResourceLoading loading = ResourceLoading::kImmediate);
 };
 
 }  // namespace sde::audio

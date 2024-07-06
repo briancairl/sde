@@ -6,7 +6,8 @@
 #pragma once
 
 // SDE
-#include "sde/graphics/shader.hpp"
+#include "sde/graphics/shader_fwd.hpp"
+#include "sde/graphics/shader_handle.hpp"
 #include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
 
@@ -22,14 +23,14 @@ struct load<Archive, graphics::ShaderHandle> : load<Archive, typename graphics::
 {};
 
 
-template <typename Archive> struct save<Archive, graphics::ShaderCacheWithAssets>
+template <typename Archive> struct save<Archive, graphics::ShaderCache>
 {
-  void operator()(Archive& ar, const graphics::ShaderCacheWithAssets& cache) const;
+  void operator()(Archive& ar, const graphics::ShaderCache& cache) const;
 };
 
-template <typename Archive> struct load<Archive, graphics::ShaderCacheWithAssets>
+template <typename Archive> struct load<Archive, graphics::ShaderCache>
 {
-  void operator()(Archive& ar, graphics::ShaderCacheWithAssets& cache) const;
+  void operator()(Archive& ar, graphics::ShaderCache& cache) const;
 };
 
 }  // namespace sde::serial

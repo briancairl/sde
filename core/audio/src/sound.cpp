@@ -18,7 +18,7 @@ inline ALenum toALChannelFormat(const SoundChannelFormat& format)
 {
   if (format.count == SoundChannelCount::kStereo)
   {
-    switch (format.bit_depth)
+    switch (format.element_type)
     {
     case SoundChannelBitDepth::kU8:
       return AL_FORMAT_STEREO8;
@@ -28,7 +28,7 @@ inline ALenum toALChannelFormat(const SoundChannelFormat& format)
   }
   else
   {
-    switch (format.bit_depth)
+    switch (format.element_type)
     {
     case SoundChannelBitDepth::kU8:
       return AL_FORMAT_MONO8;
@@ -41,66 +41,90 @@ inline ALenum toALChannelFormat(const SoundChannelFormat& format)
 
 }  // namespace anonymous
 
-void NativeBufferDeleter::operator()(buffer_handle_t id) const { alDeleteBuffers(1, &id); }
+void NativeSoundBufferDeleter::operator()(buffer_handle_t id) const { alDeleteBuffers(1, &id); }
 
-expected<SoundInfo, SoundError> SoundCache::generate(const SoundData& sound, const SoundOptions& options)
+SoundCache::SoundCache(SoundDataCache& sound_data) : sound_data_{std::addressof(sound_data)} {}
+
+expected<void, SoundError> SoundCache::reload(SoundInfo& sound)
 {
-  NativeBufferID native_id{[] {
-    buffer_handle_t id;
-    alGenBuffers(1, &id);
-    return id;
-  }()};
+  const auto* sound_data = sound_data_->get_if(sound.sound_data);
+  if (sound_data == nullptr)
+  {
+    return make_unexpected(SoundError::kInvalidSoundData);
+  }
+
+  buffer_handle_t id;
+  alGenBuffers(1, &id);
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
     return make_unexpected(SoundError::kBackendBufferCreationFailure);
   }
 
+  NativeSoundBufferID native_id{id};
   alBufferData(
     native_id,
-    toALChannelFormat(sound.getChannelFormat()),
-    sound.data().data(),
-    sound.data().size(),
-    sound.getBitRate());
+    toALChannelFormat(sound_data->buffer_channel_format),
+    sound_data->data().data(),
+    sound_data->data().size(),
+    sound_data->buffer_channel_format.bits_per_second);
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
     return make_unexpected(SoundError::kBackendBufferTransferFailure);
   }
 
-  return SoundInfo{
-    .options = options,
-    .buffer_length = sound.data().size(),
-    .bit_rate = sound.getBitRate(),
-    .native_id = std::move(native_id),
-  };
+  sound.channel_format = sound_data->buffer_channel_format;
+  sound.buffer_length = sound_data->buffer_length;
+  sound.native_id = std::move(native_id);
+  return {};
 }
 
-SoundCache::result_type
-SoundCacheLoader::operator()(SoundCache& cache, const asset::path& path, const SoundOptions& options) const
+expected<void, SoundError> SoundCache::reload(SoundHandle sound)
 {
-  if (auto sound_data_or_error = SoundData::load(path); sound_data_or_error.has_value())
+  const auto handle_and_value_itr = handle_to_value_cache_.find(sound);
+  if (handle_and_value_itr == std::end(handle_to_value_cache_))
   {
-    SDE_LOG_INFO_FMT("sound loaded from disk: %s", path.string().c_str());
-    return cache.create(*sound_data_or_error, options);
+    return make_unexpected(SoundError::kInvalidHandle);
   }
-  SDE_LOG_DEBUG("AssetLoadingFailed");
-  return make_unexpected(SoundError::kAssetLoadingFailed);
+  return reload(handle_and_value_itr->second);
 }
 
-SoundCache::result_type SoundCacheLoader::operator()(
-  SoundCache& cache,
-  const SoundHandle& handle,
-  const asset::path& path,
-  const SoundOptions& options) const
+expected<void, SoundError> SoundCache::unload(SoundHandle sound)
 {
-  if (auto sound_data_or_error = SoundData::load(path); sound_data_or_error.has_value())
+  const auto handle_and_value_itr = handle_to_value_cache_.find(sound);
+  if (handle_and_value_itr == std::end(handle_to_value_cache_))
   {
-    SDE_LOG_INFO_FMT("sound loaded from disk: %s", path.string().c_str());
-    return cache.insert(handle, *sound_data_or_error, options);
+    return make_unexpected(SoundError::kInvalidHandle);
   }
-  SDE_LOG_DEBUG("AssetLoadingFailed");
-  return make_unexpected(SoundError::kAssetLoadingFailed);
+  auto& info = handle_and_value_itr->second;
+  info.native_id = NativeSoundBufferID{0};
+  return {};
+}
+
+expected<SoundInfo, SoundError> SoundCache::generate(const asset::path& sound_data_path)
+{
+  auto sound_data_or_error = sound_data_->create(sound_data_path);
+  if (!sound_data_or_error.has_value())
+  {
+    return make_unexpected(SoundError::kInvalidSoundData);
+  }
+  return generate(sound_data_or_error->handle);
+}
+
+expected<SoundInfo, SoundError> SoundCache::generate(SoundDataHandle sound_data, ResourceLoading loading)
+{
+  SoundInfo sound{
+    .sound_data = sound_data, .channel_format = {}, .buffer_length = 0, .native_id = NativeSoundBufferID{0}};
+  if (loading == ResourceLoading::kDeferred)
+  {
+    return sound;
+  }
+  if (auto ok_or_error = reload(sound); !ok_or_error.has_value())
+  {
+    return make_unexpected(ok_or_error.error());
+  }
+  return sound;
 }
 
 }  // namespace sde::audio

@@ -8,7 +8,7 @@
 // SDE
 #include "sde/expected.hpp"
 #include "sde/geometry_types.hpp"
-#include "sde/graphics/image_fwd.hpp"
+#include "sde/graphics/image_ref.hpp"
 #include "sde/graphics/window_fwd.hpp"
 #include "sde/resource_wrapper.hpp"
 
@@ -19,8 +19,8 @@ struct WindowOptions
 {
   const char* title = "sde";
   Vec2i initial_size = {640, 480};
-  Image* icon = nullptr;
-  Image* cursor = nullptr;
+  ImageRef icon = {};
+  ImageRef cursor = {};
 };
 
 enum class WindowError

@@ -22,14 +22,14 @@ template <typename Archive>
 struct load<Archive, graphics::FontHandle> : load<Archive, typename graphics::FontHandle::base>
 {};
 
-template <typename Archive> struct save<Archive, graphics::FontCacheWithAssets>
+template <typename Archive> struct save<Archive, graphics::FontCache>
 {
-  void operator()(Archive& ar, const graphics::FontCacheWithAssets& cache) const;
+  void operator()(Archive& ar, const graphics::FontCache& cache) const;
 };
 
-template <typename Archive> struct load<Archive, graphics::FontCacheWithAssets>
+template <typename Archive> struct load<Archive, graphics::FontCache>
 {
-  void operator()(Archive& ar, graphics::FontCacheWithAssets& cache) const;
+  void operator()(Archive& ar, graphics::FontCache& cache) const;
 };
 
 }  // namespace sde::serial

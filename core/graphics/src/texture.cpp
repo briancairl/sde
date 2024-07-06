@@ -173,23 +173,6 @@ expected<TextureNativeID, TextureError> create_native_texture_2D(
   return texture_id;
 }
 
-expected<TextureNativeID, TextureError> create_native_texture_2D(
-  const TextureShape& shape,
-  const TextureLayout layout,
-  const TextureOptions& options,
-  const TypeCode type)
-{
-  auto texture_id = allocate_texture_2D_and_bind(shape, layout, options, type);
-
-  if (has_active_error())
-  {
-    SDE_LOG_DEBUG("BackendCreationFailure");
-    return make_unexpected(TextureError::kBackendCreationFailure);
-  }
-
-  return texture_id;
-}
-
 std::size_t to_channel_count(const TextureLayout channels)
 {
   switch (channels)
@@ -227,8 +210,22 @@ std::size_t size_in_bytes(const Vec2i& extents, TextureLayout layout)
   return (static_cast<std::size_t>(extents.prod()) * to_channel_count(layout));
 }
 
+expected<TextureNativeID, TextureError>
+create_texture_impl(TypeCode type, const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
+{
+  auto texture_id = allocate_texture_2D_and_bind(shape, layout, options, type);
+
+  if (has_active_error())
+  {
+    SDE_LOG_DEBUG("BackendCreationFailure");
+    return make_unexpected(TextureError::kBackendCreationFailure);
+  }
+
+  return texture_id;
+}
+
 template <typename DataT>
-expected<TextureInfo, TextureError>
+expected<TextureNativeID, TextureError>
 create_texture_impl(View<DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
 {
   if (!data)
@@ -257,34 +254,15 @@ create_texture_impl(View<DataT> data, const TextureShape& shape, TextureLayout l
     return make_unexpected(texture_or_error.error());
   }
 
-  return TextureInfo{
-    .layout = layout, .shape = shape, .options = options, .native_id = std::move(texture_or_error).value()};
-}
-
-template <typename DataT>
-expected<TextureInfo, TextureError>
-create_texture_impl(const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
-{
-  auto texture_or_error = create_native_texture_2D(shape, layout, options, typecode<DataT>());
-
-  if (!texture_or_error.has_value())
-  {
-    return make_unexpected(texture_or_error.error());
-  }
-
-  return TextureInfo{
-    .layout = layout, .shape = shape, .options = options, .native_id = std::move(texture_or_error).value()};
+  return std::move(texture_or_error).value();
 }
 
 }  // namespace
 
 void TextureNativeDeleter::operator()(native_texture_id_t id) const
 {
-  if (id != 0)
-  {
-    SDE_LOG_DEBUG_FMT("glDeleteTextures(1, &%u)", id);
-    glDeleteTextures(1, &id);
-  }
+  SDE_LOG_DEBUG_FMT("glDeleteTextures(1, &%u)", id);
+  glDeleteTextures(1, &id);
 }
 
 std::ostream& operator<<(std::ostream& os, const TextureShape& shape)
@@ -344,14 +322,14 @@ std::ostream& operator<<(std::ostream& os, TextureError error)
 {
   switch (error)
   {
-  case TextureError::kAssetNotFound:
-    return os << "AssetNotFound";
-  case TextureError::kAssetLoadingFailed:
-    return os << "AssetLoadingFailed";
+  case TextureError::kTextureNotFound:
+    return os << "TextureNotFound";
   case TextureError::kElementAlreadyExists:
     return os << "ElementAlreadyExists";
   case TextureError::kInvalidHandle:
     return os << "InvalidHandle";
+  case TextureError::kInvalidSourceImage:
+    return os << "InvalidSourceImage";
   case TextureError::kInvalidDimensions:
     return os << "InvalidDimensions";
   case TextureError::kInvalidDataValue:
@@ -438,6 +416,8 @@ replace(const TextureInfo& texture_info, View<const std::uint32_t> data, const B
 template expected<void, TextureError>
 replace(const TextureInfo& texture_info, View<const float> data, const Bounds2i& area);
 
+TextureCache::TextureCache(ImageCache& images) : images_{std::addressof(images)} {}
+
 template <typename DataT>
 expected<TextureInfo, TextureError> TextureCache::generate(
   View<const DataT> data,
@@ -445,7 +425,18 @@ expected<TextureInfo, TextureError> TextureCache::generate(
   const TextureLayout layout,
   const TextureOptions& options)
 {
-  return create_texture_impl(data, shape, layout, options);
+  auto native_texture_or_error = create_texture_impl(data, shape, layout, options);
+  if (!native_texture_or_error.has_value())
+  {
+    return make_unexpected(native_texture_or_error.error());
+  }
+  return TextureInfo{
+    .source_image = ImageHandle::null(),
+    .element_type = typecode<DataT>(),
+    .layout = layout,
+    .shape = shape,
+    .options = options,
+    .native_id = std::move(native_texture_or_error).value()};
 }
 
 template expected<TextureInfo, TextureError> TextureCache::generate(
@@ -472,75 +463,84 @@ template expected<TextureInfo, TextureError> TextureCache::generate(
   const TextureLayout layout,
   const TextureOptions& options);
 
-
-expected<TextureInfo, TextureError> TextureCache::generate(const Image& image, const TextureOptions& options)
+expected<TextureInfo, TextureError> TextureCache::generate(const asset::path& image_path, const TextureOptions& options)
 {
-  return TextureCache::generate(
-    image.data(), TextureShape{image.shape().value}, layout_from_channel_count(image.getChannelCount()), options);
+  auto image_or_error = images_->create(image_path, ImageOptions{.flags = {.flip_vertically = true}});
+  if (!image_or_error.has_value())
+  {
+    return make_unexpected(TextureError::kInvalidSourceImage);
+  }
+  return generate(image_or_error->handle, options);
 }
 
-template <typename DataT>
+expected<TextureInfo, TextureError>
+TextureCache::generate(const ImageHandle& image, const TextureOptions& options, ResourceLoading loading)
+{
+  if (image.isNull())
+  {
+    return make_unexpected(TextureError::kInvalidSourceImage);
+  }
+  auto image_info = images_->get_if(image);
+  if (image_info == nullptr)
+  {
+    return make_unexpected(TextureError::kInvalidSourceImage);
+  }
+  SDE_LOG_DEBUG_FMT(
+    "Creating texture from image: %s (%d x %d) (%lu bytes)",
+    image_info->path.string().c_str(),
+    image_info->shape.value.x(),
+    image_info->shape.value.y(),
+    image_info->getTotalSizeInBytes());
+  auto texture_info_or_error = TextureCache::generate(
+    image_info->data(),
+    TextureShape{image_info->shape.value},
+    layout_from_channel_count(image_info->getChannelCount()),
+    options);
+  if (texture_info_or_error.has_value())
+  {
+    texture_info_or_error->source_image = image;
+  }
+  return texture_info_or_error;
+}
+
 expected<TextureInfo, TextureError> TextureCache::generate(
-  TypeTag<const DataT> /*_*/,
+  TypeCode type,
   const TextureShape& shape,
   const TextureLayout layout,
-  const TextureOptions& options)
+  const TextureOptions& options,
+  ResourceLoading loading)
 {
-  return create_texture_impl<DataT>(shape, layout, options);
+  auto native_texture_or_error = create_texture_impl(type, shape, layout, options);
+  if (!native_texture_or_error.has_value())
+  {
+    return make_unexpected(native_texture_or_error.error());
+  }
+  return TextureInfo{
+    .source_image = ImageHandle::null(),
+    .element_type = type,
+    .layout = layout,
+    .shape = shape,
+    .options = options,
+    .native_id = std::move(native_texture_or_error).value()};
 }
 
-template expected<TextureInfo, TextureError> TextureCache::generate(
-  TypeTag<const std::uint8_t> /*_*/,
-  const TextureShape& shape,
-  const TextureLayout layout,
-  const TextureOptions& options);
-
-template expected<TextureInfo, TextureError> TextureCache::generate(
-  TypeTag<const std::uint16_t> /*_*/,
-  const TextureShape& shape,
-  const TextureLayout layout,
-  const TextureOptions& options);
-
-template expected<TextureInfo, TextureError> TextureCache::generate(
-  TypeTag<const std::uint32_t> /*_*/,
-  const TextureShape& shape,
-  const TextureLayout layout,
-  const TextureOptions& options);
-
-template expected<TextureInfo, TextureError> TextureCache::generate(
-  TypeTag<const float> /*_*/,
-  const TextureShape& shape,
-  const TextureLayout layout,
-  const TextureOptions& options);
-
-
-TextureCache::result_type
-TextureCacheLoader::operator()(TextureCache& cache, const asset::path& path, const TextureOptions& options) const
+expected<void, TextureError> TextureCache::reload(TextureInfo& texture)
 {
-  static constexpr ImageOptions kImageOptions{.flags = {.flip_vertically = true}};
-  if (auto texture_source_image = Image::load(path, kImageOptions); texture_source_image.has_value())
+  auto native_texture_or_error =
+    create_texture_impl(texture.element_type, texture.shape, texture.layout, texture.options);
+  if (!native_texture_or_error.has_value())
   {
-    SDE_LOG_INFO_FMT("texture data loaded from disk: %s", path.string().c_str());
-    return cache.create(*texture_source_image, options);
+    return make_unexpected(native_texture_or_error.error());
   }
-  SDE_LOG_DEBUG("AssetLoadingFailed");
-  return make_unexpected(TextureError::kAssetLoadingFailed);
+  texture.native_id = std::move(native_texture_or_error).value();
+  return {};
 }
 
-TextureCache::result_type TextureCacheLoader::operator()(
-  TextureCache& cache,
-  const TextureHandle& handle,
-  const asset::path& path,
-  const TextureOptions& options) const
+
+expected<void, TextureError> TextureCache::unload(TextureInfo& texture)
 {
-  static constexpr ImageOptions kImageOptions{.flags = {.flip_vertically = true}};
-  if (auto texture_source_image = Image::load(path, kImageOptions); texture_source_image.has_value())
-  {
-    SDE_LOG_INFO_FMT("texture data loaded from disk: %s", path.string().c_str());
-    return cache.insert(handle, *texture_source_image, options);
-  }
-  SDE_LOG_DEBUG("AssetLoadingFailed");
-  return make_unexpected(TextureError::kAssetLoadingFailed);
+  texture.native_id = TextureNativeID{0};
+  return {};
 }
 
 }  // namespace sde::graphics

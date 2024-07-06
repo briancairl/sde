@@ -17,6 +17,12 @@
 namespace sde
 {
 
+enum class ResourceLoading
+{
+  kDeferred,
+  kImmediate
+};
+
 template <typename ResourceCacheT> struct ResourceCacheTypes;
 
 template <typename ResourceCacheT> class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>
@@ -95,11 +101,57 @@ public:
 
   std::size_t size() const { return handle_to_value_cache_.size(); }
 
+  expected<void, error_type> refresh()
+  {
+    for (auto& [handle, value] : handle_to_value_cache_)
+    {
+      if (auto ok_or_error = this->derived().reload(value); !ok_or_error.has_value())
+      {
+        return ok_or_error;
+      }
+    }
+    return {};
+  }
+
+  expected<void, error_type> relinquish()
+  {
+    for (auto& [handle, value] : handle_to_value_cache_)
+    {
+      if (auto ok_or_error = this->derived().unload(value); !ok_or_error.has_value())
+      {
+        return ok_or_error;
+      }
+    }
+    return {};
+  }
+
+  expected<void, error_type> refresh(handle_type handle)
+  {
+    const auto handle_to_value_itr = handle_to_value_cache_.find(handle);
+    if (handle_to_value_itr == handle_to_value_cache_.end())
+    {
+      return make_unexpected(error_type::kInvalidHandle);
+    }
+    return this->derived().reload(handle_to_value_itr->handle);
+  }
+
+  expected<void, error_type> relinquish(handle_type handle)
+  {
+    const auto handle_to_value_itr = handle_to_value_cache_.find(handle);
+    if (handle_to_value_itr == handle_to_value_cache_.end())
+    {
+      return make_unexpected(error_type::kInvalidHandle);
+    }
+    return this->derived().unload(handle_to_value_itr->handle);
+  }
+
   ResourceCache() = default;
   ResourceCache(ResourceCache&&) = default;
   ResourceCache& operator=(ResourceCache&&) = default;
 
 private:
+  [[nodiscard]] static expected<void, error_type> reload([[maybe_unused]] value_type& _) { return {}; }
+  [[nodiscard]] static expected<void, error_type> unload([[maybe_unused]] value_type& _) { return {}; }
   [[nodiscard]] static handle_type next_unique_id([[maybe_unused]] const CacheMap& map, handle_type lower_bound)
   {
     ++lower_bound;

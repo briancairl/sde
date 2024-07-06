@@ -1,33 +1,59 @@
+// C++ Standard Library
+#include <ostream>
+
 // SDE
+#include "sde/geometry_io.hpp"
+#include "sde/graphics/image_io.hpp"
+#include "sde/graphics/texture.hpp"
 #include "sde/graphics/texture_io.hpp"
 #include "sde/logging.hpp"
-#include "sde/serial/std/filesystem.hpp"
 #include "sde/serialization_binary_file.hpp"
 
 namespace sde::serial
 {
 
 template <>
-void save<binary_ofarchive, graphics::TextureCacheWithAssets>::operator()(
+void save<binary_ofarchive, graphics::TextureShape>::operator()(
   binary_ofarchive& ar,
-  const graphics::TextureCacheWithAssets& cache) const
+  const graphics::TextureShape& shape) const
 {
-  ar << named{"element_count", cache.handles().size()};
-  for (const auto& [handle, path] : cache.handles())
-  {
-    ar << named{"handle", handle};
-    ar << named{"path", path};
-    const auto* texture_info = cache.get_if(handle);
-    SDE_ASSERT_NE(texture_info, nullptr);
-    ar << named{"options", texture_info->options};
-  }
+  ar << named{"value", shape.value};
 }
 
+template <>
+void load<binary_ifarchive, graphics::TextureShape>::operator()(binary_ifarchive& ar, graphics::TextureShape& shape)
+  const
+{
+  ar >> named{"value", shape.value};
+}
 
 template <>
-void load<binary_ifarchive, graphics::TextureCacheWithAssets>::operator()(
+void save<binary_ofarchive, graphics::TextureOptions>::operator()(
+  binary_ofarchive& ar,
+  const graphics::TextureOptions& options) const
+{
+  ar << named{"u_wrapping", options.u_wrapping};
+  ar << named{"v_wrapping", options.v_wrapping};
+  ar << named{"min_sampling", options.min_sampling};
+  ar << named{"mag_sampling", options.mag_sampling};
+  ar << named{"flags", options.flags};
+}
+
+template <>
+void load<binary_ifarchive, graphics::TextureOptions>::operator()(
   binary_ifarchive& ar,
-  graphics::TextureCacheWithAssets& cache) const
+  graphics::TextureOptions& options) const
+{
+  ar >> named{"u_wrapping", options.u_wrapping};
+  ar >> named{"v_wrapping", options.v_wrapping};
+  ar >> named{"min_sampling", options.min_sampling};
+  ar >> named{"mag_sampling", options.mag_sampling};
+  ar >> named{"flags", options.flags};
+}
+
+template <>
+void load<binary_ifarchive, graphics::TextureCache>::operator()(binary_ifarchive& ar, graphics::TextureCache& cache)
+  const
 {
   std::size_t element_count{0};
   ar >> named{"element_count", element_count};
@@ -35,11 +61,24 @@ void load<binary_ifarchive, graphics::TextureCacheWithAssets>::operator()(
   {
     graphics::TextureHandle handle;
     ar >> named{"handle", handle};
-    asset::path path;
-    ar >> named{"path", path};
+    graphics::TypeCode element_type;
+    ar >> named{"element_type", element_type};
+    graphics::TextureLayout layout;
+    ar >> named{"layout", layout};
+    graphics::TextureShape shape;
+    ar >> named{"shape", shape};
     graphics::TextureOptions options;
     ar >> named{"options", options};
-    cache.load(handle, path, options);
+    graphics::ImageHandle source_image;
+    ar >> named{"source_image", source_image};
+    if (source_image.isValid())
+    {
+      cache.insert(handle, source_image, options, ResourceLoading::kDeferred);
+    }
+    else
+    {
+      cache.insert(handle, element_type, shape, layout, options, ResourceLoading::kDeferred);
+    }
   }
 }
 

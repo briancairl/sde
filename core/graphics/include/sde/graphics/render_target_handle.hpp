@@ -13,6 +13,7 @@ namespace sde::graphics
 
 struct RenderTargetHandle : ResourceHandle<RenderTargetHandle>
 {
+  RenderTargetHandle() = default;
   explicit RenderTargetHandle(id_type id) : ResourceHandle<RenderTargetHandle>{id} {}
 };
 

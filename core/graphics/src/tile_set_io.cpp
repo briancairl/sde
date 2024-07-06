@@ -4,8 +4,8 @@
 // SDE
 #include "sde/geometry_io.hpp"
 #include "sde/graphics/texture_io.hpp"
+#include "sde/graphics/tile_set.hpp"
 #include "sde/graphics/tile_set_io.hpp"
-#include "sde/logging.hpp"
 #include "sde/serial/std/vector.hpp"
 #include "sde/serialization_binary_file.hpp"
 

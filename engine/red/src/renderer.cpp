@@ -18,7 +18,8 @@ using namespace sde;
 
 bool Renderer::onInitialize(entt::registry& registry, Systems& systems, Assets& assets, const AppProperties& app)
 {
-  auto sprite_shader_or_error = assets.graphics.shaders.load("/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl");
+  auto sprite_shader_or_error =
+    assets.graphics.shaders.create("/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl");
   if (!sprite_shader_or_error.has_value())
   {
     SDE_LOG_ERROR("Missing sprite shader");
@@ -26,14 +27,14 @@ bool Renderer::onInitialize(entt::registry& registry, Systems& systems, Assets& 
   }
 
   auto player_text_shader_or_error =
-    assets.graphics.shaders.load("/home/brian/dev/assets/shaders/glsl/simple_text.glsl");
+    assets.graphics.shaders.create("/home/brian/dev/assets/shaders/glsl/simple_text.glsl");
   if (!player_text_shader_or_error.has_value())
   {
     SDE_LOG_ERROR("Missing text shader");
     return false;
   }
 
-  auto player_font_or_error = assets.graphics.fonts.load("/home/brian/dev/assets/fonts/white_rabbit.ttf");
+  auto player_font_or_error = assets.graphics.fonts.create("/home/brian/dev/assets/fonts/white_rabbit.ttf");
   if (!player_font_or_error.has_value())
   {
     SDE_LOG_ERROR("Missing front");
