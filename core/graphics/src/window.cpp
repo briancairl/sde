@@ -68,10 +68,6 @@ bool glfwTryFirstInit()
 
 void WindowDeleter::operator()(NativeWindowHandle native_handle) const
 {
-  if (native_handle == nullptr)
-  {
-    return;
-  }
   SDE_LOG_DEBUG("glfwDestroyWindow");
   glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(native_handle));
 }
@@ -95,54 +91,6 @@ expected<Window, WindowError> Window::create(const WindowOptions& options)
 
   // Wrap GLFW window in resource wrapper for auto-cleanup on failure
   Window window{reinterpret_cast<NativeWindowHandle>(glfw_window)};
-
-  // Handle window icon setting
-  if (!options.icon.isValid())
-  {
-    SDE_LOG_DEBUG("No icon set to window");
-  }
-  else if (options.icon.channels != ImageChannels::kRGBA)
-  {
-    SDE_LOG_DEBUG("WindowIconInvalidPixelFormat");
-    return make_unexpected(WindowError::kWindowIconInvalidPixelFormat);
-  }
-  else if (options.icon.pixels() == 0)
-  {
-    SDE_LOG_DEBUG("WindowIconInvalidSize");
-    return make_unexpected(WindowError::kWindowIconInvalidSize);
-  }
-  else
-  {
-    const GLFWimage icon_image{
-      .width = options.icon.width,
-      .height = options.icon.height,
-      .pixels = reinterpret_cast<std::uint8_t*>(options.icon.data)};
-    glfwSetWindowIcon(glfw_window, 1, &icon_image);
-  }
-
-  // Handle window cursor setting
-  if (!options.cursor.isValid())
-  {
-    SDE_LOG_DEBUG("No cursor set to window");
-  }
-  else if (options.cursor.channels != ImageChannels::kRGBA)
-  {
-    SDE_LOG_DEBUG("WindowCursorInvalidPixelFormat");
-    return make_unexpected(WindowError::kWindowCursorInvalidPixelFormat);
-  }
-  else if (options.cursor.pixels() == 0)
-  {
-    SDE_LOG_DEBUG("WindowCursorInvalidSize");
-    return make_unexpected(WindowError::kWindowCursorInvalidSize);
-  }
-  else
-  {
-    const GLFWimage cursor_image{
-      .width = options.cursor.width,
-      .height = options.cursor.height,
-      .pixels = reinterpret_cast<std::uint8_t*>(options.cursor.data)};
-    glfwSetCursor(glfw_window, glfwCreateCursor(&cursor_image, 0, 0));
-  }
 
   SDE_LOG_INFO("Created GLFW window");
   glfwMakeContextCurrent(glfw_window);
@@ -173,5 +121,66 @@ expected<Window, WindowError> Window::create(const WindowOptions& options)
 
   return window;
 }
+
+expected<void, WindowError> Window::setIcon(ImageRef icon) const
+{
+  auto* glfw_window = reinterpret_cast<GLFWwindow*>(this->value());
+
+  // Handle window icon setting
+  if (!icon.isValid())
+  {
+    SDE_LOG_DEBUG("No icon set to window");
+    glfwSetWindowIcon(glfw_window, 0, nullptr);
+    return {};
+  }
+  else if (icon.channels != ImageChannels::kRGBA)
+  {
+    SDE_LOG_DEBUG("WindowIconInvalidPixelFormat");
+    return make_unexpected(WindowError::kWindowIconInvalidPixelFormat);
+  }
+  else if (icon.pixels() == 0)
+  {
+    SDE_LOG_DEBUG("WindowIconInvalidSize");
+    return make_unexpected(WindowError::kWindowIconInvalidSize);
+  }
+
+  const GLFWimage glfw_image{
+    .width = icon.width, .height = icon.height, .pixels = reinterpret_cast<std::uint8_t*>(icon.data)};
+
+  glfwSetWindowIcon(glfw_window, 1, &glfw_image);
+
+  return {};
+}
+
+expected<void, WindowError> Window::setCursor(ImageRef cursor) const
+{
+  auto* glfw_window = reinterpret_cast<GLFWwindow*>(this->value());
+
+  // Handle window cursor setting
+  if (!cursor.isValid())
+  {
+    SDE_LOG_DEBUG("No cursor set to window");
+    glfwSetCursor(glfw_window, glfwCreateStandardCursor(GLFW_ARROW_CURSOR));
+    return {};
+  }
+  else if (cursor.channels != ImageChannels::kRGBA)
+  {
+    SDE_LOG_DEBUG("WindowCursorInvalidPixelFormat");
+    return make_unexpected(WindowError::kWindowCursorInvalidPixelFormat);
+  }
+  else if (cursor.pixels() == 0)
+  {
+    SDE_LOG_DEBUG("WindowCursorInvalidSize");
+    return make_unexpected(WindowError::kWindowCursorInvalidSize);
+  }
+
+  const GLFWimage glfw_image{
+    .width = cursor.width, .height = cursor.height, .pixels = reinterpret_cast<std::uint8_t*>(cursor.data)};
+
+  glfwSetCursor(glfw_window, glfwCreateCursor(&glfw_image, 0, 0));
+
+  return {};
+}
+
 
 }  // namespace sde::graphics

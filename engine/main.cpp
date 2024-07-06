@@ -40,17 +40,25 @@ int main(int argc, char** argv)
     iar >> serial::named{"assets", assets};
   }
 
-  auto icon_or_error =
-    assets.graphics.images.create("/home/brian/dev/assets/icons/red.png", ImageOptions{ImageChannels::kRGBA});
+  auto app_or_error = App::create({.initial_size = {1000, 500}});
+  SDE_ASSERT_TRUE(app_or_error.has_value());
+
+  assets.refresh();
+
+  auto icon_or_error = assets.graphics.images.find_or_create(
+    [](const auto& value, const auto& path, auto&&...) -> bool { return value.path == path; },
+    "/home/brian/dev/assets/icons/red.png",
+    ImageOptions{ImageChannels::kRGBA});
   SDE_ASSERT_TRUE(icon_or_error.has_value());
 
-  auto cursor_or_error =
-    assets.graphics.images.create("/home/brian/dev/assets/icons/sword.png", ImageOptions{ImageChannels::kRGBA});
+  auto cursor_or_error = assets.graphics.images.find_or_create(
+    [](const auto& value, const auto& path, auto&&...) -> bool { return value.path == path; },
+    "/home/brian/dev/assets/icons/sword.png",
+    ImageOptions{ImageChannels::kRGBA});
   SDE_ASSERT_TRUE(cursor_or_error.has_value());
 
-  auto app_or_error = App::create(
-    {.initial_size = {1000, 500}, .icon = icon_or_error->value->ref(), .cursor = cursor_or_error->value->ref()});
-  SDE_ASSERT_TRUE(app_or_error.has_value());
+  app_or_error->window().setIcon(icon_or_error->value->ref());
+  app_or_error->window().setCursor(cursor_or_error->value->ref());
 
   game::Systems systems{game::Systems::create().value()};
 

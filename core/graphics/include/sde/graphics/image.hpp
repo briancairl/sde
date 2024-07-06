@@ -13,6 +13,7 @@
 #include "sde/asset.hpp"
 #include "sde/expected.hpp"
 #include "sde/geometry_types.hpp"
+#include "sde/graphics/image_fwd.hpp"
 #include "sde/graphics/image_handle.hpp"
 #include "sde/graphics/image_ref.hpp"
 #include "sde/graphics/typecode.hpp"
@@ -174,8 +175,6 @@ struct ImageInfo
       .data = data_buffer.value()};
   }
 };
-
-class ImageCache;
 
 }  // namespace sde::graphics
 

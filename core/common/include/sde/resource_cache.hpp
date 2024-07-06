@@ -48,6 +48,19 @@ public:
 
   using result_type = expected<element_type, error_type>;
 
+  template <typename LocatorT, typename... CreateArgTs>
+  [[nodiscard]] expected<element_type, error_type> find_or_create(LocatorT locator, CreateArgTs&&... args)
+  {
+    for (const auto& [handle, value] : handle_to_value_cache_)
+    {
+      if (locator(value, std::forward<CreateArgTs>(args)...))
+      {
+        return element_type{handle, std::addressof(value)};
+      }
+    }
+    return create(std::forward<CreateArgTs>(args)...);
+  }
+
   template <typename... CreateArgTs> [[nodiscard]] expected<element_type, error_type> create(CreateArgTs&&... args)
   {
     auto h = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);

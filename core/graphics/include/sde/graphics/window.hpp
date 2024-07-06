@@ -19,8 +19,6 @@ struct WindowOptions
 {
   const char* title = "sde";
   Vec2i initial_size = {640, 480};
-  ImageRef icon = {};
-  ImageRef cursor = {};
 };
 
 enum class WindowError
@@ -43,6 +41,10 @@ public:
   static expected<Window, WindowError> create(const WindowOptions& options);
 
   void activate() const;
+
+  expected<void, WindowError> setIcon(ImageRef icon) const;
+
+  expected<void, WindowError> setCursor(ImageRef cursor) const;
 
 private:
   explicit Window(NativeWindowHandle native_handle);
