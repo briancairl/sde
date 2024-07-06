@@ -1,6 +1,10 @@
+// C++ Standard Library
+#include <ostream>
+
+
 // SDE
-#include "sde/graphics/assets_io.hpp"
 #include "sde/graphics/assets.hpp"
+#include "sde/graphics/assets_io.hpp"
 #include "sde/graphics/font_io.hpp"
 #include "sde/graphics/image_io.hpp"
 #include "sde/graphics/render_target_io.hpp"
@@ -13,8 +17,8 @@
 namespace sde::serial
 {
 
-template <>
-void save<binary_ofarchive, graphics::Assets>::operator()(binary_ofarchive& ar, const graphics::Assets& assets) const
+template <typename Archive>
+void save<Archive, graphics::Assets>::operator()(Archive& ar, const graphics::Assets& assets) const
 {
   ar << named{"images", assets.images};
   ar << named{"fonts", assets.fonts};
@@ -26,8 +30,8 @@ void save<binary_ofarchive, graphics::Assets>::operator()(binary_ofarchive& ar, 
 }
 
 
-template <>
-void load<binary_ifarchive, graphics::Assets>::operator()(binary_ifarchive& ar, graphics::Assets& assets) const
+template <typename Archive>
+void load<Archive, graphics::Assets>::operator()(Archive& ar, graphics::Assets& assets) const
 {
   ar >> named{"images", assets.images};
   ar >> named{"fonts", assets.fonts};
@@ -37,5 +41,8 @@ void load<binary_ifarchive, graphics::Assets>::operator()(binary_ifarchive& ar, 
   ar >> named{"type_sets", assets.type_sets};
   ar >> named{"render_targets", assets.render_targets};
 }
+
+template struct save<binary_ofarchive, graphics::Assets>;
+template struct load<binary_ifarchive, graphics::Assets>;
 
 }  // namespace sde::serial

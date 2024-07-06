@@ -105,7 +105,7 @@ struct TextureNativeDeleter
   void operator()(native_texture_id_t id) const;
 };
 
-using TextureNativeID = UniqueResource<native_texture_id_t, TextureNativeDeleter>;
+using NativeTextureID = UniqueResource<native_texture_id_t, TextureNativeDeleter>;
 
 struct TextureInfo
 {
@@ -114,7 +114,7 @@ struct TextureInfo
   TextureLayout layout;
   TextureShape shape;
   TextureOptions options;
-  TextureNativeID native_id;
+  NativeTextureID native_id;
 };
 
 std::ostream& operator<<(std::ostream& os, const TextureInfo& info);
@@ -174,25 +174,23 @@ public:
 private:
   ImageCache* images_;
 
-  static expected<void, TextureError> reload(TextureInfo& texture);
+  expected<void, TextureError> reload(TextureInfo& texture);
   static expected<void, TextureError> unload(TextureInfo& texture);
 
   expected<TextureInfo, TextureError> generate(const asset::path& image_path, const TextureOptions& options = {});
+
+  expected<TextureInfo, TextureError> generate(const ImageHandle& image, const TextureOptions& options = {});
 
   template <typename DataT>
   expected<TextureInfo, TextureError>
   generate(View<const DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
 
   expected<TextureInfo, TextureError> generate(
-    const ImageHandle& image,
-    const TextureOptions& options = {},
-    ResourceLoading loading = ResourceLoading::kImmediate);
-
-  expected<TextureInfo, TextureError> generate(
     TypeCode type,
     const TextureShape& shape,
     TextureLayout layout,
     const TextureOptions& options = {},
+    ImageHandle source_image = ImageHandle::null(),
     ResourceLoading loading = ResourceLoading::kImmediate);
 };
 

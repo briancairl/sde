@@ -12,6 +12,7 @@
 #include "sde/geometry_types.hpp"
 #include "sde/graphics/render_buffer_fwd.hpp"
 #include "sde/graphics/renderer_fwd.hpp"
+#include "sde/graphics/tile_map_fwd.hpp"
 #include "sde/graphics/tile_set_handle.hpp"
 #include "sde/view.hpp"
 
@@ -29,8 +30,6 @@ struct TileMapOptions
 std::ostream& operator<<(std::ostream& os, const TileMapOptions& tile_map_options);
 
 bool operator==(const TileMapOptions& lhs, const TileMapOptions& rhs);
-
-using TileIndex = std::size_t;
 
 class TileMap
 {

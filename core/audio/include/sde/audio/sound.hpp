@@ -71,12 +71,11 @@ class SoundCache : public ResourceCache<SoundCache>
 
 public:
   explicit SoundCache(SoundDataCache& sound_data);
-  expected<void, SoundError> reload(SoundHandle sound);
-  expected<void, SoundError> unload(SoundHandle sound);
 
 private:
   SoundDataCache* sound_data_ = nullptr;
   expected<void, SoundError> reload(SoundInfo& sound);
+  expected<void, SoundError> unload(SoundInfo& sound);
   expected<SoundInfo, SoundError> generate(const asset::path& sound_data_path);
   expected<SoundInfo, SoundError>
   generate(SoundDataHandle sound_data, ResourceLoading loading = ResourceLoading::kImmediate);

@@ -64,13 +64,13 @@ enum_t to_native_sampling_mode_enum(const TextureSampling mode)
   return GL_NEAREST;
 }
 
-TextureNativeID allocate_texture_2D_and_bind(
+NativeTextureID allocate_texture_2D_and_bind(
   const TextureShape& shape,
   const TextureLayout layout,
   const TextureOptions& options,
   const TypeCode type)
 {
-  TextureNativeID texture_id{[] {
+  NativeTextureID texture_id{[] {
     native_texture_id_t id;
     glGenTextures(1, &id);
     return id;
@@ -139,7 +139,7 @@ expected<void, TextureError> upload_texture_2D(
   return {};
 }
 
-expected<TextureNativeID, TextureError> create_native_texture_2D(
+expected<NativeTextureID, TextureError> create_native_texture_2D(
   const void* const data,
   const TextureShape& shape,
   const TextureLayout layout,
@@ -210,7 +210,7 @@ std::size_t size_in_bytes(const Vec2i& extents, TextureLayout layout)
   return (static_cast<std::size_t>(extents.prod()) * to_channel_count(layout));
 }
 
-expected<TextureNativeID, TextureError>
+expected<NativeTextureID, TextureError>
 create_texture_impl(TypeCode type, const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
 {
   auto texture_id = allocate_texture_2D_and_bind(shape, layout, options, type);
@@ -225,7 +225,7 @@ create_texture_impl(TypeCode type, const TextureShape& shape, TextureLayout layo
 }
 
 template <typename DataT>
-expected<TextureNativeID, TextureError>
+expected<NativeTextureID, TextureError>
 create_texture_impl(View<DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
 {
   if (!data)
@@ -473,8 +473,7 @@ expected<TextureInfo, TextureError> TextureCache::generate(const asset::path& im
   return generate(image_or_error->handle, options);
 }
 
-expected<TextureInfo, TextureError>
-TextureCache::generate(const ImageHandle& image, const TextureOptions& options, ResourceLoading loading)
+expected<TextureInfo, TextureError> TextureCache::generate(const ImageHandle& image, const TextureOptions& options)
 {
   if (image.isNull())
   {
@@ -506,22 +505,27 @@ TextureCache::generate(const ImageHandle& image, const TextureOptions& options, 
 expected<TextureInfo, TextureError> TextureCache::generate(
   TypeCode type,
   const TextureShape& shape,
-  const TextureLayout layout,
+  TextureLayout layout,
   const TextureOptions& options,
+  ImageHandle source_image,
   ResourceLoading loading)
 {
-  auto native_texture_or_error = create_texture_impl(type, shape, layout, options);
-  if (!native_texture_or_error.has_value())
-  {
-    return make_unexpected(native_texture_or_error.error());
-  }
-  return TextureInfo{
-    .source_image = ImageHandle::null(),
+  TextureInfo texture{
+    .source_image = source_image,
     .element_type = type,
     .layout = layout,
     .shape = shape,
     .options = options,
-    .native_id = std::move(native_texture_or_error).value()};
+    .native_id = NativeTextureID{0}};
+  if (loading == ResourceLoading::kDeferred)
+  {
+    return texture;
+  }
+  if (auto ok_or_error = reload(texture); !ok_or_error.has_value())
+  {
+    return make_unexpected(ok_or_error.error());
+  }
+  return texture;
 }
 
 expected<void, TextureError> TextureCache::reload(TextureInfo& texture)
@@ -533,13 +537,32 @@ expected<void, TextureError> TextureCache::reload(TextureInfo& texture)
     return make_unexpected(native_texture_or_error.error());
   }
   texture.native_id = std::move(native_texture_or_error).value();
-  return {};
+
+  if (texture.source_image.isNull())
+  {
+    return {};
+  }
+
+  auto image = images_->get_if(texture.source_image);
+  if (image == nullptr)
+  {
+    return make_unexpected(TextureError::kInvalidSourceImage);
+  }
+
+  SDE_LOG_DEBUG_FMT(
+    "Creating texture from image: %s (%d x %d) (%lu bytes)",
+    image->path.string().c_str(),
+    image->shape.value.x(),
+    image->shape.value.y(),
+    image->getTotalSizeInBytes());
+
+  return replace(texture, image->data());
 }
 
 
 expected<void, TextureError> TextureCache::unload(TextureInfo& texture)
 {
-  texture.native_id = TextureNativeID{0};
+  texture.native_id = NativeTextureID{0};
   return {};
 }
 

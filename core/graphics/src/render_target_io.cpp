@@ -10,10 +10,8 @@
 namespace sde::serial
 {
 
-template <>
-void save<binary_ofarchive, graphics::RenderTargetCache>::operator()(
-  binary_ofarchive& ar,
-  const graphics::RenderTargetCache& cache) const
+template <typename Archive>
+void save<Archive, graphics::RenderTargetCache>::operator()(Archive& ar, const graphics::RenderTargetCache& cache) const
 {
   ar << named{"element_count", cache.size()};
   for (const auto& [handle, info] : cache)
@@ -24,10 +22,8 @@ void save<binary_ofarchive, graphics::RenderTargetCache>::operator()(
 }
 
 
-template <>
-void load<binary_ifarchive, graphics::RenderTargetCache>::operator()(
-  binary_ifarchive& ar,
-  graphics::RenderTargetCache& cache) const
+template <typename Archive>
+void load<Archive, graphics::RenderTargetCache>::operator()(Archive& ar, graphics::RenderTargetCache& cache) const
 {
   std::size_t element_count{0};
   ar >> named{"element_count", element_count};
@@ -40,5 +36,8 @@ void load<binary_ifarchive, graphics::RenderTargetCache>::operator()(
     cache.insert(handle, color_attachment, ResourceLoading::kDeferred);
   }
 }
+
+template struct save<binary_ofarchive, graphics::RenderTargetCache>;
+template struct load<binary_ifarchive, graphics::RenderTargetCache>;
 
 }  // namespace sde::serial

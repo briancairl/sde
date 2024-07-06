@@ -12,6 +12,12 @@
 namespace sde::audio
 {
 
+enum class AssetError
+{
+  kFailedSoundDataLoading,
+  kFailedSoundLoading,
+};
+
 struct Assets
 {
   /// Sound data cache
@@ -19,7 +25,9 @@ struct Assets
   /// Sound cache
   SoundCache sounds;
 
-  Assets() : sound_data{}, sounds{sound_data} {}
+  Assets();
+
+  expected<void, AssetError> refresh();
 };
 
 }  // namespace sde::audio

@@ -14,29 +14,17 @@
 namespace sde::audio
 {
 
-void NativeSourceDeleter::operator()(source_handle_t id) const
-{
-  if (id != 0)
-  {
-    alDeleteSources(1, &id);
-  }
-}
+void NativeSourceDeleter::operator()(source_handle_t id) const { alDeleteSources(1, &id); }
 
 void NativeDeviceDeleter::operator()(device_handle_t id) const
 {
-  if (id != nullptr)
-  {
-    SDE_LOG_DEBUG_FMT("device closed: %p", id);
-    alcCloseDevice(reinterpret_cast<ALCdevice*>(id));
-  }
+  SDE_LOG_DEBUG_FMT("device closed: %p", id);
+  alcCloseDevice(reinterpret_cast<ALCdevice*>(id));
 }
 
 void NativeContextDeleter::operator()(context_handle_t id) const
 {
-  if (id != nullptr)
-  {
-    alcDestroyContext(reinterpret_cast<ALCcontext*>(id));
-  }
+  alcDestroyContext(reinterpret_cast<ALCcontext*>(id));
 }
 
 Track::Track(NativeSource&& source) : source_{std::move(source)}, playback_queued_{false}, playback_buffer_length_{0} {}

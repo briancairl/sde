@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 // SDE
+#include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/tile_map_io.hpp"
 #include "sde/serialization_binary_file.hpp"
 

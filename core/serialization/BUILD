@@ -3,7 +3,8 @@ cc_library(
   hdrs=[
     "serialization.hpp",
     "serialization_fwd.hpp",
-    "serialization_binary_file.hpp"
+    "serialization_binary_file.hpp",
+    "serialization_binary_file_fwd.hpp"
   ],
   srcs=[
     "serialization.cc"

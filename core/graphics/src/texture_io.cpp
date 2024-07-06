@@ -12,25 +12,20 @@
 namespace sde::serial
 {
 
-template <>
-void save<binary_ofarchive, graphics::TextureShape>::operator()(
-  binary_ofarchive& ar,
-  const graphics::TextureShape& shape) const
+template <typename Archive>
+void save<Archive, graphics::TextureShape>::operator()(Archive& ar, const graphics::TextureShape& shape) const
 {
   ar << named{"value", shape.value};
 }
 
-template <>
-void load<binary_ifarchive, graphics::TextureShape>::operator()(binary_ifarchive& ar, graphics::TextureShape& shape)
-  const
+template <typename Archive>
+void load<Archive, graphics::TextureShape>::operator()(Archive& ar, graphics::TextureShape& shape) const
 {
   ar >> named{"value", shape.value};
 }
 
-template <>
-void save<binary_ofarchive, graphics::TextureOptions>::operator()(
-  binary_ofarchive& ar,
-  const graphics::TextureOptions& options) const
+template <typename Archive>
+void save<Archive, graphics::TextureOptions>::operator()(Archive& ar, const graphics::TextureOptions& options) const
 {
   ar << named{"u_wrapping", options.u_wrapping};
   ar << named{"v_wrapping", options.v_wrapping};
@@ -39,10 +34,8 @@ void save<binary_ofarchive, graphics::TextureOptions>::operator()(
   ar << named{"flags", options.flags};
 }
 
-template <>
-void load<binary_ifarchive, graphics::TextureOptions>::operator()(
-  binary_ifarchive& ar,
-  graphics::TextureOptions& options) const
+template <typename Archive>
+void load<Archive, graphics::TextureOptions>::operator()(Archive& ar, graphics::TextureOptions& options) const
 {
   ar >> named{"u_wrapping", options.u_wrapping};
   ar >> named{"v_wrapping", options.v_wrapping};
@@ -51,9 +44,23 @@ void load<binary_ifarchive, graphics::TextureOptions>::operator()(
   ar >> named{"flags", options.flags};
 }
 
-template <>
-void load<binary_ifarchive, graphics::TextureCache>::operator()(binary_ifarchive& ar, graphics::TextureCache& cache)
-  const
+template <typename Archive>
+void save<Archive, graphics::TextureCache>::operator()(Archive& ar, const graphics::TextureCache& cache) const
+{
+  ar << named{"element_count", cache.size()};
+  for (const auto& [handle, info] : cache)
+  {
+    ar << named{"handle", handle};
+    ar << named{"element_type", info.element_type};
+    ar << named{"layout", info.layout};
+    ar << named{"shape", info.shape};
+    ar << named{"options", info.options};
+    ar << named{"source_image", info.source_image};
+  }
+}
+
+template <typename Archive>
+void load<Archive, graphics::TextureCache>::operator()(Archive& ar, graphics::TextureCache& cache) const
 {
   std::size_t element_count{0};
   ar >> named{"element_count", element_count};
@@ -71,15 +78,15 @@ void load<binary_ifarchive, graphics::TextureCache>::operator()(binary_ifarchive
     ar >> named{"options", options};
     graphics::ImageHandle source_image;
     ar >> named{"source_image", source_image};
-    if (source_image.isValid())
-    {
-      cache.insert(handle, source_image, options, ResourceLoading::kDeferred);
-    }
-    else
-    {
-      cache.insert(handle, element_type, shape, layout, options, ResourceLoading::kDeferred);
-    }
+    cache.insert(handle, element_type, shape, layout, options, source_image, ResourceLoading::kDeferred);
   }
 }
+
+template struct save<binary_ofarchive, graphics::TextureShape>;
+template struct load<binary_ifarchive, graphics::TextureShape>;
+template struct save<binary_ofarchive, graphics::TextureOptions>;
+template struct load<binary_ifarchive, graphics::TextureOptions>;
+template struct save<binary_ofarchive, graphics::TextureCache>;
+template struct load<binary_ifarchive, graphics::TextureCache>;
 
 }  // namespace sde::serial

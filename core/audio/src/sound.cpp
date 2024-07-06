@@ -80,25 +80,9 @@ expected<void, SoundError> SoundCache::reload(SoundInfo& sound)
   return {};
 }
 
-expected<void, SoundError> SoundCache::reload(SoundHandle sound)
+expected<void, SoundError> SoundCache::unload(SoundInfo& sound)
 {
-  const auto handle_and_value_itr = handle_to_value_cache_.find(sound);
-  if (handle_and_value_itr == std::end(handle_to_value_cache_))
-  {
-    return make_unexpected(SoundError::kInvalidHandle);
-  }
-  return reload(handle_and_value_itr->second);
-}
-
-expected<void, SoundError> SoundCache::unload(SoundHandle sound)
-{
-  const auto handle_and_value_itr = handle_to_value_cache_.find(sound);
-  if (handle_and_value_itr == std::end(handle_to_value_cache_))
-  {
-    return make_unexpected(SoundError::kInvalidHandle);
-  }
-  auto& info = handle_and_value_itr->second;
-  info.native_id = NativeSoundBufferID{0};
+  sound.native_id = NativeSoundBufferID{0};
   return {};
 }
 

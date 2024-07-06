@@ -60,6 +60,7 @@ cc_library(
   hdrs=[
     "include/sde/graphics/assets.hpp",
     "include/sde/graphics/assets_fwd.hpp",
+    "include/sde/graphics/assets_io.hpp",
     "include/sde/graphics/colors.hpp",
     "include/sde/graphics/debug.hpp",
     "include/sde/graphics/font.hpp",
@@ -89,6 +90,7 @@ cc_library(
     "include/sde/graphics/texture_io.hpp",
     "include/sde/graphics/texture_units.hpp",
     "include/sde/graphics/tile_map.hpp",
+    "include/sde/graphics/tile_map_fwd.hpp",
     "include/sde/graphics/tile_map_io.hpp",
     "include/sde/graphics/tile_set.hpp",
     "include/sde/graphics/tile_set_fwd.hpp",
@@ -144,6 +146,7 @@ cc_library(
   name="graphics_impl__renderer__opengl",
   srcs=[
     "src/assets.cpp",
+    "src/assets_io.cpp",
     "src/font.cpp",
     "src/font_io.cpp",
     "src/render_target.cpp",
@@ -158,6 +161,7 @@ cc_library(
     "src/texture_io.cpp",
     "src/texture_units.cpp",
     "src/tile_map.cpp",
+    "src/tile_map_io.cpp",
     "src/tile_set.cpp",
     "src/tile_set_io.cpp",
     "src/type_set.cpp",

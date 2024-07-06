@@ -10,28 +10,24 @@
 namespace sde::serial
 {
 
-template <>
-void save<binary_ofarchive, graphics::ImageOptions>::operator()(
-  binary_ofarchive& ar,
-  const graphics::ImageOptions& options) const
+template <typename Archive>
+void save<Archive, graphics::ImageOptions>::operator()(Archive& ar, const graphics::ImageOptions& options) const
 {
   ar << named{"channels", options.channels};
   ar << named{"element_type", options.element_type};
   ar << named{"flags", options.flags};
 }
 
-template <>
-void load<binary_ifarchive, graphics::ImageOptions>::operator()(binary_ifarchive& ar, graphics::ImageOptions& options)
-  const
+template <typename Archive>
+void load<Archive, graphics::ImageOptions>::operator()(Archive& ar, graphics::ImageOptions& options) const
 {
   ar >> named{"channels", options.channels};
   ar >> named{"element_type", options.element_type};
   ar >> named{"flags", options.flags};
 }
 
-template <>
-void save<binary_ofarchive, graphics::ImageCache>::operator()(binary_ofarchive& ar, const graphics::ImageCache& cache)
-  const
+template <typename Archive>
+void save<Archive, graphics::ImageCache>::operator()(Archive& ar, const graphics::ImageCache& cache) const
 {
   ar << named{"element_count", cache.size()};
   for (const auto& [handle, info] : cache)
@@ -43,8 +39,8 @@ void save<binary_ofarchive, graphics::ImageCache>::operator()(binary_ofarchive& 
 }
 
 
-template <>
-void load<binary_ifarchive, graphics::ImageCache>::operator()(binary_ifarchive& ar, graphics::ImageCache& cache) const
+template <typename Archive>
+void load<Archive, graphics::ImageCache>::operator()(Archive& ar, graphics::ImageCache& cache) const
 {
   std::size_t element_count{0};
   ar >> named{"element_count", element_count};
@@ -59,5 +55,10 @@ void load<binary_ifarchive, graphics::ImageCache>::operator()(binary_ifarchive& 
     cache.insert(handle, path, options, ResourceLoading::kDeferred);
   }
 }
+
+template struct save<binary_ofarchive, graphics::ImageOptions>;
+template struct load<binary_ifarchive, graphics::ImageOptions>;
+template struct save<binary_ofarchive, graphics::ImageCache>;
+template struct load<binary_ifarchive, graphics::ImageCache>;
 
 }  // namespace sde::serial

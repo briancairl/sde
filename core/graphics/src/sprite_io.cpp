@@ -9,42 +9,39 @@
 namespace sde::serial
 {
 
-template <>
-void save<binary_ofarchive, graphics::SpriteOptions>::operator()(
-  binary_ofarchive& ar,
-  const graphics::SpriteOptions& options) const
+template <typename Archive>
+void save<Archive, graphics::SpriteOptions>::operator()(Archive& ar, const graphics::SpriteOptions& options) const
 {
   ar << named{"tint_color", options.tint_color};
   ar << named{"frames", options.frames};
   ar << named{"frame_index", options.frame_index};
 }
 
-template <>
-void load<binary_ifarchive, graphics::SpriteOptions>::operator()(binary_ifarchive& ar, graphics::SpriteOptions& options)
-  const
+template <typename Archive>
+void load<Archive, graphics::SpriteOptions>::operator()(Archive& ar, graphics::SpriteOptions& options) const
 {
   ar >> named{"tint_color", options.tint_color};
   ar >> named{"frames", options.frames};
   ar >> named{"frame_index", options.frame_index};
 }
 
-template <>
-void save<binary_ofarchive, graphics::Sprite>::operator()(binary_ofarchive& ar, const graphics::Sprite& sprite) const
+template <typename Archive>
+void save<Archive, graphics::Sprite>::operator()(Archive& ar, const graphics::Sprite& sprite) const
 {
   ar << named{"options", sprite.options()};
 }
 
-template <>
-void load<binary_ifarchive, graphics::Sprite>::operator()(binary_ifarchive& ar, graphics::Sprite& sprite) const
+template <typename Archive>
+void load<Archive, graphics::Sprite>::operator()(Archive& ar, graphics::Sprite& sprite) const
 {
   graphics::SpriteOptions options;
   ar >> named{"options", options};
   sprite.setup(options);
 }
 
-template <>
-void save<binary_ofarchive, graphics::AnimatedSpriteOptions>::operator()(
-  binary_ofarchive& ar,
+template <typename Archive>
+void save<Archive, graphics::AnimatedSpriteOptions>::operator()(
+  Archive& ar,
   const graphics::AnimatedSpriteOptions& options) const
 {
   ar << named{"tint_color", options.tint_color};
@@ -54,10 +51,9 @@ void save<binary_ofarchive, graphics::AnimatedSpriteOptions>::operator()(
   ar << named{"mode", options.mode};
 }
 
-template <>
-void load<binary_ifarchive, graphics::AnimatedSpriteOptions>::operator()(
-  binary_ifarchive& ar,
-  graphics::AnimatedSpriteOptions& options) const
+template <typename Archive>
+void load<Archive, graphics::AnimatedSpriteOptions>::operator()(Archive& ar, graphics::AnimatedSpriteOptions& options)
+  const
 {
   ar >> named{"tint_color", options.tint_color};
   ar >> named{"frames", options.frames};
@@ -66,22 +62,28 @@ void load<binary_ifarchive, graphics::AnimatedSpriteOptions>::operator()(
   ar >> named{"mode", options.mode};
 }
 
-template <>
-void save<binary_ofarchive, graphics::AnimatedSprite>::operator()(
-  binary_ofarchive& ar,
-  const graphics::AnimatedSprite& sprite) const
+template <typename Archive>
+void save<Archive, graphics::AnimatedSprite>::operator()(Archive& ar, const graphics::AnimatedSprite& sprite) const
 {
   ar << named{"options", sprite.options()};
 }
 
-template <>
-void load<binary_ifarchive, graphics::AnimatedSprite>::operator()(
-  binary_ifarchive& ar,
-  graphics::AnimatedSprite& sprite) const
+template <typename Archive>
+void load<Archive, graphics::AnimatedSprite>::operator()(Archive& ar, graphics::AnimatedSprite& sprite) const
 {
   graphics::AnimatedSpriteOptions options;
   ar >> named{"options", options};
   sprite.setup(options);
 }
+
+template struct save<binary_ofarchive, graphics::SpriteOptions>;
+template struct load<binary_ifarchive, graphics::SpriteOptions>;
+template struct save<binary_ofarchive, graphics::Sprite>;
+template struct load<binary_ifarchive, graphics::Sprite>;
+
+template struct save<binary_ofarchive, graphics::AnimatedSpriteOptions>;
+template struct load<binary_ifarchive, graphics::AnimatedSpriteOptions>;
+template struct save<binary_ofarchive, graphics::AnimatedSprite>;
+template struct load<binary_ifarchive, graphics::AnimatedSprite>;
 
 }  // namespace sde::serial

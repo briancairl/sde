@@ -1,3 +1,6 @@
+// C++ Standard Library
+#include <ostream>
+
 // SDE
 #include "sde/graphics/font_io.hpp"
 #include "sde/logging.hpp"
@@ -7,9 +10,8 @@
 namespace sde::serial
 {
 
-template <>
-void save<binary_ofarchive, graphics::FontCache>::operator()(binary_ofarchive& ar, const graphics::FontCache& cache)
-  const
+template <typename Archive>
+void save<Archive, graphics::FontCache>::operator()(Archive& ar, const graphics::FontCache& cache) const
 {
   ar << named{"element_count", cache.size()};
   for (const auto& [handle, info] : cache)
@@ -20,8 +22,8 @@ void save<binary_ofarchive, graphics::FontCache>::operator()(binary_ofarchive& a
 }
 
 
-template <>
-void load<binary_ifarchive, graphics::FontCache>::operator()(binary_ifarchive& ar, graphics::FontCache& cache) const
+template <typename Archive>
+void load<Archive, graphics::FontCache>::operator()(Archive& ar, graphics::FontCache& cache) const
 {
   std::size_t element_count{0};
   ar >> named{"element_count", element_count};
@@ -34,5 +36,8 @@ void load<binary_ifarchive, graphics::FontCache>::operator()(binary_ifarchive& a
     cache.insert(handle, path, ResourceLoading::kDeferred);
   }
 }
+
+template struct save<binary_ofarchive, graphics::FontCache>;
+template struct load<binary_ifarchive, graphics::FontCache>;
 
 }  // namespace sde::serial

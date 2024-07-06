@@ -12,6 +12,12 @@
 namespace sde::game
 {
 
+enum class AssetError
+{
+  kFailedGraphicsLoading,
+  kFailedAudioLoading,
+};
+
 /**
  * @brief Collection of active game assets
  */
@@ -21,6 +27,10 @@ struct Assets
   audio::Assets audio;
   /// Collection of graphics audio assets
   graphics::Assets graphics;
+
+  Assets();
+
+  expected<void, AssetError> refresh();
 };
 
 }  // namespace sde::game

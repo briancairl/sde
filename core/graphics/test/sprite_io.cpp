@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 // SDE
+#include "sde/graphics/sprite.hpp"
 #include "sde/graphics/sprite_io.hpp"
 #include "sde/serialization_binary_file.hpp"
 
