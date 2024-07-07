@@ -49,7 +49,8 @@ void createMovementTileSets(
   std::size_t ordinal_start_offset)
 {
   movement_tilsets[kFront] = [&] {
-    auto frames_or_error = assets.graphics.tile_sets.create(
+    auto frames_or_error = assets.graphics.tile_sets.find_or_create(
+      movement_tilsets[kFront],
       character_textures.front_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -64,7 +65,8 @@ void createMovementTileSets(
   }();
 
   movement_tilsets[kBack] = [&] {
-    auto frames_or_error = assets.graphics.tile_sets.create(
+    auto frames_or_error = assets.graphics.tile_sets.find_or_create(
+      movement_tilsets[kBack],
       character_textures.back_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -79,7 +81,8 @@ void createMovementTileSets(
   }();
 
   movement_tilsets[kRight] = [&] {
-    auto frames_or_error = assets.graphics.tile_sets.create(
+    auto frames_or_error = assets.graphics.tile_sets.find_or_create(
+      movement_tilsets[kRight],
       character_textures.side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -94,7 +97,8 @@ void createMovementTileSets(
   }();
 
   movement_tilsets[kLeft] = [&] {
-    auto frames_or_error = assets.graphics.tile_sets.create(
+    auto frames_or_error = assets.graphics.tile_sets.find_or_create(
+      movement_tilsets[kLeft],
       character_textures.side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -109,7 +113,8 @@ void createMovementTileSets(
   }();
 
   movement_tilsets[kFrontRight] = [&] {
-    auto frames_or_error = assets.graphics.tile_sets.create(
+    auto frames_or_error = assets.graphics.tile_sets.find_or_create(
+      movement_tilsets[kFrontRight],
       character_textures.front_side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -124,7 +129,8 @@ void createMovementTileSets(
   }();
 
   movement_tilsets[kFrontLeft] = [&] {
-    auto frames_or_error = assets.graphics.tile_sets.create(
+    auto frames_or_error = assets.graphics.tile_sets.find_or_create(
+      movement_tilsets[kFrontLeft],
       character_textures.front_side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -139,7 +145,8 @@ void createMovementTileSets(
   }();
 
   movement_tilsets[kBackRight] = [&] {
-    auto frames_or_error = assets.graphics.tile_sets.create(
+    auto frames_or_error = assets.graphics.tile_sets.find_or_create(
+      movement_tilsets[kBackRight],
       character_textures.back_side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},
@@ -154,7 +161,8 @@ void createMovementTileSets(
   }();
 
   movement_tilsets[kBackLeft] = [&] {
-    auto frames_or_error = assets.graphics.tile_sets.create(
+    auto frames_or_error = assets.graphics.tile_sets.find_or_create(
+      movement_tilsets[kBackLeft],
       character_textures.back_side_atlas,
       TileSetSliceUniform{
         .tile_size_px = {64, 64},

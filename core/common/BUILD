@@ -61,7 +61,8 @@ cc_library(
   strip_include_prefix="include",
   deps=[
     "//core/serialization",
-    ":core"
+    ":core",
+    ":asset",
   ],
   visibility=["//visibility:public"]
 )

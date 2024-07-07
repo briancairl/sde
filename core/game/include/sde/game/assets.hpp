@@ -5,7 +5,11 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <unordered_map>
+
 // SDE
+#include "sde/asset.hpp"
 #include "sde/audio/assets.hpp"
 #include "sde/graphics/assets.hpp"
 
