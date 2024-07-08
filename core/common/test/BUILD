@@ -9,6 +9,14 @@ gtest(
 )
 
 gtest(
+  name="resource",
+  timeout = "short",
+  srcs=["resource.cpp"],
+  deps=["//core/common:resource"],
+  visibility=["//visibility:public"],
+)
+
+gtest(
   name="resource_handle_io",
   timeout = "short",
   srcs=["resource_handle_io.cpp"],

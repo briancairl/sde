@@ -74,6 +74,7 @@ enum class LogSeverity
   if (!(cond))                                                                                                         \
   {                                                                                                                    \
     SDE_ASSERT_MSG(fmt, __VA_ARGS__);                                                                                  \
+    std::abort();                                                                                                      \
   }
 #define SDE_ASSERT(cond, message)                                                                                      \
   if (!(cond))                                                                                                         \
@@ -99,7 +100,8 @@ enum class LogSeverity
 #define SDE_ASSERT_GE_MSG(val_lhs, val_rhs, msg) SDE_ASSERT((val_lhs >= val_rhs), msg)
 
 #define SDE_STR(x) #x
-#define SDE_ASSERT_OK(expected) SDE_ASSERT_MSG_COND(expected.has_value(), "[%s] failed\n", SDE_STR(expected))
+#define SDE_ASSERT_OK(expected)                                                                                        \
+  SDE_ASSERT_MSG_COND(expected.has_value(), "[SDE] %s:%d : (%s) failed\n", __FILE__, __LINE__, SDE_STR(expected))
 
 #define SDE_ASSERT_NULL(val_ptr) SDE_ASSERT_NULL_MSG(val_ptr, "expected pointer to have NULL value")
 #define SDE_ASSERT_NON_NULL(val_ptr) SDE_ASSERT_NON_NULL_MSG(val_ptr, "expected pointer to have non-NULL value")

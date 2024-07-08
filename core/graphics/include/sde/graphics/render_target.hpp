@@ -75,8 +75,9 @@ private:
   expected<void, RenderTargetError> reload(RenderTargetInfo& render_target);
   expected<void, RenderTargetError> unload(RenderTargetInfo& render_target);
 
-  expected<RenderTargetInfo, RenderTargetError>
-  generate(TextureHandle color_attachment, ResourceLoading loading = ResourceLoading::kImmediate);
+  expected<RenderTargetInfo, RenderTargetError> generate(
+    TextureHandle color_attachment = TextureHandle::null(),
+    ResourceLoading loading = ResourceLoading::kImmediate);
 };
 
 }  // namespace sde::graphics

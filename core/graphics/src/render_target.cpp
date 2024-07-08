@@ -28,22 +28,18 @@ std::ostream& operator<<(std::ostream& os, RenderTargetError error)
 
 void NativeFrameBufferDeleter::operator()(native_frame_buffer_id_t id) const { glDeleteFramebuffers(1, &id); }
 
-RenderTargetCache::RenderTargetCache(TextureCache& textures) : textures_{std::addressof(textures)}
-{
-  cache_base::handle_to_value_cache_.try_emplace(
-    RenderTargetHandle::null(),
-    RenderTargetInfo{.color_attachment = TextureHandle::null(), .native_id = NativeFrameBufferID{0}});
-}
+RenderTargetCache::RenderTargetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
 
 expected<void, RenderTargetError> RenderTargetCache::reload(RenderTargetInfo& render_target)
 {
   if (render_target.color_attachment.isNull())
   {
+    SDE_LOG_DEBUG("Default Frame Buffer");
     render_target.native_id = NativeFrameBufferID{0};
     return {};
   }
-  const auto* texture_info = textures_->get_if(render_target.color_attachment);
-  if (texture_info == nullptr)
+  const auto* color_attachment = textures_->get_if(render_target.color_attachment);
+  if (color_attachment == nullptr)
   {
     SDE_LOG_DEBUG("InvalidColorAttachment");
     return make_unexpected(RenderTargetError::kInvalidColorAttachment);
@@ -53,7 +49,7 @@ expected<void, RenderTargetError> RenderTargetCache::reload(RenderTargetInfo& re
     GLuint texture_framebuffer;
     glGenFramebuffers(1, &texture_framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, texture_framebuffer);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_info->native_id, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_attachment->native_id, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     render_target.native_id = NativeFrameBufferID{texture_framebuffer};
   }

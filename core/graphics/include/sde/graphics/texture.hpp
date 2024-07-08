@@ -21,6 +21,7 @@
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/typecode.hpp"
 #include "sde/graphics/typedef.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 #include "sde/type.hpp"
@@ -107,7 +108,7 @@ struct TextureNativeDeleter
 
 using NativeTextureID = UniqueResource<native_texture_id_t, TextureNativeDeleter>;
 
-struct TextureInfo
+struct TextureInfo : Resource<TextureInfo>
 {
   ImageHandle source_image;
   TypeCode element_type;
@@ -115,6 +116,16 @@ struct TextureInfo
   TextureShape shape;
   TextureOptions options;
   NativeTextureID native_id;
+
+  auto fields_list()
+  {
+    return std::make_tuple(
+      Field{"source_image", source_image},
+      Field{"element_type", element_type},
+      Field{"layout", layout},
+      Field{"shape", shape},
+      Field{"options", options});
+  }
 };
 
 std::ostream& operator<<(std::ostream& os, const TextureInfo& info);

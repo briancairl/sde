@@ -13,6 +13,7 @@
 // SDE
 #include "sde/crtp.hpp"
 #include "sde/expected.hpp"
+#include "sde/hash.hpp"
 #include "sde/resource_handle.hpp"
 
 namespace sde
@@ -51,11 +52,11 @@ public:
 
   template <typename... CreateArgTs> [[nodiscard]] expected<element_type, error_type> create(CreateArgTs&&... args)
   {
-    auto h = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);
-    auto element_or_error = this->insert(h, std::forward<CreateArgTs>(args)...);
+    auto handle = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);
+    auto element_or_error = this->insert(handle, std::forward<CreateArgTs>(args)...);
     if (element_or_error.has_value())
     {
-      handle_lower_bound_ = std::max(handle_lower_bound_, h);
+      handle_lower_bound_ = std::max(handle_lower_bound_, handle);
       return std::move(element_or_error).value();
     }
     return make_unexpected(element_or_error.error());

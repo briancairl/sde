@@ -53,6 +53,7 @@ cc_library(
 cc_library(
   name="resource",
   hdrs=[
+    "include/sde/resource.hpp",
     "include/sde/resource_cache.hpp",
     "include/sde/resource_handle.hpp",
     "include/sde/resource_handle_io.hpp",
@@ -71,12 +72,13 @@ cc_library(
   name="core",
   hdrs=[
     "include/sde/crtp.hpp",
-    "include/sde/view.hpp",
     "include/sde/format.hpp",
-    "include/sde/type.hpp",
+    "include/sde/hash.hpp",
     "include/sde/time.hpp",
     "include/sde/time_io.hpp",
     "include/sde/time_ostream.hpp",
+    "include/sde/type.hpp",
+    "include/sde/view.hpp",
   ],
   strip_include_prefix="include",
   deps=[":build", ":logging"],

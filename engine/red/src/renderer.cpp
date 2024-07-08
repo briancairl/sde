@@ -31,11 +31,13 @@ private:
   FontHandle player_text_font_;
   TypeSetHandle player_text_type_set_;
   ShaderHandle player_text_shader_;
+  RenderTargetHandle render_target_;
 
   bool onLoad(IArchive& ar) override
   {
     using namespace sde::serial;
     ar >> named{"scaling", scaling_};
+    ar >> named{"render_target", render_target_};
     ar >> named{"sprite_shader", sprite_shader_};
     ar >> named{"player_text_font", player_text_font_};
     ar >> named{"player_text_type_set", player_text_type_set_};
@@ -47,6 +49,7 @@ private:
   {
     using namespace sde::serial;
     ar << named{"scaling", scaling_};
+    ar << named{"render_target", render_target_};
     ar << named{"sprite_shader", sprite_shader_};
     ar << named{"player_text_font", player_text_font_};
     ar << named{"player_text_type_set", player_text_type_set_};
@@ -56,6 +59,12 @@ private:
 
   bool onInitialize(entt::registry& registry, Systems& systems, SharedAssets& assets, const AppProperties& app) override
   {
+    if (!assets.assign(render_target_))
+    {
+      SDE_LOG_ERROR("Missing sprite shader");
+      return false;
+    }
+
     if (!assets.assign(sprite_shader_, "/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl"))
     {
       SDE_LOG_ERROR("Missing sprite shader");
@@ -102,7 +111,7 @@ private:
     using namespace sde::graphics;
 
     RenderResources render_resources;
-    render_resources.target = RenderTargetHandle::null();
+    render_resources.target = render_target_;
     render_resources.shader = sprite_shader_;
     render_resources.buffer_group = 0;
 
