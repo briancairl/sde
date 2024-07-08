@@ -7,6 +7,7 @@
 
 // SDE
 #include "sde/audio/sound_data.hpp"
+#include "sde/logging.hpp"
 #include "sde/resource_wrapper.hpp"
 
 namespace sde::audio
@@ -47,11 +48,8 @@ std::ostream& operator<<(std::ostream& os, SoundDataError count)
   case SoundDataError::kSoundDataNotFound: return os << "SoundDataNotFound";
   case SoundDataError::kMissingSoundFile: return os << "MissingSoundFile";
   case SoundDataError::kInvalidSoundFile: return os << "InvalidSoundFile";
+  case SoundDataError::kInvalidHandle: return os << "InvalidHandle";
   case SoundDataError::kElementAlreadyExists: return os << "ElementAlreadyExists";
-  case SoundDataError::kInvalidSoundFileSeek: return os << "InvalidSoundFileSeek";
-  case SoundDataError::kInvalidSoundFileReadSize: return os << "InvalidSoundFileReadSize";
-  case SoundDataError::kInvalidSoundFileChannelCount: return os << "InvalidSoundFileChannelCount";
-  case SoundDataError::kInvalidSoundFileBitDepth: return os << "InvalidSoundFileBitDepth";
   }
   // clang-format on
   return os;
@@ -59,26 +57,10 @@ std::ostream& operator<<(std::ostream& os, SoundDataError count)
 
 void SoundDataBufferDeleter::operator()(void* data) const { std::free(data); }
 
-expected<void, SoundDataError> SoundDataCache::reload(SoundDataHandle sound)
+expected<void, SoundDataError> SoundDataCache::unload(SoundDataInfo& sound)
 {
-  if (const auto handle_and_value_itr = handle_to_value_cache_.find(sound);
-      handle_and_value_itr != std::end(handle_to_value_cache_))
-  {
-    return reload(handle_and_value_itr->second);
-  }
-  return make_unexpected(SoundDataError::kSoundDataNotFound);
-}
-
-expected<void, SoundDataError> SoundDataCache::unload(SoundDataHandle sound)
-{
-  if (const auto handle_and_value_itr = handle_to_value_cache_.find(sound);
-      handle_and_value_itr != std::end(handle_to_value_cache_))
-  {
-    auto& info = handle_and_value_itr->second;
-    info.buffered_samples = SoundDataBuffer{nullptr};
-    return {};
-  }
-  return make_unexpected(SoundDataError::kSoundDataNotFound);
+  sound.buffered_samples = SoundDataBuffer{nullptr};
+  return {};
 }
 
 expected<void, SoundDataError> SoundDataCache::reload(SoundDataInfo& sound)
@@ -86,6 +68,7 @@ expected<void, SoundDataError> SoundDataCache::reload(SoundDataInfo& sound)
   // Check that sound file exists
   if (!asset::exists(sound.path))
   {
+    SDE_LOG_DEBUG("MissingSoundFile");
     return make_unexpected(SoundDataError::kMissingSoundFile);
   }
 
@@ -94,32 +77,37 @@ expected<void, SoundDataError> SoundDataCache::reload(SoundDataInfo& sound)
     WaveOpenFileForReading(sound.path.c_str()), [](WaveInfo* wave_ptr) { WaveCloseFile(wave_ptr); });
   if (wave == nullptr)
   {
+    SDE_LOG_DEBUG("InvalidSoundFile");
     return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   // Seek WAV to start
   if (const auto retcode = WaveSeekFile(0, wave); retcode != 0)
   {
-    return make_unexpected(SoundDataError::kInvalidSoundFileSeek);
+    SDE_LOG_DEBUG("InvalidSoundFile");
+    return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   // Read WAV data
   auto* wave_data = reinterpret_cast<char*>(std::malloc(wave->dataSize));
   if (const auto read_size = WaveReadFile(wave_data, wave->dataSize, wave); read_size != wave->dataSize)
   {
-    return make_unexpected(SoundDataError::kInvalidSoundFileReadSize);
+    SDE_LOG_DEBUG("InvalidSoundFile");
+    return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   auto channel_count_opt = toSoundChannelCount(wave->channels);
   if (!channel_count_opt.has_value())
   {
-    return make_unexpected(SoundDataError::kInvalidSoundFileChannelCount);
+    SDE_LOG_DEBUG("InvalidSoundFile");
+    return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   auto channel_element_type_opt = toSoundChannelBitDepth(wave->bitsPerSample);
   if (!channel_element_type_opt.has_value())
   {
-    return make_unexpected(SoundDataError::kInvalidSoundFileBitDepth);
+    SDE_LOG_DEBUG("InvalidSoundFile");
+    return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   sound.buffered_samples = SoundDataBuffer{wave_data};

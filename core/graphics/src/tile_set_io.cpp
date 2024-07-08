@@ -6,6 +6,7 @@
 #include "sde/graphics/texture_io.hpp"
 #include "sde/graphics/tile_set.hpp"
 #include "sde/graphics/tile_set_io.hpp"
+#include "sde/logging.hpp"
 #include "sde/serial/std/vector.hpp"
 #include "sde/serialization_binary_file.hpp"
 
@@ -37,7 +38,7 @@ void load<Archive, graphics::TileSetCache>::operator()(Archive& ar, graphics::Ti
     ar >> named{"tile_atlas", tile_atlas};
     std::vector<Bounds2f> tile_bounds;
     ar >> named{"tile_bounds", tile_bounds};
-    cache.insert(handle, tile_atlas, std::move(tile_bounds));
+    SDE_ASSERT_OK(cache.insert(handle, tile_atlas, std::move(tile_bounds)));
   }
 }
 

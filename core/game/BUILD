@@ -4,9 +4,12 @@ cc_library(
     "include/sde/game/assets.hpp",
     "include/sde/game/assets_fwd.hpp",
     "include/sde/game/assets_io.hpp",
+    "include/sde/game/script.hpp",
+    "include/sde/game/script_fwd.hpp",
+    "include/sde/game/script_impl.hpp",
+    "include/sde/game/script_runtime.hpp",
     "include/sde/game/systems.hpp",
     "include/sde/game/systems_fwd.hpp",
-    "include/sde/game/script.hpp",
   ],
   srcs=[
     "src/assets.cpp",

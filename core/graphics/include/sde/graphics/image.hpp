@@ -109,9 +109,10 @@ std::ostream& operator<<(std::ostream& os, const ImageShape& error);
  */
 enum class ImageError
 {
+  kElementAlreadyExists,
+  kInvalidHandle,
   kAssetNotFound,
   kAssetInvalid,
-  kElementAlreadyExists,
   kImageNotFound,
   kUnsupportedBitDepth,
 };

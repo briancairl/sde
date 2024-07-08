@@ -7,7 +7,5 @@
 
 namespace sde::game
 {
-
-struct Assets;
-
+class Assets;
 }  // namespace sde::game

@@ -1,6 +1,7 @@
 cc_library(
   name="primitives",
   hdrs=[
+    "include/sde/serial/carray.hpp",
     "include/sde/serial/packet.hpp",
     "include/sde/serial/label.hpp",
     "include/sde/serial/named.hpp",

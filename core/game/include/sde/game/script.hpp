@@ -7,6 +7,7 @@
 
 // C++ Standard Library
 #include <optional>
+#include <string_view>
 
 // EnTT
 #include <entt/fwd.hpp>
@@ -27,26 +28,53 @@ enum class ScriptError
   kInitializationFailed,
   kCriticalUpdateFailure,
   kNonCriticalUpdateFailure,
+  kNotLoaded,
+  kLoadedPreviously,
+  kLoadFailed,
+  kSaveFailed,
 };
 
 template <typename ScriptT> struct Script : public crtp_base<Script<ScriptT>>
 {
 public:
+  using SharedAssets = game::Assets;
+
   Script(Script&& other) = default;
   Script& operator=(Script&& other) = default;
 
-  void reset() { t_start_.reset(); }
+  std::string_view identity() const { return this->derived().getIdentity(); }
+
+  void reset() { t_init_.reset(); }
+
+  template <typename Archive> expected<void, ScriptError> load(Archive& ar)
+  {
+    if (not_loaded_ and this->derived().onLoad(ar))
+    {
+      not_loaded_ = false;
+      return {};
+    }
+    return make_unexpected(ScriptError::kLoadFailed);
+  }
+
+  template <typename Archive> expected<void, ScriptError> save(Archive& ar)
+  {
+    if (this->derived().onSave(ar))
+    {
+      return {};
+    }
+    return make_unexpected(ScriptError::kSaveFailed);
+  }
 
   expected<void, ScriptError>
-  update(entt::registry& registry, Systems& systems, Assets& assets, const AppProperties& app)
+  update(entt::registry& registry, Systems& systems, SharedAssets& assets, const AppProperties& app)
   {
-    if (t_start_.has_value())
+    if (t_init_.has_value())
     {
       return this->derived().onUpdate(registry, systems, assets, app);
     }
     else if (this->derived().onInitialize(registry, systems, assets, app))
     {
-      t_start_ = app.time;
+      t_init_ = app.time;
       return {};
     }
     return make_unexpected(ScriptError::kInitializationFailed);
@@ -55,51 +83,16 @@ public:
 protected:
   using script = Script<ScriptT>;
 
+
   Script() = default;
   Script(const Script& other) = delete;
   Script& operator=(const Script& other) = delete;
 
+  const std::optional<TimeOffset>& getTimeInit() const { return t_init_; }
+
 private:
-  constexpr static bool onInitialize(
-    [[maybe_unused]] entt::registry& registry,
-    [[maybe_unused]] Systems& systems,
-    [[maybe_unused]] Assets& assets,
-    [[maybe_unused]] const AppProperties& app)
-  {
-    return true;
-  }
-
-  constexpr static expected<void, ScriptError> onUpdate(
-    [[maybe_unused]] entt::registry& registry,
-    [[maybe_unused]] Systems& systems,
-    [[maybe_unused]] const Assets& assets,
-    [[maybe_unused]] const AppProperties& app)
-  {
-    return {};
-  }
-
-  std::optional<TimeOffset> t_start_;
-};
-
-class ScriptRT : public Script<ScriptRT>
-{
-protected:
-  virtual ~ScriptRT() = default;
-
-  virtual bool onInitialize(
-    [[maybe_unused]] entt::registry& registry,
-    [[maybe_unused]] Systems& systems,
-    [[maybe_unused]] Assets& assets,
-    [[maybe_unused]] const AppProperties& app)
-  {
-    return true;
-  }
-
-  virtual expected<void, ScriptError> onUpdate(
-    [[maybe_unused]] entt::registry& registry,
-    [[maybe_unused]] Systems& systems,
-    [[maybe_unused]] const Assets& assets,
-    [[maybe_unused]] const AppProperties& app) = 0;
+  bool not_loaded_ = true;
+  std::optional<TimeOffset> t_init_;
 };
 
 }  // namespace sde::game

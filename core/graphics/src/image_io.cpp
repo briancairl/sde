@@ -4,6 +4,7 @@
 // SDE
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/image_io.hpp"
+#include "sde/logging.hpp"
 #include "sde/serial/std/filesystem.hpp"
 #include "sde/serialization_binary_file.hpp"
 
@@ -52,7 +53,7 @@ void load<Archive, graphics::ImageCache>::operator()(Archive& ar, graphics::Imag
     ar >> named{"path", path};
     graphics::ImageOptions options;
     ar >> named{"options", options};
-    cache.insert(handle, path, options, ResourceLoading::kDeferred);
+    SDE_ASSERT_OK(cache.insert(handle, path, options, ResourceLoading::kDeferred));
   }
 }
 

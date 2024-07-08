@@ -78,7 +78,7 @@ void load<Archive, graphics::TextureCache>::operator()(Archive& ar, graphics::Te
     ar >> named{"options", options};
     graphics::ImageHandle source_image;
     ar >> named{"source_image", source_image};
-    cache.insert(handle, element_type, shape, layout, options, source_image, ResourceLoading::kDeferred);
+    SDE_ASSERT_OK(cache.insert(handle, element_type, shape, layout, options, source_image, ResourceLoading::kDeferred));
   }
 }
 

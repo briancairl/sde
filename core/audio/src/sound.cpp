@@ -50,6 +50,7 @@ expected<void, SoundError> SoundCache::reload(SoundInfo& sound)
   const auto* sound_data = sound_data_->get_if(sound.sound_data);
   if (sound_data == nullptr)
   {
+    SDE_LOG_DEBUG("InvalidSoundData");
     return make_unexpected(SoundError::kInvalidSoundData);
   }
 
@@ -58,6 +59,7 @@ expected<void, SoundError> SoundCache::reload(SoundInfo& sound)
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
+    SDE_LOG_DEBUG("BackendBufferCreationFailure");
     return make_unexpected(SoundError::kBackendBufferCreationFailure);
   }
 
@@ -71,6 +73,7 @@ expected<void, SoundError> SoundCache::reload(SoundInfo& sound)
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
+    SDE_LOG_DEBUG("BackendBufferTransferFailure");
     return make_unexpected(SoundError::kBackendBufferTransferFailure);
   }
 
@@ -91,6 +94,7 @@ expected<SoundInfo, SoundError> SoundCache::generate(const asset::path& sound_da
   auto sound_data_or_error = sound_data_->create(sound_data_path);
   if (!sound_data_or_error.has_value())
   {
+    SDE_LOG_DEBUG("InvalidSoundData");
     return make_unexpected(SoundError::kInvalidSoundData);
   }
   return generate(sound_data_or_error->handle);

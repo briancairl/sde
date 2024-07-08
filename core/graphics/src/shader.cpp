@@ -468,6 +468,8 @@ std::ostream& operator<<(std::ostream& os, ShaderError error)
   {
   case ShaderError::kElementAlreadyExists:
     return os << "ElementAlreadyExists";
+  case ShaderError::kInvalidHandle:
+    return os << "InvalidHandle";
   case ShaderError::kAssetNotFound:
     return os << "AssetNotFound";
   case ShaderError::kLinkageFailure:

@@ -98,6 +98,9 @@ enum class LogSeverity
 #define SDE_ASSERT_GT_MSG(val_lhs, val_rhs, msg) SDE_ASSERT((val_lhs > val_rhs), msg)
 #define SDE_ASSERT_GE_MSG(val_lhs, val_rhs, msg) SDE_ASSERT((val_lhs >= val_rhs), msg)
 
+#define SDE_STR(x) #x
+#define SDE_ASSERT_OK(expected) SDE_ASSERT_MSG_COND(expected.has_value(), "[%s] failed\n", SDE_STR(expected))
+
 #define SDE_ASSERT_NULL(val_ptr) SDE_ASSERT_NULL_MSG(val_ptr, "expected pointer to have NULL value")
 #define SDE_ASSERT_NON_NULL(val_ptr) SDE_ASSERT_NON_NULL_MSG(val_ptr, "expected pointer to have non-NULL value")
 #define SDE_ASSERT_TRUE(val_bool) SDE_ASSERT_TRUE_MSG(val_bool, "expected expression to evaluate to TRUE")

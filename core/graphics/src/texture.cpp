@@ -540,6 +540,7 @@ expected<void, TextureError> TextureCache::reload(TextureInfo& texture)
 
   if (texture.source_image.isNull())
   {
+    SDE_LOG_DEBUG_FMT("Creating empty texture: (%d x %d)", texture.shape.value.x(), texture.shape.value.y());
     return {};
   }
 

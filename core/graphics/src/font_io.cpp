@@ -33,7 +33,7 @@ void load<Archive, graphics::FontCache>::operator()(Archive& ar, graphics::FontC
     ar >> named{"handle", handle};
     asset::path path;
     ar >> named{"path", path};
-    cache.insert(handle, path, ResourceLoading::kDeferred);
+    SDE_ASSERT_OK(cache.insert(handle, path, ResourceLoading::kDeferred));
   }
 }
 

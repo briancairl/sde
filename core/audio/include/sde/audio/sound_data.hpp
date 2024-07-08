@@ -30,11 +30,8 @@ enum class SoundDataError
   kSoundDataNotFound,
   kMissingSoundFile,
   kElementAlreadyExists,
+  kInvalidHandle,
   kInvalidSoundFile,
-  kInvalidSoundFileSeek,
-  kInvalidSoundFileReadSize,
-  kInvalidSoundFileChannelCount,
-  kInvalidSoundFileBitDepth,
 };
 
 std::ostream& operator<<(std::ostream& os, SoundDataError count);
@@ -93,12 +90,9 @@ class SoundDataCache : public ResourceCache<SoundDataCache>
 {
   friend cache_base;
 
-public:
-  expected<void, SoundDataError> reload(SoundDataHandle sound);
-  expected<void, SoundDataError> unload(SoundDataHandle sound);
-
 private:
   static expected<void, SoundDataError> reload(SoundDataInfo& sound);
+  static expected<void, SoundDataError> unload(SoundDataInfo& sound);
   expected<SoundDataInfo, SoundDataError>
   generate(const asset::path& sound_path, ResourceLoading loading = ResourceLoading::kImmediate);
 };

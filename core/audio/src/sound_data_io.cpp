@@ -4,6 +4,7 @@
 // SDE
 #include "sde/audio/sound_data.hpp"
 #include "sde/audio/sound_data_io.hpp"
+#include "sde/logging.hpp"
 #include "sde/serial/std/filesystem.hpp"
 #include "sde/serialization_binary_file.hpp"
 
@@ -34,7 +35,7 @@ void load<binary_ifarchive, audio::SoundDataCache>::operator()(binary_ifarchive&
     ar >> named{"handle", handle};
     asset::path path;
     ar >> named{"path", path};
-    cache.insert(handle, path, ResourceLoading::kDeferred);
+    SDE_ASSERT_OK(cache.insert(handle, path, ResourceLoading::kDeferred));
   }
 }
 

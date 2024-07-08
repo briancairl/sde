@@ -27,7 +27,7 @@ struct Assets
 
   Assets();
 
-  expected<void, AssetError> refresh();
+  [[nodiscard]] expected<void, AssetError> refresh();
 };
 
 }  // namespace sde::audio

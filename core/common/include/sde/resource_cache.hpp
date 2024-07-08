@@ -52,36 +52,38 @@ public:
   template <typename... CreateArgTs> [[nodiscard]] expected<element_type, error_type> create(CreateArgTs&&... args)
   {
     auto h = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);
-    return this->insert(h, std::forward<CreateArgTs>(args)...);
+    auto element_or_error = this->insert(h, std::forward<CreateArgTs>(args)...);
+    if (element_or_error.has_value())
+    {
+      handle_lower_bound_ = std::max(handle_lower_bound_, h);
+      return std::move(element_or_error).value();
+    }
+    return make_unexpected(element_or_error.error());
   }
 
-  template <typename LocatorT, typename... CreateArgTs>
-  [[nodiscard]] expected<element_type, error_type> find_or_create(LocatorT locator, CreateArgTs&&... args)
+
+  template <typename... CreateArgTs>
+  [[nodiscard]] expected<element_type, error_type> find_or_create(handle_type handle, CreateArgTs&&... args)
   {
-    if constexpr (std::is_same_v<std::remove_reference_t<LocatorT>, handle_type>)
+    if (handle.isNull())
     {
-      const auto handle_to_value_itr = handle_to_value_cache_.find(locator);
-      if (handle_to_value_itr != handle_to_value_cache_.end())
-      {
-        return element_type{handle_to_value_itr->first, std::addressof(handle_to_value_itr->second)};
-      }
+      return create(std::forward<CreateArgTs>(args)...);
     }
-    else
+    if (auto existing_value = get_if(handle); existing_value != nullptr)
     {
-      for (const auto& [handle, value] : handle_to_value_cache_)
-      {
-        if (locator(value, std::forward<CreateArgTs>(args)...))
-        {
-          return element_type{handle, std::addressof(value)};
-        }
-      }
+      return element_type{handle, existing_value};
     }
     return create(std::forward<CreateArgTs>(args)...);
   }
 
   template <typename... CreateArgTs>
-  expected<element_type, error_type> insert(const handle_type& handle, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_type, error_type> insert(const handle_type& handle, CreateArgTs&&... args)
   {
+    if (handle.isNull())
+    {
+      return make_unexpected(error_type::kInvalidHandle);
+    }
+
     // Create a new element
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
     if (!value_or_error.has_value())
@@ -99,16 +101,6 @@ public:
 
     // Element was a duplicate
     return make_unexpected(error_type::kElementAlreadyExists);
-  }
-
-  template <typename... CreateArgTs>
-  expected<element_type, error_type> find_or_insert(const handle_type& handle, CreateArgTs&&... args)
-  {
-    if (const auto* previous_value = get_if(handle); previous_value != nullptr)
-    {
-      return element_type{handle, previous_value};
-    }
-    return insert(handle, std::forward<CreateArgTs>(args)...);
   }
 
   [[nodiscard]] const value_type* get_if(const handle_type& handle) const

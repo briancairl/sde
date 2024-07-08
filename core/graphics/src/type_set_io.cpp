@@ -4,8 +4,10 @@
 // SDE
 #include "sde/geometry_io.hpp"
 #include "sde/graphics/font_io.hpp"
+#include "sde/graphics/texture_io.hpp"
 #include "sde/graphics/type_set.hpp"
 #include "sde/graphics/type_set_io.hpp"
+#include "sde/logging.hpp"
 #include "sde/serialization_binary_file.hpp"
 
 namespace sde::serial
@@ -37,6 +39,7 @@ void save<binary_ofarchive, graphics::TypeSetCache>::operator()(
   {
     ar << named{"handle", handle};
     ar << named{"font", info.font};
+    ar << named{"glyph_atlas", info.glyph_atlas};
     ar << named{"options", info.options};
   }
 }
@@ -53,9 +56,11 @@ void load<binary_ifarchive, graphics::TypeSetCache>::operator()(binary_ifarchive
     ar >> named{"handle", handle};
     graphics::FontHandle font;
     ar >> named{"font", font};
+    graphics::TextureHandle glyph_atlas;
+    ar >> named{"glyph_atlas", glyph_atlas};
     graphics::TypeSetOptions options;
     ar >> named{"options", options};
-    cache.insert(handle, font, options);
+    SDE_ASSERT_OK(cache.insert(handle, font, options, glyph_atlas, ResourceLoading::kDeferred));
   }
 }
 

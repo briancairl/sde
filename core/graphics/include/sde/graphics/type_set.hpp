@@ -6,7 +6,7 @@
 #pragma once
 
 // C++ Standard Library
-#include <array>
+#include <vector>
 
 // SDE
 #include "sde/asset.hpp"
@@ -16,9 +16,9 @@
 #include "sde/graphics/font_handle.hpp"
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
+#include "sde/graphics/type_set_fwd.hpp"
 #include "sde/graphics/type_set_handle.hpp"
 #include "sde/resource_cache.hpp"
-#include "sde/view.hpp"
 
 namespace sde::graphics
 {
@@ -39,12 +39,10 @@ struct TypeSetOptions
 
 struct TypeSetInfo
 {
-  static constexpr std::size_t kGlyphCount = 128UL;
-
   TypeSetOptions options;
   FontHandle font;
   TextureHandle glyph_atlas;
-  std::array<Glyph, kGlyphCount> glyphs;
+  std::vector<Glyph> glyphs;
 
   const Glyph& getGlyph(char c) const { return glyphs[static_cast<std::size_t>(c)]; }
   const Glyph& operator[](char c) const { return getGlyph(c); }
@@ -55,14 +53,13 @@ struct TypeSetInfo
 enum class TypeSetError
 {
   kElementAlreadyExists,
+  kInvalidHandle,
   kInvalidFont,
   kGlyphSizeInvalid,
   kGlyphDataMissing,
   kGlyphRenderingFailure,
   kGlyphAtlasTextureCreationFailed,
 };
-
-class TypeSetCache;
 
 }  // namespace sde::graphics
 
@@ -89,18 +86,17 @@ public:
   TypeSetCache(TextureCache& texture, FontCache& fonts);
 
 private:
-  static constexpr auto kGlyphCount{TypeSetInfo::kGlyphCount};
-
   TextureCache* textures_;
   FontCache* fonts_;
 
-  expected<TypeSetInfo, TypeSetError> generate(FontHandle font, const TypeSetOptions& options = {});
+  expected<void, TypeSetError> reload(TypeSetInfo& type_set);
+  expected<void, TypeSetError> unload(TypeSetInfo& type_set);
 
   expected<TypeSetInfo, TypeSetError> generate(
     FontHandle font,
-    const TypeSetOptions& options,
-    TextureHandle glyph_atlas,
-    View<const Glyph, kGlyphCount> glyphs);
+    const TypeSetOptions& options = {},
+    TextureHandle glyph_atlas = TextureHandle::null(),
+    ResourceLoading loading = ResourceLoading::kImmediate);
 };
 
 }  // namespace sde::graphics

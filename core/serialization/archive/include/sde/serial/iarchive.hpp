@@ -11,6 +11,7 @@
 
 // SDE
 #include "sde/crtp.hpp"
+#include "sde/serial/carray.hpp"
 #include "sde/serial/label.hpp"
 #include "sde/serial/object.hpp"
 #include "sde/serial/packet.hpp"

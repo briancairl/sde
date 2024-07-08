@@ -10,5 +10,5 @@ namespace sde::graphics
 struct Glyph;
 struct TypeSetOptions;
 struct TypeSetInfo;
-class GlyphCache;
+class TypeSetCache;
 }  // namespace sde::graphics

@@ -37,14 +37,16 @@ RenderTargetCache::RenderTargetCache(TextureCache& textures) : textures_{std::ad
 
 expected<void, RenderTargetError> RenderTargetCache::reload(RenderTargetInfo& render_target)
 {
-  const auto* texture_info = textures_->get_if(render_target.color_attachment);
-  if (texture_info == nullptr)
-  {
-    return make_unexpected(RenderTargetError::kInvalidColorAttachment);
-  }
   if (render_target.color_attachment.isNull())
   {
     render_target.native_id = NativeFrameBufferID{0};
+    return {};
+  }
+  const auto* texture_info = textures_->get_if(render_target.color_attachment);
+  if (texture_info == nullptr)
+  {
+    SDE_LOG_DEBUG("InvalidColorAttachment");
+    return make_unexpected(RenderTargetError::kInvalidColorAttachment);
   }
   else
   {

@@ -17,10 +17,12 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 {
   switch (error)
   {
-  case TileSetError::kAssetNotFound:
-    return os << "AssetNotFound";
   case TileSetError::kElementAlreadyExists:
     return os << "ElementAlreadyExists";
+  case TileSetError::kInvalidHandle:
+    return os << "InvalidHandle";
+  case TileSetError::kAssetNotFound:
+    return os << "AssetNotFound";
   case TileSetError::kInvalidAtlasTexture:
     return os << "InvalidAtlasTexture";
   case TileSetError::kInvalidTileSize:
@@ -62,6 +64,7 @@ TileSetCache::generate(const TextureHandle& texture, const TileSetSliceUniform& 
   const auto* texture_info = textures_->get_if(texture);
   if (texture_info == nullptr)
   {
+    SDE_LOG_DEBUG("InvalidAtlasTexture");
     return make_unexpected(TileSetError::kInvalidAtlasTexture);
   }
 

@@ -73,12 +73,14 @@ std::ostream& operator<<(std::ostream& os, ImageError error)
 {
   switch (error)
   {
+  case ImageError::kElementAlreadyExists:
+    return os << "ElementAlreadyExists";
+  case ImageError::kInvalidHandle:
+    return os << "InvalidHandle";
   case ImageError::kAssetNotFound:
     return os << "AssetNotFound";
   case ImageError::kAssetInvalid:
     return os << "AssetInvalid";
-  case ImageError::kElementAlreadyExists:
-    return os << "ElementAlreadyExists";
   case ImageError::kImageNotFound:
     return os << "ImageNotFound";
   case ImageError::kUnsupportedBitDepth:

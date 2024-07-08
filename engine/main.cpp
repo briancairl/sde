@@ -11,6 +11,7 @@
 #include "sde/audio/mixer.hpp"
 #include "sde/game/assets.hpp"
 #include "sde/game/assets_io.hpp"
+#include "sde/game/script.hpp"
 #include "sde/game/systems.hpp"
 #include "sde/graphics/image.hpp"
 #include "sde/logging.hpp"
@@ -18,6 +19,7 @@
 // #include "sde/view.hpp"
 
 // RED
+#include "red/components.hpp"
 #include "red/player_character.hpp"
 #include "red/renderer.hpp"
 #include "red/weather.hpp"
@@ -32,35 +34,51 @@ int main(int argc, char** argv)
 
   SDE_LOG_INFO("starting...");
 
-  game::Assets assets;
+
+  auto app_or_error = App::create({.initial_size = {1000, 500}});
+  SDE_ASSERT_TRUE(app_or_error.has_value());
+
+  game::Systems systems{game::Systems::create().value()};
+
+  game::Assets assets{systems};
+
+  entt::registry reg;
+  auto character_script = createPlayerCharacter();
+  auto renderer_script = createRenderer();
+  auto weather_script = createWeather();
 
   if (auto ifs_or_error = serial::file_istream::create("/tmp/game.bin"); ifs_or_error.has_value())
   {
     serial::binary_iarchive iar{*ifs_or_error};
     iar >> serial::named{"assets", assets};
+    if (auto ok_or_error = assets.refresh())
+    {
+      character_script->load(iar);
+      renderer_script->load(iar);
+      weather_script->load(iar);
+    }
+    else
+    {
+      SDE_FAIL("failed asset resolution");
+    }
   }
 
-  auto app_or_error = App::create({.initial_size = {1000, 500}});
-  SDE_ASSERT_TRUE(app_or_error.has_value());
 
-  assets.refresh();
+  // auto icon_or_error = assets.graphics.images.find_or_create(
+  //   [](const auto& value, const auto& path, auto&&...) -> bool { return value.path == path; },
+  //   "/home/brian/dev/assets/icons/red.png",
+  //   ImageOptions{ImageChannels::kRGBA});
+  // SDE_ASSERT_TRUE(icon_or_error.has_value());
 
-  auto icon_or_error = assets.graphics.images.find_or_create(
-    [](const auto& value, const auto& path, auto&&...) -> bool { return value.path == path; },
-    "/home/brian/dev/assets/icons/red.png",
-    ImageOptions{ImageChannels::kRGBA});
-  SDE_ASSERT_TRUE(icon_or_error.has_value());
+  // auto cursor_or_error = assets.graphics.images.find_or_create(
+  //   [](const auto& value, const auto& path, auto&&...) -> bool { return value.path == path; },
+  //   "/home/brian/dev/assets/icons/sword.png",
+  //   ImageOptions{ImageChannels::kRGBA});
+  // SDE_ASSERT_TRUE(cursor_or_error.has_value());
 
-  auto cursor_or_error = assets.graphics.images.find_or_create(
-    [](const auto& value, const auto& path, auto&&...) -> bool { return value.path == path; },
-    "/home/brian/dev/assets/icons/sword.png",
-    ImageOptions{ImageChannels::kRGBA});
-  SDE_ASSERT_TRUE(cursor_or_error.has_value());
+  // app_or_error->window().setIcon(icon_or_error->value->ref());
+  // app_or_error->window().setCursor(cursor_or_error->value->ref());
 
-  app_or_error->window().setIcon(icon_or_error->value->ref());
-  app_or_error->window().setCursor(cursor_or_error->value->ref());
-
-  game::Systems systems{game::Systems::create().value()};
 
   auto background_track_1_or_error =
     assets.audio.sounds.create("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav");
@@ -75,17 +93,28 @@ int main(int argc, char** argv)
     listener_or_err->set(*background_track_2_or_error, TrackOptions{.volume = 0.4F, .looped = true});
   }
 
-  entt::registry reg;
-  PlayerCharacter character_script;
-  Renderer renderer_script;
-  Weather weather_script;
-
   app_or_error->spin([&](const auto& window) {
-    character_script.update(reg, systems, assets, window);
     reg.view<Position, Dynamics>().each(
       [dt = toSeconds(window.time_delta)](Position& pos, const Dynamics& state) { pos.center += state.velocity * dt; });
-    renderer_script.update(reg, systems, assets, window);
-    weather_script.update(reg, systems, assets, window);
+
+    if (!character_script->update(reg, systems, assets, window))
+    {
+      SDE_LOG_ERROR("character_script->update(...) failed");
+      return AppDirective::kClose;
+    }
+
+    if (!renderer_script->update(reg, systems, assets, window))
+    {
+      SDE_LOG_ERROR("renderer_script->update(...) failed");
+      return AppDirective::kClose;
+    }
+
+    if (!weather_script->update(reg, systems, assets, window))
+    {
+      SDE_LOG_ERROR("weather_script->update(...) failed");
+      return AppDirective::kClose;
+    }
+
     return AppDirective::kContinue;
   });
 
@@ -95,6 +124,9 @@ int main(int argc, char** argv)
   {
     serial::binary_oarchive oar{*ofs_or_error};
     oar << serial::named{"assets", assets};
+    character_script->save(oar);
+    renderer_script->save(oar);
+    weather_script->save(oar);
   }
 
   return 0;

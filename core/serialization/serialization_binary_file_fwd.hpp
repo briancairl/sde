@@ -13,7 +13,7 @@
 namespace sde::serial
 {
 
-using binary_ofarchive = binary_oarchive<file_ostream>;
-using binary_ifarchive = binary_iarchive<file_istream>;
+using binary_ofarchive = binary_oarchive<file_handle_ostream>;
+using binary_ifarchive = binary_iarchive<file_handle_istream>;
 
 }  // namespace sde::serial

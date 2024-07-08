@@ -5,6 +5,7 @@
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/render_target_io.hpp"
 #include "sde/graphics/texture_io.hpp"
+#include "sde/logging.hpp"
 #include "sde/serialization_binary_file.hpp"
 
 namespace sde::serial
@@ -33,7 +34,7 @@ void load<Archive, graphics::RenderTargetCache>::operator()(Archive& ar, graphic
     ar >> named{"handle", handle};
     graphics::TextureHandle color_attachment;
     ar >> named{"color_attachment", color_attachment};
-    cache.insert(handle, color_attachment, ResourceLoading::kDeferred);
+    SDE_ASSERT_OK(cache.insert(handle, color_attachment, ResourceLoading::kDeferred));
   }
 }
 

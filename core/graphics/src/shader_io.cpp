@@ -4,6 +4,7 @@
 // SDE
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/shader_io.hpp"
+#include "sde/logging.hpp"
 #include "sde/serial/std/filesystem.hpp"
 #include "sde/serialization_binary_file.hpp"
 
@@ -33,7 +34,7 @@ void load<Archive, graphics::ShaderCache>::operator()(Archive& ar, graphics::Sha
     ar >> named{"handle", handle};
     asset::path path;
     ar >> named{"path", path};
-    cache.insert(handle, path, ResourceLoading::kDeferred);
+    SDE_ASSERT_OK(cache.insert(handle, path, ResourceLoading::kDeferred));
   }
 }
 

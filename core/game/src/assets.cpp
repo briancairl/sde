@@ -9,7 +9,7 @@
 namespace sde::game
 {
 
-Assets::Assets() {}
+Assets::Assets([[maybe_unused]] Systems& systems) {}
 
 expected<void, AssetError> Assets::refresh()
 {
