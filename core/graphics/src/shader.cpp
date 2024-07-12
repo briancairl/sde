@@ -347,7 +347,7 @@ native_shader_id_t createShaderProgram(native_shader_id_t vert, native_shader_id
   return 0;
 }
 
-expected<void, ShaderError> compile(ShaderInfo& shader, std::string_view source)
+expected<void, ShaderError> compile(Shader& shader, std::string_view source)
 {
   const auto source_parts = toShaderSourceParts(source);
 
@@ -503,7 +503,7 @@ std::ostream& operator<<(std::ostream& os, ShaderComponents components)
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const ShaderInfo& info)
+std::ostream& operator<<(std::ostream& os, const Shader& info)
 {
   // clang-format off
   os << "{ components: " << info.components
@@ -513,13 +513,13 @@ std::ostream& operator<<(std::ostream& os, const ShaderInfo& info)
   return os;
 }
 
-bool hasLayout(const ShaderInfo& info, std::string_view key, ShaderVariableType type, std::size_t index)
+bool hasLayout(const Shader& info, std::string_view key, ShaderVariableType type, std::size_t index)
 {
   return (index < info.variables.layout.size()) && (key == info.variables.layout[index].key) &&
     (type == info.variables.layout[index].type);
 }
 
-bool hasUniform(const ShaderInfo& info, std::string_view key, ShaderVariableType type)
+bool hasUniform(const Shader& info, std::string_view key, ShaderVariableType type)
 {
   return std::find_if(
            std::begin(info.variables.uniforms),
@@ -534,7 +534,7 @@ void NativeShaderDeleter::operator()(native_shader_id_t id) const
   glDeleteTextures(1, &id);
 }
 
-expected<void, ShaderError> ShaderCache::reload(ShaderInfo& shader)
+expected<void, ShaderError> ShaderCache::reload(Shader& shader)
 {
   // Check if image point is valid
   if (!asset::exists(shader.path))
@@ -550,19 +550,15 @@ expected<void, ShaderError> ShaderCache::reload(ShaderInfo& shader)
   return compile(shader, shader_source_code.str());
 }
 
-expected<void, ShaderError> ShaderCache::unload(ShaderInfo& shader)
+expected<void, ShaderError> ShaderCache::unload(Shader& shader)
 {
   shader.native_id = NativeShaderID{0};
   return {};
 }
 
-expected<ShaderInfo, ShaderError> ShaderCache::generate(const asset::path& path, ResourceLoading loading)
+expected<Shader, ShaderError> ShaderCache::generate(const asset::path& path)
 {
-  ShaderInfo shader{.path = path, .components = {}, .variables = {}, .native_id = NativeShaderID{0}};
-  if (loading == ResourceLoading::kDeferred)
-  {
-    return shader;
-  }
+  Shader shader{.path = path, .components = {}, .variables = {}, .native_id = NativeShaderID{0}};
   if (auto ok_or_error = reload(shader); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());

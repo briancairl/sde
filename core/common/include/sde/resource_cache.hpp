@@ -19,12 +19,6 @@
 namespace sde
 {
 
-enum class ResourceLoading
-{
-  kDeferred,
-  kImmediate
-};
-
 template <typename ResourceCacheT> struct ResourceCacheTypes;
 
 template <typename ResourceCacheT> class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>
@@ -35,25 +29,34 @@ public:
   using error_type = typename type_info::error_type;
   using handle_type = typename type_info::handle_type;
   using value_type = typename type_info::value_type;
+  using version_type = std::size_t;
 
-  struct element_type
+  struct element_ref
   {
     handle_type handle;
     const value_type* value;
-
-    constexpr bool isValid() const { return handle.isValid(); }
-    operator handle_type() const { return handle; }
-    operator const value_type&() const { return (*value); }
+    const value_type& get() const { return *value; }
   };
 
-  using CacheMap = std::unordered_map<handle_type, value_type, ResourceHandleHash>;
+  struct element_storage
+  {
+    version_type version;
+    value_type value;
 
-  using result_type = expected<element_type, error_type>;
+    template <typename... ValueArgTs>
+    explicit element_storage(version_type _version, ValueArgTs&&... args) :
+        version{_version}, value{std::forward<ValueArgTs>(args)...}
+    {}
+  };
 
-  template <typename... CreateArgTs> [[nodiscard]] expected<element_type, error_type> create(CreateArgTs&&... args)
+  using CacheMap = std::unordered_map<handle_type, element_storage, ResourceHandleHash>;
+
+  using result_type = expected<element_ref, error_type>;
+
+  template <typename... CreateArgTs> [[nodiscard]] expected<element_ref, error_type> create(CreateArgTs&&... args)
   {
     auto handle = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);
-    auto element_or_error = this->insert(handle, std::forward<CreateArgTs>(args)...);
+    auto element_or_error = this->emplace(handle, std::forward<CreateArgTs>(args)...);
     if (element_or_error.has_value())
     {
       handle_lower_bound_ = std::max(handle_lower_bound_, handle);
@@ -64,21 +67,19 @@ public:
 
 
   template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_type, error_type> find_or_create(handle_type handle, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_ref, error_type> find_or_emplace(handle_type handle, CreateArgTs&&... args)
   {
-    if (handle.isNull())
+    const auto current_version = HashMultiple(args...);
+    if (const auto current_itr = handle_to_value_cache_.find(handle);
+        (current_itr != handle_to_value_cache_.end()) and (current_version == current_itr->second.version))
     {
-      return create(std::forward<CreateArgTs>(args)...);
+      return element_ref{handle, std::addressof(current_itr->second.value)};
     }
-    if (auto existing_value = get_if(handle); existing_value != nullptr)
-    {
-      return element_type{handle, existing_value};
-    }
-    return create(std::forward<CreateArgTs>(args)...);
+    return emplace(handle, std::forward<CreateArgTs>(args)...);
   }
 
   template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_type, error_type> insert(const handle_type& handle, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_ref, error_type> emplace(handle_type handle, CreateArgTs&&... args)
   {
     if (handle.isNull())
     {
@@ -92,30 +93,58 @@ public:
       return make_unexpected(value_or_error.error());
     }
 
+    const auto current_version = HashMultiple(args...);
+
     // Add it to the cache
-    const auto [itr, added] = handle_to_value_cache_.emplace(handle, std::move(value_or_error).value());
+    const auto [itr, added] = handle_to_value_cache_.emplace(
+      std::piecewise_construct,
+      std::forward_as_tuple(handle),
+      std::forward_as_tuple(current_version, std::move(value_or_error).value()));
+
     if (added)
     {
       handle_lower_bound_ = std::max(handle_lower_bound_, handle);
-      return element_type{itr->first, std::addressof(itr->second)};
+      return element_ref{itr->first, std::addressof(itr->second.value)};
     }
 
     // Element was a duplicate
     return make_unexpected(error_type::kElementAlreadyExists);
   }
 
-  [[nodiscard]] const value_type* get_if(const handle_type& handle) const
+  template <typename... CreateArgTs>
+  [[nodiscard]] expected<element_ref, error_type> insert(handle_type handle, version_type version, value_type&& value)
+  {
+    if (handle.isNull())
+    {
+      return make_unexpected(error_type::kInvalidHandle);
+    }
+
+    // Add it to the cache
+    const auto [itr, added] = handle_to_value_cache_.emplace(
+      std::piecewise_construct, std::forward_as_tuple(handle), std::forward_as_tuple(version, std::move(value)));
+
+    if (added)
+    {
+      handle_lower_bound_ = std::max(handle_lower_bound_, handle);
+      return element_ref{itr->first, std::addressof(itr->second.value)};
+    }
+
+    // Element was a duplicate
+    return make_unexpected(error_type::kElementAlreadyExists);
+  }
+
+  [[nodiscard]] const value_type* get_if(handle_type handle) const
   {
     if (auto itr = handle_to_value_cache_.find(handle); itr != std::end(handle_to_value_cache_))
     {
-      return std::addressof(itr->second);
+      return std::addressof(itr->second.value);
     }
     return nullptr;
   }
 
-  [[nodiscard]] const value_type* operator()(const handle_type& handle) const { return get_if(handle); }
+  [[nodiscard]] const value_type* operator()(handle_type handle) const { return get_if(handle); }
 
-  [[nodiscard]] element_type find(const handle_type& handle) const { return {handle, get_if(handle)}; }
+  [[nodiscard]] element_ref find(handle_type handle) const { return {handle, get_if(handle)}; }
 
   [[nodiscard]] const bool exists(handle_type handle) const { return handle_to_value_cache_.count(handle) != 0; }
 
@@ -127,13 +156,13 @@ public:
 
   [[nodiscard]] const auto end() const { return std::end(handle_to_value_cache_); }
 
-  std::size_t size() const { return handle_to_value_cache_.size(); }
+  [[nodiscard]] std::size_t size() const { return handle_to_value_cache_.size(); }
 
-  expected<void, error_type> refresh()
+  [[nodiscard]] expected<void, error_type> refresh()
   {
-    for (auto& [handle, value] : handle_to_value_cache_)
+    for (auto& [handle, element] : handle_to_value_cache_)
     {
-      if (auto ok_or_error = this->derived().reload(value); !ok_or_error.has_value())
+      if (auto ok_or_error = this->derived().reload(element.value); !ok_or_error.has_value())
       {
         return ok_or_error;
       }
@@ -141,26 +170,26 @@ public:
     return {};
   }
 
-  expected<void, error_type> relinquish()
-  {
-    for (auto& [handle, value] : handle_to_value_cache_)
-    {
-      if (auto ok_or_error = this->derived().unload(value); !ok_or_error.has_value())
-      {
-        return ok_or_error;
-      }
-    }
-    return {};
-  }
-
-  expected<void, error_type> refresh(handle_type handle)
+  [[nodiscard]] expected<void, error_type> refresh(handle_type handle)
   {
     const auto handle_to_value_itr = handle_to_value_cache_.find(handle);
     if (handle_to_value_itr == handle_to_value_cache_.end())
     {
       return make_unexpected(error_type::kInvalidHandle);
     }
-    return this->derived().reload(handle_to_value_itr->handle);
+    return this->derived().reload(handle_to_value_itr->second.value);
+  }
+
+  expected<void, error_type> relinquish()
+  {
+    for (auto& [handle, element] : handle_to_value_cache_)
+    {
+      if (auto ok_or_error = this->derived().unload(element.value); !ok_or_error.has_value())
+      {
+        return ok_or_error;
+      }
+    }
+    return {};
   }
 
   expected<void, error_type> relinquish(handle_type handle)
@@ -170,8 +199,12 @@ public:
     {
       return make_unexpected(error_type::kInvalidHandle);
     }
-    return this->derived().unload(handle_to_value_itr->handle);
+    return this->derived().unload(handle_to_value_itr->second.value);
   }
+
+  [[nodiscard]] auto& fundemental() { return this->derived(); }
+
+  [[nodiscard]] const auto& fundemental() const { return this->derived(); }
 
   ResourceCache() = default;
   ResourceCache(ResourceCache&&) = default;
@@ -195,19 +228,5 @@ protected:
   /// Map of {resource_handle, resource_value} objects
   CacheMap handle_to_value_cache_;
 };
-
-template <typename ResourceCacheT> struct ElementType
-{
-  using type = typename ResourceCache<ResourceCacheT>::element_type;
-};
-
-template <typename ResourceCacheT> using element_t = typename ElementType<ResourceCacheT>::type;
-
-template <typename ResourceCacheT>
-struct is_resource_cache
-    : std::integral_constant<bool, std::is_base_of_v<ResourceCache<ResourceCacheT>, ResourceCacheT>>
-{};
-
-template <typename ResourceCacheT> constexpr bool is_resource_cache_v = is_resource_cache<ResourceCacheT>::value;
 
 }  // namespace sde

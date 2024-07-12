@@ -28,7 +28,7 @@ struct load<Archive, ResourceHandle<T, IdentifierT, kNullValue>>
   {
     IdentifierT id{};
     ar >> named{"id", id};
-    handle = ResourceHandle<T, IdentifierT, kNullValue>{id};
+    handle = id;
   }
 };
 

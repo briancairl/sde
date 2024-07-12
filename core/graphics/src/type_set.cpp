@@ -12,6 +12,7 @@
 
 // SDE
 #include "sde/graphics/font.hpp"
+#include "sde/graphics/image.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/type_set.hpp"
 #include "sde/logging.hpp"
@@ -43,7 +44,7 @@ const auto kDefaultGlyphs{[] {
   return glyphs;
 }()};
 
-expected<void, TypeSetError> loadGlyphsFromFont(std::vector<Glyph>& glyph_lut, const FontInfo& font, int glyph_height)
+expected<void, TypeSetError> loadGlyphsFromFont(std::vector<Glyph>& glyph_lut, const Font& font, int glyph_height)
 {
   if (glyph_height == 0)
   {
@@ -86,7 +87,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
   TextureCache& texture_cache,
   TextureHandle glyph_atlas,
   std::vector<Glyph>& glyph_lut,
-  const FontInfo& font,
+  const Font& font,
   const TypeSetOptions& options)
 {
   // Compute required texture dimensions
@@ -104,19 +105,16 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
   }
 
   // clang-format off
-  auto glyph_atlas_or_error = texture_cache.find_or_create(
-    glyph_atlas,
+  auto glyph_atlas_or_error = texture_cache.create(
     TypeCode::kUInt8,
-    TextureShape{{texture_dimensions}},
+    TextureShape{.value=texture_dimensions},
     TextureLayout::kR,
     TextureOptions{
       .u_wrapping = TextureWrapping::kClampToEdge,
       .v_wrapping = TextureWrapping::kClampToEdge,
       .min_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
       .mag_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
-      .flags = {
-        .unpack_alignment = true
-      }
+      .unpack_alignment = true
     });
   // clang-format on
 
@@ -151,7 +149,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
     const Vec2i tex_coord_max_px{tex_coord_min_px + g.size_px};
 
     if (const auto ok_or_error = replace(
-          *glyph_atlas_or_error,
+          *glyph_atlas_or_error->value,
           make_const_view(buffer_ptr, buffer_length),
           Bounds2i{tex_coord_min_px, tex_coord_max_px});
         !ok_or_error.has_value())
@@ -177,7 +175,7 @@ TypeSetCache::TypeSetCache(TextureCache& textures, FontCache& fonts) :
     textures_{std::addressof(textures)}, fonts_{std::addressof(fonts)}
 {}
 
-const Bounds2i TypeSetInfo::getTextBounds(std::string_view text) const
+const Bounds2i TypeSet::getTextBounds(std::string_view text) const
 {
   Bounds2i text_bounds;
 
@@ -196,7 +194,7 @@ const Bounds2i TypeSetInfo::getTextBounds(std::string_view text) const
   return text_bounds;
 }
 
-expected<void, TypeSetError> TypeSetCache::reload(TypeSetInfo& type_set)
+expected<void, TypeSetError> TypeSetCache::reload(TypeSet& type_set)
 {
   const auto* font = fonts_->get_if(type_set.font);
   if (font == nullptr)
@@ -222,24 +220,16 @@ expected<void, TypeSetError> TypeSetCache::reload(TypeSetInfo& type_set)
   return {};
 }
 
-expected<void, TypeSetError> TypeSetCache::unload(TypeSetInfo& type_set)
+expected<void, TypeSetError> TypeSetCache::unload(TypeSet& type_set)
 {
   textures_->remove(type_set.glyph_atlas);
   type_set.glyphs.clear();
   return {};
 }
 
-expected<TypeSetInfo, TypeSetError> TypeSetCache::generate(
-  FontHandle font,
-  const TypeSetOptions& options,
-  TextureHandle glyph_atlas,
-  ResourceLoading loading)
+expected<TypeSet, TypeSetError> TypeSetCache::generate(FontHandle font, const TypeSetOptions& options)
 {
-  TypeSetInfo type_set{.options = options, .font = font, .glyph_atlas = glyph_atlas, .glyphs = {}};
-  if (loading == ResourceLoading::kDeferred)
-  {
-    return type_set;
-  }
+  TypeSet type_set{.options = options, .font = font, .glyph_atlas = TextureHandle::null(), .glyphs = {}};
   if (auto ok_or_error = reload(type_set); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());

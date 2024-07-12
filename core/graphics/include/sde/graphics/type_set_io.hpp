@@ -7,20 +7,20 @@
 
 // SDE
 #include "sde/graphics/type_set_fwd.hpp"
-#include "sde/graphics/type_set_handle.hpp"
-#include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
 
 namespace sde::serial
 {
 
-template <typename Archive>
-struct save<Archive, graphics::TypeSetHandle> : save<Archive, typename graphics::TypeSetHandle::base>
-{};
+template <typename Archive> struct save<Archive, graphics::TypeSetHandle>
+{
+  void operator()(Archive& ar, const graphics::TypeSetHandle& handle) const;
+};
 
-template <typename Archive>
-struct load<Archive, graphics::TypeSetHandle> : load<Archive, typename graphics::TypeSetHandle::base>
-{};
+template <typename Archive> struct load<Archive, graphics::TypeSetHandle>
+{
+  void operator()(Archive& ar, graphics::TypeSetHandle& handle) const;
+};
 
 template <typename Archive> struct save<Archive, graphics::TypeSetOptions>
 {

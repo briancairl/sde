@@ -34,7 +34,7 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 }
 
 
-std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info)
+std::ostream& operator<<(std::ostream& os, const TileSet& tile_set_info)
 {
   os << "tile_atlas: " << tile_set_info.tile_atlas << '\n';
   os << "tile_bounds:\n{\n";
@@ -48,18 +48,17 @@ std::ostream& operator<<(std::ostream& os, const TileSetInfo& tile_set_info)
 
 TileSetCache::TileSetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
 
-expected<TileSetInfo, TileSetError>
+expected<TileSet, TileSetError>
 TileSetCache::generate(const TextureHandle& texture, std::vector<Bounds2f>&& tile_bounds)
 {
   if (!textures_->exists(texture))
   {
     return make_unexpected(TileSetError::kInvalidAtlasTexture);
   }
-  return TileSetInfo{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
+  return TileSet{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
 }
 
-expected<TileSetInfo, TileSetError>
-TileSetCache::generate(const TextureHandle& texture, const TileSetSliceUniform& slice)
+expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& texture, const TileSetSliceUniform& slice)
 {
   const auto* texture_info = textures_->get_if(texture);
   if (texture_info == nullptr)
@@ -144,7 +143,7 @@ TileSetCache::generate(const TextureHandle& texture, const TileSetSliceUniform& 
 
         if ((slice.stop_after > 0UL) and (tile_bounds.size() == slice.stop_after))
         {
-          return TileSetInfo{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
+          return TileSet{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
         }
       }
     }
@@ -169,13 +168,13 @@ TileSetCache::generate(const TextureHandle& texture, const TileSetSliceUniform& 
 
         if ((slice.stop_after > 0UL) and (tile_bounds.size() == slice.stop_after))
         {
-          return TileSetInfo{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
+          return TileSet{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
         }
       }
     }
   }
 
-  return TileSetInfo{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
+  return TileSet{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
 }
 
 }  // namespace sde::graphics

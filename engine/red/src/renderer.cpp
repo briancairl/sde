@@ -65,19 +65,19 @@ private:
       return false;
     }
 
-    if (!assets.assign(sprite_shader_, "/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl"))
+    if (!assets.assign(sprite_shader_, "/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl"_path))
     {
       SDE_LOG_ERROR("Missing sprite shader");
       return false;
     }
 
-    if (!assets.assign(player_text_shader_, "/home/brian/dev/assets/shaders/glsl/simple_text.glsl"))
+    if (!assets.assign(player_text_shader_, "/home/brian/dev/assets/shaders/glsl/simple_text.glsl"_path))
     {
       SDE_LOG_ERROR("Missing text shader");
       return false;
     }
 
-    if (!assets.assign(player_text_font_, "/home/brian/dev/assets/fonts/white_rabbit.ttf"))
+    if (!assets.assign(player_text_font_, "/home/brian/dev/assets/fonts/white_rabbit.ttf"_path))
     {
       SDE_LOG_ERROR("Missing font");
       return false;

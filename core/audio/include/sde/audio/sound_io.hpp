@@ -7,18 +7,20 @@
 
 // SDE
 #include "sde/audio/sound_fwd.hpp"
-#include "sde/audio/sound_handle.hpp"
-#include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
 
 namespace sde::serial
 {
 
-template <typename Archive> struct save<Archive, audio::SoundHandle> : save<Archive, typename audio::SoundHandle::base>
-{};
+template <typename Archive> struct save<Archive, audio::SoundHandle>
+{
+  void operator()(Archive& ar, const audio::SoundHandle& handle) const;
+};
 
-template <typename Archive> struct load<Archive, audio::SoundHandle> : load<Archive, typename audio::SoundHandle::base>
-{};
+template <typename Archive> struct load<Archive, audio::SoundHandle>
+{
+  void operator()(Archive& ar, audio::SoundHandle& handle) const;
+};
 
 template <typename Archive> struct save<Archive, audio::SoundCache>
 {

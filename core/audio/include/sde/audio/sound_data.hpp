@@ -7,7 +7,6 @@
 
 // C++ Standard Library
 #include <cstddef>
-#include <memory>
 
 // SDE
 #include "sde/asset.hpp"
@@ -15,6 +14,7 @@
 #include "sde/audio/sound_data_fwd.hpp"
 #include "sde/audio/sound_data_handle.hpp"
 #include "sde/expected.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 #include "sde/view.hpp"
@@ -46,7 +46,7 @@ using SoundDataBuffer = UniqueResource<void*, SoundDataBufferDeleter>;
 /**
  * @brief In memory sound data, typically loaded from disk
  */
-struct SoundDataInfo
+struct SoundData : Resource<SoundData>
 {
   /// Path to sound
   asset::path path;
@@ -59,6 +59,15 @@ struct SoundDataInfo
 
   /// Sound channel formatting
   SoundChannelFormat buffer_channel_format = {};
+
+  auto fields_list()
+  {
+    return std::make_tuple(
+      (Field{"path", path}),
+      (Field{"buffered_samples", buffered_samples} | kNotSerialized),
+      (Field{"buffer_length", buffer_length} | kNotSerialized),
+      (Field{"buffer_channel_format", buffer_channel_format} | kNotSerialized));
+  }
 
   /**
    * @brief Returns pointer to sound data
@@ -78,7 +87,7 @@ template <> struct ResourceCacheTypes<audio::SoundDataCache>
 {
   using error_type = audio::SoundDataError;
   using handle_type = audio::SoundDataHandle;
-  using value_type = audio::SoundDataInfo;
+  using value_type = audio::SoundData;
 };
 
 }  // namespace sde
@@ -91,10 +100,9 @@ class SoundDataCache : public ResourceCache<SoundDataCache>
   friend cache_base;
 
 private:
-  static expected<void, SoundDataError> reload(SoundDataInfo& sound);
-  static expected<void, SoundDataError> unload(SoundDataInfo& sound);
-  expected<SoundDataInfo, SoundDataError>
-  generate(const asset::path& sound_path, ResourceLoading loading = ResourceLoading::kImmediate);
+  static expected<void, SoundDataError> reload(SoundData& sound);
+  static expected<void, SoundDataError> unload(SoundData& sound);
+  expected<SoundData, SoundDataError> generate(const asset::path& sound_path);
 };
 
 }  // namespace sde::audio

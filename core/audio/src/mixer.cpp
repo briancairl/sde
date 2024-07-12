@@ -58,7 +58,7 @@ float Track::progress() const
   return static_cast<float>(byte_offset) / static_cast<float>(playback_buffer_length_);
 }
 
-TrackPlayback Track::set(const SoundInfo& sound, const TrackOptions& track_options)
+TrackPlayback Track::set(const Sound& sound, const TrackOptions& track_options)
 {
   ++instance_counter_;
 
@@ -239,14 +239,14 @@ void Listener::set(const ListenerState& state) const
   alListenerf(AL_GAIN, state.gain);
 }
 
-expected<TrackPlayback, TrackPlaybackError> Listener::set(const SoundInfo& sound, const TrackOptions& options)
+expected<TrackPlayback, TrackPlaybackError> Listener::set(const Sound& sound, const TrackOptions& options)
 {
   const auto track_itr = std::find_if(
     std::begin(tracks_), std::end(tracks_), [](const auto& track) { return !track.queued() and track.stopped(); });
   if (track_itr == std::end(tracks_))
   {
     SDE_LOG_DEBUG_FMT(
-      "Listener::set(SoundInfo{%d}, ...) failed; no sources free", static_cast<int>(sound.native_id.value()));
+      "Listener::set(Sound{%d}, ...) failed; no sources free", static_cast<int>(sound.native_id.value()));
     return make_unexpected(TrackPlaybackError::kNoFreeSources);
   }
   return track_itr->set(sound, options);

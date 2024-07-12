@@ -81,16 +81,16 @@ int main(int argc, char** argv)
 
 
   auto background_track_1_or_error =
-    assets.audio.sounds.create("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav");
+    assets.audio.sounds.create("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav"_path);
   SDE_ASSERT_TRUE(background_track_1_or_error.has_value());
 
-  auto background_track_2_or_error = assets.audio.sounds.create("/home/brian/dev/assets/sounds/tracks/forest.wav");
+  auto background_track_2_or_error = assets.audio.sounds.create("/home/brian/dev/assets/sounds/tracks/forest.wav"_path);
   SDE_ASSERT_TRUE(background_track_2_or_error.has_value());
 
   if (auto listener_or_err = ListenerTarget::create(systems.mixer, 0UL); listener_or_err.has_value())
   {
-    listener_or_err->set(*background_track_1_or_error, TrackOptions{.volume = 0.2F, .looped = true});
-    listener_or_err->set(*background_track_2_or_error, TrackOptions{.volume = 0.4F, .looped = true});
+    listener_or_err->set(background_track_1_or_error->get(), TrackOptions{.volume = 0.2F, .looped = true});
+    listener_or_err->set(background_track_2_or_error->get(), TrackOptions{.volume = 0.4F, .looped = true});
   }
 
   app_or_error->spin([&](const auto& window) {

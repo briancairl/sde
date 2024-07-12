@@ -8,7 +8,7 @@
 namespace sde::graphics
 {
 struct TextureHandle;
-struct TextureInfo;
+struct Texture;
 struct TextureUnits;
 struct TextureOptions;
 struct TextureShape;

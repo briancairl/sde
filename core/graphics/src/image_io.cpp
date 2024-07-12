@@ -4,8 +4,8 @@
 // SDE
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/image_io.hpp"
-#include "sde/logging.hpp"
-#include "sde/serial/std/filesystem.hpp"
+#include "sde/resource_cache_io.hpp"
+#include "sde/resource_handle_io.hpp"
 #include "sde/serialization_binary_file.hpp"
 
 namespace sde::serial
@@ -14,51 +14,43 @@ namespace sde::serial
 template <typename Archive>
 void save<Archive, graphics::ImageOptions>::operator()(Archive& ar, const graphics::ImageOptions& options) const
 {
-  ar << named{"channels", options.channels};
-  ar << named{"element_type", options.element_type};
-  ar << named{"flags", options.flags};
+  ar << options.fundemental();
 }
 
 template <typename Archive>
 void load<Archive, graphics::ImageOptions>::operator()(Archive& ar, graphics::ImageOptions& options) const
 {
-  ar >> named{"channels", options.channels};
-  ar >> named{"element_type", options.element_type};
-  ar >> named{"flags", options.flags};
+  ar >> options.fundemental();
+}
+
+template <typename Archive>
+void save<Archive, graphics::ImageHandle>::operator()(Archive& ar, const graphics::ImageHandle& handle) const
+{
+  ar << handle.fundemental();
+}
+
+template <typename Archive>
+void load<Archive, graphics::ImageHandle>::operator()(Archive& ar, graphics::ImageHandle& handle) const
+{
+  ar >> handle.fundemental();
 }
 
 template <typename Archive>
 void save<Archive, graphics::ImageCache>::operator()(Archive& ar, const graphics::ImageCache& cache) const
 {
-  ar << named{"element_count", cache.size()};
-  for (const auto& [handle, info] : cache)
-  {
-    ar << named{"handle", handle};
-    ar << named{"path", info.path};
-    ar << named{"options", info.options};
-  }
+  ar << cache.fundemental();
 }
-
 
 template <typename Archive>
 void load<Archive, graphics::ImageCache>::operator()(Archive& ar, graphics::ImageCache& cache) const
 {
-  std::size_t element_count{0};
-  ar >> named{"element_count", element_count};
-  for (std::size_t element_idx = 0; element_idx < element_count; ++element_idx)
-  {
-    graphics::ImageHandle handle;
-    ar >> named{"handle", handle};
-    asset::path path;
-    ar >> named{"path", path};
-    graphics::ImageOptions options;
-    ar >> named{"options", options};
-    SDE_ASSERT_OK(cache.insert(handle, path, options, ResourceLoading::kDeferred));
-  }
+  ar >> cache.fundemental();
 }
 
 template struct save<binary_ofarchive, graphics::ImageOptions>;
 template struct load<binary_ifarchive, graphics::ImageOptions>;
+template struct save<binary_ofarchive, graphics::ImageHandle>;
+template struct load<binary_ifarchive, graphics::ImageHandle>;
 template struct save<binary_ofarchive, graphics::ImageCache>;
 template struct load<binary_ifarchive, graphics::ImageCache>;
 

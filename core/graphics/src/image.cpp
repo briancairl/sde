@@ -59,11 +59,6 @@ std::ostream& operator<<(std::ostream& os, ImageChannels channels)
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, ImageLoadFlags flags)
-{
-  return os << std::boolalpha << "{ flip_vertically: " << static_cast<bool>(flags.flip_vertically) << " }";
-}
-
 std::ostream& operator<<(std::ostream& os, const ImageShape& shape)
 {
   return os << "{ height: " << shape.value.y() << ", width: " << shape.value.x() << " }";
@@ -91,7 +86,7 @@ std::ostream& operator<<(std::ostream& os, ImageError error)
 
 void ImageDataBufferDeleter::operator()(void* data) const { stbi_image_free(data); }
 
-expected<void, ImageError> ImageCache::reload(ImageInfo& image)
+expected<void, ImageError> ImageCache::reload(Image& image)
 {
   // Already loaded
   if (image.data_buffer.isValid())
@@ -107,7 +102,7 @@ expected<void, ImageError> ImageCache::reload(ImageInfo& image)
   }
 
   // Set flag determining whether image should be flipped on load
-  stbi_set_flip_vertically_on_load(image.options.flags.flip_vertically);
+  stbi_set_flip_vertically_on_load(image.options.flip_vertically);
 
   // Get STBI channel code
   const int channel_count_forced = to_stbi_enum(image.options.channels);
@@ -152,21 +147,16 @@ expected<void, ImageError> ImageCache::reload(ImageInfo& image)
   return {};
 }
 
-expected<void, ImageError> ImageCache::unload(ImageInfo& image)
+expected<void, ImageError> ImageCache::unload(Image& image)
 {
   image.data_buffer = ImageDataBuffer{nullptr};
   image.shape.value.setZero();
   return {};
 }
 
-expected<ImageInfo, ImageError>
-ImageCache::generate(const asset::path& image_path, const ImageOptions& options, ResourceLoading loading)
+expected<Image, ImageError> ImageCache::generate(const asset::path& image_path, const ImageOptions& options)
 {
-  ImageInfo info{.path = image_path, .options = options, .shape = {{0, 0}}, .data_buffer = ImageDataBuffer{nullptr}};
-  if (loading == ResourceLoading::kDeferred)
-  {
-    return info;
-  }
+  Image info{.path = image_path, .options = options, .shape = {{0, 0}}, .data_buffer = ImageDataBuffer{nullptr}};
   if (auto ok_or_error = reload(info); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());

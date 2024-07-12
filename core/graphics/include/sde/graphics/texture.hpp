@@ -43,19 +43,6 @@ enum class TextureLayout : std::uint8_t
 
 std::ostream& operator<<(std::ostream& os, TextureLayout layout);
 
-/*
- * @brief Image loading options
- */
-struct TextureFlags
-{
-  std::uint8_t unpack_alignment : 1;
-  std::uint8_t generate_mip_map : 1;
-};
-
-std::ostream& operator<<(std::ostream& os, TextureFlags flags);
-
-bool operator==(const TextureFlags& lhs, const TextureFlags& rhs);
-
 enum class TextureWrapping : std::uint8_t
 {
   kClampToBorder,
@@ -76,7 +63,7 @@ std::ostream& operator<<(std::ostream& os, TextureSampling sampling);
 /**
  * @brief Texture creation options
  */
-struct TextureOptions
+struct TextureOptions : Resource<TextureOptions>
 {
   TextureWrapping u_wrapping = TextureWrapping::kClampToBorder;
   TextureWrapping v_wrapping = TextureWrapping::kClampToBorder;
@@ -84,19 +71,31 @@ struct TextureOptions
   TextureSampling min_sampling = TextureSampling::kNearest;
   TextureSampling mag_sampling = TextureSampling::kNearest;
 
-  TextureFlags flags = {0};
-};
+  bool unpack_alignment = false;
+  bool generate_mip_map = false;
 
-std::ostream& operator<<(std::ostream& os, const TextureOptions& options);
+  auto fields_list()
+  {
+    return std::make_tuple(
+      (Field{"u_wrapping", u_wrapping}),
+      (Field{"v_wrapping", v_wrapping}),
+      (Field{"min_sampling", min_sampling}),
+      (Field{"mag_sampling", mag_sampling}),
+      (Field{"unpack_alignment", unpack_alignment}),
+      (Field{"generate_mip_map", generate_mip_map}));
+  }
+};
 
 bool operator==(const TextureOptions& lhs, const TextureOptions& rhs);
 
-struct TextureShape
+struct TextureShape : Resource<Texture>
 {
   Vec2i value = {};
   auto width() const { return value.x(); }
   auto height() const { return value.y(); }
   auto texels() const { return value.size(); }
+
+  auto fields_list() { return std::make_tuple((Field{"value", value})); }
 };
 
 std::ostream& operator<<(std::ostream& os, const TextureShape& shape);
@@ -108,7 +107,7 @@ struct TextureNativeDeleter
 
 using NativeTextureID = UniqueResource<native_texture_id_t, TextureNativeDeleter>;
 
-struct TextureInfo : Resource<TextureInfo>
+struct Texture : Resource<Texture>
 {
   ImageHandle source_image;
   TypeCode element_type;
@@ -120,17 +119,18 @@ struct TextureInfo : Resource<TextureInfo>
   auto fields_list()
   {
     return std::make_tuple(
-      Field{"source_image", source_image},
-      Field{"element_type", element_type},
-      Field{"layout", layout},
-      Field{"shape", shape},
-      Field{"options", options});
+      (Field{"source_image", source_image}),
+      (Field{"element_type", element_type}),
+      (Field{"layout", layout}),
+      (Field{"shape", shape}),
+      (Field{"options", options}),
+      (Field{"native_id", native_id} | kNotSerialized));
   }
 };
 
-std::ostream& operator<<(std::ostream& os, const TextureInfo& info);
+std::ostream& operator<<(std::ostream& os, const Texture& info);
 
-bool operator==(const TextureInfo& lhs, const TextureInfo& rhs);
+bool operator==(const Texture& lhs, const Texture& rhs);
 
 enum class TextureError
 {
@@ -155,11 +155,18 @@ std::ostream& operator<<(std::ostream& os, TextureError error);
 namespace sde
 {
 
+template <> struct Hasher<graphics::TextureOptions> : ResourceHasher
+{};
+template <> struct Hasher<graphics::TextureShape> : ResourceHasher
+{};
+template <> struct Hasher<graphics::Texture> : ResourceHasher
+{};
+
 template <> struct ResourceCacheTypes<graphics::TextureCache>
 {
   using error_type = graphics::TextureError;
   using handle_type = graphics::TextureHandle;
-  using value_type = graphics::TextureInfo;
+  using value_type = graphics::Texture;
 };
 
 }  // namespace sde
@@ -168,9 +175,9 @@ namespace sde::graphics
 {
 
 template <typename DataT>
-expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data, const Bounds2i& area);
+expected<void, TextureError> replace(const Texture& texture_info, View<const DataT> data, const Bounds2i& area);
 
-template <typename DataT> expected<void, TextureError> replace(const TextureInfo& texture_info, View<const DataT> data)
+template <typename DataT> expected<void, TextureError> replace(const Texture& texture_info, View<const DataT> data)
 {
   return replace(texture_info, data, Bounds2i{Vec2i{0, 0}, texture_info.shape.value});
 }
@@ -185,24 +192,19 @@ public:
 private:
   ImageCache* images_;
 
-  expected<void, TextureError> reload(TextureInfo& texture);
-  static expected<void, TextureError> unload(TextureInfo& texture);
+  expected<void, TextureError> reload(Texture& texture);
+  static expected<void, TextureError> unload(Texture& texture);
 
-  expected<TextureInfo, TextureError> generate(const asset::path& image_path, const TextureOptions& options = {});
+  expected<Texture, TextureError> generate(const asset::path& image_path, const TextureOptions& options = {});
 
-  expected<TextureInfo, TextureError> generate(const ImageHandle& image, const TextureOptions& options = {});
+  expected<Texture, TextureError> generate(const ImageHandle& image, const TextureOptions& options = {});
 
   template <typename DataT>
-  expected<TextureInfo, TextureError>
+  expected<Texture, TextureError>
   generate(View<const DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
 
-  expected<TextureInfo, TextureError> generate(
-    TypeCode type,
-    const TextureShape& shape,
-    TextureLayout layout,
-    const TextureOptions& options = {},
-    ImageHandle source_image = ImageHandle::null(),
-    ResourceLoading loading = ResourceLoading::kImmediate);
+  expected<Texture, TextureError>
+  generate(TypeCode type, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
 };
 
 }  // namespace sde::graphics

@@ -54,7 +54,8 @@ private:
 
   bool onInitialize(entt::registry& registry, Systems& systems, SharedAssets& assets, const AppProperties& app) override
   {
-    if (!assets.assign(rain_frames_atlas_, "/home/brian/dev/assets/sprites/weather/weather_effects/light_rain.png"))
+    if (!assets.assign(
+          rain_frames_atlas_, "/home/brian/dev/assets/sprites/weather/weather_effects/light_rain.png"_path))
     {
       SDE_LOG_ERROR("Missing texture");
       return false;
@@ -72,7 +73,7 @@ private:
       return false;
     }
 
-    if (!assets.assign(rain_sound_, "/home/brian/dev/assets/sounds/fx/rain1_mono.wav"))
+    if (!assets.assign(rain_sound_, "/home/brian/dev/assets/sounds/fx/rain1_mono.wav"_path))
     {
       SDE_LOG_ERROR("Failed to load rain");
       return false;

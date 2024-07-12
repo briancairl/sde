@@ -17,6 +17,7 @@
 #include "sde/graphics/image_handle.hpp"
 #include "sde/graphics/image_ref.hpp"
 #include "sde/graphics/typecode.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 #include "sde/view.hpp"
@@ -67,26 +68,24 @@ inline ImageChannels from_channel_count(std::size_t count)
 }
 
 /**
- * @brief Image loading options
- */
-struct ImageLoadFlags
-{
-  std::uint8_t flip_vertically : 1;
-};
-
-std::ostream& operator<<(std::ostream& os, ImageLoadFlags flags);
-
-/**
  * @brief Image load options
  */
-struct ImageOptions
+struct ImageOptions : Resource<ImageOptions>
 {
   /// Image channel loading options
   ImageChannels channels = ImageChannels::kDefault;
   /// Image channel loading options
   TypeCode element_type = TypeCode::kUInt8;
-  /// On-load option flags
-  ImageLoadFlags flags = {0};
+  /// Image was flipped vertically on load
+  bool flip_vertically = false;
+
+  auto fields_list()
+  {
+    return std::make_tuple(
+      (Field{"channels", channels}),
+      (Field{"element_type", element_type}),
+      (Field{"flip_vertically", flip_vertically}));
+  }
 };
 
 std::ostream& operator<<(std::ostream& os, const ImageOptions& error);
@@ -126,7 +125,7 @@ struct ImageDataBufferDeleter
 
 using ImageDataBuffer = UniqueResource<void*, ImageDataBufferDeleter>;
 
-struct ImageInfo
+struct Image : Resource<Image>
 {
   /// Path to image
   asset::path path;
@@ -136,6 +135,15 @@ struct ImageInfo
   ImageShape shape;
   /// Image data (in memory)
   ImageDataBuffer data_buffer;
+
+  auto fields_list()
+  {
+    return std::make_tuple(
+      (Field{"path", path}),
+      (Field{"options", options}),
+      (Field{"shape", shape}),
+      (Field{"data_buffer", data_buffer} | kNotSerialized));
+  }
 
   /**
    * @brief Returns image channel count
@@ -182,11 +190,18 @@ struct ImageInfo
 namespace sde
 {
 
+template <> struct Hasher<graphics::ImageHandle> : ResourceHandleHash
+{};
+template <> struct Hasher<graphics::ImageOptions> : ResourceHasher
+{};
+template <> struct Hasher<graphics::Image> : ResourceHasher
+{};
+
 template <> struct ResourceCacheTypes<graphics::ImageCache>
 {
   using error_type = graphics::ImageError;
   using handle_type = graphics::ImageHandle;
-  using value_type = graphics::ImageInfo;
+  using value_type = graphics::Image;
 };
 
 }  // namespace sde
@@ -199,12 +214,9 @@ class ImageCache : public ResourceCache<ImageCache>
   friend cache_base;
 
 private:
-  static expected<void, ImageError> reload(ImageInfo& image);
-  static expected<void, ImageError> unload(ImageInfo& image);
-  expected<ImageInfo, ImageError> generate(
-    const asset::path& image_path,
-    const ImageOptions& options = {},
-    ResourceLoading loading = ResourceLoading::kImmediate);
+  static expected<void, ImageError> reload(Image& image);
+  static expected<void, ImageError> unload(Image& image);
+  expected<Image, ImageError> generate(const asset::path& image_path, const ImageOptions& options = {});
 };
 
 }  // namespace sde::graphics

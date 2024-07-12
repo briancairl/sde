@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <tuple>
 
 // SDE
 #include "sde/asset.hpp"
@@ -16,6 +17,7 @@
 #include "sde/audio/sound_handle.hpp"
 #include "sde/audio/typedef.hpp"
 #include "sde/expected.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 
@@ -40,12 +42,21 @@ struct NativeSoundBufferDeleter
 
 using NativeSoundBufferID = UniqueResource<buffer_handle_t, NativeSoundBufferDeleter>;
 
-struct SoundInfo
+struct Sound : Resource<Sound>
 {
   SoundDataHandle sound_data = SoundDataHandle{};
   SoundChannelFormat channel_format = {};
   std::size_t buffer_length = 0;
   NativeSoundBufferID native_id;
+
+  auto fields_list()
+  {
+    return std::make_tuple(
+      (Field{"sound_data", sound_data}),
+      (Field{"channel_format", channel_format} | kNotSerialized),
+      (Field{"buffer_length", buffer_length} | kNotSerialized),
+      (Field{"native_id", native_id} | kNotSerialized));
+  }
 };
 
 }  // namespace sde::audio
@@ -57,7 +68,7 @@ template <> struct ResourceCacheTypes<audio::SoundCache>
 {
   using error_type = audio::SoundError;
   using handle_type = audio::SoundHandle;
-  using value_type = audio::SoundInfo;
+  using value_type = audio::Sound;
 };
 
 }  // namespace sde
@@ -74,11 +85,10 @@ public:
 
 private:
   SoundDataCache* sound_data_ = nullptr;
-  expected<void, SoundError> reload(SoundInfo& sound);
-  expected<void, SoundError> unload(SoundInfo& sound);
-  expected<SoundInfo, SoundError> generate(const asset::path& sound_data_path);
-  expected<SoundInfo, SoundError>
-  generate(SoundDataHandle sound_data, ResourceLoading loading = ResourceLoading::kImmediate);
+  expected<void, SoundError> reload(Sound& sound);
+  expected<void, SoundError> unload(Sound& sound);
+  expected<Sound, SoundError> generate(const asset::path& sound_data_path);
+  expected<Sound, SoundError> generate(SoundDataHandle sound_data);
 };
 
 }  // namespace sde::audio

@@ -6,21 +6,21 @@
 #pragma once
 
 // SDE
-#include "sde/geometry_io.hpp"
-#include "sde/graphics/font.hpp"
-#include "sde/resource_handle_io.hpp"
+#include "sde/graphics/font_fwd.hpp"
 #include "sde/serialization.hpp"
 
 namespace sde::serial
 {
 
-template <typename Archive>
-struct save<Archive, graphics::FontHandle> : save<Archive, typename graphics::FontHandle::base>
-{};
+template <typename Archive> struct save<Archive, graphics::FontHandle>
+{
+  void operator()(Archive& ar, const graphics::FontHandle& handle) const;
+};
 
-template <typename Archive>
-struct load<Archive, graphics::FontHandle> : load<Archive, typename graphics::FontHandle::base>
-{};
+template <typename Archive> struct load<Archive, graphics::FontHandle>
+{
+  void operator()(Archive& ar, graphics::FontHandle& handle) const;
+};
 
 template <typename Archive> struct save<Archive, graphics::FontCache>
 {

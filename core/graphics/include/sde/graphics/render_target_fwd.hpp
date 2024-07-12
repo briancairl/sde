@@ -8,7 +8,8 @@
 namespace sde::graphics
 {
 
-struct RenderTargetInfo;
+struct RenderTarget;
+struct RenderTargetHandle;
 class RenderTargetCache;
 
 }  // namespace sde::graphics

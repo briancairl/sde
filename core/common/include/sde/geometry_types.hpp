@@ -11,6 +11,9 @@
 // Eigen
 #include <Eigen/Dense>
 
+// SDE
+#include "sde/hash.hpp"
+
 namespace sde
 {
 
@@ -54,6 +57,26 @@ template <typename T, int D> inline bool operator==(const Bounds<T, D>& lhs, con
 {
   return (lhs.min() == rhs.min()) && (lhs.max() == rhs.max());
 }
+
+template <typename T, int N, int M> struct Hasher<Eigen::Matrix<T, N, M, Eigen::ColMajor>>
+{
+  std::size_t operator()(const Eigen::Matrix<T, N, M, Eigen::ColMajor>& m) const
+  {
+    std::size_t h{0};
+    const T* p_beg = m.data();
+    const T* p_end = m.data() + m.size();
+    for (const T* p = p_beg; p != p_end; ++p)
+    {
+      h = hash_combine(h, Hasher<T>{}(*p));
+    }
+    return h;
+  }
+};
+
+template <typename T, int Dim> struct Hasher<Eigen::AlignedBox<T, Dim>>
+{
+  std::size_t operator()(const Eigen::AlignedBox<T, Dim>& box) const { return HashMultiple(box.min(), box.max()); }
+};
 
 }  // namespace sde
 

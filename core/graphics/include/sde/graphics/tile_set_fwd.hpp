@@ -7,6 +7,7 @@
 
 namespace sde::graphics
 {
-struct TileSetInfo;
+struct TileSet;
+struct TileSetHandle;
 class TileSetCache;
 }  // namespace sde::graphics

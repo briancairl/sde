@@ -69,7 +69,7 @@ public:
   bool playing() const;
   float progress() const;
 
-  TrackPlayback set(const SoundInfo& sound, const TrackOptions& track_options);
+  TrackPlayback set(const Sound& sound, const TrackOptions& track_options);
   void pop(std::vector<source_handle_t>& target);
 
   const NativeSource& source() const { return source_; }
@@ -138,7 +138,7 @@ public:
   create(const NativeDevice& device, const ListenerOptions& options);
 
   void set(const ListenerState& state) const;
-  expected<TrackPlayback, TrackPlaybackError> set(const SoundInfo& sound, const TrackOptions& options);
+  expected<TrackPlayback, TrackPlaybackError> set(const Sound& sound, const TrackOptions& options);
   void play();
   void stop();
 
@@ -172,7 +172,7 @@ public:
   [[nodiscard]] static expected<ListenerTarget, ListenerTargetError> create(Mixer& mixer, std::size_t listener_id);
 
   void set(const ListenerState& state) const { l_->set(state); }
-  expected<TrackPlayback, TrackPlaybackError> set(const SoundInfo& sound, const TrackOptions& options = {})
+  expected<TrackPlayback, TrackPlaybackError> set(const Sound& sound, const TrackOptions& options = {})
   {
     return l_->set(sound, options);
   }

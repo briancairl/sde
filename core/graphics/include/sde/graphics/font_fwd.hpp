@@ -7,6 +7,7 @@
 
 namespace sde::graphics
 {
-struct FontInfo;
+struct Font;
+struct FontHandle;
 class FontCache;
 }  // namespace sde::graphics

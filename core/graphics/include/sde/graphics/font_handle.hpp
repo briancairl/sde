@@ -18,3 +18,9 @@ struct FontHandle : ResourceHandle<FontHandle>
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct Hasher<graphics::FontHandle> : ResourceHandleHash
+{};
+}  // namespace sde

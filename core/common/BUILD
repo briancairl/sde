@@ -55,6 +55,7 @@ cc_library(
   hdrs=[
     "include/sde/resource.hpp",
     "include/sde/resource_cache.hpp",
+    "include/sde/resource_cache_io.hpp",
     "include/sde/resource_handle.hpp",
     "include/sde/resource_handle_io.hpp",
     "include/sde/resource_wrapper.hpp",

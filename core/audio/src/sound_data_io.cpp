@@ -4,39 +4,40 @@
 // SDE
 #include "sde/audio/sound_data.hpp"
 #include "sde/audio/sound_data_io.hpp"
-#include "sde/logging.hpp"
-#include "sde/serial/std/filesystem.hpp"
+#include "sde/resource_cache_io.hpp"
+#include "sde/resource_handle_io.hpp"
 #include "sde/serialization_binary_file.hpp"
 
 namespace sde::serial
 {
 
-template <>
-void save<binary_ofarchive, audio::SoundDataCache>::operator()(binary_ofarchive& ar, const audio::SoundDataCache& cache)
-  const
+template <typename ArchiveT>
+void save<ArchiveT, audio::SoundDataHandle>::operator()(ArchiveT& ar, const audio::SoundDataHandle& handle) const
 {
-  ar << named{"element_count", cache.size()};
-  for (const auto& [handle, info] : cache)
-  {
-    ar << named{"handle", handle};
-    ar << named{"path", info.path};
-  }
+  ar << handle.fundemental();
 }
 
-
-template <>
-void load<binary_ifarchive, audio::SoundDataCache>::operator()(binary_ifarchive& ar, audio::SoundDataCache& cache) const
+template <typename ArchiveT>
+void load<ArchiveT, audio::SoundDataHandle>::operator()(ArchiveT& ar, audio::SoundDataHandle& handle) const
 {
-  std::size_t element_count{0};
-  ar >> named{"element_count", element_count};
-  for (std::size_t element_idx = 0; element_idx < element_count; ++element_idx)
-  {
-    audio::SoundDataHandle handle;
-    ar >> named{"handle", handle};
-    asset::path path;
-    ar >> named{"path", path};
-    SDE_ASSERT_OK(cache.insert(handle, path, ResourceLoading::kDeferred));
-  }
+  ar >> handle.fundemental();
 }
+
+template <typename ArchiveT>
+void save<ArchiveT, audio::SoundDataCache>::operator()(ArchiveT& ar, const audio::SoundDataCache& cache) const
+{
+  ar << cache.fundemental();
+}
+
+template <typename ArchiveT>
+void load<ArchiveT, audio::SoundDataCache>::operator()(ArchiveT& ar, audio::SoundDataCache& cache) const
+{
+  ar >> cache.fundemental();
+}
+
+template struct save<binary_ofarchive, audio::SoundDataHandle>;
+template struct load<binary_ifarchive, audio::SoundDataHandle>;
+template struct save<binary_ofarchive, audio::SoundDataCache>;
+template struct load<binary_ifarchive, audio::SoundDataCache>;
 
 }  // namespace sde::serial

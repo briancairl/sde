@@ -15,6 +15,7 @@
 #include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/typedef.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 
@@ -28,10 +29,16 @@ struct NativeFrameBufferDeleter
 
 using NativeFrameBufferID = UniqueResource<native_frame_buffer_id_t, NativeFrameBufferDeleter>;
 
-struct RenderTargetInfo
+struct RenderTarget : Resource<RenderTarget>
 {
   TextureHandle color_attachment = TextureHandle::null();
   NativeFrameBufferID native_id;
+
+  auto fields_list()
+  {
+    return std::make_tuple(
+      (Field{"color_attachment", color_attachment}), (Field{"native_id", native_id} | kNotSerialized));
+  }
 };
 
 enum class RenderTargetError
@@ -54,7 +61,7 @@ template <> struct ResourceCacheTypes<graphics::RenderTargetCache>
 {
   using error_type = graphics::RenderTargetError;
   using handle_type = graphics::RenderTargetHandle;
-  using value_type = graphics::RenderTargetInfo;
+  using value_type = graphics::RenderTarget;
 };
 
 }  // namespace sde
@@ -72,12 +79,10 @@ public:
 private:
   TextureCache* textures_;
 
-  expected<void, RenderTargetError> reload(RenderTargetInfo& render_target);
-  expected<void, RenderTargetError> unload(RenderTargetInfo& render_target);
+  expected<void, RenderTargetError> reload(RenderTarget& render_target);
+  expected<void, RenderTargetError> unload(RenderTarget& render_target);
 
-  expected<RenderTargetInfo, RenderTargetError> generate(
-    TextureHandle color_attachment = TextureHandle::null(),
-    ResourceLoading loading = ResourceLoading::kImmediate);
+  expected<RenderTarget, RenderTargetError> generate(TextureHandle color_attachment = TextureHandle::null());
 };
 
 }  // namespace sde::graphics

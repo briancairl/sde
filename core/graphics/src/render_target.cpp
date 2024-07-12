@@ -30,7 +30,7 @@ void NativeFrameBufferDeleter::operator()(native_frame_buffer_id_t id) const { g
 
 RenderTargetCache::RenderTargetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
 
-expected<void, RenderTargetError> RenderTargetCache::reload(RenderTargetInfo& render_target)
+expected<void, RenderTargetError> RenderTargetCache::reload(RenderTarget& render_target)
 {
   if (render_target.color_attachment.isNull())
   {
@@ -56,20 +56,15 @@ expected<void, RenderTargetError> RenderTargetCache::reload(RenderTargetInfo& re
   return {};
 }
 
-expected<void, RenderTargetError> RenderTargetCache::unload(RenderTargetInfo& render_target)
+expected<void, RenderTargetError> RenderTargetCache::unload(RenderTarget& render_target)
 {
   render_target.native_id = NativeFrameBufferID{0};
   return {};
 }
 
-expected<RenderTargetInfo, RenderTargetError>
-RenderTargetCache::generate(TextureHandle color_attachment, ResourceLoading loading)
+expected<RenderTarget, RenderTargetError> RenderTargetCache::generate(TextureHandle color_attachment)
 {
-  RenderTargetInfo render_target{.color_attachment = color_attachment, .native_id = NativeFrameBufferID{0}};
-  if (loading == ResourceLoading::kDeferred)
-  {
-    return render_target;
-  }
+  RenderTarget render_target{.color_attachment = color_attachment, .native_id = NativeFrameBufferID{0}};
   if (auto ok_or_error = reload(render_target); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());

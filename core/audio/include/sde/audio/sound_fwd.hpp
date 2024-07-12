@@ -9,8 +9,7 @@
 
 namespace sde::audio
 {
+struct Sound;
 struct SoundHandle;
-struct SoundInfo;
-class SoundData;
 class SoundCache;
 }  // namespace sde::audio

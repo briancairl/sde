@@ -10,16 +10,19 @@
 #include <iosfwd>
 #include <type_traits>
 
+// SDE
+#include "sde/hash.hpp"
+
 namespace sde
 {
 
 template <typename T, typename IdentifierT = std::size_t, IdentifierT kNullValue = 0> struct ResourceHandle
 {
 public:
-  using base = ResourceHandle<T, IdentifierT, kNullValue>;
   using id_type = IdentifierT;
+  using self_type = ResourceHandle<T, id_type, kNullValue>;
 
-  explicit ResourceHandle(IdentifierT id) : id_{id} {}
+  explicit ResourceHandle(id_type id) : id_{id} {}
 
   ResourceHandle(const ResourceHandle&) = default;
 
@@ -36,13 +39,19 @@ public:
     return *this;
   }
 
+  ResourceHandle& operator=(const id_type& id)
+  {
+    id_ = id;
+    return *this;
+  }
+
   ResourceHandle& operator++()
   {
     id_ = T::next_unique(id_);
     return *this;
   }
 
-  constexpr IdentifierT id() const { return id_; }
+  constexpr id_type id() const { return id_; }
 
   constexpr bool isNull() const { return id_ == kNullValue; }
 
@@ -52,9 +61,13 @@ public:
 
   static constexpr T null() { return T{kNullValue}; }
 
+  self_type& fundemental() { return *this; }
+
+  const self_type& fundemental() const { return *this; }
+
 private:
-  static constexpr IdentifierT next_unique(IdentifierT prev) { return prev + 1; }
-  IdentifierT id_ = kNullValue;
+  static constexpr id_type next_unique(id_type prev) { return prev + 1; }
+  id_type id_ = kNullValue;
 };
 
 template <typename T> constexpr bool operator<(const ResourceHandle<T>& lhs, const ResourceHandle<T>& rhs)

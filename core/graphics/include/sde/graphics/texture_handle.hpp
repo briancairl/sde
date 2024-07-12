@@ -18,3 +18,9 @@ struct TextureHandle : ResourceHandle<TextureHandle>
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct Hasher<graphics::TextureHandle> : ResourceHandleHash
+{};
+}  // namespace sde

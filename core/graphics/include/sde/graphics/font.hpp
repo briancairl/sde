@@ -8,7 +8,9 @@
 // SDE
 #include "sde/asset.hpp"
 #include "sde/expected.hpp"
+#include "sde/graphics/font_fwd.hpp"
 #include "sde/graphics/font_handle.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 
@@ -31,24 +33,30 @@ struct FontNativeDeleter
 
 using FontNativeID = UniqueResource<void*, FontNativeDeleter>;
 
-struct FontInfo
+struct Font : Resource<Font>
 {
   asset::path path;
   FontNativeID native_id;
-};
 
-class FontCache;
+  auto fields_list()
+  {
+    return std::make_tuple((Field{"path", path}), (Field{"native_id", native_id} | kNotSerialized));
+  }
+};
 
 }  // namespace sde::graphics
 
 namespace sde
 {
 
+template <> struct Hasher<graphics::Font> : ResourceHasher
+{};
+
 template <> struct ResourceCacheTypes<graphics::FontCache>
 {
   using error_type = graphics::FontError;
   using handle_type = graphics::FontHandle;
-  using value_type = graphics::FontInfo;
+  using value_type = graphics::Font;
 };
 
 }  // namespace sde
@@ -61,10 +69,9 @@ class FontCache : public ResourceCache<FontCache>
   friend cache_base;
 
 private:
-  static expected<void, FontError> reload(FontInfo& font);
-  static expected<void, FontError> unload(FontInfo& font);
-  expected<FontInfo, FontError>
-  generate(const asset::path& font_path, ResourceLoading loading = ResourceLoading::kImmediate);
+  static expected<void, FontError> reload(Font& font);
+  static expected<void, FontError> unload(Font& font);
+  expected<Font, FontError> generate(const asset::path& font_path);
 };
 
 }  // namespace sde::graphics

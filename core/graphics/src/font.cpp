@@ -36,7 +36,7 @@ UniqueResource<FT_Library, FreeTypeRelease> FreeType{[] {
 
 void FontNativeDeleter::operator()(void* font) const { FT_Done_Face(reinterpret_cast<FT_Face>(font)); }
 
-expected<void, FontError> FontCache::reload(FontInfo& font)
+expected<void, FontError> FontCache::reload(Font& font)
 {
   if (!asset::exists(font.path))
   {
@@ -59,19 +59,15 @@ expected<void, FontError> FontCache::reload(FontInfo& font)
   return {};
 }
 
-expected<void, FontError> FontCache::unload(FontInfo& font)
+expected<void, FontError> FontCache::unload(Font& font)
 {
   font.native_id = FontNativeID{nullptr};
   return {};
 }
 
-expected<FontInfo, FontError> FontCache::generate(const asset::path& font_path, ResourceLoading loading)
+expected<Font, FontError> FontCache::generate(const asset::path& font_path)
 {
-  FontInfo font_info{.path = font_path, .native_id = FontNativeID{nullptr}};
-  if (loading == ResourceLoading::kDeferred)
-  {
-    return font_info;
-  }
+  Font font_info{.path = font_path, .native_id = FontNativeID{nullptr}};
   if (auto ok_or_error = reload(font_info); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());

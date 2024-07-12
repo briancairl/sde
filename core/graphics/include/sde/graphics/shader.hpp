@@ -19,6 +19,7 @@
 #include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/typedef.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 
@@ -106,21 +107,30 @@ using NativeShaderID = UniqueResource<native_shader_id_t, NativeShaderDeleter>;
 /**
  * @brief Information about an active shader
  */
-struct ShaderInfo
+struct Shader : Resource<Shader>
 {
   asset::path path;
   ShaderComponents components;
   ShaderVariables variables;
   NativeShaderID native_id;
 
+  auto fields_list()
+  {
+    return std::make_tuple(
+      (Field{"path", path}),
+      (Field{"components", components} | kNotSerialized),
+      (Field{"variables", variables} | kNotSerialized),
+      (Field{"native_id", native_id} | kNotSerialized));
+  }
+
   [[nodiscard]] constexpr bool isValid() const { return ::sde::graphics::isValid(components); }
 };
 
-std::ostream& operator<<(std::ostream& os, const ShaderInfo& error);
+std::ostream& operator<<(std::ostream& os, const Shader& error);
 
-[[nodiscard]] bool hasLayout(const ShaderInfo& info, std::string_view key, ShaderVariableType type, std::size_t index);
+[[nodiscard]] bool hasLayout(const Shader& info, std::string_view key, ShaderVariableType type, std::size_t index);
 
-[[nodiscard]] bool hasUniform(const ShaderInfo& info, std::string_view key, ShaderVariableType type);
+[[nodiscard]] bool hasUniform(const Shader& info, std::string_view key, ShaderVariableType type);
 
 }  // namespace sde::graphics
 
@@ -131,7 +141,7 @@ template <> struct ResourceCacheTypes<graphics::ShaderCache>
 {
   using error_type = graphics::ShaderError;
   using handle_type = graphics::ShaderHandle;
-  using value_type = graphics::ShaderInfo;
+  using value_type = graphics::Shader;
 };
 
 }  // namespace sde
@@ -144,10 +154,9 @@ class ShaderCache : public ResourceCache<ShaderCache>
   friend cache_base;
 
 private:
-  static expected<void, ShaderError> reload(ShaderInfo& shader);
-  static expected<void, ShaderError> unload(ShaderInfo& shader);
-  expected<ShaderInfo, ShaderError>
-  generate(const asset::path& path, ResourceLoading loading = ResourceLoading::kImmediate);
+  static expected<void, ShaderError> reload(Shader& shader);
+  static expected<void, ShaderError> unload(Shader& shader);
+  expected<Shader, ShaderError> generate(const asset::path& path);
 };
 
 }  // namespace sde::graphics

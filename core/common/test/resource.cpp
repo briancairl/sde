@@ -11,7 +11,7 @@ struct SimpleResource : Resource<SimpleResource>
   float a;
   int b;
 
-  auto fields_list() { return std::make_tuple(Field{"a", a}, Field{"b", b}); }
+  auto fields_list() { return std::make_tuple(Field{"a", a}, Field{"b", b} | kNotSerialized); }
 };
 
 TEST(Resource, Fields)
@@ -36,4 +36,41 @@ TEST(Resource, Names)
   auto simple_tup = simple.names();
   EXPECT_EQ(std::get<0>(simple_tup), "a");
   EXPECT_EQ(std::get<1>(simple_tup), "b");
+}
+
+TEST(Resource, Hash)
+{
+  SimpleResource simple{.a = 1.F, .b = 2};
+  const auto h = ResourceHasher{}(simple);
+  EXPECT_EQ(h, 17077749257889412985UL);
+}
+
+struct NestedResource : Resource<NestedResource>
+{
+  SimpleResource a;
+  int b;
+  auto fields_list() { return std::make_tuple(Field{"a", a}, Field{"b", b} | kNotSerialized); }
+};
+
+namespace sde
+{
+template <> struct Hasher<SimpleResource> : ResourceHasher
+{};
+
+template <> struct Hasher<NestedResource> : ResourceHasher
+{};
+}  // namespace sde
+
+TEST(Resource, NestedHash)
+{
+  NestedResource nested{.a = {.a = 1.F, .b = 2}, .b = 2};
+  const auto h = ResourceHasher{}(nested);
+  EXPECT_EQ(h, 6486436383776920708UL) << nested;
+}
+
+TEST(Resource, MultiHash)
+{
+  NestedResource nested{.a = {.a = 1.F, .b = 2}, .b = 2};
+  const auto h = HashMultiple(nested, nested);
+  EXPECT_EQ(h, 17411604422488376414UL) << nested;
 }

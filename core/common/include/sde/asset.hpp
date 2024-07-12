@@ -79,4 +79,7 @@ namespace filesystem = experimental::filesystem;
 namespace sde
 {
 namespace asset = std::filesystem;
+
+inline asset::path operator""_path(const char* str, std::size_t _) { return asset::path{str}; }
+
 }  // namespace sde

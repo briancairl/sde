@@ -1,26 +1,26 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file tileset_io.hpp
+ * @file tile_set_io.hpp
  */
 #pragma once
 
 // SDE
 #include "sde/graphics/tile_set_fwd.hpp"
-#include "sde/graphics/tile_set_handle.hpp"
-#include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
 
 namespace sde::serial
 {
 
-template <typename Archive>
-struct save<Archive, graphics::TileSetHandle> : save<Archive, typename graphics::TileSetHandle::base>
-{};
+template <typename Archive> struct save<Archive, graphics::TileSetHandle>
+{
+  void operator()(Archive& ar, const graphics::TileSetHandle& handle) const;
+};
 
-template <typename Archive>
-struct load<Archive, graphics::TileSetHandle> : load<Archive, typename graphics::TileSetHandle::base>
-{};
+template <typename Archive> struct load<Archive, graphics::TileSetHandle>
+{
+  void operator()(Archive& ar, graphics::TileSetHandle& handle) const;
+};
 
 template <typename Archive> struct save<Archive, graphics::TileSetCache>
 {

@@ -80,31 +80,31 @@ private:
 
   bool onInitialize(entt::registry& registry, Systems& systems, SharedAssets& assets, const AppProperties& app) override
   {
-    if (!assets.assign(front_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png"))
+    if (!assets.assign(front_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png"_path))
     {
       SDE_LOG_ERROR("failed");
       return false;
     }
 
-    if (!assets.assign(back_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png"))
+    if (!assets.assign(back_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png"_path))
     {
       SDE_LOG_ERROR("failed");
       return false;
     }
 
-    if (!assets.assign(side_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png"))
+    if (!assets.assign(side_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png"_path))
     {
       SDE_LOG_ERROR("failed");
       return false;
     }
 
-    if (!assets.assign(front_side_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png"))
+    if (!assets.assign(front_side_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png"_path))
     {
       SDE_LOG_ERROR("failed");
       return false;
     }
 
-    if (!assets.assign(back_side_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png"))
+    if (!assets.assign(back_side_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png"_path))
     {
       SDE_LOG_ERROR("failed");
       return false;
