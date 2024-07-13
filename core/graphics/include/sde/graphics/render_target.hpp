@@ -34,10 +34,9 @@ struct RenderTarget : Resource<RenderTarget>
   TextureHandle color_attachment = TextureHandle::null();
   NativeFrameBufferID native_id;
 
-  auto fields_list()
+  auto field_list()
   {
-    return std::make_tuple(
-      (Field{"color_attachment", color_attachment}), (Field{"native_id", native_id} | kNotSerialized));
+    return std::make_tuple((Field{"color_attachment", color_attachment}), (_Stub{"native_id", native_id}));
   }
 };
 

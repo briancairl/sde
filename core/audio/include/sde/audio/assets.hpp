@@ -8,6 +8,7 @@
 // SDE
 #include "sde/audio/sound.hpp"
 #include "sde/audio/sound_data.hpp"
+#include "sde/resource.hpp"
 
 namespace sde::audio
 {
@@ -18,7 +19,7 @@ enum class AssetError
   kFailedSoundLoading,
 };
 
-struct Assets
+struct Assets : Resource<Assets>
 {
   /// Sound data cache
   SoundDataCache sound_data;
@@ -28,6 +29,8 @@ struct Assets
   Assets();
 
   [[nodiscard]] expected<void, AssetError> refresh();
+
+  auto field_list() { return FieldList((Field{"sound_data", sound_data}), (Field{"sounds", sounds})); }
 };
 
 }  // namespace sde::audio

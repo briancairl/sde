@@ -74,9 +74,9 @@ struct TextureOptions : Resource<TextureOptions>
   bool unpack_alignment = false;
   bool generate_mip_map = false;
 
-  auto fields_list()
+  auto field_list()
   {
-    return std::make_tuple(
+    return FieldList(
       (Field{"u_wrapping", u_wrapping}),
       (Field{"v_wrapping", v_wrapping}),
       (Field{"min_sampling", min_sampling}),
@@ -86,19 +86,15 @@ struct TextureOptions : Resource<TextureOptions>
   }
 };
 
-bool operator==(const TextureOptions& lhs, const TextureOptions& rhs);
-
-struct TextureShape : Resource<Texture>
+struct TextureShape : Resource<TextureShape>
 {
   Vec2i value = {};
   auto width() const { return value.x(); }
   auto height() const { return value.y(); }
   auto texels() const { return value.size(); }
 
-  auto fields_list() { return std::make_tuple((Field{"value", value})); }
+  auto field_list() { return FieldList((Field{"value", value})); }
 };
-
-std::ostream& operator<<(std::ostream& os, const TextureShape& shape);
 
 struct TextureNativeDeleter
 {
@@ -116,15 +112,15 @@ struct Texture : Resource<Texture>
   TextureOptions options;
   NativeTextureID native_id;
 
-  auto fields_list()
+  auto field_list()
   {
-    return std::make_tuple(
+    return FieldList(
       (Field{"source_image", source_image}),
       (Field{"element_type", element_type}),
       (Field{"layout", layout}),
       (Field{"shape", shape}),
       (Field{"options", options}),
-      (Field{"native_id", native_id} | kNotSerialized));
+      (_Stub{"native_id", native_id}));
   }
 };
 

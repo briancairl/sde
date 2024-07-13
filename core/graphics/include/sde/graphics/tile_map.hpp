@@ -7,6 +7,7 @@
 
 // C++ Standard Library
 #include <iosfwd>
+#include <vector>
 
 // SDE
 #include "sde/geometry_types.hpp"
@@ -14,28 +15,38 @@
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/tile_map_fwd.hpp"
 #include "sde/graphics/tile_set_handle.hpp"
+#include "sde/resource.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
 {
 
-struct TileMapOptions
+struct TileMapOptions : Resource<TileMapOptions>
 {
   Vec4f tint_color = Vec4f::Ones();
   Vec2i shape = Vec2i::Zero();
   Vec2f tile_size = Vec2f::Zero();
   TileSetHandle tile_set = TileSetHandle::null();
+
+  auto field_list()
+  {
+    return FieldList(
+      (Field{"tint_color", tint_color}),
+      (Field{"shape", shape}),
+      (Field{"tile_size", tile_size}),
+      (Field{"tile_set", tile_set}));
+  }
 };
 
 std::ostream& operator<<(std::ostream& os, const TileMapOptions& tile_map_options);
 
 bool operator==(const TileMapOptions& lhs, const TileMapOptions& rhs);
 
-class TileMap
+class TileMap : public Resource<TileMap>
 {
-public:
-  ~TileMap();
+  friend fundemental_type;
 
+public:
   explicit TileMap(const TileMapOptions& options);
 
   TileMap() = default;
@@ -48,12 +59,9 @@ public:
 
   const Vec2i shape() const { return options_.shape; }
 
-  View<TileIndex> data() { return View<TileIndex>{tile_indices_, static_cast<std::size_t>(options_.shape.prod())}; }
+  View<TileIndex> data() { return View<TileIndex>{tile_indices_.data(), tile_indices_.size()}; }
 
-  View<const TileIndex> data() const
-  {
-    return View<const TileIndex>{tile_indices_, static_cast<std::size_t>(options_.shape.prod())};
-  }
+  View<const TileIndex> data() const { return View<const TileIndex>{tile_indices_.data(), tile_indices_.size()}; }
 
   TileIndex operator[](const Vec2i indices) const
   {
@@ -71,17 +79,15 @@ public:
   void setTileSet(TileSetHandle tile_set) { options_.tile_set = tile_set; }
 
 private:
+  auto field_list() { return std::tuple_cat(options_.field_list(), FieldList(Field{"tile_indices", tile_indices_})); }
+
   TileMap(const TileMap&) = delete;
   TileMap& operator=(const TileMap&) = delete;
 
   void release();
 
   TileMapOptions options_;
-  TileIndex* tile_indices_ = nullptr;
+  std::vector<TileIndex> tile_indices_;
 };
-
-std::ostream& operator<<(std::ostream& os, const TileMap& tile_map);
-
-bool operator==(const TileMap& lhs, const TileMap& rhs);
 
 }  // namespace sde::graphics

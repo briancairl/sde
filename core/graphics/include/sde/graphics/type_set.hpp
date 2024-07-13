@@ -37,7 +37,7 @@ struct TypeSetOptions : Resource<TypeSet>
 {
   std::size_t height_px = 10;
 
-  auto fields_list() { return std::make_tuple((Field{"height_px", height_px})); }
+  auto field_list() { return std::make_tuple((Field{"height_px", height_px})); }
 };
 
 struct TypeSet : Resource<TypeSet>
@@ -47,13 +47,13 @@ struct TypeSet : Resource<TypeSet>
   TextureHandle glyph_atlas;
   std::vector<Glyph> glyphs;
 
-  auto fields_list()
+  auto field_list()
   {
     return std::make_tuple(
       (Field{"options", options}),
       (Field{"font", font}),
       (Field{"glyph_atlas", glyph_atlas}),
-      (Field{"glyphs", glyphs} | kNotSerialized));
+      (_Stub{"glyphs", glyphs}));
   }
 
   const Glyph& getGlyph(char c) const { return glyphs[static_cast<std::size_t>(c)]; }

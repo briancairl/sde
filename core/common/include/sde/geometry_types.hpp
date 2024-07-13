@@ -75,7 +75,7 @@ template <typename T, int N, int M> struct Hasher<Eigen::Matrix<T, N, M, Eigen::
 
 template <typename T, int Dim> struct Hasher<Eigen::AlignedBox<T, Dim>>
 {
-  std::size_t operator()(const Eigen::AlignedBox<T, Dim>& box) const { return HashMultiple(box.min(), box.max()); }
+  std::size_t operator()(const Eigen::AlignedBox<T, Dim>& box) const { return Hash(box.min(), box.max()); }
 };
 
 }  // namespace sde

@@ -105,7 +105,8 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
   }
 
   // clang-format off
-  auto glyph_atlas_or_error = texture_cache.create(
+  auto glyph_atlas_or_error = 
+  texture_cache.create(
     TypeCode::kUInt8,
     TextureShape{.value=texture_dimensions},
     TextureLayout::kR,

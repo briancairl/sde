@@ -79,7 +79,7 @@ struct ImageOptions : Resource<ImageOptions>
   /// Image was flipped vertically on load
   bool flip_vertically = false;
 
-  auto fields_list()
+  auto field_list()
   {
     return std::make_tuple(
       (Field{"channels", channels}),
@@ -136,13 +136,10 @@ struct Image : Resource<Image>
   /// Image data (in memory)
   ImageDataBuffer data_buffer;
 
-  auto fields_list()
+  auto field_list()
   {
     return std::make_tuple(
-      (Field{"path", path}),
-      (Field{"options", options}),
-      (Field{"shape", shape}),
-      (Field{"data_buffer", data_buffer} | kNotSerialized));
+      (Field{"path", path}), (Field{"options", options}), (Field{"shape", shape}), (_Stub{"data_buffer", data_buffer}));
   }
 
   /**

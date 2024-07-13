@@ -15,6 +15,33 @@ template <typename DerivedT> class crtp_base;
 
 template <template <typename> class CRTPBaseTemplate, typename DerivedT> class crtp_base<CRTPBaseTemplate<DerivedT>>
 {
+public:
+  using fundemental_type = CRTPBaseTemplate<DerivedT>;
+
+  fundemental_type& fundemental()
+  {
+    if constexpr (std::is_polymorphic_v<DerivedT>)
+    {
+      return static_cast<fundemental_type*>(this);
+    }
+    else
+    {
+      return reinterpret_cast<fundemental_type*>(this);
+    }
+  }
+
+  const fundemental_type& fundemental() const
+  {
+    if constexpr (std::is_polymorphic_v<DerivedT>)
+    {
+      return static_cast<const fundemental_type*>(this);
+    }
+    else
+    {
+      return reinterpret_cast<const fundemental_type*>(this);
+    }
+  }
+
 protected:
   constexpr DerivedT* derived_ptr()
   {

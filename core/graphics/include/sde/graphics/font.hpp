@@ -38,10 +38,7 @@ struct Font : Resource<Font>
   asset::path path;
   FontNativeID native_id;
 
-  auto fields_list()
-  {
-    return std::make_tuple((Field{"path", path}), (Field{"native_id", native_id} | kNotSerialized));
-  }
+  auto field_list() { return std::make_tuple((Field{"path", path}), (_Stub{"native_id", native_id})); }
 };
 
 }  // namespace sde::graphics

@@ -12,7 +12,7 @@ gtest(
   name="tile_map_io",
   timeout = "short",
   srcs=["tile_map_io.cpp"],
-  deps=["//core/graphics"],
+  deps=["//core/graphics", "//core/serialization/std"],
   visibility=["//visibility:public"],
 )
 

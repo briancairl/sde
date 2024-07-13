@@ -11,7 +11,7 @@ struct SimpleResource : Resource<SimpleResource>
   float a;
   int b;
 
-  auto fields_list() { return std::make_tuple(Field{"a", a}, Field{"b", b} | kNotSerialized); }
+  auto field_list() { return std::make_tuple(Field{"a", a}, Stub{"b", b}); }
 };
 
 TEST(Resource, Fields)
@@ -49,7 +49,7 @@ struct NestedResource : Resource<NestedResource>
 {
   SimpleResource a;
   int b;
-  auto fields_list() { return std::make_tuple(Field{"a", a}, Field{"b", b} | kNotSerialized); }
+  auto field_list() { return std::make_tuple(Field{"a", a}, Stub{"b", b}); }
 };
 
 namespace sde
@@ -71,6 +71,6 @@ TEST(Resource, NestedHash)
 TEST(Resource, MultiHash)
 {
   NestedResource nested{.a = {.a = 1.F, .b = 2}, .b = 2};
-  const auto h = HashMultiple(nested, nested);
+  const auto h = Hash(nested, nested);
   EXPECT_EQ(h, 17411604422488376414UL) << nested;
 }

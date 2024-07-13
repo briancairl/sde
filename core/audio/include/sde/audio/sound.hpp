@@ -49,13 +49,13 @@ struct Sound : Resource<Sound>
   std::size_t buffer_length = 0;
   NativeSoundBufferID native_id;
 
-  auto fields_list()
+  auto field_list()
   {
-    return std::make_tuple(
+    return FieldList(
       (Field{"sound_data", sound_data}),
-      (Field{"channel_format", channel_format} | kNotSerialized),
-      (Field{"buffer_length", buffer_length} | kNotSerialized),
-      (Field{"native_id", native_id} | kNotSerialized));
+      (_Stub{"channel_format", channel_format}),
+      (_Stub{"buffer_length", buffer_length}),
+      (_Stub{"native_id", native_id}));
   }
 };
 

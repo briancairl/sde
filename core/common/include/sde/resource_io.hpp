@@ -10,36 +10,37 @@
 
 // SDE
 #include "sde/resource.hpp"
+#include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
 
 namespace sde::serial
 {
 
-template <typename Archive, typename ResourceT> struct save<Archive, Field<T>>
+template <typename Archive, typename T> struct serialize<Archive, Field<T>>
 {
-  void operator()(Archive& ar, const Field<T>& field) const { ar << named{field.name, field.value}; }
+  void operator()(Archive& ar, Field<T>& field) const
+  {
+    if constexpr (is_resource_v<T> or is_resource_handle_v<T>)
+    {
+      ar& named{field.name, field->fundemental()};
+    }
+    else
+    {
+      ar& named{field.name, *field};
+    }
+  }
 };
 
-template <typename Archive, typename T> struct load<Archive, Field<T>>
+template <typename Archive, typename T> struct serialize<Archive, _Stub<T>>
 {
-  void operator()(Archive& ar, Field<T>& field) const { ar >> named{field.name, field.value}; }
-};
-
-template <typename Archive, typename ResourceT> struct save<Archive, FieldNotSerialized<T>>
-{
-  void operator()(Archive& ar, const FieldNotSerialized<T>& field) const {}
-};
-
-template <typename Archive, typename T> struct load<Archive, FieldNotSerialized<T>>
-{
-  void operator()(Archive& ar, FieldNotSerialized<T>& field) const {}
+  void operator()(Archive& ar, _Stub<T>& field) const {}
 };
 
 template <typename Archive, typename ResourceT> struct save<Archive, Resource<ResourceT>>
 {
   void operator()(Archive& ar, const Resource<ResourceT>& resource) const
   {
-    std::apply([&ar](const auto&... field) { ((ar << field, 0) + ...); }, resource.fields());
+    std::apply([&ar](auto&&... field) { [[maybe_unused]] auto _ = ((ar << field, 0) + ...); }, resource.fields());
   }
 };
 
@@ -47,7 +48,7 @@ template <typename Archive, typename ResourceT> struct load<Archive, Resource<Re
 {
   void operator()(Archive& ar, Resource<ResourceT>& resource) const
   {
-    std::apply([&ar](const auto&... field) { ((ar >> field, 0) + ...); }, resource.fields());
+    std::apply([&ar](auto&&... field) { [[maybe_unused]] auto _ = ((ar >> field, 0) + ...); }, resource.fields());
   }
 };
 

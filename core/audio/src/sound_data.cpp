@@ -73,8 +73,8 @@ expected<void, SoundDataError> SoundDataCache::reload(SoundData& sound)
   }
 
   // Read WAV meta information
-  auto wave = make_unique_resource(
-    WaveOpenFileForReading(sound.path.c_str()), [](WaveInfo* wave_ptr) { WaveCloseFile(wave_ptr); });
+  auto wave =
+    UniqueResource{WaveOpenFileForReading(sound.path.c_str()), [](WaveInfo* wave_ptr) { WaveCloseFile(wave_ptr); }};
   if (wave == nullptr)
   {
     SDE_LOG_DEBUG("InvalidSoundFile");

@@ -9,6 +9,7 @@
 #include <tuple>
 
 // SDE
+#include "sde/crtp.hpp"
 #include "sde/hash.hpp"
 
 namespace sde
@@ -16,35 +17,37 @@ namespace sde
 
 template <typename T> struct BasicField
 {
-  std::string_view name;
-  T& value;
-  constexpr BasicField(std::string_view n, T& v) : name{n}, value{v} {}
+  static_assert(!std::is_reference_v<T>);
+
+  const char* name;
+  T* value;
+
+  constexpr T& get() { return *value; }
+  constexpr const T& get() const { return *value; }
+
+  constexpr T& operator*() { return get(); }
+  constexpr const T& operator*() const { return get(); }
+
+  constexpr T* operator->() { return value; }
+  constexpr const T* operator->() const { return value; }
+
+  constexpr BasicField(const char* _name, T& _value) : name{_name}, value{std::addressof(_value)} {}
 };
 
 template <typename L, typename R> constexpr bool operator==(const BasicField<L>& lhs, const BasicField<R>& rhs)
 {
-  return lhs.value == rhs.value;
+  return lhs.get() == rhs.get();
 }
 
 template <typename T> struct Field : BasicField<T>
 {
-  constexpr Field(std::string_view n, T& v) : BasicField<T>{n, v} {}
+  constexpr Field(const char* _name, T& _value) : BasicField<T>{_name, _value} {}
 };
 
-template <typename T> struct FieldNotSerialized : BasicField<T>
+template <typename T> struct _Stub : BasicField<T>
 {
-  constexpr FieldNotSerialized(std::string_view n, T& v) : BasicField<T>{n, v} {}
+  constexpr _Stub(const char* _name, T& _value) : BasicField<T>{_name, _value} {}
 };
-
-struct NotSerializedTag
-{};
-
-static constexpr NotSerializedTag kNotSerialized{};
-
-template <typename T> constexpr FieldNotSerialized<T> operator|(Field<T> field, NotSerializedTag _)
-{
-  return FieldNotSerialized<T>{field.name, field.value};
-}
 
 template <typename F> struct is_field : std::false_type
 {};
@@ -52,7 +55,7 @@ template <typename F> struct is_field : std::false_type
 template <typename T> struct is_field<Field<T>> : std::true_type
 {};
 
-template <typename T> struct is_field<FieldNotSerialized<T>> : std::true_type
+template <typename T> struct is_field<_Stub<T>> : std::true_type
 {};
 
 template <typename F> struct is_field_serializable : std::false_type
@@ -61,7 +64,7 @@ template <typename F> struct is_field_serializable : std::false_type
 template <typename T> struct is_field_serializable<Field<T>> : std::true_type
 {};
 
-template <typename T> struct is_field_serializable<FieldNotSerialized<T>> : std::false_type
+template <typename T> struct is_field_serializable<_Stub<T>> : std::false_type
 {};
 
 template <typename F> struct to_const_field;
@@ -71,57 +74,38 @@ template <typename T> struct to_const_field<Field<T>>
   using type = Field<const std::remove_const_t<T>>;
 };
 
-template <typename T> struct to_const_field<FieldNotSerialized<T>>
+template <typename T> struct to_const_field<_Stub<T>>
 {
-  using type = FieldNotSerialized<const std::remove_const_t<T>>;
+  using type = _Stub<const std::remove_const_t<T>>;
 };
 
 template <typename T> using to_const_field_t = typename to_const_field<T>::type;
-
-template <typename... MaybeFieldTs> constexpr bool is_valid_fields_list(const std::tuple<MaybeFieldTs...>& fields)
-{
-  return (is_field<MaybeFieldTs>() and ...);
-}
 
 template <typename... FieldTs> auto to_const(const std::tuple<FieldTs...>& fields)
 {
   return std::apply(
     [](auto&... field) {
-      return std::make_tuple(to_const_field_t<FieldTs>{field.name, field.value}...);
+      return std::make_tuple(to_const_field_t<FieldTs>{field.name, field.get()}...);
     },
     fields);
 }
 
-template <typename ResourceT> struct Resource
+template <typename ResourceT> struct Resource : crtp_base<Resource<ResourceT>>
 {
-  auto& fundemental() { return *this; }
+  constexpr auto fields() { return this->derived().field_list(); }
 
-  const auto& fundemental() const { return *this; }
-
-  constexpr decltype(auto) fields()
-  {
-    auto fields = reinterpret_cast<ResourceT*>(this)->fields_list();
-    static_assert(is_valid_fields_list(fields));
-    return fields;
-  }
-
-  constexpr decltype(auto) fields() const
-  {
-    auto fields = to_const(reinterpret_cast<ResourceT*>(const_cast<Resource*>(this))->fields_list());
-    static_assert(is_valid_fields_list(fields));
-    return fields;
-  }
+  constexpr auto fields() const { return to_const(const_cast<Resource*>(this)->derived().field_list()); }
 
   constexpr auto values()
   {
     return std::apply(
-      [](auto... field) -> std::tuple<decltype(field.value)...> { return {field.value...}; }, this->fields());
+      [](auto... field) -> std::tuple<decltype(field.get())...> { return {field.get()...}; }, this->fields());
   }
 
   constexpr auto values() const
   {
     return std::apply(
-      [](auto... field) -> std::tuple<decltype(field.value)...> { return {field.value...}; }, this->fields());
+      [](auto... field) -> std::tuple<decltype(field.get())...> { return {field.get()...}; }, this->fields());
   }
 
   constexpr auto names() const
@@ -130,43 +114,120 @@ template <typename ResourceT> struct Resource
   }
 };
 
+template <typename ResourceT> bool operator==(const Resource<ResourceT>& lhs, const Resource<ResourceT>& rhs)
+{
+  return lhs.values() == rhs.values();
+}
+
+template <typename ResourceT> bool operator!=(const Resource<ResourceT>& lhs, const Resource<ResourceT>& rhs)
+{
+  return lhs.values() != rhs.values();
+}
+
+template <typename ResourceT> bool operator<(const Resource<ResourceT>& lhs, const Resource<ResourceT>& rhs)
+{
+  return lhs.values() < rhs.values();
+}
+
+template <typename ResourceT> bool operator>(const Resource<ResourceT>& lhs, const Resource<ResourceT>& rhs)
+{
+  return lhs.values() > rhs.values();
+}
+
+template <typename ResourceT> bool operator<=(const Resource<ResourceT>& lhs, const Resource<ResourceT>& rhs)
+{
+  return (lhs < rhs) or (lhs == rhs);
+}
+
+template <typename ResourceT> bool operator>=(const Resource<ResourceT>& lhs, const Resource<ResourceT>& rhs)
+{
+  return (lhs > rhs) or (lhs == rhs);
+}
+
+template <typename T> struct is_resource : std::is_base_of<Resource<T>, T>
+{};
+
+template <typename R> constexpr bool is_resource_v = is_resource<std::remove_const_t<R>>::value;
+
 struct ResourceHasher
 {
   template <typename ResourceT> std::size_t operator()(const Resource<ResourceT>& rsc) const
   {
-    return std::apply([](const auto&... fields) { return HashMultiple(fields...); }, rsc.fields());
+    return std::apply(
+      [](const auto&... fields) {
+        return 0; /*Hash(fields...);*/
+      },
+      rsc.fields());
   }
 };
 
-template <typename ResourceT> struct Hasher<Resource<ResourceT>> : ResourceHasher
-{};
-
 template <typename T> struct Hasher<Field<T>>
 {
-  std::size_t operator()(const Field<T>& rsc) const { return Hasher<std::remove_const_t<T>>{}(rsc.value); }
+  std::size_t operator()(const Field<T>& rsc) const { return Hasher<std::remove_const_t<T>>{}(rsc.get()); }
 };
 
-template <typename T> struct Hasher<FieldNotSerialized<T>>
+template <typename T> struct Hasher<_Stub<T>>
 {
-  std::size_t operator()(const FieldNotSerialized<T>& rsc) const { return 0xDEADBEEFBEEFDEAD; }
+  std::size_t operator()(const _Stub<T>& rsc) const { return 0xDEADBEEFBEEFDEAD; }
 };
+
+template <typename... FieldTs> auto FieldList(FieldTs&&... fields)
+{
+  static_assert((is_field<std::remove_reference_t<FieldTs>>() and ...), "Invalid FieldList");
+  return std::make_tuple(std::forward<FieldTs>(fields)...);
+}
+
+template <typename ResourceT> auto& _R(Resource<ResourceT>& resource) { return resource; }
+
+template <typename ResourceT> const auto& _R(const Resource<ResourceT>& resource) { return resource; }
+
+namespace detail
+{
+
+template <typename T, typename Eval = decltype((std::declval<std::ostream&>() << std::declval<const T&>()))>
+constexpr bool call_ostream_overload([[maybe_unused]] const T* _)
+{
+  return true;
+}
+
+constexpr bool call_ostream_overload(...) { return false; }
+
+}  // namespace detail
+
+template <typename T>
+using has_ostream_overload =
+  std::integral_constant<bool, detail::call_ostream_overload(std::add_pointer_t<T>{nullptr})>;
+
 
 template <typename T> std::ostream& operator<<(std::ostream& os, const Field<T>& field)
 {
-  return os << field.name << ": " << field.value;
+  if constexpr (has_ostream_overload<T>())
+  {
+    return os << field.name << ": " << field.get();
+  }
+  else
+  {
+    return os << field.name << ": ...";
+  }
 }
 
-template <typename T> std::ostream& operator<<(std::ostream& os, const FieldNotSerialized<T>& field)
+template <typename T> std::ostream& operator<<(std::ostream& os, const _Stub<T>& field)
 {
-  return os << field.name << ": [?] " << field.value;
+  if constexpr (has_ostream_overload<T>())
+  {
+    return os << field.name << ": [?] " << field.get();
+  }
+  else
+  {
+    return os << field.name << ": [?] ...";
+  }
 }
-
 
 template <typename ResourceT> std::ostream& operator<<(std::ostream& os, const Resource<ResourceT>& rsc)
 {
   os << '{';
   std::apply(
-    [&os](const auto&... fields) { [[maybe_unused]] auto _ = (((os << fields << ' '), 0) + ...); }, rsc.fields());
+    [&os](const auto&... fields) { [[maybe_unused]] auto _ = (((os << fields << ", "), 0) + ...); }, rsc.fields());
   os << '}';
   return os;
 }

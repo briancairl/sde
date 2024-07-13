@@ -12,22 +12,17 @@
 namespace sde::serial
 {
 
-template <typename Archive> struct save<Archive, graphics::RenderTargetHandle>
+template <typename Archive> struct serialize<Archive, graphics::RenderTarget>
 {
-  void operator()(Archive& ar, const graphics::RenderTargetHandle& handle) const;
+  void operator()(Archive& ar, graphics::RenderTarget& render_target) const;
 };
 
-template <typename Archive> struct load<Archive, graphics::RenderTargetHandle>
+template <typename Archive> struct serialize<Archive, graphics::RenderTargetHandle>
 {
   void operator()(Archive& ar, graphics::RenderTargetHandle& handle) const;
 };
 
-template <typename Archive> struct save<Archive, graphics::RenderTargetCache>
-{
-  void operator()(Archive& ar, const graphics::RenderTargetCache& cache) const;
-};
-
-template <typename Archive> struct load<Archive, graphics::RenderTargetCache>
+template <typename Archive> struct serialize<Archive, graphics::RenderTargetCache>
 {
   void operator()(Archive& ar, graphics::RenderTargetCache& cache) const;
 };

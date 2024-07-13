@@ -69,7 +69,7 @@ public:
   template <typename... CreateArgTs>
   [[nodiscard]] expected<element_ref, error_type> find_or_emplace(handle_type handle, CreateArgTs&&... args)
   {
-    const auto current_version = HashMultiple(args...);
+    const auto current_version = Hash(args...);
     if (const auto current_itr = handle_to_value_cache_.find(handle);
         (current_itr != handle_to_value_cache_.end()) and (current_version == current_itr->second.version))
     {
@@ -86,14 +86,14 @@ public:
       return make_unexpected(error_type::kInvalidHandle);
     }
 
+    const auto current_version = Hash(args...);
+
     // Create a new element
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
     if (!value_or_error.has_value())
     {
       return make_unexpected(value_or_error.error());
     }
-
-    const auto current_version = HashMultiple(args...);
 
     // Add it to the cache
     const auto [itr, added] = handle_to_value_cache_.emplace(
@@ -202,9 +202,9 @@ public:
     return this->derived().unload(handle_to_value_itr->second.value);
   }
 
-  [[nodiscard]] auto& fundemental() { return this->derived(); }
+  [[nodiscard]] ResourceCache& fundemental() { return *this; }
 
-  [[nodiscard]] const auto& fundemental() const { return this->derived(); }
+  [[nodiscard]] const ResourceCache& fundemental() const { return *this; }
 
   ResourceCache() = default;
   ResourceCache(ResourceCache&&) = default;

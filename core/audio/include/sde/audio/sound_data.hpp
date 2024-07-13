@@ -60,13 +60,13 @@ struct SoundData : Resource<SoundData>
   /// Sound channel formatting
   SoundChannelFormat buffer_channel_format = {};
 
-  auto fields_list()
+  auto field_list()
   {
-    return std::make_tuple(
+    return FieldList(
       (Field{"path", path}),
-      (Field{"buffered_samples", buffered_samples} | kNotSerialized),
-      (Field{"buffer_length", buffer_length} | kNotSerialized),
-      (Field{"buffer_channel_format", buffer_channel_format} | kNotSerialized));
+      (_Stub{"buffered_samples", buffered_samples}),
+      (_Stub{"buffer_length", buffer_length}),
+      (_Stub{"buffer_channel_format", buffer_channel_format}));
   }
 
   /**

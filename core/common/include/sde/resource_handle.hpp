@@ -16,7 +16,11 @@
 namespace sde
 {
 
-template <typename T, typename IdentifierT = std::size_t, IdentifierT kNullValue = 0> struct ResourceHandle
+template <typename T> struct ResourceHandleBase
+{};
+
+template <typename T, typename IdentifierT = std::size_t, IdentifierT kNullValue = 0>
+struct ResourceHandle : ResourceHandleBase<T>
 {
 public:
   using id_type = IdentifierT;
@@ -90,6 +94,12 @@ template <typename T> constexpr bool operator!=(const ResourceHandle<T>& lhs, co
   return lhs.id() != rhs.id();
 }
 
+template <typename T> struct is_resource_handle : std::is_base_of<ResourceHandleBase<T>, T>
+{};
+
+template <typename H> constexpr bool is_resource_handle_v = is_resource_handle<std::remove_const_t<H>>::value;
+
+
 struct ResourceHandleHash
 {
   template <typename T> constexpr std::size_t operator()(const ResourceHandle<T>& handle) const { return handle.id(); }
@@ -105,6 +115,18 @@ template <typename T> inline std::ostream& operator<<(std::ostream& os, const Re
   {
     return os << "{ id: " << handle.id() << " }";
   }
+}
+
+template <typename T, typename IdentifierT, IdentifierT kNullValue>
+auto& _R(ResourceHandle<T, IdentifierT, kNullValue>& handle)
+{
+  return handle;
+}
+
+template <typename T, typename IdentifierT, IdentifierT kNullValue>
+const auto& _R(const ResourceHandle<T, IdentifierT, kNullValue>& handle)
+{
+  return handle;
 }
 
 }  // namespace sde

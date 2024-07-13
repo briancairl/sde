@@ -42,7 +42,7 @@ struct TileSet : Resource<TileSet>
   TextureHandle tile_atlas;
   std::vector<Bounds2f> tile_bounds;
 
-  auto fields_list() { return std::make_tuple((Field{"tile_atlas", tile_atlas}), (Field{"tile_bounds", tile_bounds})); }
+  auto field_list() { return std::make_tuple((Field{"tile_atlas", tile_atlas}), (Field{"tile_bounds", tile_bounds})); }
 
   const Bounds2f& operator[](const std::size_t index) const { return tile_bounds[index]; };
 };
@@ -73,7 +73,7 @@ struct TileSetSliceUniform : Resource<TileSetSliceUniform>
   Vec2i offset_px = Vec2i::Zero();
   Vec2i skip_px = Vec2i::Zero();
 
-  auto fields_list()
+  auto field_list()
   {
     return std::make_tuple(
       (Field{"tile_size_px", tile_size_px}),

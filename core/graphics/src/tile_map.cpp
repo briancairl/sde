@@ -31,7 +31,7 @@ bool operator==(const TileMapOptions& lhs, const TileMapOptions& rhs)
 
 TileMap::TileMap(const TileMapOptions& options) { this->setup(options); }
 
-TileMap::TileMap(TileMap&& other) : tile_indices_{nullptr} { this->swap(other); }
+TileMap::TileMap(TileMap&& other) : tile_indices_{} { this->swap(other); }
 
 TileMap& TileMap::operator=(TileMap&& other)
 {
@@ -45,24 +45,12 @@ void TileMap::swap(TileMap& other)
   std::swap(tile_indices_, other.tile_indices_);
 }
 
-TileMap::~TileMap() { release(); }
-
-void TileMap::release()
-{
-  if (tile_indices_ == nullptr)
-  {
-    return;
-  }
-  delete[] tile_indices_;
-}
-
 void TileMap::setup(const TileMapOptions& options)
 {
-  release();
   options_ = options;
   if (const std::size_t new_tile_count = static_cast<std::size_t>(options_.shape.prod()); new_tile_count > 0UL)
   {
-    tile_indices_ = new TileIndex[new_tile_count];
+    tile_indices_.resize(new_tile_count);
   }
 }
 
@@ -107,13 +95,6 @@ void TileMap::draw(RenderPass& rp, const Vec2f& origin) const
          .texture_unit = (*texture_unit_opt)});
     }
   }
-}
-
-std::ostream& operator<<(std::ostream& os, const TileMap& tile_map) { return os << tile_map.options(); }
-
-bool operator==(const TileMap& lhs, const TileMap& rhs)
-{
-  return (lhs.options() == rhs.options()) && (lhs.data() == rhs.data());
 }
 
 }  // namespace sde::graphics
