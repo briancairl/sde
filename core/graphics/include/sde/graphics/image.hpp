@@ -208,7 +208,7 @@ namespace sde::graphics
 
 class ImageCache : public ResourceCache<ImageCache>
 {
-  friend cache_base;
+  friend fundemental_type;
 
 private:
   static expected<void, ImageError> reload(Image& image);

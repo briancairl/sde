@@ -180,7 +180,7 @@ template <typename DataT> expected<void, TextureError> replace(const Texture& te
 
 class TextureCache : public ResourceCache<TextureCache>
 {
-  friend cache_base;
+  friend fundemental_type;
 
 public:
   explicit TextureCache(ImageCache& images);

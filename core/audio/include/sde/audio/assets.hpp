@@ -30,7 +30,7 @@ struct Assets : Resource<Assets>
 
   [[nodiscard]] expected<void, AssetError> refresh();
 
-  auto field_list() { return FieldList((Field{"sound_data", sound_data}), (Field{"sounds", sounds})); }
+  auto field_list() { return FieldList(Field{"sound_data", sound_data}, Field{"sounds", sounds}); }
 };
 
 }  // namespace sde::audio

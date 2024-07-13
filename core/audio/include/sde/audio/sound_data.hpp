@@ -97,7 +97,7 @@ namespace sde::audio
 
 class SoundDataCache : public ResourceCache<SoundDataCache>
 {
-  friend cache_base;
+  friend fundemental_type;
 
 private:
   static expected<void, SoundDataError> reload(SoundData& sound);

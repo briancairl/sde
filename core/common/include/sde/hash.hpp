@@ -7,28 +7,52 @@
 
 // C++ Standard Library
 #include <functional>
-#include <iostream>
+#include <iosfwd>
 #include <type_traits>
+
 namespace sde
 {
-constexpr std::size_t kHashSeed{0x9e3779b9};
+constexpr std::size_t kHashOffset{0x9e3779b9};
 
-constexpr std::size_t hash_combine(std::size_t h) { return h; }
+constexpr std::size_t hash_digest(std::size_t h) { return h + kHashOffset; }
 
-template <typename... OtherTs> constexpr std::size_t hash_combine(std::size_t lhs, std::size_t rhs, OtherTs... others)
+template <typename... OtherTs> constexpr std::size_t hash_digest(std::size_t lhs, std::size_t rhs)
 {
-  return rhs + kHashSeed + (lhs << 6) + (lhs >> 2);
+  return hash_digest(rhs) + (lhs << 6) + (lhs >> 2);
 }
 
-template <typename T> struct Hasher : std::hash<T>
-{};
-
-constexpr std::size_t Hash() { return kHashSeed; }
-
-template <typename T, typename... OtherTs> std::size_t Hash(const T& first, OtherTs&&... others)
+struct Hash
 {
-  std::cerr << __PRETTY_FUNCTION__ << std::endl;
-  return hash_combine(Hasher<T>{}(first), Hash(std::forward<OtherTs>(others)...));
+  std::size_t value = hash_digest(0);
+
+  Hash& operator+=(const Hash& other)
+  {
+    this->value = hash_digest(this->value, other.value);
+    return *this;
+  }
+};
+
+constexpr Hash operator+(Hash lhs, Hash rhs) { return {hash_digest(lhs.value, rhs.value)}; }
+
+constexpr bool operator==(Hash lhs, Hash rhs) { return lhs.value == rhs.value; }
+
+constexpr bool operator!=(Hash lhs, Hash rhs) { return lhs.value != rhs.value; }
+
+template <typename T> struct Hasher
+{
+  constexpr Hash operator()(const T& v) const { return {std::hash<T>{}(v)}; }
+};
+
+
+template <typename T> using hashable_t = std::remove_const_t<std::remove_reference_t<T>>;
+
+constexpr Hash HashMany() { return {}; }
+
+template <typename FirstT, typename... OtherTs> Hash HashMany(const FirstT& first, OtherTs&&... others)
+{
+  return Hasher<FirstT>{}(first) + HashMany(others...);
 }
+
+inline std::ostream& operator<<(std::ostream& os, const Hash& hash) { return os << "{ hash: " << hash.value << " }"; }
 
 }  // namespace sde

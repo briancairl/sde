@@ -63,7 +63,7 @@ namespace sde::graphics
 
 class FontCache : public ResourceCache<FontCache>
 {
-  friend cache_base;
+  friend fundemental_type;
 
 private:
   static expected<void, FontError> reload(Font& font);

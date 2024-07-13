@@ -78,7 +78,7 @@ namespace sde::audio
 
 class SoundCache : public ResourceCache<SoundCache>
 {
-  friend cache_base;
+  friend fundemental_type;
 
 public:
   explicit SoundCache(SoundDataCache& sound_data);

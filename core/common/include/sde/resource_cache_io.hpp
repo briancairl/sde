@@ -6,6 +6,7 @@
 #pragma once
 
 // SDE
+#include "sde/hash_io.hpp"
 #include "sde/logging.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_handle_io.hpp"

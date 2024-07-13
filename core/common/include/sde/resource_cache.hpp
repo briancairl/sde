@@ -24,12 +24,11 @@ template <typename ResourceCacheT> struct ResourceCacheTypes;
 template <typename ResourceCacheT> class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>
 {
 public:
-  using cache_base = ResourceCache<ResourceCacheT>;
   using type_info = ResourceCacheTypes<ResourceCacheT>;
   using error_type = typename type_info::error_type;
   using handle_type = typename type_info::handle_type;
   using value_type = typename type_info::value_type;
-  using version_type = std::size_t;
+  using version_type = Hash;
 
   struct element_ref
   {
@@ -49,7 +48,12 @@ public:
     {}
   };
 
-  using CacheMap = std::unordered_map<handle_type, element_storage, ResourceHandleHash>;
+  struct handle_type_umap_hash
+  {
+    std::size_t operator()(const handle_type& h) const { return std::hash<typename handle_type::id_type>{}(h.id()); }
+  };
+
+  using CacheMap = std::unordered_map<handle_type, element_storage, handle_type_umap_hash>;
 
   using result_type = expected<element_ref, error_type>;
 
@@ -69,7 +73,7 @@ public:
   template <typename... CreateArgTs>
   [[nodiscard]] expected<element_ref, error_type> find_or_emplace(handle_type handle, CreateArgTs&&... args)
   {
-    const auto current_version = Hash(args...);
+    const auto current_version = HashMany(args...);
     if (const auto current_itr = handle_to_value_cache_.find(handle);
         (current_itr != handle_to_value_cache_.end()) and (current_version == current_itr->second.version))
     {
@@ -86,7 +90,7 @@ public:
       return make_unexpected(error_type::kInvalidHandle);
     }
 
-    const auto current_version = Hash(args...);
+    const auto current_version = HashMany(args...);
 
     // Create a new element
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);

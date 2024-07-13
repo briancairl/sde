@@ -14,6 +14,7 @@
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_set.hpp"
 #include "sde/graphics/type_set.hpp"
+#include "sde/resource.hpp"
 
 namespace sde::graphics
 {
@@ -29,7 +30,7 @@ enum class AssetError
   kFailedRenderTargetLoading,
 };
 
-struct Assets
+struct Assets : Resource<Assets>
 {
   /// Image cache
   ImageCache images;
@@ -55,6 +56,17 @@ struct Assets
   Assets();
 
   expected<void, AssetError> refresh();
+
+  auto field_list()
+  {
+    return FieldList(
+      Field{"images", images},
+      Field{"fonts", fonts},
+      Field{"shaders", shaders},
+      Field{"tile_sets", tile_sets},
+      Field{"type_sets", type_sets},
+      Field{"render_targets", render_targets});
+  }
 };
 
 }  // namespace sde::graphics

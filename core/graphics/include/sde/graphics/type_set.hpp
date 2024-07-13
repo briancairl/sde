@@ -97,7 +97,7 @@ namespace sde::graphics
 
 class TypeSetCache : public ResourceCache<TypeSetCache>
 {
-  friend cache_base;
+  friend fundemental_type;
 
 public:
   TypeSetCache(TextureCache& texture, FontCache& fonts);

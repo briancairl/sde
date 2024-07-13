@@ -102,7 +102,10 @@ template <typename H> constexpr bool is_resource_handle_v = is_resource_handle<s
 
 struct ResourceHandleHash
 {
-  template <typename T> constexpr std::size_t operator()(const ResourceHandle<T>& handle) const { return handle.id(); }
+  template <typename T> constexpr Hash operator()(const ResourceHandle<T>& handle) const
+  {
+    return {static_cast<std::size_t>(handle.id())};
+  }
 };
 
 template <typename T> inline std::ostream& operator<<(std::ostream& os, const ResourceHandle<T>& handle)

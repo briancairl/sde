@@ -114,7 +114,7 @@ namespace sde::graphics
 
 class TileSetCache : public ResourceCache<TileSetCache>
 {
-  friend cache_base;
+  friend fundemental_type;
 
 public:
   explicit TileSetCache(TextureCache& textures);

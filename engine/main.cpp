@@ -10,7 +10,6 @@
 #include "sde/audio/assets.hpp"
 #include "sde/audio/mixer.hpp"
 #include "sde/game/assets.hpp"
-#include "sde/game/assets_io.hpp"
 #include "sde/game/script.hpp"
 #include "sde/game/systems.hpp"
 #include "sde/graphics/image.hpp"
@@ -50,7 +49,7 @@ int main(int argc, char** argv)
   if (auto ifs_or_error = serial::file_istream::create("/tmp/game.bin"); ifs_or_error.has_value())
   {
     serial::binary_iarchive iar{*ifs_or_error};
-    iar >> serial::named{"assets", assets};
+    iar >> serial::named{"assets", sde::_R(assets)};
     if (auto ok_or_error = assets.refresh())
     {
       character_script->load(iar);
@@ -123,7 +122,7 @@ int main(int argc, char** argv)
   if (auto ofs_or_error = serial::file_ostream::create("/tmp/game.bin"); ofs_or_error.has_value())
   {
     serial::binary_oarchive oar{*ofs_or_error};
-    oar << serial::named{"assets", assets};
+    oar << serial::named{"assets", sde::_R(assets)};
     character_script->save(oar);
     renderer_script->save(oar);
     weather_script->save(oar);

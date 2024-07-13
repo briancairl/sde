@@ -13,6 +13,7 @@
 #include "sde/audio/assets.hpp"
 #include "sde/game/systems_fwd.hpp"
 #include "sde/graphics/assets.hpp"
+#include "sde/resource.hpp"
 
 namespace sde::game
 {
@@ -26,8 +27,10 @@ enum class AssetError
 /**
  * @brief Collection of active game assets
  */
-class Assets
+class Assets : public Resource<Assets>
 {
+  friend fundemental_type;
+
 public:
   /// Collection of active audio assets
   audio::Assets audio;
@@ -86,6 +89,8 @@ public:
   }
 
 private:
+  auto field_list() { return FieldList(Field{"audio", audio}, Field{"graphics", graphics}); }
+
   template <typename CacheT, typename... CreateArgTs>
   [[nodiscard]] expected<void, typename CacheT::error_type> assignImpl(
     typename CacheT::handle_type& handle,

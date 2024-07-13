@@ -17,7 +17,7 @@ namespace sde
 
 template <typename T> struct BasicField
 {
-  static_assert(!std::is_reference_v<T>);
+  static_assert(!std::is_reference_v<T> and !std::is_pointer_v<T>);
 
   const char* name;
   T* value;
@@ -31,7 +31,7 @@ template <typename T> struct BasicField
   constexpr T* operator->() { return value; }
   constexpr const T* operator->() const { return value; }
 
-  constexpr BasicField(const char* _name, T& _value) : name{_name}, value{std::addressof(_value)} {}
+  constexpr BasicField(const char* _name, T* _value) : name{_name}, value{_value} {}
 };
 
 template <typename L, typename R> constexpr bool operator==(const BasicField<L>& lhs, const BasicField<R>& rhs)
@@ -41,12 +41,12 @@ template <typename L, typename R> constexpr bool operator==(const BasicField<L>&
 
 template <typename T> struct Field : BasicField<T>
 {
-  constexpr Field(const char* _name, T& _value) : BasicField<T>{_name, _value} {}
+  constexpr Field(const char* _name, T& _value) : BasicField<T>{_name, std::addressof(_value)} {}
 };
 
 template <typename T> struct _Stub : BasicField<T>
 {
-  constexpr _Stub(const char* _name, T& _value) : BasicField<T>{_name, _value} {}
+  constexpr _Stub(const char* _name, T& _value) : BasicField<T>{_name, std::addressof(_value)} {}
 };
 
 template <typename F> struct is_field : std::false_type
@@ -151,24 +151,23 @@ template <typename R> constexpr bool is_resource_v = is_resource<std::remove_con
 
 struct ResourceHasher
 {
-  template <typename ResourceT> std::size_t operator()(const Resource<ResourceT>& rsc) const
+  template <typename ResourceT> auto operator()(const Resource<ResourceT>& rsc) const
   {
-    return std::apply(
-      [](const auto&... fields) {
-        return 0; /*Hash(fields...);*/
-      },
-      rsc.fields());
+    return std::apply([](const auto&... fields) { return HashMany(fields...); }, rsc.fields());
   }
 };
 
+template <typename T> struct Hasher<Resource<T>> : ResourceHasher
+{};
+
 template <typename T> struct Hasher<Field<T>>
 {
-  std::size_t operator()(const Field<T>& rsc) const { return Hasher<std::remove_const_t<T>>{}(rsc.get()); }
+  Hash operator()(const Field<T>& rsc) const { return Hasher<hashable_t<T>>{}(rsc.get()); }
 };
 
 template <typename T> struct Hasher<_Stub<T>>
 {
-  std::size_t operator()(const _Stub<T>& rsc) const { return 0xDEADBEEFBEEFDEAD; }
+  Hash operator()(const _Stub<T>& rsc) const { return {}; }
 };
 
 template <typename... FieldTs> auto FieldList(FieldTs&&... fields)

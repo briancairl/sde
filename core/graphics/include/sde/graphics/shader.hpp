@@ -151,7 +151,7 @@ namespace sde::graphics
 
 class ShaderCache : public ResourceCache<ShaderCache>
 {
-  friend cache_base;
+  friend fundemental_type;
 
 private:
   static expected<void, ShaderError> reload(Shader& shader);

@@ -76,6 +76,7 @@ cc_library(
     "include/sde/crtp.hpp",
     "include/sde/format.hpp",
     "include/sde/hash.hpp",
+    "include/sde/hash_io.hpp",
     "include/sde/time.hpp",
     "include/sde/time_io.hpp",
     "include/sde/time_ostream.hpp",

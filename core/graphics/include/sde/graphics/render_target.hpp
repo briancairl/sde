@@ -70,7 +70,7 @@ namespace sde::graphics
 
 class RenderTargetCache : public ResourceCache<RenderTargetCache>
 {
-  friend cache_base;
+  friend fundemental_type;
 
 public:
   explicit RenderTargetCache(TextureCache& textures);

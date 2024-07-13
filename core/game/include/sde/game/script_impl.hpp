@@ -10,24 +10,65 @@
 
 // Common
 #include "sde/expected.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
+#include "sde/resource_io.hpp"
+#include "sde/serialization.hpp"
 #include "sde/serialization_binary_file.hpp"
-
-// Audio
-#include "sde/audio/sound_data_io.hpp"
-#include "sde/audio/sound_io.hpp"
-
-// Graphics
-#include "sde/graphics/assets_io.hpp"
-#include "sde/graphics/font_io.hpp"
-#include "sde/graphics/image_io.hpp"
-#include "sde/graphics/render_target_io.hpp"
-#include "sde/graphics/shader_io.hpp"
-#include "sde/graphics/texture_io.hpp"
-#include "sde/graphics/tile_set_io.hpp"
-#include "sde/graphics/type_set_io.hpp"
 
 // Game
 #include "sde/game/assets.hpp"
 #include "sde/game/script_runtime.hpp"
 #include "sde/game/systems.hpp"
+
+namespace sde::serial
+{
+
+template <typename Archive> struct load<Archive, audio::SoundHandle> : load<Archive, ResourceHandle<audio::SoundHandle>>
+{};
+template <typename Archive> struct save<Archive, audio::SoundHandle> : save<Archive, ResourceHandle<audio::SoundHandle>>
+{};
+
+template <typename Archive>
+struct load<Archive, graphics::FontHandle> : load<Archive, ResourceHandle<graphics::FontHandle>>
+{};
+template <typename Archive>
+struct save<Archive, graphics::FontHandle> : save<Archive, ResourceHandle<graphics::FontHandle>>
+{};
+
+template <typename Archive>
+struct load<Archive, graphics::TextureHandle> : load<Archive, ResourceHandle<graphics::TextureHandle>>
+{};
+template <typename Archive>
+struct save<Archive, graphics::TextureHandle> : save<Archive, ResourceHandle<graphics::TextureHandle>>
+{};
+
+template <typename Archive>
+struct load<Archive, graphics::ShaderHandle> : load<Archive, ResourceHandle<graphics::ShaderHandle>>
+{};
+template <typename Archive>
+struct save<Archive, graphics::ShaderHandle> : save<Archive, ResourceHandle<graphics::ShaderHandle>>
+{};
+
+template <typename Archive>
+struct load<Archive, graphics::TileSetHandle> : load<Archive, ResourceHandle<graphics::TileSetHandle>>
+{};
+template <typename Archive>
+struct save<Archive, graphics::TileSetHandle> : save<Archive, ResourceHandle<graphics::TileSetHandle>>
+{};
+
+template <typename Archive>
+struct load<Archive, graphics::TypeSetHandle> : load<Archive, ResourceHandle<graphics::TypeSetHandle>>
+{};
+template <typename Archive>
+struct save<Archive, graphics::TypeSetHandle> : save<Archive, ResourceHandle<graphics::TypeSetHandle>>
+{};
+
+template <typename Archive>
+struct load<Archive, graphics::RenderTargetHandle> : load<Archive, ResourceHandle<graphics::RenderTargetHandle>>
+{};
+template <typename Archive>
+struct save<Archive, graphics::RenderTargetHandle> : save<Archive, ResourceHandle<graphics::RenderTargetHandle>>
+{};
+
+}  // namespace sde::serial
