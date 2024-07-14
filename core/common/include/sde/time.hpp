@@ -32,6 +32,7 @@ template <typename DurationT, typename ScalarT = float> constexpr DurationT toTi
 template <typename DurationT> class BasicRate
 {
 public:
+  BasicRate() : period_{toTimeOffset<DurationT>(0.0)} {}
   constexpr explicit BasicRate(DurationT period) : period_{period} {}
 
   constexpr const DurationT& period() const { return period_; }
@@ -78,6 +79,12 @@ constexpr auto operator/(const BasicRate<DurationT>& lhs, const DurationOrRepT& 
   return lhs.period() * rhs;
 }
 
+template <typename DurationT>
+constexpr bool operator==(const BasicRate<DurationT>& lhs, const BasicRate<DurationT>& rhs)
+{
+  return lhs.period() == rhs.period();
+}
+
 using Clock = std::chrono::steady_clock;
 using TimeOffset = Clock::duration;
 using Rate = BasicRate<TimeOffset>;
@@ -89,6 +96,11 @@ using WallRate = BasicRate<WallTimeOffset>;
 template <typename TimeOffsetT = TimeOffset, typename ScalarT> constexpr auto Hertz(ScalarT hz)
 {
   return BasicRate<TimeOffsetT>::fromHertz(hz);
+}
+
+template <typename TimeOffsetT = TimeOffset, typename ScalarT> constexpr auto Seconds(ScalarT seconds)
+{
+  return toTimeOffset<TimeOffsetT>(seconds);
 }
 
 }  // namespace sde

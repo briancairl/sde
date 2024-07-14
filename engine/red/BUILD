@@ -1,0 +1,24 @@
+cc_library(
+  name="red",
+  hdrs=[
+    "include/red/components.hpp",
+    "include/red/background_music.hpp",
+    "include/red/player_character.hpp",
+    "include/red/renderer.hpp",
+    "include/red/weather.hpp",
+    "include/red/imgui.hpp",
+  ],
+  srcs=[
+    "src/background_music.cpp",
+    "src/player_character.cpp",
+    "src/renderer.cpp",
+    "src/weather.cpp",
+    "src/imgui.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    "//core/game",
+    "@imgui//:imgui"
+  ],
+  visibility=["//visibility:public"]
+)

@@ -3,6 +3,7 @@ cc_library(
   hdrs=[
     "include/sde/app.hpp",
     "include/sde/app_fwd.hpp",
+    "include/sde/app_properties.hpp",
     "include/sde/keyboard.hpp"
   ],
   srcs=["src/app.cpp"],

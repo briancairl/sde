@@ -7,76 +7,81 @@
 
 // C++ Standard Library
 #include <iosfwd>
-#include <variant>
 
 // SDE
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/graphics/render_target_fwd.hpp"
+#include "sde/graphics/render_target_handle.hpp"
 #include "sde/graphics/texture_fwd.hpp"
+#include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/typedef.hpp"
-#include "sde/graphics/window_fwd.hpp"
-#include "sde/resource_handle.hpp"
+#include "sde/resource.hpp"
+#include "sde/resource_cache.hpp"
+#include "sde/resource_wrapper.hpp"
 
 namespace sde::graphics
 {
-class RenderTargetActive;
 
-struct RenderTargetHandle : ResourceHandle<RenderTargetHandle>
+struct NativeFrameBufferDeleter
 {
-  RenderTargetHandle() = default;
-  explicit RenderTargetHandle(id_type id) : ResourceHandle<RenderTargetHandle>{id} {}
+  void operator()(native_frame_buffer_id_t id) const;
+};
+
+using NativeFrameBufferID = UniqueResource<native_frame_buffer_id_t, NativeFrameBufferDeleter>;
+
+struct RenderTarget : Resource<RenderTarget>
+{
+  TextureHandle color_attachment = TextureHandle::null();
+  NativeFrameBufferID native_id = NativeFrameBufferID{0};
+
+  auto field_list()
+  {
+    return std::make_tuple((Field{"color_attachment", color_attachment}), (_Stub{"native_id", native_id}));
+  }
 };
 
 enum class RenderTargetError
 {
-  kInvalidTexture,
-  kInvalidWindow,
+  kElementAlreadyExists,
+  kInvalidHandle,
+  kInvalidColorAttachment,
 };
 
 std::ostream& operator<<(std::ostream& os, RenderTargetError error);
 
-class RenderTarget
+
+}  // namespace sde::graphics
+
+
+namespace sde
 {
+
+template <> struct ResourceCacheTypes<graphics::RenderTargetCache>
+{
+  using error_type = graphics::RenderTargetError;
+  using handle_type = graphics::RenderTargetHandle;
+  using value_type = graphics::RenderTarget;
+};
+
+}  // namespace sde
+
+namespace sde::graphics
+{
+
+class RenderTargetCache : public ResourceCache<RenderTargetCache>
+{
+  friend fundemental_type;
+
 public:
-  ~RenderTarget();
-
-  RenderTarget(RenderTarget&& other);
-
-  static expected<RenderTarget, RenderTargetError> create(const Window& window);
-
-  static expected<RenderTarget, RenderTargetError>
-  create(const TextureHandle& texture, const TextureCache& texture_cache);
-
-  RenderTargetHandle handle() const
-  {
-    return std::holds_alternative<RenderTargetHandle>(target_) ? std::get<RenderTargetHandle>(target_)
-                                                               : RenderTargetHandle::null();
-  }
-
-  void refresh();
-
-  void refresh(const Vec4f& clear_color);
-
-  Vec2i getLastSize() const { return viewport_size_; }
-
-  float getLastAspectRatio() const { return toAspectRatio(viewport_size_); }
-
-  static float toAspectRatio(const Vec2i viewport_size)
-  {
-    return static_cast<float>(viewport_size.x()) / static_cast<float>(viewport_size.y());
-  }
+  explicit RenderTargetCache(TextureCache& textures);
 
 private:
-  void activate();
+  TextureCache* textures_;
 
-  friend class RenderTargetActive;
+  expected<void, RenderTargetError> reload(RenderTarget& render_target);
+  expected<void, RenderTargetError> unload(RenderTarget& render_target);
 
-  explicit RenderTarget(WindowNativeHandle window);
-  RenderTarget(RenderTargetHandle frame_buffer, Vec2i size);
-
-  std::variant<WindowNativeHandle, RenderTargetHandle> target_;
-
-  Vec2i viewport_size_;
+  expected<RenderTarget, RenderTargetError> generate(TextureHandle color_attachment = TextureHandle::null());
 };
 
 }  // namespace sde::graphics

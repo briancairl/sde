@@ -10,33 +10,15 @@
 #include <functional>
 
 // SDE
+#include "sde/app_properties.hpp"
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/window.hpp"
 #include "sde/keyboard.hpp"
 #include "sde/time.hpp"
 
 namespace sde
 {
-
-struct AppProperties
-{
-  TimeOffset time = TimeOffset::zero();
-  TimeOffset time_delta = TimeOffset::zero();
-
-  Vec2i size = {640, 480};
-  Vec2d mouse_position_px = {0.0, 0.0};
-  Vec2d mouse_scroll = {0.0, 0.0};
-
-  KeyStates keys;
-
-  Vec2f getMousePositionViewport(Vec2i viewport_size) const
-  {
-    return {
-      static_cast<float>(2.0 * mouse_position_px.x() / static_cast<double>(viewport_size.x()) - 1.0),
-      static_cast<float>(1.0 - 2.0 * mouse_position_px.y() / static_cast<double>(viewport_size.y()))};
-  }
-};
 
 enum class AppDirective
 {
@@ -56,10 +38,11 @@ class App
 public:
   using Window = graphics::Window;
   using WindowOptions = graphics::WindowOptions;
+  using OnUpdate = std::function<AppDirective(AppState&, const AppProperties&)>;
 
   App(App&&) = default;
 
-  void spin(std::function<AppDirective(const AppProperties&)> on_update, const Rate spin_rate = Hertz(60.0F));
+  void spin(OnUpdate on_update, const Rate spin_rate = Hertz(60.0F));
 
   const Window& window() const { return window_; }
 

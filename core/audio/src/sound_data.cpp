@@ -7,6 +7,7 @@
 
 // SDE
 #include "sde/audio/sound_data.hpp"
+#include "sde/logging.hpp"
 #include "sde/resource_wrapper.hpp"
 
 namespace sde::audio
@@ -44,97 +45,92 @@ std::ostream& operator<<(std::ostream& os, SoundDataError count)
   // clang-format off
   switch (count)
   {
+  case SoundDataError::kSoundDataNotFound: return os << "SoundDataNotFound";
   case SoundDataError::kMissingSoundFile: return os << "MissingSoundFile";
   case SoundDataError::kInvalidSoundFile: return os << "InvalidSoundFile";
-  case SoundDataError::kInvalidSoundFileSeek: return os << "InvalidSoundFileSeek";
-  case SoundDataError::kInvalidSoundFileReadSize: return os << "InvalidSoundFileReadSize";
-  case SoundDataError::kInvalidSoundFileChannelCount: return os << "InvalidSoundFileChannelCount";
-  case SoundDataError::kInvalidSoundFileBitDepth: return os << "InvalidSoundFileBitDepth";
+  case SoundDataError::kInvalidHandle: return os << "InvalidHandle";
+  case SoundDataError::kElementAlreadyExists: return os << "ElementAlreadyExists";
   }
   // clang-format on
   return os;
 }
 
-SoundData::SoundData(SoundData&& other) { this->swap(other); }
+void SoundDataBufferDeleter::operator()(void* data) const { std::free(data); }
 
-SoundData::SoundData(
-  std::byte* const data,
-  const std::size_t buffer_length,
-  const std::size_t bits_per_second,
-  const SoundChannelFormat& channel_format) :
-    data_{data}, buffer_length_{buffer_length}, bits_per_second_{bits_per_second}, channel_format_{channel_format}
-{}
-
-SoundData::~SoundData()
+expected<void, SoundDataError> SoundDataCache::unload(SoundData& sound)
 {
-  if (data_ == nullptr)
-  {
-    return;
-  }
-  std::free(reinterpret_cast<void*>(data_));
+  sound.buffered_samples = SoundDataBuffer{nullptr};
+  return {};
 }
 
-SoundData& SoundData::operator=(SoundData&& other)
-{
-  this->swap(other);
-  return *this;
-}
-
-expected<SoundData, SoundDataError> SoundData::load(const asset::path& path)
+expected<void, SoundDataError> SoundDataCache::reload(SoundData& sound)
 {
   // Check that sound file exists
-  if (!asset::exists(path))
+  if (!asset::exists(sound.path))
   {
+    SDE_LOG_DEBUG("MissingSoundFile");
     return make_unexpected(SoundDataError::kMissingSoundFile);
   }
 
   // Read WAV meta information
   auto wave =
-    make_unique_resource(WaveOpenFileForReading(path.c_str()), [](WaveInfo* wave_ptr) { WaveCloseFile(wave_ptr); });
+    UniqueResource{WaveOpenFileForReading(sound.path.c_str()), [](WaveInfo* wave_ptr) { WaveCloseFile(wave_ptr); }};
   if (wave == nullptr)
   {
+    SDE_LOG_DEBUG("InvalidSoundFile");
     return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   // Seek WAV to start
   if (const auto retcode = WaveSeekFile(0, wave); retcode != 0)
   {
-    return make_unexpected(SoundDataError::kInvalidSoundFileSeek);
+    SDE_LOG_DEBUG("InvalidSoundFile");
+    return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   // Read WAV data
   auto* wave_data = reinterpret_cast<char*>(std::malloc(wave->dataSize));
   if (const auto read_size = WaveReadFile(wave_data, wave->dataSize, wave); read_size != wave->dataSize)
   {
-    return make_unexpected(SoundDataError::kInvalidSoundFileReadSize);
+    SDE_LOG_DEBUG("InvalidSoundFile");
+    return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   auto channel_count_opt = toSoundChannelCount(wave->channels);
   if (!channel_count_opt.has_value())
   {
-    return make_unexpected(SoundDataError::kInvalidSoundFileChannelCount);
+    SDE_LOG_DEBUG("InvalidSoundFile");
+    return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
-  auto channel_bit_depth_opt = toSoundChannelBitDepth(wave->bitsPerSample);
-  if (!channel_bit_depth_opt.has_value())
+  auto channel_element_type_opt = toSoundChannelBitDepth(wave->bitsPerSample);
+  if (!channel_element_type_opt.has_value())
   {
-    return make_unexpected(SoundDataError::kInvalidSoundFileBitDepth);
+    SDE_LOG_DEBUG("InvalidSoundFile");
+    return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
-  return SoundData{
-    reinterpret_cast<std::byte*>(wave_data),
-    static_cast<std::size_t>(wave->dataSize),
-    static_cast<std::size_t>(wave->sampleRate),
-    SoundChannelFormat{
-      .count = std::move(channel_count_opt).value(), .bit_depth = std::move(channel_bit_depth_opt).value()}};
+  sound.buffered_samples = SoundDataBuffer{wave_data};
+  sound.buffer_length = static_cast<std::size_t>(wave->dataSize);
+  sound.buffer_channel_format = {
+    .count = std::move(channel_count_opt).value(),
+    .element_type = std::move(channel_element_type_opt).value(),
+    .bits_per_second = static_cast<std::size_t>(wave->sampleRate)};
+
+  SDE_LOG_DEBUG_FMT("Loaded sound from file: %s (%lu bytes)", sound.path.string().c_str(), sound.buffer_length);
+  return {};
 }
 
-void SoundData::swap(SoundData& other)
+expected<SoundData, SoundDataError> SoundDataCache::generate(const asset::path& sound_path)
 {
-  std::swap(data_, other.data_);
-  std::swap(buffer_length_, other.buffer_length_);
-  std::swap(bits_per_second_, other.bits_per_second_);
-  std::swap(channel_format_, other.channel_format_);
+  SoundData sound{
+    .path = sound_path, .buffered_samples = SoundDataBuffer{nullptr}, .buffer_length = 0, .buffer_channel_format = {}};
+  if (auto ok_or_error = reload(sound); !ok_or_error.has_value())
+  {
+    return make_unexpected(ok_or_error.error());
+  }
+  return sound;
 }
+
 
 }  // namespace sde::audio

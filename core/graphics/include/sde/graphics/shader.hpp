@@ -8,6 +8,7 @@
 // C++ Standard Library
 #include <cstdint>
 #include <iosfwd>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -18,6 +19,7 @@
 #include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/typedef.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
 
@@ -61,6 +63,7 @@ std::ostream& operator<<(std::ostream& os, const ShaderVariable& value);
 enum class ShaderError
 {
   kElementAlreadyExists,
+  kInvalidHandle,
   kAssetNotFound,
   kLinkageFailure,
   kVertShaderCompilationFailure,
@@ -94,30 +97,38 @@ struct ShaderVariables
 std::ostream& operator<<(std::ostream& os, const ShaderVariables& variables);
 
 
-struct ShaderNativeDeleter
+struct NativeShaderDeleter
 {
   void operator()(native_shader_id_t id) const;
 };
 
-using ShaderNativeID = UniqueResource<native_shader_id_t, ShaderNativeDeleter>;
+using NativeShaderID = UniqueResource<native_shader_id_t, NativeShaderDeleter>;
 
 /**
  * @brief Information about an active shader
  */
-struct ShaderInfo
+struct Shader : Resource<Shader>
 {
-  ShaderComponents components;
-  ShaderVariables variables;
-  ShaderNativeID native_id;
+  asset::path path = {};
+  ShaderComponents components = {};
+  ShaderVariables variables = {};
+  NativeShaderID native_id = NativeShaderID{0};
+
+  auto field_list()
+  {
+    return std::make_tuple(
+      (Field{"path", path}),
+      (_Stub{"components", components}),
+      (_Stub{"variables", variables}),
+      (_Stub{"native_id", native_id}));
+  }
 
   [[nodiscard]] constexpr bool isValid() const { return ::sde::graphics::isValid(components); }
 };
 
-std::ostream& operator<<(std::ostream& os, const ShaderInfo& error);
+[[nodiscard]] bool hasLayout(const Shader& info, std::string_view key, ShaderVariableType type, std::size_t index);
 
-[[nodiscard]] bool hasLayout(const ShaderInfo& info, std::string_view key, ShaderVariableType type, std::size_t index);
-
-[[nodiscard]] bool hasUniform(const ShaderInfo& info, std::string_view key, ShaderVariableType type);
+[[nodiscard]] bool hasUniform(const Shader& info, std::string_view key, ShaderVariableType type);
 
 }  // namespace sde::graphics
 
@@ -128,7 +139,7 @@ template <> struct ResourceCacheTypes<graphics::ShaderCache>
 {
   using error_type = graphics::ShaderError;
   using handle_type = graphics::ShaderHandle;
-  using value_type = graphics::ShaderInfo;
+  using value_type = graphics::Shader;
 };
 
 }  // namespace sde
@@ -138,10 +149,12 @@ namespace sde::graphics
 
 class ShaderCache : public ResourceCache<ShaderCache>
 {
-  friend class ResourceCache<ShaderCache>;
+  friend fundemental_type;
 
 private:
-  expected<ShaderInfo, ShaderError> generate(std::string_view source);
+  static expected<void, ShaderError> reload(Shader& shader);
+  static expected<void, ShaderError> unload(Shader& shader);
+  expected<Shader, ShaderError> generate(const asset::path& path);
 };
 
 }  // namespace sde::graphics

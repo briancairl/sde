@@ -13,7 +13,7 @@
 #include "sde/audio/sound_fwd.hpp"
 #include "sde/audio/typedef.hpp"
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/resource_wrapper.hpp"
 #include "sde/view.hpp"
 
@@ -50,10 +50,14 @@ struct TrackOptions
 {
   Vec3f position = Vec3f::Zero();
   Vec3f velocity = Vec3f::Zero();
-  float gain = 1.F;
+  Vec3f orientation = Vec3f::UnitZ();
+  float volume = 1.F;
   float pitch = 1.F;
+  float cutoff_distance = 0.0F;
   bool looped = false;
 };
+
+class TrackPlayback;
 
 class Track
 {
@@ -65,15 +69,37 @@ public:
   bool playing() const;
   float progress() const;
 
-  void set(const SoundInfo& sound, const TrackOptions& track_options);
-  source_handle_t pop();
+  TrackPlayback set(const Sound& sound, const TrackOptions& track_options);
+  void pop(std::vector<source_handle_t>& target);
 
   const NativeSource& source() const { return source_; }
+  const std::size_t instance() const { return instance_counter_; }
 
 private:
+  std::size_t instance_counter_ = 0;
   NativeSource source_;
   bool playback_queued_ = false;
   std::size_t playback_buffer_length_ = 0;
+};
+
+class TrackPlayback
+{
+public:
+  TrackPlayback() = default;
+  TrackPlayback(std::size_t instance_id, Track& track);
+
+  bool isValid() const { return (track_ != nullptr) and (instance_id_ == track_->instance()); }
+  bool setPosition(const Vec3f& position) const;
+  bool setVelocity(const Vec3f& velocity) const;
+  bool setVolume(float level) const;
+  bool setPitch(float level) const;
+  bool resume() const;
+  bool pause() const;
+  bool stop();
+
+private:
+  std::size_t instance_id_ = 0;
+  const Track* track_ = nullptr;
 };
 
 enum class ListenerError
@@ -84,10 +110,11 @@ enum class ListenerError
 
 struct ListenerState
 {
+  float gain = 0.5F;
   Vec3f position = Vec3f::Zero();
   Vec3f velocity = Vec3f::Zero();
+  Vec3f orientation_at = Vec3f::UnitX();
   Vec3f orientation_up = Vec3f::UnitZ();
-  Vec3f orientation_look = Vec3f::UnitX();
 };
 
 struct ListenerOptions
@@ -96,6 +123,11 @@ struct ListenerOptions
 };
 
 class ListenerTarget;
+
+enum class TrackPlaybackError
+{
+  kNoFreeSources
+};
 
 class Listener
 {
@@ -106,7 +138,7 @@ public:
   create(const NativeDevice& device, const ListenerOptions& options);
 
   void set(const ListenerState& state) const;
-  bool set(const SoundInfo& sound, const TrackOptions& options);
+  expected<TrackPlayback, TrackPlaybackError> set(const Sound& sound, const TrackOptions& options);
   void play();
   void stop();
 
@@ -140,7 +172,10 @@ public:
   [[nodiscard]] static expected<ListenerTarget, ListenerTargetError> create(Mixer& mixer, std::size_t listener_id);
 
   void set(const ListenerState& state) const { l_->set(state); }
-  bool set(const SoundInfo& sound, const TrackOptions& options = {}) { return l_->set(sound, options); }
+  expected<TrackPlayback, TrackPlaybackError> set(const Sound& sound, const TrackOptions& options = {})
+  {
+    return l_->set(sound, options);
+  }
 
 private:
   explicit ListenerTarget(Mixer* m, Listener* p);

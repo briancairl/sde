@@ -1,4 +1,5 @@
 // C++ Standard Library
+#include <algorithm>
 #include <array>
 #include <numeric>
 #include <ostream>
@@ -11,6 +12,7 @@
 
 // SDE
 #include "sde/graphics/font.hpp"
+#include "sde/graphics/image.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/type_set.hpp"
 #include "sde/logging.hpp"
@@ -20,8 +22,6 @@ namespace sde::graphics
 {
 namespace
 {
-
-using GlyphLookup = std::array<Glyph, TypeSetInfo::kGlyphCount>;
 
 constexpr int kFreeTypeSuccess = 0;
 
@@ -36,13 +36,15 @@ UniqueResource<FT_Library, FreeTypeRelease> FreeType{[] {
   return ft;
 }()};
 
+static constexpr std::size_t kDefaultGlyphCount{128UL};
+
 const auto kDefaultGlyphs{[] {
-  std::array<char, TypeSetInfo::kGlyphCount> glyphs;
+  std::array<char, kDefaultGlyphCount> glyphs;
   std::iota(std::begin(glyphs), std::end(glyphs), 0);
   return glyphs;
 }()};
 
-expected<void, TypeSetError> loadGlyphsFromFont(GlyphLookup& glyph_lut, const FontInfo& font, int glyph_height)
+expected<void, TypeSetError> loadGlyphsFromFont(std::vector<Glyph>& glyph_lut, const Font& font, int glyph_height)
 {
   if (glyph_height == 0)
   {
@@ -50,12 +52,14 @@ expected<void, TypeSetError> loadGlyphsFromFont(GlyphLookup& glyph_lut, const Fo
     return make_unexpected(TypeSetError::kGlyphSizeInvalid);
   }
 
+  glyph_lut.resize(kDefaultGlyphCount);
+
   const auto face = reinterpret_cast<FT_Face>(font.native_id.value());
 
   static constexpr int kWidthFromHeight = 0;
   if (FT_Set_Pixel_Sizes(face, kWidthFromHeight, glyph_height) != kFreeTypeSuccess)
   {
-    SDE_LOG_DEBUG("GlyphSizeInvalid");
+    SDE_LOG_DEBUG_FMT("GlyphSizeInvalid (font: %p, height: %lu)", face, glyph_height);
     return make_unexpected(TypeSetError::kGlyphSizeInvalid);
   }
   for (std::size_t char_index = 0; char_index < kDefaultGlyphs.size(); ++char_index)
@@ -81,8 +85,9 @@ expected<void, TypeSetError> loadGlyphsFromFont(GlyphLookup& glyph_lut, const Fo
 
 expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
   TextureCache& texture_cache,
-  GlyphLookup& glyph_lut,
-  const FontInfo& font,
+  TextureHandle glyph_atlas,
+  std::vector<Glyph>& glyph_lut,
+  const Font& font,
   const TypeSetOptions& options)
 {
   // Compute required texture dimensions
@@ -100,24 +105,24 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
   }
 
   // clang-format off
-  auto atlas_texture_or_error = texture_cache.create(
-    Type<std::uint8_t>,
-    TextureShape{{texture_dimensions}},
-    TextureLayout::kR,
-    TextureOptions{
-      .u_wrapping = TextureWrapping::kClampToEdge,
-      .v_wrapping = TextureWrapping::kClampToEdge,
-      .min_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
-      .mag_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
-      .flags = {
+  auto glyph_atlas_or_error = 
+    texture_cache.find_or_create(
+      glyph_atlas,
+      TypeCode::kUInt8,
+      TextureShape{.value=texture_dimensions},
+      TextureLayout::kR,
+      TextureOptions{
+        .u_wrapping = TextureWrapping::kClampToEdge,
+        .v_wrapping = TextureWrapping::kClampToEdge,
+        .min_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
+        .mag_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
         .unpack_alignment = true
-      }
-    });
+      });
   // clang-format on
 
-  if (!atlas_texture_or_error.has_value())
+  if (!glyph_atlas_or_error.has_value())
   {
-    SDE_LOG_DEBUG("GlyphAtlasTextureCreationFailed");
+    SDE_LOG_DEBUG_FMT("GlyphAtlasTextureCreationFailed: %d", static_cast<int>(glyph_atlas_or_error.error()));
     return make_unexpected(TypeSetError::kGlyphAtlasTextureCreationFailed);
   }
 
@@ -146,7 +151,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
     const Vec2i tex_coord_max_px{tex_coord_min_px + g.size_px};
 
     if (const auto ok_or_error = replace(
-          *atlas_texture_or_error,
+          *glyph_atlas_or_error->value,
           make_const_view(buffer_ptr, buffer_length),
           Bounds2i{tex_coord_min_px, tex_coord_max_px});
         !ok_or_error.has_value())
@@ -163,12 +168,16 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
     prex_px_y += g.size_px.y();
   }
 
-  return atlas_texture_or_error->handle;
+  return glyph_atlas_or_error->handle;
 }
 
 }  // namespace
 
-const Bounds2i TypeSetInfo::getTextBounds(std::string_view text) const
+TypeSetCache::TypeSetCache(TextureCache& textures, FontCache& fonts) :
+    textures_{std::addressof(textures)}, fonts_{std::addressof(fonts)}
+{}
+
+const Bounds2i TypeSet::getTextBounds(std::string_view text) const
 {
   Bounds2i text_bounds;
 
@@ -187,28 +196,55 @@ const Bounds2i TypeSetInfo::getTextBounds(std::string_view text) const
   return text_bounds;
 }
 
-expected<TypeSetInfo, TypeSetError>
-TypeSetCache::generate(TextureCache& texture_cache, const element_t<FontCache>& font, const TypeSetOptions& options)
+expected<void, TypeSetError> TypeSetCache::reload(TypeSet& type_set)
 {
-  GlyphLookup glyph_lut;
-  if (auto ok_or_error = loadGlyphsFromFont(glyph_lut, font, static_cast<int>(options.height_px));
+  const auto* font = fonts_->get_if(type_set.font);
+
+  if (font == nullptr)
+  {
+    return make_unexpected(TypeSetError::kInvalidFont);
+  }
+
+  SDE_LOG_DEBUG_FMT(
+    "TypeSet from Font(%lu:%p) %s (of %lu available)",
+    type_set.font.id(),
+    font->native_id.value(),
+    font->path.string().c_str(),
+    fonts_->size());
+
+  if (auto ok_or_error = loadGlyphsFromFont(type_set.glyphs, *font, static_cast<int>(type_set.options.height_px));
       !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }
 
-  auto glyph_atlas_texture_or_error = sendGlyphsToTexture(texture_cache, glyph_lut, font, options);
-  if (!glyph_atlas_texture_or_error.has_value())
+  auto glyph_atlas_or_error =
+    sendGlyphsToTexture(*textures_, type_set.glyph_atlas, type_set.glyphs, *font, type_set.options);
+  if (!glyph_atlas_or_error.has_value())
   {
     SDE_LOG_DEBUG("GlyphTextureInvalid");
-    return make_unexpected(glyph_atlas_texture_or_error.error());
+    return make_unexpected(glyph_atlas_or_error.error());
   }
+  type_set.glyph_atlas = (*glyph_atlas_or_error);
+  SDE_LOG_DEBUG_FMT("GlyphAtlasTexture(%lu)", type_set.glyph_atlas.id());
+  return {};
+}
 
-  return TypeSetInfo{
-    .options = options,
-    .font = font,
-    .glyph_atlas = std::move(glyph_atlas_texture_or_error).value(),
-    .glyphs = std::move(glyph_lut)};
+expected<void, TypeSetError> TypeSetCache::unload(TypeSet& type_set)
+{
+  textures_->remove(type_set.glyph_atlas);
+  type_set.glyphs.clear();
+  return {};
+}
+
+expected<TypeSet, TypeSetError> TypeSetCache::generate(FontHandle font, const TypeSetOptions& options)
+{
+  TypeSet type_set{.options = options, .font = font, .glyph_atlas = TextureHandle::null(), .glyphs = {}};
+  if (auto ok_or_error = reload(type_set); !ok_or_error.has_value())
+  {
+    return make_unexpected(ok_or_error.error());
+  }
+  return type_set;
 }
 
 }  // namespace sde::graphics

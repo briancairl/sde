@@ -7,8 +7,8 @@
 
 // SDE
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
-#include "sde/graphics/image_fwd.hpp"
+#include "sde/geometry.hpp"
+#include "sde/graphics/image_ref.hpp"
 #include "sde/graphics/window_fwd.hpp"
 #include "sde/resource_wrapper.hpp"
 
@@ -19,8 +19,6 @@ struct WindowOptions
 {
   const char* title = "sde";
   Vec2i initial_size = {640, 480};
-  Image* icon = nullptr;
-  Image* cursor = nullptr;
 };
 
 enum class WindowError
@@ -34,18 +32,22 @@ enum class WindowError
 
 struct WindowDeleter
 {
-  void operator()(WindowNativeHandle id) const;
+  void operator()(NativeWindowHandle id) const;
 };
 
-class Window : public UniqueResource<WindowNativeHandle, WindowDeleter>
+class Window : public UniqueResource<NativeWindowHandle, WindowDeleter>
 {
 public:
   static expected<Window, WindowError> create(const WindowOptions& options);
 
   void activate() const;
 
+  expected<void, WindowError> setIcon(ImageRef icon) const;
+
+  expected<void, WindowError> setCursor(ImageRef cursor) const;
+
 private:
-  explicit Window(WindowNativeHandle native_handle);
+  explicit Window(NativeWindowHandle native_handle);
 };
 
 }  // namespace sde::graphics

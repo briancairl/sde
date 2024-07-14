@@ -13,7 +13,14 @@ namespace sde::graphics
 
 struct FontHandle : ResourceHandle<FontHandle>
 {
+  FontHandle() = default;
   explicit FontHandle(id_type id) : ResourceHandle<FontHandle>{id} {}
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct Hasher<graphics::FontHandle> : ResourceHandleHash
+{};
+}  // namespace sde

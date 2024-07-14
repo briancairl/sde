@@ -4,13 +4,9 @@
 // Backend
 #include "opengl.inl"
 
-// Include glfw3.h after our OpenGL definitions
-#include <GLFW/glfw3.h>
-
 // SDE
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/texture.hpp"
-#include "sde/graphics/window.hpp"
 #include "sde/logging.hpp"
 
 namespace sde::graphics
@@ -20,88 +16,60 @@ std::ostream& operator<<(std::ostream& os, RenderTargetError error)
 {
   switch (error)
   {
-  case RenderTargetError::kInvalidTexture:
-    return os << "InvalidTexture";
-  case RenderTargetError::kInvalidWindow:
-    return os << "InvalidWindow";
+  case RenderTargetError::kInvalidHandle:
+    return os << "InvalidHandle";
+  case RenderTargetError::kInvalidColorAttachment:
+    return os << "InvalidColorAttachment";
+  case RenderTargetError::kElementAlreadyExists:
+    return os << "ElementAlreadyExists";
   }
   return os;
 }
 
-RenderTarget::RenderTarget(RenderTarget&& other) :
-    target_{std::move(other.target_)}, viewport_size_{std::move(other.viewport_size_)}
-{}
+void NativeFrameBufferDeleter::operator()(native_frame_buffer_id_t id) const { glDeleteFramebuffers(1, &id); }
 
-RenderTarget::RenderTarget(WindowNativeHandle window) : target_{window}, viewport_size_{Vec2i::Zero()} {}
+RenderTargetCache::RenderTargetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
 
-RenderTarget::RenderTarget(RenderTargetHandle frame_buffer, Vec2i size) : target_{frame_buffer}, viewport_size_{size} {}
-
-RenderTarget::~RenderTarget()
+expected<void, RenderTargetError> RenderTargetCache::reload(RenderTarget& render_target)
 {
-  if (handle().isValid())
+  if (render_target.color_attachment.isNull())
   {
-    GLuint texture_framebuffer = handle().id();
-    glDeleteFramebuffers(1, &texture_framebuffer);
+    SDE_LOG_DEBUG("Default Frame Buffer");
+    render_target.native_id = NativeFrameBufferID{0};
+    return {};
   }
-}
-
-expected<RenderTarget, RenderTargetError> RenderTarget::create(const Window& window)
-{
-  if (window.isNull())
+  const auto* color_attachment = textures_->get_if(render_target.color_attachment);
+  if (color_attachment == nullptr)
   {
-    return unexpected<RenderTargetError>{RenderTargetError::kInvalidWindow};
-  }
-  return RenderTarget{window.value()};
-}
-
-expected<RenderTarget, RenderTargetError>
-RenderTarget::create(const TextureHandle& texture, const TextureCache& texture_cache)
-{
-  if (texture.isNull())
-  {
-    return unexpected<RenderTargetError>{RenderTargetError::kInvalidTexture};
-  }
-
-  const auto* texture_info = texture_cache.get_if(texture);
-
-  if (texture_info == nullptr)
-  {
-    return unexpected<RenderTargetError>{RenderTargetError::kInvalidTexture};
-  }
-
-  GLuint texture_framebuffer;
-  glGenFramebuffers(1, &texture_framebuffer);
-  glBindFramebuffer(GL_FRAMEBUFFER, texture_framebuffer);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_info->native_id, 0);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  return RenderTarget{RenderTargetHandle{texture_framebuffer}, texture_info->shape.value};
-}
-
-void RenderTarget::activate() { glBindFramebuffer(GL_FRAMEBUFFER, handle().id()); }
-
-void RenderTarget::refresh()
-{
-  if (const WindowNativeHandle* window_handle_native = std::get_if<WindowNativeHandle>(&target_);
-      window_handle_native != nullptr)
-  {
-    glfwGetFramebufferSize(
-      reinterpret_cast<GLFWwindow*>(*window_handle_native), (viewport_size_.data() + 0), (viewport_size_.data() + 1));
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    SDE_LOG_DEBUG("InvalidColorAttachment");
+    return make_unexpected(RenderTargetError::kInvalidColorAttachment);
   }
   else
   {
-    glBindFramebuffer(GL_FRAMEBUFFER, std::get<RenderTargetHandle>(target_).id());
+    GLuint texture_framebuffer;
+    glGenFramebuffers(1, &texture_framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, texture_framebuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_attachment->native_id, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    render_target.native_id = NativeFrameBufferID{texture_framebuffer};
   }
-  glViewport(0, 0, viewport_size_.x(), viewport_size_.y());
+  return {};
 }
 
-void RenderTarget::refresh(const Vec4f& color)
+expected<void, RenderTargetError> RenderTargetCache::unload(RenderTarget& render_target)
 {
-  refresh();
-  glClearColor(color[0], color[1], color[2], color[3]);
-  glClear(GL_COLOR_BUFFER_BIT);
+  render_target.native_id = NativeFrameBufferID{0};
+  return {};
 }
 
+expected<RenderTarget, RenderTargetError> RenderTargetCache::generate(TextureHandle color_attachment)
+{
+  RenderTarget render_target{.color_attachment = color_attachment, .native_id = NativeFrameBufferID{0}};
+  if (auto ok_or_error = reload(render_target); !ok_or_error.has_value())
+  {
+    return make_unexpected(ok_or_error.error());
+  }
+  return render_target;
+}
 
 }  // namespace sde::graphics

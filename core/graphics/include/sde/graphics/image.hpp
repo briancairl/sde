@@ -12,24 +12,18 @@
 // SDE
 #include "sde/asset.hpp"
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
+#include "sde/graphics/image_fwd.hpp"
+#include "sde/graphics/image_handle.hpp"
+#include "sde/graphics/image_ref.hpp"
 #include "sde/graphics/typecode.hpp"
+#include "sde/resource.hpp"
+#include "sde/resource_cache.hpp"
+#include "sde/resource_wrapper.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
 {
-
-/**
- * @brief Image channel specifier
- */
-enum class ImageChannels : std::uint8_t
-{
-  kDefault,
-  kGrey,
-  kGreyA,
-  kRGB,
-  kRGBA
-};
 
 std::ostream& operator<<(std::ostream& os, ImageChannels channels);
 
@@ -74,135 +68,147 @@ inline ImageChannels from_channel_count(std::size_t count)
 }
 
 /**
- * @brief Image loading options
- */
-struct ImageLoadFlags
-{
-  std::uint8_t flip_vertically : 1;
-};
-
-std::ostream& operator<<(std::ostream& os, ImageLoadFlags flags);
-
-/**
  * @brief Image load options
  */
-struct ImageOptions
+struct ImageOptions : Resource<ImageOptions>
 {
   /// Image channel loading options
   ImageChannels channels = ImageChannels::kDefault;
-
   /// Image channel loading options
-  TypeCode bit_depth = TypeCode::kUInt8;
+  TypeCode element_type = TypeCode::kUInt8;
+  /// Image was flipped vertically on load
+  bool flip_vertically = false;
 
-  /// On-load option flags
-  ImageLoadFlags flags = {0};
+  auto field_list()
+  {
+    return FieldList(
+      Field{"channels", channels}, Field{"element_type", element_type}, Field{"flip_vertically", flip_vertically});
+  }
 };
-
-std::ostream& operator<<(std::ostream& os, const ImageOptions& error);
 
 /**
  * @brief Image dimensions
  */
-struct ImageShape
+struct ImageShape : Resource<ImageShape>
 {
   Vec2i value = {};
   auto width() const { return value.x(); }
   auto height() const { return value.y(); }
   auto pixels() const { return value.x() * value.y(); }
-};
 
-std::ostream& operator<<(std::ostream& os, const ImageShape& error);
+  auto field_list() { return FieldList(Field{"value", value}); }
+};
 
 /**
  * @brief Error codes pertaining to Image loading
  */
-enum class ImageLoadError
+enum class ImageError
 {
+  kElementAlreadyExists,
+  kInvalidHandle,
   kAssetNotFound,
   kAssetInvalid,
+  kImageNotFound,
   kUnsupportedBitDepth,
 };
 
-std::ostream& operator<<(std::ostream& os, ImageLoadError error);
+std::ostream& operator<<(std::ostream& os, ImageError error);
 
-/**
- * @brief In-memory image data
- */
-class Image
+struct ImageDataBufferDeleter
 {
-public:
-  ~Image();
+  void operator()(void* data) const;
+};
 
-  Image(const Image&) = delete;
-  Image(Image&& other);
+using ImageDataBuffer = UniqueResource<void*, ImageDataBufferDeleter>;
 
-  /**
-   * @brief Loads an Image from disk, or returns an ImageLoadError
-   */
-  [[nodiscard]] static expected<Image, ImageLoadError>
-  load(const asset::path& image_path, const ImageOptions& options = {});
+struct Image : Resource<Image>
+{
+  /// Path to image
+  asset::path path = {};
+  /// Image load options
+  ImageOptions options = {};
+  /// Image shape
+  ImageShape shape = {};
+  /// Image data (in memory)
+  ImageDataBuffer data_buffer = ImageDataBuffer{nullptr};
 
-  /**
-   * @brief Returns true if held resource is valid
-   */
-  [[nodiscard]] constexpr bool valid() const { return data_ != nullptr; }
-
-  /**
-   * @copydoc valid
-   */
-  [[nodiscard]] constexpr operator bool() const { return valid(); }
-
-  /**
-   * @brief Returns image dimensions
-   */
-  [[nodiscard]] constexpr const ImageShape& shape() const { return shape_; }
-
-  /**
-   * @brief Returns image pixel depth
-   */
-  [[nodiscard]] constexpr TypeCode depth() const { return bit_depth_; }
+  auto field_list()
+  {
+    return FieldList(
+      Field{"path", path}, Field{"options", options}, Field{"shape", shape}, _Stub{"data_buffer", data_buffer});
+  }
 
   /**
    * @brief Returns image channel count
    */
-  [[nodiscard]] constexpr ImageChannels channels() const { return channels_; }
-
-  /**
-   * @brief Returns image channel count
-   */
-  [[nodiscard]] constexpr std::size_t getChannelCount() const { return to_channel_count(channels_); }
+  [[nodiscard]] constexpr std::size_t getChannelCount() const { return to_channel_count(options.channels); }
 
   /**
    * @brief Returns size of single pixel, in bytes
    */
-  [[nodiscard]] constexpr std::size_t getPixelSizeInBytes() const { return getChannelCount() * byte_count(bit_depth_); }
+  [[nodiscard]] constexpr std::size_t getPixelSizeInBytes() const
+  {
+    return getChannelCount() * byte_count(options.element_type);
+  }
 
   /**
    * @brief Returns total size of image in bytes
    */
-  [[nodiscard]] constexpr std::size_t getTotalSizeInBytes() const { return shape_.pixels() * getPixelSizeInBytes(); }
+  [[nodiscard]] constexpr std::size_t getTotalSizeInBytes() const { return shape.pixels() * getPixelSizeInBytes(); }
 
   /**
    * @brief Returns pointer to image data
    */
   [[nodiscard]] auto data() const
   {
-    return View<const std::uint8_t>{reinterpret_cast<const std::uint8_t*>(data_), getTotalSizeInBytes()};
+    return View<const std::uint8_t>{reinterpret_cast<const std::uint8_t*>(data_buffer.value()), getTotalSizeInBytes()};
   }
 
-private:
-  Image(const ImageShape& shape, ImageChannels channels, TypeCode bit_depth, void* data);
-
-  /// Image size
-  ImageShape shape_;
-  /// Image channel layout
-  ImageChannels channels_;
-  /// Image pixel depth
-  TypeCode bit_depth_;
-  /// Image data buffer pointer
-  void* data_;
+  /**
+   * @brief Returns pointer to image data
+   */
+  [[nodiscard]] auto ref() const
+  {
+    return ImageRef{
+      .channels = options.channels,
+      .element_type = options.element_type,
+      .width = shape.width(),
+      .height = shape.height(),
+      .data = data_buffer.value()};
+  }
 };
 
-std::ostream& operator<<(std::ostream& os, const Image& error);
+}  // namespace sde::graphics
+
+namespace sde
+{
+
+template <> struct Hasher<graphics::ImageOptions> : ResourceHasher
+{};
+
+template <> struct Hasher<graphics::Image> : ResourceHasher
+{};
+
+template <> struct ResourceCacheTypes<graphics::ImageCache>
+{
+  using error_type = graphics::ImageError;
+  using handle_type = graphics::ImageHandle;
+  using value_type = graphics::Image;
+};
+
+}  // namespace sde
+
+namespace sde::graphics
+{
+
+class ImageCache : public ResourceCache<ImageCache>
+{
+  friend fundemental_type;
+
+private:
+  static expected<void, ImageError> reload(Image& image);
+  static expected<void, ImageError> unload(Image& image);
+  expected<Image, ImageError> generate(const asset::path& image_path, const ImageOptions& options = {});
+};
 
 }  // namespace sde::graphics

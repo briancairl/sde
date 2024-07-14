@@ -14,8 +14,10 @@
 // SDE
 
 #include "sde/expected.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/assets_fwd.hpp"
-#include "sde/graphics/render_target.hpp"
+#include "sde/graphics/render_buffer_fwd.hpp"
+#include "sde/graphics/render_target_handle.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/shapes_fwd.hpp"
 #include "sde/graphics/texture_units.hpp"
@@ -30,6 +32,7 @@ namespace sde::graphics
  */
 struct RenderResources
 {
+  RenderTargetHandle target = RenderTargetHandle::null();
   ShaderHandle shader = ShaderHandle::null();
   std::size_t buffer_group = 0UL;
   bool isValid() const { return shader.isValid(); }
@@ -41,22 +44,22 @@ std::ostream& operator<<(std::ostream& os, const RenderResources& resources);
 /**
  * @brief Standard values passed to shaders on render pass
  */
-struct RenderAttributes
+struct RenderUniforms
 {
   Mat3f world_from_camera = Mat3f::Identity();
   float scaling = 1.0F;
   TimeOffset time = TimeOffset::zero();
   TimeOffset time_delta = TimeOffset::zero();
-  Mat3f getWorldFromViewportMatrix(const RenderTarget& target) const;
+  Mat3f getWorldFromViewportMatrix(const Vec2i& viewport_size) const;
 };
 
-std::ostream& operator<<(std::ostream& os, const RenderAttributes& attributes);
+std::ostream& operator<<(std::ostream& os, const RenderUniforms& uniforms);
 
 
 /**
  * @brief Buffer mode
  */
-enum class RenderBufferMode
+enum class VertexBufferMode
 {
   kStatic,
   kDynamic
@@ -65,10 +68,10 @@ enum class RenderBufferMode
 /**
  * @brief Texture creation options
  */
-struct RenderBufferOptions
+struct VertexBufferOptions
 {
   std::size_t max_triangle_count_per_render_pass = 10000UL;
-  RenderBufferMode mode = RenderBufferMode::kDynamic;
+  VertexBufferMode mode = VertexBufferMode::kDynamic;
 };
 
 
@@ -78,7 +81,7 @@ struct RenderBufferOptions
 struct Renderer2DOptions
 {
   static constexpr std::size_t kVetexArrayCount = 4;
-  std::array<RenderBufferOptions, kVetexArrayCount> buffers;
+  std::array<VertexBufferOptions, kVetexArrayCount> buffers;
 };
 
 struct RenderBackend
@@ -101,7 +104,7 @@ public:
 
   static expected<Renderer2D, RendererError> create(const Renderer2DOptions& options = {});
 
-  void flush(const Assets& assets, const RenderAttributes& attributes, const Mat3f& viewport_from_world);
+  void flush(const Assets& assets, const RenderUniforms& uniforms, const Mat3f& viewport_from_world);
 
   void refresh(const RenderResources& resources);
 
@@ -124,6 +127,7 @@ private:
 enum class RenderPassError
 {
   kRenderPassActive,
+  kInvalidRenderTarget,
   kMaxVertexCountExceeded,
   kMaxElementCountExceeded,
 };
@@ -146,24 +150,32 @@ public:
   std::optional<std::size_t> assign(const TextureHandle& texture) { return renderer_->assign(texture); }
 
   static expected<RenderPass, RenderPassError> create(
-    RenderTarget& target,
+    RenderBuffer& buffer,
     Renderer2D& renderer,
     const Assets& assets,
-    const RenderAttributes& attributes,
-    const RenderResources& resources);
+    const RenderUniforms& uniforms,
+    const RenderResources& resources,
+    Vec2i viewport_size = Vec2i::Zero());
 
   const Mat3f& getWorldFromViewportMatrix() const { return world_from_viewport_; };
   const Mat3f& getViewportFromWorldMatrix() const { return viewport_from_world_; };
   const Bounds2f& getViewportInWorldBounds() const { return viewport_in_world_bounds_; };
+
+  constexpr RenderBuffer* operator->() { return buffer_; }
+
+  void clear(const Vec4f& color = Vec4f::Zero());
   bool visible(const Bounds2f& query_aabb) const { return getViewportInWorldBounds().intersects(query_aabb); }
 
 private:
   RenderPass() = default;
   RenderPass(const RenderPass&) = delete;
 
+  static bool retarget(Vec2i& viewport_size, RenderTargetHandle render_target, const Assets& assets);
+
   Renderer2D* renderer_;
+  RenderBuffer* buffer_;
   const Assets* assets_;
-  const RenderAttributes* attributes_;
+  const RenderUniforms* uniforms_;
   Mat3f world_from_viewport_;
   Mat3f viewport_from_world_;
   Bounds2f viewport_in_world_bounds_;

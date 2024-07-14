@@ -18,3 +18,9 @@ struct TileSetHandle : ResourceHandle<TileSetHandle>
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct Hasher<graphics::TileSetHandle> : ResourceHandleHash
+{};
+}  // namespace sde

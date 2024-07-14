@@ -7,7 +7,9 @@
 
 namespace sde::graphics
 {
+struct ImageHandle;
 struct ImageOptions;
 struct ImageShape;
-class Image;
+struct ImageRef;
+class ImageCache;
 }  // namespace sde::graphics

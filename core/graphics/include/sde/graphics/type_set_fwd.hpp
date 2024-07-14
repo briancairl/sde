@@ -9,6 +9,7 @@ namespace sde::graphics
 {
 struct Glyph;
 struct TypeSetOptions;
-struct TypeSetInfo;
-class GlyphCache;
+struct TypeSetHandle;
+struct TypeSet;
+class TypeSetCache;
 }  // namespace sde::graphics

@@ -68,9 +68,9 @@ void glfwScanKeyStates(GLFWwindow* glfw_window, KeyStates& curr)
 
 void glfwScrollEventHandler(GLFWwindow* glfw_window, double xoffset, double yoffset)
 {
-  auto* window_properties = reinterpret_cast<AppProperties*>(glfwGetWindowUserPointer(glfw_window));
-  window_properties->mouse_scroll.x() = xoffset;
-  window_properties->mouse_scroll.y() = yoffset;
+  auto* app_properties = reinterpret_cast<AppProperties*>(glfwGetWindowUserPointer(glfw_window));
+  app_properties->mouse_scroll.x() = xoffset;
+  app_properties->mouse_scroll.y() = yoffset;
 }
 
 }  // namespace
@@ -98,9 +98,11 @@ expected<App, AppError> App::create(const WindowOptions& options)
 
 App::App(Window&& window) : window_{std::move(window)} {}
 
-void App::spin(std::function<AppDirective(const AppProperties&)> on_update, const Rate spin_rate)
+void App::spin(OnUpdate on_update, const Rate spin_rate)
 {
-  AppProperties window_properties;
+  AppState app_state;
+  AppProperties app_properties;
+  app_properties.window = window_.value();
 
   auto* glfw_window = reinterpret_cast<GLFWwindow*>(window_.value());
 
@@ -108,19 +110,22 @@ void App::spin(std::function<AppDirective(const AppProperties&)> on_update, cons
   auto t_prev = t_start;
   auto t_next = t_start + spin_rate.period();
 
-  glfwSetWindowUserPointer(glfw_window, reinterpret_cast<void*>(&window_properties));
+  glfwSetWindowUserPointer(glfw_window, reinterpret_cast<void*>(&app_properties));
   glfwSetScrollCallback(glfw_window, glfwScrollEventHandler);
 
   while (!glfwWindowShouldClose(glfw_window))
   {
+    glfwGetFramebufferSize(
+      glfw_window, (app_properties.viewport_size.data() + 0), (app_properties.viewport_size.data() + 1));
+
     glfwGetCursorPos(
-      glfw_window, (window_properties.mouse_position_px.data() + 0), (window_properties.mouse_position_px.data() + 1));
+      glfw_window, (app_properties.mouse_position_px.data() + 0), (app_properties.mouse_position_px.data() + 1));
 
     glfwPollEvents();
 
-    glfwScanKeyStates(glfw_window, window_properties.keys);
+    glfwScanKeyStates(glfw_window, app_properties.keys);
 
-    switch (on_update(window_properties))
+    switch (on_update(app_state, app_properties))
     {
     case AppDirective::kContinue:
       break;
@@ -146,9 +151,9 @@ void App::spin(std::function<AppDirective(const AppProperties&)> on_update, cons
       t_next += spin_rate.period();
     }
 
-    window_properties.mouse_scroll.setZero();
-    window_properties.time = (t_now - t_start);
-    window_properties.time_delta = (t_now - t_prev);
+    app_properties.mouse_scroll.setZero();
+    app_properties.time = (t_now - t_start);
+    app_properties.time_delta = (t_now - t_prev);
     t_prev = t_now;
   }
   glfwSetWindowUserPointer(glfw_window, nullptr);

@@ -14,6 +14,7 @@
 
 // SDE
 #include "sde/graphics/image.hpp"
+#include "sde/logging.hpp"
 
 namespace sde::graphics
 {
@@ -58,104 +59,110 @@ std::ostream& operator<<(std::ostream& os, ImageChannels channels)
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, ImageLoadFlags flags)
-{
-  return os << std::boolalpha << "{ flip_vertically: " << static_cast<bool>(flags.flip_vertically) << " }";
-}
-
 std::ostream& operator<<(std::ostream& os, const ImageShape& shape)
 {
   return os << "{ height: " << shape.value.y() << ", width: " << shape.value.x() << " }";
 }
 
-std::ostream& operator<<(std::ostream& os, ImageLoadError error)
+std::ostream& operator<<(std::ostream& os, ImageError error)
 {
   switch (error)
   {
-  case ImageLoadError::kAssetNotFound:
+  case ImageError::kElementAlreadyExists:
+    return os << "ElementAlreadyExists";
+  case ImageError::kInvalidHandle:
+    return os << "InvalidHandle";
+  case ImageError::kAssetNotFound:
     return os << "AssetNotFound";
-  case ImageLoadError::kAssetInvalid:
+  case ImageError::kAssetInvalid:
     return os << "AssetInvalid";
-  case ImageLoadError::kUnsupportedBitDepth:
+  case ImageError::kImageNotFound:
+    return os << "ImageNotFound";
+  case ImageError::kUnsupportedBitDepth:
     return os << "UnsupportedBitDepth";
   }
   return os;
 }
 
-Image::Image(const ImageShape& shape, ImageChannels channels, TypeCode bit_depth, void* data) :
-    shape_{shape}, channels_{channels}, bit_depth_{bit_depth}, data_{data}
-{}
+void ImageDataBufferDeleter::operator()(void* data) const { stbi_image_free(data); }
 
-Image::Image(Image&& other) :
-    shape_{other.shape_}, channels_{other.channels_}, bit_depth_{other.bit_depth_}, data_{other.data_}
+expected<void, ImageError> ImageCache::reload(Image& image)
 {
-  other.data_ = nullptr;
-}
-
-Image::~Image()
-{
-  if (data_ == nullptr)
+  // Already loaded
+  if (image.data_buffer.isValid())
   {
-    return;
+    return {};
   }
-  stbi_image_free(data_);
-}
 
-expected<Image, ImageLoadError> Image::load(const asset::path& image_path, const ImageOptions& options)
-{
   // Check if image point is valid
-  if (!asset::exists(image_path))
+  if (!asset::exists(image.path))
   {
-    return make_unexpected(ImageLoadError::kAssetNotFound);
+    SDE_LOG_DEBUG("AssetNotFound");
+    return make_unexpected(ImageError::kAssetNotFound);
   }
 
   // Set flag determining whether image should be flipped on load
-  stbi_set_flip_vertically_on_load(options.flags.flip_vertically);
+  stbi_set_flip_vertically_on_load(image.options.flip_vertically);
 
   // Get STBI channel code
-  const int channel_count_forced = to_stbi_enum(options.channels);
+  const int channel_count_forced = to_stbi_enum(image.options.channels);
 
   // Load image data and sizing
   int height_on_load = 0;
   int width_on_load = 0;
   int channel_count_on_load = 0;
   void* image_data_ptr = nullptr;
-  switch (options.bit_depth)
+  switch (image.options.element_type)
   {
   case TypeCode::kUInt8: {
     image_data_ptr = reinterpret_cast<void*>(stbi_load(
-      image_path.string().c_str(), &height_on_load, &width_on_load, &channel_count_on_load, channel_count_forced));
+      image.path.string().c_str(), &height_on_load, &width_on_load, &channel_count_on_load, channel_count_forced));
     break;
   }
   case TypeCode::kUInt16: {
     image_data_ptr = reinterpret_cast<void*>(stbi_load_16(
-      image_path.string().c_str(), &height_on_load, &width_on_load, &channel_count_on_load, channel_count_forced));
+      image.path.string().c_str(), &height_on_load, &width_on_load, &channel_count_on_load, channel_count_forced));
     break;
   }
   default: {
-    return make_unexpected(ImageLoadError::kUnsupportedBitDepth);
+    SDE_LOG_DEBUG("UnsupportedBitDepth");
+    return make_unexpected(ImageError::kUnsupportedBitDepth);
   }
   }
 
   // Check if image point is valid
   if (image_data_ptr == nullptr)
   {
-    return make_unexpected(ImageLoadError::kAssetInvalid);
+    SDE_LOG_DEBUG("AssetInvalid");
+    return make_unexpected(ImageError::kAssetInvalid);
   }
 
-  return Image{
-    {
-      .value = {height_on_load, width_on_load},
-    },
-    ((options.channels == ImageChannels::kDefault) ? from_channel_count(channel_count_on_load) : options.channels),
-    options.bit_depth,
-    image_data_ptr};
+  SDE_LOG_DEBUG_FMT("Loaded image: %s (%d x %d)", image.path.string().c_str(), height_on_load, width_on_load);
+
+  // Set loaded image image
+  image.options.channels = from_channel_count(channel_count_on_load);
+  image.shape.value.x() = height_on_load;
+  image.shape.value.y() = width_on_load;
+  image.data_buffer = ImageDataBuffer{image_data_ptr};
+  return {};
 }
 
-
-std::ostream& operator<<(std::ostream& os, const Image& image)
+expected<void, ImageError> ImageCache::unload(Image& image)
 {
-  return os << "{ shape: " << image.shape() << ", depth: " << image.depth() << " }";
+  image.data_buffer = ImageDataBuffer{nullptr};
+  image.shape.value.setZero();
+  return {};
+}
+
+expected<Image, ImageError> ImageCache::generate(const asset::path& image_path, const ImageOptions& options)
+{
+  Image info{
+    .path = image_path, .options = options, .shape = {.value = {0, 0}}, .data_buffer = ImageDataBuffer{nullptr}};
+  if (auto ok_or_error = reload(info); !ok_or_error.has_value())
+  {
+    return make_unexpected(ok_or_error.error());
+  }
+  return info;
 }
 
 }  // namespace sde::graphics

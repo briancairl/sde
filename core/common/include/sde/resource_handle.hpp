@@ -10,15 +10,22 @@
 #include <iosfwd>
 #include <type_traits>
 
+// SDE
+#include "sde/crtp.hpp"
+#include "sde/hash.hpp"
+
 namespace sde
 {
 
-template <typename T, typename IdentifierT = std::size_t, IdentifierT kNullValue = 0> struct ResourceHandle
+template <typename T> struct ResourceHandle : crtp_base<ResourceHandle<T>>
 {
-public:
-  using id_type = IdentifierT;
+  friend class fundemental_type;
 
-  explicit ResourceHandle(IdentifierT id) : id_{id} {}
+public:
+  using id_type = std::size_t;
+  static const id_type kNullValue{0};
+
+  explicit ResourceHandle(id_type id) : id_{id} {}
 
   ResourceHandle(const ResourceHandle&) = default;
 
@@ -35,13 +42,19 @@ public:
     return *this;
   }
 
+  ResourceHandle& operator=(const id_type& id)
+  {
+    id_ = id;
+    return *this;
+  }
+
   ResourceHandle& operator++()
   {
     id_ = T::next_unique(id_);
     return *this;
   }
 
-  constexpr IdentifierT id() const { return id_; }
+  constexpr id_type id() const { return id_; }
 
   constexpr bool isNull() const { return id_ == kNullValue; }
 
@@ -52,8 +65,8 @@ public:
   static constexpr T null() { return T{kNullValue}; }
 
 private:
-  static constexpr IdentifierT next_unique(IdentifierT prev) { return prev + 1; }
-  IdentifierT id_ = kNullValue;
+  static constexpr id_type next_unique(id_type prev) { return prev + 1; }
+  id_type id_ = kNullValue;
 };
 
 template <typename T> constexpr bool operator<(const ResourceHandle<T>& lhs, const ResourceHandle<T>& rhs)
@@ -78,7 +91,10 @@ template <typename T> constexpr bool operator!=(const ResourceHandle<T>& lhs, co
 
 struct ResourceHandleHash
 {
-  template <typename T> constexpr std::size_t operator()(const ResourceHandle<T>& handle) const { return handle.id(); }
+  template <typename T> constexpr Hash operator()(const ResourceHandle<T>& handle) const
+  {
+    return {static_cast<std::size_t>(handle.id())};
+  }
 };
 
 template <typename T> inline std::ostream& operator<<(std::ostream& os, const ResourceHandle<T>& handle)

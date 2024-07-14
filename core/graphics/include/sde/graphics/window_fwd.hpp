@@ -7,7 +7,7 @@
 
 namespace sde::graphics
 {
-using WindowNativeHandle = void*;
+using NativeWindowHandle = void*;
 struct WindowOptions;
 class Window;
 }  // namespace sde::graphics

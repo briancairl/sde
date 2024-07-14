@@ -16,13 +16,10 @@ template <typename T> struct DefaultExchanger
   void operator()(T& lhs, T& rhs) const { std::swap(lhs, rhs); }
 };
 
-template <typename T, typename DeleterT, typename ExchangerT = DefaultExchanger<T>, T kNullValue = static_cast<T>(0)>
-class UniqueResource
+template <typename T, typename DeleterT, T kNullValue = static_cast<T>(0)> class UniqueResource
 {
 public:
-  explicit UniqueResource(const T& v, DeleterT deleter = DeleterT{}, ExchangerT exchanger = ExchangerT{}) :
-      value_{v}, deleter_{std::move(deleter)}, exchanger_{std::move(exchanger)}
-  {}
+  explicit UniqueResource(const T& v, DeleterT deleter = DeleterT{}) : value_{v}, deleter_{std::move(deleter)} {}
 
   UniqueResource(UniqueResource&& other) { this->swap(other); }
 
@@ -40,13 +37,10 @@ public:
     return *this;
   }
 
-  void swap(T& other) { exchanger_(value_, other); }
-
   void swap(UniqueResource& other)
   {
-    exchanger_(value_, other.value_);
+    std::swap(value_, other.value_);
     std::swap(deleter_, other.deleter_);
-    std::swap(exchanger_, other.exchanger_);
   }
 
   [[nodiscard]] constexpr const T operator->() const
@@ -75,62 +69,44 @@ private:
 
   T value_ = kNullValue;
   DeleterT deleter_;
-  ExchangerT exchanger_;
 };
 
-template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
-constexpr bool operator==(
-  const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& lhs,
-  const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& rhs)
+template <typename T, typename DeleterT, T kNullValue>
+constexpr bool
+operator==(const UniqueResource<T, DeleterT, kNullValue>& lhs, const UniqueResource<T, DeleterT, kNullValue>& rhs)
 {
   return lhs.value() == rhs.value();
 }
 
-template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
-constexpr bool
-operator==([[maybe_unused]] std::nullptr_t _, const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& rhs)
+template <typename T, typename DeleterT, T kNullValue>
+constexpr bool operator==([[maybe_unused]] std::nullptr_t _, const UniqueResource<T, DeleterT, kNullValue>& rhs)
 {
   return rhs.isNull();
 }
 
-template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
-constexpr bool
-operator==(const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& lhs, [[maybe_unused]] std::nullptr_t _)
+template <typename T, typename DeleterT, T kNullValue>
+constexpr bool operator==(const UniqueResource<T, DeleterT, kNullValue>& lhs, [[maybe_unused]] std::nullptr_t _)
 {
   return lhs.isNull();
 }
 
-template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
-constexpr bool operator!=(
-  const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& lhs,
-  const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& rhs)
+template <typename T, typename DeleterT, T kNullValue>
+constexpr bool
+operator!=(const UniqueResource<T, DeleterT, kNullValue>& lhs, const UniqueResource<T, DeleterT, kNullValue>& rhs)
 {
   return lhs.value() != rhs.value();
 }
 
-template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
-constexpr bool
-operator!=([[maybe_unused]] std::nullptr_t _, const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& rhs)
+template <typename T, typename DeleterT, T kNullValue>
+constexpr bool operator!=([[maybe_unused]] std::nullptr_t _, const UniqueResource<T, DeleterT, kNullValue>& rhs)
 {
   return rhs.isValid();
 }
 
-template <typename T, typename DeleterT, typename ExchangerT, T kNullValue>
-constexpr bool
-operator!=(const UniqueResource<T, DeleterT, ExchangerT, kNullValue>& lhs, [[maybe_unused]] std::nullptr_t _)
+template <typename T, typename DeleterT, T kNullValue>
+constexpr bool operator!=(const UniqueResource<T, DeleterT, kNullValue>& lhs, [[maybe_unused]] std::nullptr_t _)
 {
   return lhs.isValid();
-}
-
-template <typename T, typename DeleterT> UniqueResource<T, DeleterT> make_unique_resource(T p, DeleterT deleter)
-{
-  return UniqueResource{p, std::move(deleter)};
-}
-
-template <typename T, typename DeleterT, typename ExchangerT>
-UniqueResource<T, DeleterT, ExchangerT> make_unique_resource(T p, DeleterT deleter, ExchangerT exchanger)
-{
-  return UniqueResource{p, std::move(deleter), std::move(exchanger)};
 }
 
 }  // namespace sde

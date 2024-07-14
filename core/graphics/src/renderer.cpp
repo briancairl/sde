@@ -14,9 +14,10 @@
 // SDE
 #include "sde/build.hpp"
 #include "sde/format.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/assets.hpp"
+#include "sde/graphics/render_buffer.hpp"
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
@@ -451,7 +452,7 @@ public:
     for (auto va_itr = std::begin(va_); va_itr != std::end(va_); ++va_itr, ++va_opt_itr)
     {
       va_itr->emplace(
-        3UL * va_opt_itr->max_triangle_count_per_render_pass, va_opt_itr->mode == RenderBufferMode::kStatic);
+        3UL * va_opt_itr->max_triangle_count_per_render_pass, va_opt_itr->mode == VertexBufferMode::kStatic);
     }
   }
 
@@ -561,11 +562,16 @@ private:
 std::optional<OpenGLBackend> backend__opengl;
 std::atomic_flag backend__render_pass_active;
 
+float toAspectRatio(const Vec2i viewport_size)
+{
+  return static_cast<float>(viewport_size.x()) / static_cast<float>(viewport_size.y());
+}
+
 }  // namespace
 
-Mat3f RenderAttributes::getWorldFromViewportMatrix(const RenderTarget& target) const
+Mat3f RenderUniforms::getWorldFromViewportMatrix(const Vec2i& viewport_size) const
 {
-  return toInverseCameraMatrix(scaling, target.getLastAspectRatio()) * world_from_camera;
+  return world_from_camera * toInverseCameraMatrix(scaling, toAspectRatio(viewport_size));
 }
 
 expected<Renderer2D, RendererError> Renderer2D::create(const Renderer2DOptions& options)
@@ -637,15 +643,14 @@ void Renderer2D::refresh(const RenderResources& resources)
   backend__opengl->start(next_active_resources_.buffer_group);
 }
 
-void Renderer2D::flush(const Assets& assets, const RenderAttributes& attributes, const Mat3f& viewport_from_world)
+void Renderer2D::flush(const Assets& assets, const RenderUniforms& uniforms, const Mat3f& viewport_from_world)
 {
-  const auto* shader = assets.shaders(next_active_resources_.shader);
-  SDE_ASSERT_NE(shader, nullptr);
+  const auto shader = assets.shaders(next_active_resources_.shader);
+  SDE_ASSERT_TRUE(shader);
 
   // Set active shader
   if (next_active_resources_.shader != last_active_resources_.shader)
   {
-    SDE_ASSERT_NE(shader, nullptr);
     glUseProgram(shader->native_id);
     // Make sure all texture units are set ???
     // last_active_texture_units_.reset();
@@ -656,8 +661,8 @@ void Renderer2D::flush(const Assets& assets, const RenderAttributes& attributes,
   {
     if (next_active_textures_[u] and next_active_textures_[u] != last_active_textures_[u])
     {
-      const auto* texture = assets.textures(next_active_textures_[u]);
-      SDE_ASSERT_NE(texture, nullptr);
+      const auto texture = assets.textures(next_active_textures_[u]);
+      SDE_ASSERT_TRUE(texture);
 
       glActiveTexture(GL_TEXTURE0 + u);
       glBindTexture(GL_TEXTURE_2D, texture->native_id);
@@ -667,8 +672,8 @@ void Renderer2D::flush(const Assets& assets, const RenderAttributes& attributes,
 
   // clang-format off
   // Apply other variables
-  glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), toSeconds(attributes.time));
-  glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), toSeconds(attributes.time_delta));
+  glUniform1f(glGetUniformLocation(shader->native_id, "uTime"), toSeconds(uniforms.time));
+  glUniform1f(glGetUniformLocation(shader->native_id, "uTimeDelta"), toSeconds(uniforms.time_delta));
   glUniformMatrix3fv(glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, viewport_from_world.data());
   // clang-format on
 
@@ -689,8 +694,9 @@ expected<void, RenderPassError> RenderPass::submit(View<const TexturedQuad> quad
 
 RenderPass::RenderPass(RenderPass&& other) :
     renderer_{other.renderer_},
+    buffer_{other.buffer_},
     assets_{other.assets_},
-    attributes_{other.attributes_},
+    uniforms_{other.uniforms_},
     world_from_viewport_{other.world_from_viewport_},
     viewport_from_world_{other.viewport_from_world_},
     viewport_in_world_bounds_{other.viewport_in_world_bounds_}
@@ -704,30 +710,79 @@ RenderPass::~RenderPass()
   {
     return;
   }
-  renderer_->flush(*assets_, *attributes_, viewport_from_world_);
+
+  submit(make_const_view(buffer_->circles));
+  submit(make_const_view(buffer_->quads));
+  submit(make_const_view(buffer_->textured_quads));
+  buffer_->reset();
+
+  renderer_->flush(*assets_, *uniforms_, viewport_from_world_);
   backend__render_pass_active.clear();
 }
 
+void RenderPass::clear(const Vec4f& color)
+{
+  glClearColor(color[0], color[1], color[2], color[3]);
+  glClear(GL_COLOR_BUFFER_BIT);
+}
+
+bool RenderPass::retarget(Vec2i& viewport_size, RenderTargetHandle render_target, const Assets& assets)
+{
+  // Pick render target
+  const auto* render_target_info = assets.render_targets.get_if(render_target);
+  if (render_target_info == nullptr)
+  {
+    return false;
+  }
+
+  glBindFramebuffer(GL_FRAMEBUFFER, render_target_info->native_id);
+
+  // Render target is the screen
+  if (render_target_info->native_id.isNull())
+  {
+    return true;
+  }
+
+  // If render target is an off-screen target, update viewport size
+  const auto* color_attachment_texture = assets.textures.get_if(render_target_info->color_attachment);
+  if (color_attachment_texture == nullptr)
+  {
+    return false;
+  }
+  viewport_size.x() = std::max(viewport_size.x(), color_attachment_texture->shape.value.x());
+  viewport_size.y() = std::max(viewport_size.y(), color_attachment_texture->shape.value.y());
+
+  return true;
+}
+
 expected<RenderPass, RenderPassError> RenderPass::create(
-  RenderTarget& target,
+  RenderBuffer& buffer,
   Renderer2D& renderer,
   const Assets& assets,
-  const RenderAttributes& attributes,
-  const RenderResources& resources)
+  const RenderUniforms& uniforms,
+  const RenderResources& resources,
+  Vec2i viewport_size)
 {
   if (backend__render_pass_active.test_and_set())
   {
     return make_unexpected(RenderPassError::kRenderPassActive);
   }
 
+  if (!retarget(viewport_size, resources.target, assets))
+  {
+    return make_unexpected(RenderPassError::kInvalidRenderTarget);
+  }
+
+  glViewport(0, 0, viewport_size.x(), viewport_size.y());
 
   renderer.refresh(resources);
 
   RenderPass render_pass;
   render_pass.renderer_ = std::addressof(renderer);
+  render_pass.buffer_ = std::addressof(buffer);
   render_pass.assets_ = std::addressof(assets);
-  render_pass.attributes_ = std::addressof(attributes);
-  render_pass.world_from_viewport_ = attributes.getWorldFromViewportMatrix(target);
+  render_pass.uniforms_ = std::addressof(uniforms);
+  render_pass.world_from_viewport_ = uniforms.getWorldFromViewportMatrix(viewport_size);
   render_pass.viewport_from_world_ = render_pass.world_from_viewport_.inverse();
   render_pass.viewport_in_world_bounds_ =
     transform(render_pass.world_from_viewport_, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
@@ -740,13 +795,13 @@ std::ostream& operator<<(std::ostream& os, const RenderResources& resources)
   return os << "shader: " << resources.shader;
 }
 
-std::ostream& operator<<(std::ostream& os, const RenderAttributes& attributes)
+std::ostream& operator<<(std::ostream& os, const RenderUniforms& uniforms)
 {
   // clang-format off
-  return os << "world_from_camera:\n" << attributes.world_from_camera
-            << "\ntime: " << attributes.time
-            << " (delta: " << attributes.time_delta << ')'
-            << "\nscaling: " << attributes.scaling;
+  return os << "world_from_camera:\n" << uniforms.world_from_camera
+            << "\ntime: " << uniforms.time
+            << " (delta: " << uniforms.time_delta << ')'
+            << "\nscaling: " << uniforms.scaling;
   // clang-format on
 }
 
