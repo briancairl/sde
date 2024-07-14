@@ -1,9 +1,7 @@
 // C++ Standard Library
 #include <cmath>
 #include <ostream>
-
-// EnTT
-#include <entt/entt.hpp>
+#include <vector>
 
 // SDE
 #include "sde/app.hpp"
@@ -22,6 +20,7 @@
 // #include "sde/view.hpp"
 
 // RED
+#include "red/background_music.hpp"
 #include "red/components.hpp"
 #include "red/player_character.hpp"
 #include "red/renderer.hpp"
@@ -45,10 +44,11 @@ int main(int argc, char** argv)
 
   game::Assets assets{systems};
 
-  entt::registry reg;
-  auto character_script = createPlayerCharacter();
-  auto renderer_script = createRenderer();
-  auto weather_script = createWeather();
+  std::vector<sde::game::ScriptRuntime::UPtr> scripts;
+  scripts.push_back(createBackgroundMusic());
+  scripts.push_back(createPlayerCharacter());
+  scripts.push_back(createRenderer());
+  scripts.push_back(createWeather());
 
   if (auto ifs_or_error = serial::file_istream::create("/tmp/game.bin"); ifs_or_error.has_value())
   {
@@ -56,18 +56,16 @@ int main(int argc, char** argv)
     iar >> serial::named{"assets", sde::_R(assets)};
     if (auto ok_or_error = assets.refresh())
     {
-      SDE_LOG_INFO_FMT("sounds: %lu", assets.audio.sounds.size());
-      SDE_LOG_INFO_FMT("textures: %lu", assets.graphics.textures.size());
-      character_script->load(iar, assets);
-      renderer_script->load(iar, assets);
-      weather_script->load(iar, assets);
+      for (auto& script : scripts)
+      {
+        script->load(iar, assets);
+      }
     }
     else
     {
       SDE_FAIL("failed asset resolution");
     }
   }
-
 
   // auto icon_or_error = assets.graphics.images.find_or_create(
   //   [](const auto& value, const auto& path, auto&&...) -> bool { return value.path == path; },
@@ -84,42 +82,18 @@ int main(int argc, char** argv)
   // app_or_error->window().setIcon(icon_or_error->value->ref());
   // app_or_error->window().setCursor(cursor_or_error->value->ref());
 
-
-  auto background_track_1_or_error =
-    assets.audio.sounds.create("/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav"_path);
-  SDE_ASSERT_TRUE(background_track_1_or_error.has_value());
-
-  auto background_track_2_or_error = assets.audio.sounds.create("/home/brian/dev/assets/sounds/tracks/forest.wav"_path);
-  SDE_ASSERT_TRUE(background_track_2_or_error.has_value());
-
-  if (auto listener_or_err = ListenerTarget::create(systems.mixer, 0UL); listener_or_err.has_value())
-  {
-    listener_or_err->set(background_track_1_or_error->get(), TrackOptions{.volume = 0.2F, .looped = true});
-    listener_or_err->set(background_track_2_or_error->get(), TrackOptions{.volume = 0.4F, .looped = true});
-  }
-
   app_or_error->spin([&](const auto& window) {
     assets.registry.view<Position, Dynamics>().each(
       [dt = toSeconds(window.time_delta)](Position& pos, const Dynamics& state) { pos.center += state.velocity * dt; });
 
-    if (!character_script->update(systems, assets, window))
+    for (auto& script : scripts)
     {
-      SDE_LOG_ERROR("character_script->update(...) failed");
-      return AppDirective::kClose;
+      if (!script->update(systems, assets, window))
+      {
+        SDE_LOG_ERROR_FMT("script->update(...) failed: %s", script->identity().data());
+        return AppDirective::kClose;
+      }
     }
-
-    if (!renderer_script->update(systems, assets, window))
-    {
-      SDE_LOG_ERROR("renderer_script->update(...) failed");
-      return AppDirective::kClose;
-    }
-
-    if (!weather_script->update(systems, assets, window))
-    {
-      SDE_LOG_ERROR("weather_script->update(...) failed");
-      return AppDirective::kClose;
-    }
-
     return AppDirective::kContinue;
   });
 
@@ -127,13 +101,12 @@ int main(int argc, char** argv)
 
   if (auto ofs_or_error = serial::file_ostream::create("/tmp/game.bin"); ofs_or_error.has_value())
   {
-    SDE_LOG_INFO_FMT("sounds: %lu", assets.audio.sounds.size());
-    SDE_LOG_INFO_FMT("textures: %lu", assets.graphics.textures.size());
     serial::binary_oarchive oar{*ofs_or_error};
     oar << serial::named{"assets", sde::_R(assets)};
-    character_script->save(oar, assets);
-    renderer_script->save(oar, assets);
-    weather_script->save(oar, assets);
+    for (auto& script : scripts)
+    {
+      script->save(oar, assets);
+    }
   }
 
   return 0;

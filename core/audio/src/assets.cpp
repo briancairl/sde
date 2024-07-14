@@ -23,7 +23,7 @@ expected<void, AssetError> Assets::refresh()
     SDE_LOG_DEBUG("FailedSoundLoading");
     return make_unexpected(AssetError::kFailedSoundLoading);
   }
-  sounds.relinquish();
+  sound_data.relinquish();
   return {};
 }
 

@@ -249,6 +249,7 @@ expected<TrackPlayback, TrackPlaybackError> Listener::set(const Sound& sound, co
       "Listener::set(Sound{%d}, ...) failed; no sources free", static_cast<int>(sound.native_id.value()));
     return make_unexpected(TrackPlaybackError::kNoFreeSources);
   }
+  SDE_LOG_DEBUG_FMT("Listener::set(Sound{%d}, ...) succeeded", static_cast<int>(sound.native_id.value()));
   return track_itr->set(sound, options);
 }
 

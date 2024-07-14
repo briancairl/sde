@@ -13,13 +13,17 @@
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_io.hpp"
+#include "sde/serial/std/string.hpp"
+#include "sde/serial/std/vector.hpp"
 #include "sde/serialization.hpp"
 #include "sde/serialization_binary_file.hpp"
+#include "sde/time_io.hpp"
 
 // Game
 #include "sde/game/assets.hpp"
 #include "sde/game/script_runtime.hpp"
 #include "sde/game/systems.hpp"
+
 
 namespace sde::serial
 {

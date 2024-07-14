@@ -645,13 +645,12 @@ void Renderer2D::refresh(const RenderResources& resources)
 
 void Renderer2D::flush(const Assets& assets, const RenderUniforms& uniforms, const Mat3f& viewport_from_world)
 {
-  const auto* shader = assets.shaders(next_active_resources_.shader);
-  SDE_ASSERT_NE(shader, nullptr);
+  const auto shader = assets.shaders(next_active_resources_.shader);
+  SDE_ASSERT_TRUE(shader);
 
   // Set active shader
   if (next_active_resources_.shader != last_active_resources_.shader)
   {
-    SDE_ASSERT_NE(shader, nullptr);
     glUseProgram(shader->native_id);
     // Make sure all texture units are set ???
     // last_active_texture_units_.reset();
@@ -662,8 +661,8 @@ void Renderer2D::flush(const Assets& assets, const RenderUniforms& uniforms, con
   {
     if (next_active_textures_[u] and next_active_textures_[u] != last_active_textures_[u])
     {
-      const auto* texture = assets.textures(next_active_textures_[u]);
-      SDE_ASSERT_NE(texture, nullptr);
+      const auto texture = assets.textures(next_active_textures_[u]);
+      SDE_ASSERT_TRUE(texture);
 
       glActiveTexture(GL_TEXTURE0 + u);
       glBindTexture(GL_TEXTURE_2D, texture->native_id);

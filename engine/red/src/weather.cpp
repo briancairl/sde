@@ -109,15 +109,10 @@ private:
       SDE_LOG_ERROR("Failed to create listener pass");
       return false;
     }
-    else if (auto sound = assets.audio.sounds(rain_sound_); sound == nullptr)
-    {
-      SDE_LOG_ERROR("Failed to locate sound");
-      return false;
-    }
-    else
+    else if (auto sound = assets.audio.sounds(rain_sound_))
     {
       listener_or_err->set(
-        *sound,
+        sound.get(),
         audio::TrackOptions{
           .position = Vec3f{0.0F, 0.0F, -0.5F},
           .velocity = Vec3f::Zero(),
@@ -125,6 +120,11 @@ private:
           .volume = 0.5F,
           .cutoff_distance = 8.0F,
           .looped = true});
+    }
+    else
+    {
+      SDE_LOG_ERROR("Failed to locate sound");
+      return false;
     }
     return true;
   }

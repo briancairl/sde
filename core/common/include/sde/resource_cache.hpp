@@ -43,6 +43,8 @@ public:
     ResourceStatus status;
     handle_type handle;
     const value_type* value;
+
+    operator bool() const { return handle.isValid(); }
     const value_type& get() const { return *value; }
     const value_type& operator*() const { return get(); }
     const value_type* operator->() const { return value; }
@@ -146,7 +148,7 @@ public:
     return nullptr;
   }
 
-  [[nodiscard]] const value_type* operator()(handle_type handle) const { return get_if(handle); }
+  [[nodiscard]] element_ref operator()(handle_type handle) const { return find(handle); }
 
   [[nodiscard]] element_ref find(handle_type handle) const
   {

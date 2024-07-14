@@ -21,8 +21,8 @@ void Sprite::draw(RenderPass& rp, const Bounds2f& rect) const
     return;
   }
 
-  const auto* frames = rp.assets().tile_sets(options_.frames);
-  if (frames == nullptr)
+  const auto frames = rp.assets().tile_sets(options_.frames);
+  if (!frames)
   {
     return;
   }
@@ -59,8 +59,8 @@ void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect) co
     return;
   }
 
-  const auto* frames = rp.assets().tile_sets(options_.frames);
-  if (frames == nullptr)
+  const auto frames = rp.assets().tile_sets(options_.frames);
+  if (!frames)
   {
     return;
   }
