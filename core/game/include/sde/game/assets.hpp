@@ -93,7 +93,10 @@ public:
   }
 
 private:
-  auto field_list() { return FieldList(Field{"audio", audio}, Field{"graphics", graphics}); }
+  auto field_list()
+  {
+    return FieldList(Field{"entities", entities}, Field{"audio", audio}, Field{"graphics", graphics});
+  }
 
   template <typename CacheT, typename... CreateArgTs>
   [[nodiscard]] expected<void, typename CacheT::error_type> assignImpl(

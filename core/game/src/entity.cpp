@@ -13,24 +13,24 @@ namespace sde::game
 
 EntityCache::EntityCache(entt::registry& registry) : registry_{std::addressof(registry)} {}
 
-expected<void, EntityError> EntityCache::reload(entt::entity& entity)
+expected<void, EntityError> EntityCache::reload(Entity& entity)
 {
-  entity = registry_->create();
+  entity.id = registry_->create();
   return {};
 }
 
-expected<void, EntityError> EntityCache::unload(const entt::entity& entity)
+expected<void, EntityError> EntityCache::unload(const Entity& entity)
 {
-  registry_->destroy(entity);
+  registry_->destroy(entity.id);
   return {};
 }
 
-expected<entt::entity, EntityError> EntityCache::generate()
+expected<Entity, EntityError> EntityCache::generate()
 {
-  entt::entity e;
-  if (auto ok_or_error = reload(e))
+  Entity entity;
+  if (auto ok_or_error = reload(entity))
   {
-    return e;
+    return entity;
   }
   return make_unexpected(EntityError::kCreationFailure);
 }

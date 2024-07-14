@@ -25,6 +25,13 @@ enum class EntityError
   kCreationFailure,
 };
 
+struct Entity : Resource<Entity>
+{
+  entt::entity id;
+
+  auto field_list() { return FieldList(Field{"id", id}); }
+};
+
 }  // namespace sde::game
 
 namespace sde
@@ -39,7 +46,7 @@ template <> struct ResourceCacheTypes<game::EntityCache>
 {
   using error_type = game::EntityError;
   using handle_type = game::EntityHandle;
-  using value_type = entt::entity;
+  using value_type = game::Entity;
 };
 
 }  // namespace sde
@@ -57,9 +64,9 @@ public:
 private:
   entt::registry* registry_;
 
-  expected<void, EntityError> reload(entt::entity& entity);
-  expected<void, EntityError> unload(const entt::entity& entity);
-  expected<entt::entity, EntityError> generate();
+  expected<void, EntityError> reload(Entity& entity);
+  expected<void, EntityError> unload(const Entity& entity);
+  expected<Entity, EntityError> generate();
 };
 
 }  // namespace sde::game
