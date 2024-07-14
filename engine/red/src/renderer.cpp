@@ -57,7 +57,7 @@ private:
     return false;
   }
 
-  bool onInitialize(entt::registry& registry, Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  bool onInitialize(Systems& systems, SharedAssets& assets, const AppProperties& app) override
   {
     if (!assets.assign(render_target_))
     {
@@ -93,8 +93,7 @@ private:
     return true;
   }
 
-  expected<void, ScriptError>
-  onUpdate(entt::registry& registry, Systems& systems, const SharedAssets& assets, const AppProperties& app) override
+  expected<void, ScriptError> onUpdate(Systems& systems, SharedAssets& assets, const AppProperties& app) override
   {
     // Handle screen zoom
     static constexpr float kScaleRate = 500.0;
@@ -120,7 +119,7 @@ private:
     uniforms.time = app.time;
     uniforms.time_delta = app.time_delta;
 
-    registry.view<Focused, Position>().each(
+    assets.registry.view<Focused, Position>().each(
       [&](const Position& pos) { uniforms.world_from_camera.block<2, 1>(0, 2) = pos.center; });
 
     if (auto render_pass_or_error = RenderPass::create(
@@ -128,14 +127,14 @@ private:
         render_pass_or_error.has_value())
     {
       render_pass_or_error->clear(Black());
-      registry.view<Midground, Size, Position, AnimatedSprite>().each(
+      assets.registry.view<Midground, Size, Position, AnimatedSprite>().each(
         [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
           const Vec2f min_corner{pos.center - 0.5F * size.extent};
           const Vec2f max_corner{pos.center + 0.5F * size.extent};
           sprite.draw(*render_pass_or_error, app.time, {min_corner, max_corner});
         });
 
-      registry.view<Foreground, Size, Position, AnimatedSprite>().each(
+      assets.registry.view<Foreground, Size, Position, AnimatedSprite>().each(
         [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
           const Vec2f min_corner{pos.center - 0.5F * size.extent};
           const Vec2f max_corner{pos.center + 0.5F * size.extent};
@@ -149,7 +148,7 @@ private:
         render_pass_or_error.has_value())
     {
       TypeSetter type_setter{player_text_type_set_};
-      registry.view<Info, Size, Position, Dynamics>().each(
+      assets.registry.view<Info, Size, Position, Dynamics>().each(
         [&](const Info& info, const Size& size, const Position& pos, const Dynamics& state) {
           if ((state.velocity.array() == 0.0F).all())
           {

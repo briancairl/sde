@@ -18,3 +18,9 @@ struct TypeSetHandle : ResourceHandle<TypeSetHandle>
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct Hasher<graphics::TypeSetHandle> : ResourceHandleHash
+{};
+}  // namespace sde

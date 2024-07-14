@@ -18,3 +18,9 @@ struct ImageHandle : ResourceHandle<ImageHandle>
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct Hasher<graphics::ImageHandle> : ResourceHandleHash
+{};
+}  // namespace sde

@@ -3,6 +3,9 @@ cc_library(
   hdrs=[
     "include/sde/game/assets.hpp",
     "include/sde/game/assets_fwd.hpp",
+    "include/sde/game/entity.hpp",
+    "include/sde/game/entity_fwd.hpp",
+    "include/sde/game/entity_handle.hpp",
     "include/sde/game/script.hpp",
     "include/sde/game/script_fwd.hpp",
     "include/sde/game/script_impl.hpp",
@@ -12,6 +15,7 @@ cc_library(
   ],
   srcs=[
     "src/assets.cpp",
+    "src/entity.cpp",
     "src/systems.cpp",
   ],
   strip_include_prefix="include",

@@ -33,19 +33,6 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
   return os;
 }
 
-
-std::ostream& operator<<(std::ostream& os, const TileSet& tile_set_info)
-{
-  os << "tile_atlas: " << tile_set_info.tile_atlas << '\n';
-  os << "tile_bounds:\n{\n";
-  for (std::size_t tile = 0; tile < tile_set_info.tile_bounds.size(); ++tile)
-  {
-    os << "  [" << tile << "] : " << tile_set_info.tile_bounds[tile] << '\n';
-  }
-  os << '}';
-  return os;
-}
-
 TileSetCache::TileSetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
 
 expected<TileSet, TileSetError>

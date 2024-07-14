@@ -65,14 +65,13 @@ public:
     return make_unexpected(ScriptError::kSaveFailed);
   }
 
-  expected<void, ScriptError>
-  update(entt::registry& registry, Systems& systems, SharedAssets& assets, const AppProperties& app)
+  expected<void, ScriptError> update(Systems& systems, SharedAssets& assets, const AppProperties& app)
   {
     if (t_init_.has_value())
     {
-      return this->derived().onUpdate(registry, systems, assets, app);
+      return this->derived().onUpdate(systems, assets, app);
     }
-    else if (this->derived().onInitialize(registry, systems, assets, app))
+    else if (this->derived().onInitialize(systems, assets, app))
     {
       t_init_ = app.time;
       return {};

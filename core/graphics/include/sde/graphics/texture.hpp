@@ -151,8 +151,10 @@ namespace sde
 
 template <> struct Hasher<graphics::TextureOptions> : ResourceHasher
 {};
+
 template <> struct Hasher<graphics::TextureShape> : ResourceHasher
 {};
+
 template <> struct Hasher<graphics::Texture> : ResourceHasher
 {};
 

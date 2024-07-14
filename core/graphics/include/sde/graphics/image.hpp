@@ -183,10 +183,9 @@ struct Image : Resource<Image>
 namespace sde
 {
 
-template <> struct Hasher<graphics::ImageHandle> : ResourceHandleHash
-{};
 template <> struct Hasher<graphics::ImageOptions> : ResourceHasher
 {};
+
 template <> struct Hasher<graphics::Image> : ResourceHasher
 {};
 

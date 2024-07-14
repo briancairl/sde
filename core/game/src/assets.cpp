@@ -4,12 +4,11 @@
 // SDE
 #include "sde/game/assets.hpp"
 #include "sde/logging.hpp"
-#include "sde/serialization_binary_file.hpp"
 
 namespace sde::game
 {
 
-Assets::Assets([[maybe_unused]] Systems& systems) {}
+Assets::Assets([[maybe_unused]] Systems& systems) : entities{registry} {}
 
 expected<void, AssetError> Assets::refresh()
 {

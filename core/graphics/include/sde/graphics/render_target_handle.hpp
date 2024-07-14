@@ -18,3 +18,9 @@ struct RenderTargetHandle : ResourceHandle<RenderTargetHandle>
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct Hasher<graphics::RenderTargetHandle> : ResourceHandleHash
+{};
+}  // namespace sde

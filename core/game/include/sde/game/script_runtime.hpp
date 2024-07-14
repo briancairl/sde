@@ -34,10 +34,9 @@ public:
 
   virtual bool onSave(OArchive& ar) = 0;
 
-  virtual bool onInitialize(entt::registry& registry, Systems& systems, Assets& assets, const AppProperties& app) = 0;
+  virtual bool onInitialize(Systems& systems, Assets& assets, const AppProperties& app) = 0;
 
-  virtual expected<void, ScriptError>
-  onUpdate(entt::registry& registry, Systems& systems, const Assets& assets, const AppProperties& app) = 0;
+  virtual expected<void, ScriptError> onUpdate(Systems& systems, Assets& assets, const AppProperties& app) = 0;
 
   const std::string& getIdentity() const { return script_name_; }
 

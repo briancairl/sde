@@ -77,7 +77,7 @@ private:
     return false;
   }
 
-  bool onInitialize(entt::registry& registry, Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  bool onInitialize(Systems& systems, SharedAssets& assets, const AppProperties& app) override
   {
     if (!assets.assign(front_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png"_path))
     {
@@ -127,24 +127,23 @@ private:
       return false;
     }
 
-    if (!registry.valid(id_))
+    if (!assets.registry.valid(id_))
     {
-      id_ = registry.create();
-      registry.emplace<Focused>(id_);
-      registry.emplace<Midground>(id_);
-      registry.emplace<Info>(id_, Info{{"bob"}});
-      registry.emplace<Size>(id_, Size{{1.5F, 1.5F}});
-      registry.emplace<Position>(id_, Position{Vec2f::Zero()});
-      registry.emplace<Dynamics>(id_, Dynamics{Vec2f::Zero(), {0, -1}});
-      registry.emplace<graphics::AnimatedSprite>(id_).setMode(graphics::AnimatedSprite::Mode::kLooped);
+      id_ = assets.registry.create();
+      assets.registry.emplace<Focused>(id_);
+      assets.registry.emplace<Midground>(id_);
+      assets.registry.emplace<Info>(id_, Info{{"bob"}});
+      assets.registry.emplace<Size>(id_, Size{{1.5F, 1.5F}});
+      assets.registry.emplace<Position>(id_, Position{Vec2f::Zero()});
+      assets.registry.emplace<Dynamics>(id_, Dynamics{Vec2f::Zero(), {0, -1}});
+      assets.registry.emplace<graphics::AnimatedSprite>(id_).setMode(graphics::AnimatedSprite::Mode::kLooped);
     }
     return true;
   }
 
-  expected<void, ScriptError>
-  onUpdate(entt::registry& registry, Systems& systems, const SharedAssets& assets, const AppProperties& app) override
+  expected<void, ScriptError> onUpdate(Systems& systems, SharedAssets& assets, const AppProperties& app) override
   {
-    auto [size, position, state, sprite] = registry.get<Size, Position, Dynamics, graphics::AnimatedSprite>(id_);
+    auto [size, position, state, sprite] = assets.registry.get<Size, Position, Dynamics, graphics::AnimatedSprite>(id_);
 
     static constexpr float kSpeedWalking = 0.5;
     static constexpr float kSpeedRunning = 1.0;

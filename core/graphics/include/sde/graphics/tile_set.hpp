@@ -47,8 +47,6 @@ struct TileSet : Resource<TileSet>
   const Bounds2f& operator[](const std::size_t index) const { return tile_bounds[index]; };
 };
 
-std::ostream& operator<<(std::ostream& os, const TileSet& tile_set_info);
-
 enum class TileSliceDirection
 {
   kColWise,
@@ -93,10 +91,9 @@ struct TileSetSliceUniform : Resource<TileSetSliceUniform>
 namespace sde
 {
 
-template <> struct Hasher<graphics::TileSetHandle> : ResourceHandleHash
-{};
 template <> struct Hasher<graphics::TileSetSliceUniform> : ResourceHasher
 {};
+
 template <> struct Hasher<graphics::TileSet> : ResourceHasher
 {};
 

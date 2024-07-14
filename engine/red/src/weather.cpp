@@ -52,7 +52,7 @@ private:
     return false;
   }
 
-  bool onInitialize(entt::registry& registry, Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  bool onInitialize(Systems& systems, SharedAssets& assets, const AppProperties& app) override
   {
     if (!assets.assign(
           rain_frames_atlas_, "/home/brian/dev/assets/sprites/weather/weather_effects/light_rain.png"_path))
@@ -86,12 +86,12 @@ private:
       float y_start = -4.0F;
       for (int yi = 0; yi < 16; ++yi)
       {
-        const auto id = registry.create();
-        registry.emplace<Foreground>(id);
-        registry.emplace<Size>(id, Size{{0.25F, 1.0F}});
-        registry.emplace<Position>(id, Position{{x_start, y_start}});
+        const auto id = assets.registry.create();
+        assets.registry.emplace<Foreground>(id);
+        assets.registry.emplace<Size>(id, Size{{0.25F, 1.0F}});
+        assets.registry.emplace<Position>(id, Position{{x_start, y_start}});
 
-        auto& sprite = registry.emplace<AnimatedSprite>(id);
+        auto& sprite = assets.registry.emplace<AnimatedSprite>(id);
         sprite.setMode(AnimatedSprite::Mode::kLooped);
         sprite.setFrames(rain_frames_);
         sprite.setFrameRate(Hertz(15.F));
@@ -129,8 +129,7 @@ private:
     return true;
   }
 
-  expected<void, ScriptError>
-  onUpdate(entt::registry& registry, Systems& systems, const SharedAssets& assets, const AppProperties& app) override
+  expected<void, ScriptError> onUpdate(Systems& systems, SharedAssets& assets, const AppProperties& app) override
   {
     return {};
   }

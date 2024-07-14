@@ -80,6 +80,7 @@ namespace sde
 
 template <> struct Hasher<graphics::TypeSetOptions> : ResourceHasher
 {};
+
 template <> struct Hasher<graphics::TypeSet> : ResourceHasher
 {};
 

@@ -99,22 +99,22 @@ int main(int argc, char** argv)
   }
 
   app_or_error->spin([&](const auto& window) {
-    reg.view<Position, Dynamics>().each(
+    assets.registry.view<Position, Dynamics>().each(
       [dt = toSeconds(window.time_delta)](Position& pos, const Dynamics& state) { pos.center += state.velocity * dt; });
 
-    if (!character_script->update(reg, systems, assets, window))
+    if (!character_script->update(systems, assets, window))
     {
       SDE_LOG_ERROR("character_script->update(...) failed");
       return AppDirective::kClose;
     }
 
-    if (!renderer_script->update(reg, systems, assets, window))
+    if (!renderer_script->update(systems, assets, window))
     {
       SDE_LOG_ERROR("renderer_script->update(...) failed");
       return AppDirective::kClose;
     }
 
-    if (!weather_script->update(reg, systems, assets, window))
+    if (!weather_script->update(systems, assets, window))
     {
       SDE_LOG_ERROR("weather_script->update(...) failed");
       return AppDirective::kClose;
