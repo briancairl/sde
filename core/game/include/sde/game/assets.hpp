@@ -97,11 +97,8 @@ private:
     ResourceCache<CacheT>& asset_cache,
     CreateArgTs&&... asset_create_args)
   {
-    if (!handle.isNull() or asset_cache.exists(handle))
-    {
-      return {};
-    }
-    auto handle_and_value_or_error = asset_cache.create(std::forward<CreateArgTs>(asset_create_args)...);
+    auto handle_and_value_or_error =
+      asset_cache.find_or_emplace(handle, std::forward<CreateArgTs>(asset_create_args)...);
     if (handle_and_value_or_error.has_value())
     {
       handle = handle_and_value_or_error->handle;
