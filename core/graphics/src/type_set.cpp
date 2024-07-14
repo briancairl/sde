@@ -106,18 +106,18 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
 
   // clang-format off
   auto glyph_atlas_or_error = 
-  texture_cache.find_or_emplace(
-    glyph_atlas,
-    TypeCode::kUInt8,
-    TextureShape{.value=texture_dimensions},
-    TextureLayout::kR,
-    TextureOptions{
-      .u_wrapping = TextureWrapping::kClampToEdge,
-      .v_wrapping = TextureWrapping::kClampToEdge,
-      .min_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
-      .mag_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
-      .unpack_alignment = true
-    });
+    texture_cache.find_or_create(
+      glyph_atlas,
+      TypeCode::kUInt8,
+      TextureShape{.value=texture_dimensions},
+      TextureLayout::kR,
+      TextureOptions{
+        .u_wrapping = TextureWrapping::kClampToEdge,
+        .v_wrapping = TextureWrapping::kClampToEdge,
+        .min_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
+        .mag_sampling = (options.height_px < 50) ? TextureSampling::kNearest : TextureSampling::kLinear,
+        .unpack_alignment = true
+      });
   // clang-format on
 
   if (!glyph_atlas_or_error.has_value())

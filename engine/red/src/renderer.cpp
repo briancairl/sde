@@ -33,7 +33,7 @@ private:
   ShaderHandle player_text_shader_;
   RenderTargetHandle render_target_;
 
-  bool onLoad(IArchive& ar) override
+  bool onLoad(IArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
     ar >> named{"scaling", scaling_};
@@ -45,7 +45,7 @@ private:
     return true;
   }
 
-  bool onSave(OArchive& ar) override
+  bool onSave(OArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
     ar << named{"scaling", scaling_};
@@ -54,7 +54,7 @@ private:
     ar << named{"player_text_font", player_text_font_};
     ar << named{"player_text_type_set", player_text_type_set_};
     ar << named{"player_text_shader", player_text_shader_};
-    return false;
+    return true;
   }
 
   bool onInitialize(Systems& systems, SharedAssets& assets, const AppProperties& app) override

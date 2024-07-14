@@ -21,6 +21,14 @@ namespace sde
 
 template <typename ResourceCacheT> struct ResourceCacheTypes;
 
+enum class ResourceStatus
+{
+  kInvalid,
+  kCreated,
+  kReplaced,
+  kExisted
+};
+
 template <typename ResourceCacheT> class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>
 {
 public:
@@ -32,9 +40,12 @@ public:
 
   struct element_ref
   {
+    ResourceStatus status;
     handle_type handle;
     const value_type* value;
     const value_type& get() const { return *value; }
+    const value_type& operator*() const { return get(); }
+    const value_type* operator->() const { return value; }
   };
 
   struct element_storage
@@ -48,19 +59,17 @@ public:
     {}
   };
 
-  struct handle_type_umap_hash
+  struct handle_type_hash
   {
     std::size_t operator()(const handle_type& h) const { return std::hash<typename handle_type::id_type>{}(h.id()); }
   };
 
-  using CacheMap = std::unordered_map<handle_type, element_storage, handle_type_umap_hash>;
-
-  using result_type = expected<element_ref, error_type>;
+  using CacheMap = std::unordered_map<handle_type, element_storage, handle_type_hash>;
 
   template <typename... CreateArgTs> [[nodiscard]] expected<element_ref, error_type> create(CreateArgTs&&... args)
   {
-    auto handle = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);
-    auto element_or_error = this->emplace(handle, std::forward<CreateArgTs>(args)...);
+    const auto handle = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);
+    auto element_or_error = this->create_at_handle(handle, std::forward<CreateArgTs>(args)...);
     if (element_or_error.has_value())
     {
       handle_lower_bound_ = std::max(handle_lower_bound_, handle);
@@ -71,46 +80,39 @@ public:
 
 
   template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> find_or_emplace(handle_type handle, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_ref, error_type> find_or_replace(handle_type handle, CreateArgTs&&... args)
   {
-    const auto current_version = HashMany(args...);
-    if (const auto current_itr = handle_to_value_cache_.find(handle);
-        (current_itr != handle_to_value_cache_.end()) and (current_version == current_itr->second.version))
+    const auto current_itr = handle_to_value_cache_.find(handle);
+
+    if (current_itr == handle_to_value_cache_.end())
     {
-      return element_ref{handle, std::addressof(current_itr->second.value)};
+      return create_at_handle(handle, std::forward<CreateArgTs>(args)...);
     }
-    return emplace(handle, std::forward<CreateArgTs>(args)...);
+
+    const auto current_version = HashMany(args...);
+
+    if (current_version == current_itr->second.version)
+    {
+      return element_ref{ResourceStatus::kExisted, handle, std::addressof(current_itr->second.value)};
+    }
+
+    return replace_at_position(current_itr, std::forward<CreateArgTs>(args)...);
   }
 
   template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> emplace(handle_type handle, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_ref, error_type> find_or_create(handle_type handle, CreateArgTs&&... args)
   {
-    if (handle.isNull())
-    {
-      return create(std::forward<CreateArgTs>(args)...);
-    }
+    // If hint handle is null, create a new resource, otherwise attempt replacement
+    return handle.isNull() ? create(std::forward<CreateArgTs>(args)...)
+                           : find_or_replace(handle, std::forward<CreateArgTs>(args)...);
+  }
 
-    const auto current_version = HashMany(args...);
-
-    // Create a new element
-    auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
-    if (!value_or_error.has_value())
-    {
-      return make_unexpected(value_or_error.error());
-    }
-
-    // Add it to the cache
-    const auto [itr, added] = handle_to_value_cache_.emplace(
-      std::piecewise_construct,
-      std::forward_as_tuple(handle),
-      std::forward_as_tuple(current_version, std::move(value_or_error).value()));
-
-    if (added)
-    {
-      handle_lower_bound_ = std::max(handle_lower_bound_, handle);
-    }
-
-    return element_ref{itr->first, std::addressof(itr->second.value)};
+  template <typename... CreateArgTs>
+  [[nodiscard]] expected<element_ref, error_type> emplace_with_hint(handle_type handle, CreateArgTs&&... args)
+  {
+    // If hint handle is null, create a new resource, otherwise attempt creation at handle
+    return handle.isNull() ? create(std::forward<CreateArgTs>(args)...)
+                           : create_at_handle(handle, std::forward<CreateArgTs>(args)...);
   }
 
   template <typename... CreateArgTs>
@@ -128,7 +130,7 @@ public:
     if (added)
     {
       handle_lower_bound_ = std::max(handle_lower_bound_, handle);
-      return element_ref{itr->first, std::addressof(itr->second.value)};
+      return element_ref{ResourceStatus::kReplaced, itr->first, std::addressof(itr->second.value)};
     }
 
     // Element was a duplicate
@@ -146,7 +148,11 @@ public:
 
   [[nodiscard]] const value_type* operator()(handle_type handle) const { return get_if(handle); }
 
-  [[nodiscard]] element_ref find(handle_type handle) const { return {handle, get_if(handle)}; }
+  [[nodiscard]] element_ref find(handle_type handle) const
+  {
+    const auto value_ptr = get_if(handle);
+    return {(value_ptr == nullptr) ? ResourceStatus::kInvalid : ResourceStatus::kExisted, handle, value_ptr};
+  }
 
   [[nodiscard]] const bool exists(handle_type handle) const { return handle_to_value_cache_.count(handle) != 0; }
 
@@ -213,6 +219,52 @@ public:
   ResourceCache& operator=(ResourceCache&&) = default;
 
 private:
+  template <typename... CreateArgTs>
+  [[nodiscard]] expected<element_ref, error_type> create_at_handle(handle_type handle, CreateArgTs&&... args)
+  {
+    const auto current_version = HashMany(args...);
+
+    // Create a new element
+    auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
+    if (!value_or_error.has_value())
+    {
+      return make_unexpected(value_or_error.error());
+    }
+
+    // Add it to the cache
+    const auto [itr, added] = handle_to_value_cache_.emplace(
+      std::piecewise_construct,
+      std::forward_as_tuple(handle),
+      std::forward_as_tuple(current_version, std::move(value_or_error).value()));
+
+    // Update handle lower bound for next element creates
+    if (added)
+    {
+      handle_lower_bound_ = std::max(handle_lower_bound_, handle);
+      return element_ref{ResourceStatus::kCreated, itr->first, std::addressof(itr->second.value)};
+    }
+    return make_unexpected(error_type::kInvalidHandle);
+  }
+
+  template <typename Iterator, typename... CreateArgTs>
+  [[nodiscard]] expected<element_ref, error_type> replace_at_position(Iterator itr, CreateArgTs&&... args)
+  {
+    const auto current_version = HashMany(args...);
+
+    // Create a new element
+    auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
+    if (!value_or_error.has_value())
+    {
+      return make_unexpected(value_or_error.error());
+    }
+
+    // Replace current value
+    itr->second.version = current_version;
+    itr->second.value = std::move(value_or_error).value();
+    return element_ref{ResourceStatus::kReplaced, itr->first, std::addressof(itr->second.value)};
+  }
+
+
   [[nodiscard]] static expected<void, error_type> reload([[maybe_unused]] value_type& _) { return {}; }
   [[nodiscard]] static expected<void, error_type> unload([[maybe_unused]] value_type& _) { return {}; }
   [[nodiscard]] static handle_type next_unique_id([[maybe_unused]] const CacheMap& map, handle_type lower_bound)

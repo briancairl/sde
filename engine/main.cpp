@@ -58,9 +58,9 @@ int main(int argc, char** argv)
     {
       SDE_LOG_INFO_FMT("sounds: %lu", assets.audio.sounds.size());
       SDE_LOG_INFO_FMT("textures: %lu", assets.graphics.textures.size());
-      character_script->load(iar);
-      renderer_script->load(iar);
-      weather_script->load(iar);
+      character_script->load(iar, assets);
+      renderer_script->load(iar, assets);
+      weather_script->load(iar, assets);
     }
     else
     {
@@ -131,9 +131,9 @@ int main(int argc, char** argv)
     SDE_LOG_INFO_FMT("textures: %lu", assets.graphics.textures.size());
     serial::binary_oarchive oar{*ofs_or_error};
     oar << serial::named{"assets", sde::_R(assets)};
-    character_script->save(oar);
-    renderer_script->save(oar);
-    weather_script->save(oar);
+    character_script->save(oar, assets);
+    renderer_script->save(oar, assets);
+    weather_script->save(oar, assets);
   }
 
   return 0;

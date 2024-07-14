@@ -30,9 +30,9 @@ public:
 
   virtual ~ScriptRuntime() = default;
 
-  virtual bool onLoad(IArchive& ar) = 0;
+  virtual bool onLoad(IArchive& ar, SharedAssets& assets) = 0;
 
-  virtual bool onSave(OArchive& ar) = 0;
+  virtual bool onSave(OArchive& ar, SharedAssets& assets) = 0;
 
   virtual bool onInitialize(Systems& systems, Assets& assets, const AppProperties& app) = 0;
 

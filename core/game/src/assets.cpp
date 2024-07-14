@@ -22,6 +22,11 @@ expected<void, AssetError> Assets::refresh()
     SDE_LOG_DEBUG("FailedAudioLoading");
     return make_unexpected(AssetError::kFailedAudioLoading);
   }
+  if (auto ok_or_error = entities.refresh(); !ok_or_error.has_value())
+  {
+    SDE_LOG_DEBUG("FailedEntitiesLoading");
+    return make_unexpected(AssetError::kFailedEntitiesLoading);
+  }
   return {};
 }
 

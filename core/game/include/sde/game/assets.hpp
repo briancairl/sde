@@ -23,6 +23,7 @@ enum class AssetError
 {
   kFailedGraphicsLoading,
   kFailedAudioLoading,
+  kFailedEntitiesLoading,
 };
 
 /**
@@ -45,6 +46,8 @@ public:
   explicit Assets(Systems& systems);
 
   [[nodiscard]] expected<void, AssetError> refresh();
+
+  [[nodiscard]] auto assign(EntityHandle& handle) { return assignImpl(handle, entities); }
 
   template <typename... CreateArgTs> [[nodiscard]] auto assign(audio::SoundDataHandle& handle, CreateArgTs&&... args)
   {
@@ -99,17 +102,17 @@ private:
   }
 
   template <typename CacheT, typename... CreateArgTs>
-  [[nodiscard]] expected<void, typename CacheT::error_type> assignImpl(
+  [[nodiscard]] expected<ResourceStatus, typename CacheT::error_type> assignImpl(
     typename CacheT::handle_type& handle,
     ResourceCache<CacheT>& asset_cache,
     CreateArgTs&&... asset_create_args)
   {
     auto handle_and_value_or_error =
-      asset_cache.find_or_emplace(handle, std::forward<CreateArgTs>(asset_create_args)...);
+      asset_cache.find_or_create(handle, std::forward<CreateArgTs>(asset_create_args)...);
     if (handle_and_value_or_error.has_value())
     {
       handle = handle_and_value_or_error->handle;
-      return {};
+      return handle_and_value_or_error->status;
     }
     return make_unexpected(handle_and_value_or_error.error());
   }

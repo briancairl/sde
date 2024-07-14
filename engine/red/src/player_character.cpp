@@ -10,10 +10,13 @@
 #include "sde/game/assets.hpp"
 #include "sde/game/script_impl.hpp"
 #include "sde/game/systems.hpp"
+#include "sde/geometry_io.hpp"
 #include "sde/graphics/sprite.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_set.hpp"
 #include "sde/logging.hpp"
+#include "sde/serial/std/string.hpp"
+#include "sde/time_io.hpp"
 
 // RED
 #include "red/components.hpp"
@@ -37,6 +40,37 @@ constexpr std::size_t kBackLeft{7};
 
 }  // namespace
 
+class Components : public Resource<Components>
+{
+  friend fundemental_type;
+
+public:
+  explicit Components(entt::entity id, entt::registry& reg) : id_{id}, registry_{&reg}
+  {
+    registry_->emplace<Focused>(id_);
+    registry_->emplace<Midground>(id_);
+    registry_->emplace<Info>(id_, Info{.name = {"bob"}});
+    registry_->emplace<Size>(id_, Size{.extent = {1.5F, 1.5F}});
+    registry_->emplace<Position>(id_, Position{.center = Vec2f::Zero()});
+    registry_->emplace<Dynamics>(id_, Dynamics{.velocity = Vec2f::Zero(), .looking = {0, -1}});
+    registry_->emplace<AnimatedSprite>(id_).setMode(AnimatedSprite::Mode::kLooped);
+  }
+
+private:
+  entt::entity id_;
+  entt::registry* registry_;
+
+  auto field_list()
+  {
+    return FieldList(
+      Field{"info", registry_->get<Info>(id_)},
+      Field{"size", registry_->get<Size>(id_)},
+      Field{"position", registry_->get<Position>(id_)},
+      Field{"dynamics", registry_->get<Dynamics>(id_)},
+      Field{"sprite", registry_->get<AnimatedSprite>(id_)});
+  }
+};
+
 class PlayerCharacter final : public ScriptRuntime
 {
 public:
@@ -49,32 +83,45 @@ private:
     std::size_t cardinal_start_offset,
     std::size_t ordinal_start_offset) const;
 
-  bool onLoad(IArchive& ar) override
+  bool onLoad(IArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
-    ar >> named{"front_atlas", front_atlas_};
-    ar >> named{"back_atlas", back_atlas_};
-    ar >> named{"side_atlas", side_atlas_};
-    ar >> named{"front_side_atlas", front_side_atlas_};
-    ar >> named{"back_side_atlas", back_side_atlas_};
-    ar >> named{"idle_frames", idle_frames_};
-    ar >> named{"walk_frames", walk_frames_};
-    ar >> named{"run_frames", run_frames_};
+    ar >> Field{"entity", entity_};
+    ar >> Field{"front_atlas", front_atlas_};
+    ar >> Field{"back_atlas", back_atlas_};
+    ar >> Field{"side_atlas", side_atlas_};
+    ar >> Field{"front_side_atlas", front_side_atlas_};
+    ar >> Field{"back_side_atlas", back_side_atlas_};
+    ar >> Field{"idle_frames", idle_frames_};
+    ar >> Field{"walk_frames", walk_frames_};
+    ar >> Field{"run_frames", run_frames_};
+
+    if (auto entity = assets.entities.get_if(entity_); entity == nullptr)
+    {
+      return false;
+    }
+    else
+    {
+      components_.emplace(entity->id, assets.registry);
+      ar >> Field{"components", *components_};
+    }
     return true;
   }
 
-  bool onSave(OArchive& ar) override
+  bool onSave(OArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
-    ar << named{"front_atlas", front_atlas_};
-    ar << named{"back_atlas", back_atlas_};
-    ar << named{"side_atlas", side_atlas_};
-    ar << named{"front_side_atlas", front_side_atlas_};
-    ar << named{"back_side_atlas", back_side_atlas_};
-    ar << named{"idle_frames", idle_frames_};
-    ar << named{"walk_frames", walk_frames_};
-    ar << named{"run_frames", run_frames_};
-    return false;
+    ar << Field{"entity", entity_};
+    ar << Field{"front_atlas", front_atlas_};
+    ar << Field{"back_atlas", back_atlas_};
+    ar << Field{"side_atlas", side_atlas_};
+    ar << Field{"front_side_atlas", front_side_atlas_};
+    ar << Field{"back_side_atlas", back_side_atlas_};
+    ar << Field{"idle_frames", idle_frames_};
+    ar << Field{"walk_frames", walk_frames_};
+    ar << Field{"run_frames", run_frames_};
+    ar << Field{"components", *components_};
+    return true;
   }
 
   bool onInitialize(Systems& systems, SharedAssets& assets, const AppProperties& app) override
@@ -127,23 +174,23 @@ private:
       return false;
     }
 
-    if (!assets.registry.valid(id_))
+    if (auto status_or_error = assets.assign(entity_); !status_or_error)
     {
-      id_ = assets.registry.create();
-      assets.registry.emplace<Focused>(id_);
-      assets.registry.emplace<Midground>(id_);
-      assets.registry.emplace<Info>(id_, Info{{"bob"}});
-      assets.registry.emplace<Size>(id_, Size{{1.5F, 1.5F}});
-      assets.registry.emplace<Position>(id_, Position{Vec2f::Zero()});
-      assets.registry.emplace<Dynamics>(id_, Dynamics{Vec2f::Zero(), {0, -1}});
-      assets.registry.emplace<graphics::AnimatedSprite>(id_).setMode(graphics::AnimatedSprite::Mode::kLooped);
+      return false;
+    }
+    else if (*status_or_error == ResourceStatus::kCreated)
+    {
+      auto entity = assets.entities.get_if(entity_);
+      components_.emplace(entity->id, assets.registry);
     }
     return true;
   }
 
   expected<void, ScriptError> onUpdate(Systems& systems, SharedAssets& assets, const AppProperties& app) override
   {
-    auto [size, position, state, sprite] = assets.registry.get<Size, Position, Dynamics, graphics::AnimatedSprite>(id_);
+    auto entity = assets.entities.get_if(entity_);
+    auto [size, position, state, sprite] =
+      assets.registry.get<Size, Position, Dynamics, graphics::AnimatedSprite>(entity->id);
 
     static constexpr float kSpeedWalking = 0.5;
     static constexpr float kSpeedRunning = 1.0;
@@ -264,7 +311,7 @@ private:
     return {};
   }
 
-  entt::entity id_;
+  EntityHandle entity_;
   TextureHandle front_atlas_;
   TextureHandle back_atlas_;
   TextureHandle side_atlas_;
@@ -273,6 +320,7 @@ private:
   TileSetHandle idle_frames_[8UL];
   TileSetHandle walk_frames_[8UL];
   TileSetHandle run_frames_[8UL];
+  std::optional<Components> components_;
 };
 
 bool PlayerCharacter::AssignMovementTileSets(

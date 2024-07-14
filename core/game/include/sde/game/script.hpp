@@ -46,9 +46,9 @@ public:
 
   void reset() { t_init_.reset(); }
 
-  template <typename Archive> expected<void, ScriptError> load(Archive& ar)
+  template <typename Archive> expected<void, ScriptError> load(Archive& ar, SharedAssets& assets)
   {
-    if (not_loaded_ and this->derived().onLoad(ar))
+    if (not_loaded_ and this->derived().onLoad(ar, assets))
     {
       not_loaded_ = false;
       return {};
@@ -56,9 +56,9 @@ public:
     return make_unexpected(ScriptError::kLoadFailed);
   }
 
-  template <typename Archive> expected<void, ScriptError> save(Archive& ar)
+  template <typename Archive> expected<void, ScriptError> save(Archive& ar, SharedAssets& assets)
   {
-    if (this->derived().onSave(ar))
+    if (this->derived().onSave(ar, assets))
     {
       return {};
     }

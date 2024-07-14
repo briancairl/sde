@@ -116,6 +116,8 @@ expected<void, SoundDataError> SoundDataCache::reload(SoundData& sound)
     .count = std::move(channel_count_opt).value(),
     .element_type = std::move(channel_element_type_opt).value(),
     .bits_per_second = static_cast<std::size_t>(wave->sampleRate)};
+
+  SDE_LOG_DEBUG_FMT("Loaded sound from file: %s (%lu bytes)", sound.path.string().c_str(), sound.buffer_length);
   return {};
 }
 

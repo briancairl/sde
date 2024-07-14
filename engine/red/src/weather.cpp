@@ -34,7 +34,7 @@ private:
   TileSetHandle rain_frames_;
   SoundHandle rain_sound_;
 
-  bool onLoad(IArchive& ar) override
+  bool onLoad(IArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
     ar >> named{"rain_frames_atlas", rain_frames_atlas_};
@@ -43,13 +43,13 @@ private:
     return true;
   }
 
-  bool onSave(OArchive& ar) override
+  bool onSave(OArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
     ar << named{"rain_frames_atlas", rain_frames_atlas_};
     ar << named{"rain_frames", rain_frames_};
     ar << named{"rain_sound", rain_sound_};
-    return false;
+    return true;
   }
 
   bool onInitialize(Systems& systems, SharedAssets& assets, const AppProperties& app) override
@@ -88,8 +88,8 @@ private:
       {
         const auto id = assets.registry.create();
         assets.registry.emplace<Foreground>(id);
-        assets.registry.emplace<Size>(id, Size{{0.25F, 1.0F}});
-        assets.registry.emplace<Position>(id, Position{{x_start, y_start}});
+        assets.registry.emplace<Size>(id, Size{.extent = {0.25F, 1.0F}});
+        assets.registry.emplace<Position>(id, Position{.center = {x_start, y_start}});
 
         auto& sprite = assets.registry.emplace<AnimatedSprite>(id);
         sprite.setMode(AnimatedSprite::Mode::kLooped);
