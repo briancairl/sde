@@ -89,6 +89,8 @@ struct TextureOptions : Resource<TextureOptions>
 struct TextureShape : Resource<TextureShape>
 {
   Vec2i value = {};
+
+  float aspect() const { return static_cast<float>(value.x()) / static_cast<float>(value.y()); }
   auto width() const { return value.x(); }
   auto height() const { return value.y(); }
   auto texels() const { return value.size(); }

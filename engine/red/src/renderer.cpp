@@ -96,23 +96,6 @@ private:
   expected<void, ScriptError>
   onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
-    if (!app_state.enabled)
-    {
-      return {};
-    }
-
-    // Handle screen zoom
-    static constexpr float kScaleRate = 500.0;
-    const float scroll_sensitivity = std::clamp(scaling_, 1e-4F, 1e-2F);
-    if (app.mouse_scroll.y() > 0)
-    {
-      scaling_ = std::max(1e-3F, scaling_ - scroll_sensitivity * kScaleRate * sde::toSeconds(app.time_delta));
-    }
-    else if (app.mouse_scroll.y() < 0)
-    {
-      scaling_ = std::min(1e+3F, scaling_ + scroll_sensitivity * kScaleRate * sde::toSeconds(app.time_delta));
-    }
-
     using namespace sde::graphics;
 
     RenderResources render_resources;
@@ -124,6 +107,21 @@ private:
     uniforms.scaling = scaling_;
     uniforms.time = app.time;
     uniforms.time_delta = app.time_delta;
+
+    // Handle screen zoom
+    if (app_state.enabled)
+    {
+      static constexpr float kScaleRate = 500.0;
+      const float scroll_sensitivity = std::clamp(scaling_, 1e-4F, 1e-2F);
+      if (app.mouse_scroll.y() > 0)
+      {
+        scaling_ = std::max(1e-3F, scaling_ - scroll_sensitivity * kScaleRate * sde::toSeconds(app.time_delta));
+      }
+      else if (app.mouse_scroll.y() < 0)
+      {
+        scaling_ = std::min(1e+3F, scaling_ + scroll_sensitivity * kScaleRate * sde::toSeconds(app.time_delta));
+      }
+    }
 
     assets.registry.view<Focused, Position>().each(
       [&](const Position& pos) { uniforms.world_from_camera.block<2, 1>(0, 2) = pos.center; });

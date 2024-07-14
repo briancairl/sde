@@ -55,6 +55,7 @@ cc_library(
   hdrs=[
     "include/sde/resource.hpp",
     "include/sde/resource_io.hpp",
+    "include/sde/resource_tag.hpp",
     "include/sde/resource_cache.hpp",
     "include/sde/resource_cache_io.hpp",
     "include/sde/resource_handle.hpp",
@@ -75,6 +76,7 @@ cc_library(
   hdrs=[
     "include/sde/crtp.hpp",
     "include/sde/format.hpp",
+    "include/sde/overloaded.hpp",
     "include/sde/hash.hpp",
     "include/sde/hash_io.hpp",
     "include/sde/time.hpp",

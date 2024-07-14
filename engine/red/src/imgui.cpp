@@ -28,6 +28,49 @@ constexpr const char* kGLSLVersion{"#version 150"};
 constexpr const char* kGLSLVersion{"#version 130"};  // 3.0+ only
 #endif
 
+struct ImGuiFieldFormatter
+{
+  template <typename T> void operator()(std::size_t depth, const BasicField<T>& field)
+  {
+    ImGui::Dummy(ImVec2(depth * 10, 0.0));
+    ImGui::SameLine();
+
+    using U = std::remove_const_t<T>;
+    if constexpr (is_resource_cache_v<T>)
+    {
+      ImGui::Text("%s : ...", field.name);
+      for (const auto& [handle, element] : field.get())
+      {
+        Visit(element, ImGuiFieldFormatter{}, depth + 1);
+      }
+    }
+    if constexpr (std::is_same_v<U, asset::path>)
+    {
+      ImGui::Text("%s : %s", field.name, field->string().c_str());
+    }
+    else if constexpr (std::is_same_v<U, Vec2i>)
+    {
+      ImGui::Text("%s : (%d x %d)", field.name, field->x(), field->y());
+    }
+    else if constexpr (std::is_same_v<U, Hash>)
+    {
+      ImGui::Text("%s : {%lu}", field.name, field->value);
+    }
+    else if constexpr (std::is_enum_v<U>)
+    {
+      ImGui::Text("%s : %d", field.name, static_cast<int>(field.get()));
+    }
+    else if constexpr (std::is_integral_v<U>)
+    {
+      ImGui::Text("%s : %d", field.name, static_cast<int>(field.get()));
+    }
+    else
+    {
+      ImGui::Text("%s : ...", field.name);
+    }
+  }
+};
+
 class ImGuiWrapper final : public ScriptRuntime
 {
 public:
@@ -109,11 +152,25 @@ private:
 
     if (imgui_overlay_enabled_)
     {
+      ImGui::Begin("asset-tree");
+      app_state.enabled = !ImGui::IsWindowHovered(ImGuiFocusedFlags_AnyWindow);
+      Visit(assets, ImGuiFieldFormatter{});
+      ImGui::End();
+
       ImGui::Begin("sounds");
       app_state.enabled = !ImGui::IsWindowHovered(ImGuiFocusedFlags_AnyWindow);
       for (const auto& [handle, element] : assets.audio.sound_data)
       {
-        ImGui::Text("%lu : %s", handle.id(), element.value.path.string().c_str());
+        ImGui::Text("Sound[%lu]", handle.id());
+        {
+          static constexpr bool kChildShowBoarders = true;
+          static constexpr auto kChildFlags = ImGuiWindowFlags_None;
+          ImGui::PushID(handle.id());
+          ImGui::BeginChild("#Sound", ImVec2{0.0F, 200.0F}, kChildShowBoarders, kChildFlags);
+          Visit(element, ImGuiFieldFormatter{});
+          ImGui::EndChild();
+          ImGui::PopID();
+        }
       }
       ImGui::End();
 
@@ -121,9 +178,27 @@ private:
       app_state.enabled = !ImGui::IsWindowHovered(ImGuiFocusedFlags_AnyWindow);
       for (const auto& [handle, element] : assets.graphics.textures)
       {
-        ImGui::Text("%lu", handle.id());
-        ImGui::Image(
-          reinterpret_cast<void*>(element->native_id.value()), ImVec2(element->shape.width(), element->shape.height()));
+        ImGui::Text("Texture[%lu]", handle.id());
+        {
+          static constexpr bool kChildShowBoarders = true;
+          static constexpr auto kChildFlags = ImGuiWindowFlags_None;
+          ImGui::PushID(handle.id());
+          ImGui::BeginChild("#Texture", ImVec2{0.0F, 200.0F}, kChildShowBoarders, kChildFlags);
+          Visit(element, ImGuiFieldFormatter{});
+          ImGui::EndChild();
+          ImGui::PopID();
+        }
+        if (ImGui::IsItemHovered())
+        {
+          if (ImGui::BeginTooltip())
+          {
+            static constexpr float kTextureWidth = 400.0F;
+            ImGui::Image(
+              reinterpret_cast<void*>(element->native_id.value()),
+              ImVec2{kTextureWidth * element->shape.aspect(), kTextureWidth});
+            ImGui::EndTooltip();
+          }
+        }
       }
       ImGui::End();
     }

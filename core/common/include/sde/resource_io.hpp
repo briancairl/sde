@@ -21,7 +21,7 @@ template <typename Archive, typename T> struct serialize<Archive, Field<T>>
 {
   void operator()(Archive& ar, Field<T>& field) const
   {
-    if constexpr (has_fundemental_v<T>)
+    if constexpr (has_fundemental_v<T> && has_resource_tag_v<T>)
     {
       ar& named{field.name, field->fundemental()};
     }

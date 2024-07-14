@@ -8,6 +8,9 @@
 // C++ Standard Library
 #include <iosfwd>
 
+// SDE
+#include "sde/resource.hpp"
+
 namespace sde::audio
 {
 
@@ -36,7 +39,7 @@ std::ostream& operator<<(std::ostream& os, SoundChannelBitDepth element_type);
 /**
  * @brief Audio channel description
  */
-struct SoundChannelFormat
+struct SoundChannelFormat : Resource<SoundChannelFormat>
 {
   /// Number of channels (mono, stereo)
   SoundChannelCount count = SoundChannelCount::kMono;
@@ -44,8 +47,12 @@ struct SoundChannelFormat
   SoundChannelBitDepth element_type = SoundChannelBitDepth::kU8;
   /// Bit rate
   std::size_t bits_per_second = 0;
-};
 
-std::ostream& operator<<(std::ostream& os, const SoundChannelFormat& format);
+  auto field_list()
+  {
+    return FieldList(
+      Field{"count", count}, Field{"element_type", element_type}, Field{"bits_per_second", bits_per_second});
+  }
+};
 
 }  // namespace sde::audio

@@ -14,7 +14,9 @@
 #include "sde/crtp.hpp"
 #include "sde/expected.hpp"
 #include "sde/hash.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_handle.hpp"
+#include "sde/resource_tag.hpp"
 
 namespace sde
 {
@@ -29,7 +31,8 @@ enum class ResourceStatus
   kExisted
 };
 
-template <typename ResourceCacheT> class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>
+template <typename ResourceCacheT>
+class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>, public resource_tag
 {
 public:
   using type_info = ResourceCacheTypes<ResourceCacheT>;
@@ -50,7 +53,7 @@ public:
     const value_type* operator->() const { return value; }
   };
 
-  struct element_storage
+  struct element_storage : Resource<element_storage>
   {
     version_type version;
     value_type value;
@@ -63,6 +66,8 @@ public:
     explicit element_storage(version_type _version, ValueArgTs&&... args) :
         version{_version}, value{std::forward<ValueArgTs>(args)...}
     {}
+
+    auto field_list() { return FieldList(Field{"version", version}, Field{"value", value}); }
   };
 
   struct handle_type_hash
