@@ -63,6 +63,7 @@ struct Assets : Resource<Assets>
       Field{"images", images},
       Field{"fonts", fonts},
       Field{"shaders", shaders},
+      Field{"textures", textures},
       Field{"tile_sets", tile_sets},
       Field{"type_sets", type_sets},
       Field{"render_targets", render_targets});

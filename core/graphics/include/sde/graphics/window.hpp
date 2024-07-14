@@ -7,7 +7,7 @@
 
 // SDE
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/image_ref.hpp"
 #include "sde/graphics/window_fwd.hpp"
 #include "sde/resource_wrapper.hpp"

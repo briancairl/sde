@@ -1,7 +1,7 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file geometry_types.hpp
+ * @file geometry.hpp
  */
 #pragma once
 

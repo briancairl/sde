@@ -9,7 +9,7 @@
 #include <cstdint>
 
 // SDE
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/typecode.hpp"
 
 namespace sde::graphics

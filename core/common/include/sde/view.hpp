@@ -15,8 +15,10 @@
 namespace sde
 {
 
-template <typename ViewT> class BasicView : crtp_base<BasicView<ViewT>>
+template <typename ViewT> class BasicView : public crtp_base<BasicView<ViewT>>
 {
+  friend class fundemental_type;
+
 public:
   constexpr bool isValid() const { return this->derived().data() != nullptr; }
   constexpr operator bool() const { return isValid(); }
@@ -40,6 +42,8 @@ template <typename ViewT> bool operator==(const BasicView<ViewT>& lhs, const Bas
 
 template <typename T, std::size_t Len = 0UL> class View : public BasicView<View<T, Len>>
 {
+  friend class BasicView<View<T, Len>>;
+
 public:
   explicit View(T* data) : data_{data} {};
 
@@ -53,6 +57,8 @@ private:
 
 template <typename T> class View<T, 0> : public BasicView<View<T, 0>>
 {
+  friend class BasicView<View<T, 0>>;
+
 public:
   explicit View([[maybe_unused]] std::nullptr_t _) : data_{nullptr}, size_{0} {};
 

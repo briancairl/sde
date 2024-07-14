@@ -14,7 +14,7 @@
 
 // SDE
 #include "sde/asset.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/image_fwd.hpp"
 #include "sde/graphics/image_handle.hpp"
 #include "sde/graphics/texture_fwd.hpp"
@@ -105,12 +105,12 @@ using NativeTextureID = UniqueResource<native_texture_id_t, TextureNativeDeleter
 
 struct Texture : Resource<Texture>
 {
-  ImageHandle source_image;
-  TypeCode element_type;
-  TextureLayout layout;
-  TextureShape shape;
-  TextureOptions options;
-  NativeTextureID native_id;
+  ImageHandle source_image = ImageHandle::null();
+  TypeCode element_type = TypeCode::kUInt8;
+  TextureLayout layout = TextureLayout::kR;
+  TextureShape shape = {};
+  TextureOptions options = {};
+  NativeTextureID native_id = NativeTextureID{0};
 
   auto field_list()
   {
@@ -123,8 +123,6 @@ struct Texture : Resource<Texture>
       (_Stub{"native_id", native_id}));
   }
 };
-
-std::ostream& operator<<(std::ostream& os, const Texture& info);
 
 bool operator==(const Texture& lhs, const Texture& rhs);
 

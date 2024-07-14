@@ -156,7 +156,8 @@ expected<void, ImageError> ImageCache::unload(Image& image)
 
 expected<Image, ImageError> ImageCache::generate(const asset::path& image_path, const ImageOptions& options)
 {
-  Image info{.path = image_path, .options = options, .shape = {{0, 0}}, .data_buffer = ImageDataBuffer{nullptr}};
+  Image info{
+    .path = image_path, .options = options, .shape = {.value = {0, 0}}, .data_buffer = ImageDataBuffer{nullptr}};
   if (auto ok_or_error = reload(info); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());

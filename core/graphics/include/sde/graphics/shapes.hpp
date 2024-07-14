@@ -9,7 +9,7 @@
 #include <iosfwd>
 
 // SDE
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 
 namespace sde::graphics
 {

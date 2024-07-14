@@ -265,17 +265,6 @@ void TextureNativeDeleter::operator()(native_texture_id_t id) const
   glDeleteTextures(1, &id);
 }
 
-std::ostream& operator<<(std::ostream& os, const TextureShape& shape)
-{
-  return os << "{ height: " << shape.value.y() << ", width: " << shape.value.x() << " }";
-}
-
-std::ostream& operator<<(std::ostream& os, const Texture& info)
-{
-  return os << "{ shape: " << info.shape << ", layout: " << info.layout << ", options: " << info.options
-            << ", native_id: " << info.native_id << " }";
-}
-
 std::ostream& operator<<(std::ostream& os, TextureWrapping wrapping)
 {
   switch (wrapping)

@@ -34,7 +34,11 @@ UniqueResource<FT_Library, FreeTypeRelease> FreeType{[] {
 
 }  // namespace
 
-void FontNativeDeleter::operator()(void* font) const { FT_Done_Face(reinterpret_cast<FT_Face>(font)); }
+void FontNativeDeleter::operator()(void* font) const
+{
+  SDE_LOG_DEBUG_FMT("FontNativeDeleter(%p)", font);
+  FT_Done_Face(reinterpret_cast<FT_Face>(font));
+}
 
 expected<void, FontError> FontCache::reload(Font& font)
 {
@@ -56,6 +60,7 @@ expected<void, FontError> FontCache::reload(Font& font)
   }
 
   font.native_id = FontNativeID{reinterpret_cast<void*>(face)};
+  SDE_LOG_DEBUG_FMT("Font(%p) %s", font.native_id.value(), font.path.string().c_str());
   return {};
 }
 
@@ -67,12 +72,12 @@ expected<void, FontError> FontCache::unload(Font& font)
 
 expected<Font, FontError> FontCache::generate(const asset::path& font_path)
 {
-  Font font_info{.path = font_path, .native_id = FontNativeID{nullptr}};
-  if (auto ok_or_error = reload(font_info); !ok_or_error.has_value())
+  Font font{.path = font_path, .native_id = FontNativeID{nullptr}};
+  if (auto ok_or_error = reload(font); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }
-  return font_info;
+  return font;
 }
 
 }  // namespace sde::graphics

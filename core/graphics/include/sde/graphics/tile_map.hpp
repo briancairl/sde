@@ -10,7 +10,7 @@
 #include <vector>
 
 // SDE
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/render_buffer_fwd.hpp"
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/tile_map_fwd.hpp"

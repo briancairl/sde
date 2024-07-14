@@ -32,7 +32,7 @@ using NativeFrameBufferID = UniqueResource<native_frame_buffer_id_t, NativeFrame
 struct RenderTarget : Resource<RenderTarget>
 {
   TextureHandle color_attachment = TextureHandle::null();
-  NativeFrameBufferID native_id;
+  NativeFrameBufferID native_id = NativeFrameBufferID{0};
 
   auto field_list()
   {

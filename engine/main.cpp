@@ -12,8 +12,12 @@
 #include "sde/game/assets.hpp"
 #include "sde/game/script.hpp"
 #include "sde/game/systems.hpp"
-#include "sde/graphics/image.hpp"
+#include "sde/geometry_io.hpp"
 #include "sde/logging.hpp"
+#include "sde/resource_cache_io.hpp"
+#include "sde/resource_io.hpp"
+#include "sde/serial/std/filesystem.hpp"
+#include "sde/serial/std/vector.hpp"
 #include "sde/serialization_binary_file.hpp"
 // #include "sde/view.hpp"
 
@@ -52,6 +56,8 @@ int main(int argc, char** argv)
     iar >> serial::named{"assets", sde::_R(assets)};
     if (auto ok_or_error = assets.refresh())
     {
+      SDE_LOG_INFO_FMT("sounds: %lu", assets.audio.sounds.size());
+      SDE_LOG_INFO_FMT("textures: %lu", assets.graphics.textures.size());
       character_script->load(iar);
       renderer_script->load(iar);
       weather_script->load(iar);
@@ -121,6 +127,8 @@ int main(int argc, char** argv)
 
   if (auto ofs_or_error = serial::file_ostream::create("/tmp/game.bin"); ofs_or_error.has_value())
   {
+    SDE_LOG_INFO_FMT("sounds: %lu", assets.audio.sounds.size());
+    SDE_LOG_INFO_FMT("textures: %lu", assets.graphics.textures.size());
     serial::binary_oarchive oar{*ofs_or_error};
     oar << serial::named{"assets", sde::_R(assets)};
     character_script->save(oar);

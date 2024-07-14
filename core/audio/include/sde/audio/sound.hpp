@@ -47,7 +47,7 @@ struct Sound : Resource<Sound>
   SoundDataHandle sound_data = SoundDataHandle{};
   SoundChannelFormat channel_format = {};
   std::size_t buffer_length = 0;
-  NativeSoundBufferID native_id;
+  NativeSoundBufferID native_id = NativeSoundBufferID{0};
 
   auto field_list()
   {

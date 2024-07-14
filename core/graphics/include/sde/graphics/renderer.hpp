@@ -14,7 +14,7 @@
 // SDE
 
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/assets_fwd.hpp"
 #include "sde/graphics/render_buffer_fwd.hpp"
 #include "sde/graphics/render_target_handle.hpp"

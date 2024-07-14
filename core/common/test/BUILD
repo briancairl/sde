@@ -17,6 +17,14 @@ gtest(
 )
 
 gtest(
+  name="resource_io",
+  timeout = "short",
+  srcs=["resource_io.cpp"],
+  deps=["//core/common:resource", "//core/serialization/std"],
+  visibility=["//visibility:public"],
+)
+
+gtest(
   name="resource_cache",
   timeout = "short",
   srcs=["resource_cache.cpp"],

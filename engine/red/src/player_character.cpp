@@ -19,7 +19,6 @@
 #include "red/components.hpp"
 #include "red/player_character.hpp"
 
-#include <iostream>
 using namespace sde;
 using namespace sde::game;
 using namespace sde::graphics;

@@ -11,7 +11,7 @@
 // SDE
 #include "sde/asset.hpp"
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/font_fwd.hpp"
 #include "sde/graphics/font_handle.hpp"
 #include "sde/graphics/texture_fwd.hpp"
@@ -33,7 +33,7 @@ struct Glyph
   Bounds2f atlas_bounds = Bounds2f{};
 };
 
-struct TypeSetOptions : Resource<TypeSet>
+struct TypeSetOptions : Resource<TypeSetOptions>
 {
   std::size_t height_px = 10;
 

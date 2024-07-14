@@ -1,4 +1,4 @@
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 
 namespace Eigen
 {

@@ -106,10 +106,12 @@ private:
     if (auto listener_or_err = audio::ListenerTarget::create(systems.mixer, kPlayerListener);
         !listener_or_err.has_value())
     {
+      SDE_LOG_ERROR("Failed to create listener pass");
       return false;
     }
     else if (auto sound = assets.audio.sounds(rain_sound_); sound == nullptr)
     {
+      SDE_LOG_ERROR("Failed to locate sound");
       return false;
     }
     else

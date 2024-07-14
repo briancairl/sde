@@ -12,9 +12,13 @@
 namespace sde::serial
 {
 
+template <typename ArchiveT, typename Rep, typename Period>
+struct is_trivially_serializable<ArchiveT, std::chrono::duration<Rep, Period>> : std::true_type
+{};
+
 template <typename Archive, typename DurationT> struct save<Archive, BasicRate<DurationT>>
 {
-  void operator()(Archive& ar, const BasicRate<DurationT>& rate) const { ar& named{"period", rate.period()}; }
+  void operator()(Archive& ar, const BasicRate<DurationT>& rate) const { ar << named{"period", rate.period()}; }
 };
 
 template <typename Archive, typename DurationT> struct load<Archive, BasicRate<DurationT>>
@@ -22,7 +26,7 @@ template <typename Archive, typename DurationT> struct load<Archive, BasicRate<D
   void operator()(Archive& ar, BasicRate<DurationT>& rate) const
   {
     DurationT period;
-    ar& named{"period", period};
+    ar >> named{"period", period};
     rate = BasicRate{period};
   }
 };

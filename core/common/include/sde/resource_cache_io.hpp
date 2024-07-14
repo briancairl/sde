@@ -7,7 +7,6 @@
 
 // SDE
 #include "sde/hash_io.hpp"
-#include "sde/logging.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
@@ -47,7 +46,8 @@ template <typename Archive, typename CacheT> struct load<Archive, ResourceCache<
       ar >> named{"version", version};
       value_type value;
       ar >> named{"value", value.fundemental()};
-      SDE_ASSERT_OK(cache.insert(handle, version, std::move(value)));
+      auto _ = cache.insert(handle, version, std::move(value));
+      (void)_;
     }
   }
 };

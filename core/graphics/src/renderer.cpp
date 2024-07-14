@@ -14,7 +14,7 @@
 // SDE
 #include "sde/build.hpp"
 #include "sde/format.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/geometry_utils.hpp"
 #include "sde/graphics/assets.hpp"
 #include "sde/graphics/render_buffer.hpp"

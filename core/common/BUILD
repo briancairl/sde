@@ -19,12 +19,12 @@ cc_library(
 cc_library(
   name="geometry",
   hdrs=[
-    "include/sde/geometry_types.hpp",
+    "include/sde/geometry.hpp",
     "include/sde/geometry_utils.hpp",
     "include/sde/geometry_io.hpp"
   ],
   srcs=[
-    "src/geometry_types.cpp",
+    "src/geometry.cpp",
   ],
   strip_include_prefix="include",
   deps=[

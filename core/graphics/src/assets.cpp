@@ -49,7 +49,6 @@ expected<void, AssetError> Assets::refresh()
     return make_unexpected(AssetError::kFailedRenderTargetLoading);
   }
   images.relinquish();
-  fonts.relinquish();
   return {};
 }
 

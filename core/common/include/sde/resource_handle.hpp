@@ -11,20 +11,19 @@
 #include <type_traits>
 
 // SDE
+#include "sde/crtp.hpp"
 #include "sde/hash.hpp"
 
 namespace sde
 {
 
-template <typename T> struct ResourceHandleBase
-{};
-
-template <typename T, typename IdentifierT = std::size_t, IdentifierT kNullValue = 0>
-struct ResourceHandle : ResourceHandleBase<T>
+template <typename T> struct ResourceHandle : crtp_base<ResourceHandle<T>>
 {
+  friend class fundemental_type;
+
 public:
-  using id_type = IdentifierT;
-  using self_type = ResourceHandle<T, id_type, kNullValue>;
+  using id_type = std::size_t;
+  static const id_type kNullValue{0};
 
   explicit ResourceHandle(id_type id) : id_{id} {}
 
@@ -65,10 +64,6 @@ public:
 
   static constexpr T null() { return T{kNullValue}; }
 
-  self_type& fundemental() { return *this; }
-
-  const self_type& fundemental() const { return *this; }
-
 private:
   static constexpr id_type next_unique(id_type prev) { return prev + 1; }
   id_type id_ = kNullValue;
@@ -94,12 +89,6 @@ template <typename T> constexpr bool operator!=(const ResourceHandle<T>& lhs, co
   return lhs.id() != rhs.id();
 }
 
-template <typename T> struct is_resource_handle : std::is_base_of<ResourceHandleBase<T>, T>
-{};
-
-template <typename H> constexpr bool is_resource_handle_v = is_resource_handle<std::remove_const_t<H>>::value;
-
-
 struct ResourceHandleHash
 {
   template <typename T> constexpr Hash operator()(const ResourceHandle<T>& handle) const
@@ -118,18 +107,6 @@ template <typename T> inline std::ostream& operator<<(std::ostream& os, const Re
   {
     return os << "{ id: " << handle.id() << " }";
   }
-}
-
-template <typename T, typename IdentifierT, IdentifierT kNullValue>
-auto& _R(ResourceHandle<T, IdentifierT, kNullValue>& handle)
-{
-  return handle;
-}
-
-template <typename T, typename IdentifierT, IdentifierT kNullValue>
-const auto& _R(const ResourceHandle<T, IdentifierT, kNullValue>& handle)
-{
-  return handle;
 }
 
 }  // namespace sde

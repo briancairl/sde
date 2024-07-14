@@ -80,7 +80,11 @@ struct save_is_implemented
 template <typename OArchiveT, typename ObjectT>
 constexpr bool save_is_implemented_v = save_is_implemented<OArchiveT, ObjectT>::value;
 
-template <typename ArchiveT, typename ObjectT> struct is_trivially_serializable : std::is_trivial<ObjectT>
+template <typename ArchiveT, typename ObjectT>
+struct is_trivially_serializable : std::integral_constant<
+                                     bool,
+                                     std::is_trivial_v<ObjectT> and !std::is_class_v<ObjectT> and
+                                       !std::is_pointer_v<ObjectT> and !std::is_reference_v<ObjectT>>
 {};
 
 template <typename ArchiveT, typename ObjectT>

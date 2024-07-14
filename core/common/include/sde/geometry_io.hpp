@@ -6,7 +6,7 @@
 #pragma once
 
 // SDE
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/serialization.hpp"
 
 namespace sde::serial

@@ -67,27 +67,13 @@ template <typename T> struct is_field_serializable<Field<T>> : std::true_type
 template <typename T> struct is_field_serializable<_Stub<T>> : std::false_type
 {};
 
-template <typename F> struct to_const_field;
+template <typename T> auto to_const(Field<T> field) { return Field<const T>{field.name, field.get()}; }
 
-template <typename T> struct to_const_field<Field<T>>
-{
-  using type = Field<const std::remove_const_t<T>>;
-};
-
-template <typename T> struct to_const_field<_Stub<T>>
-{
-  using type = _Stub<const std::remove_const_t<T>>;
-};
-
-template <typename T> using to_const_field_t = typename to_const_field<T>::type;
+template <typename T> auto to_const(_Stub<T> stub) { return _Stub<const T>{stub.name, stub.get()}; }
 
 template <typename... FieldTs> auto to_const(const std::tuple<FieldTs...>& fields)
 {
-  return std::apply(
-    [](auto&... field) {
-      return std::make_tuple(to_const_field_t<FieldTs>{field.name, field.get()}...);
-    },
-    fields);
+  return std::apply([](auto&... field) { return std::make_tuple(to_const(field)...); }, fields);
 }
 
 template <typename ResourceT> struct Resource : crtp_base<Resource<ResourceT>>

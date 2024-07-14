@@ -12,7 +12,7 @@
 // SDE
 #include "sde/asset.hpp"
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/image_fwd.hpp"
 #include "sde/graphics/image_handle.hpp"
 #include "sde/graphics/image_ref.hpp"
@@ -81,27 +81,23 @@ struct ImageOptions : Resource<ImageOptions>
 
   auto field_list()
   {
-    return std::make_tuple(
-      (Field{"channels", channels}),
-      (Field{"element_type", element_type}),
-      (Field{"flip_vertically", flip_vertically}));
+    return FieldList(
+      Field{"channels", channels}, Field{"element_type", element_type}, Field{"flip_vertically", flip_vertically});
   }
 };
-
-std::ostream& operator<<(std::ostream& os, const ImageOptions& error);
 
 /**
  * @brief Image dimensions
  */
-struct ImageShape
+struct ImageShape : Resource<ImageShape>
 {
   Vec2i value = {};
   auto width() const { return value.x(); }
   auto height() const { return value.y(); }
   auto pixels() const { return value.x() * value.y(); }
-};
 
-std::ostream& operator<<(std::ostream& os, const ImageShape& error);
+  auto field_list() { return FieldList(Field{"value", value}); }
+};
 
 /**
  * @brief Error codes pertaining to Image loading
@@ -128,18 +124,18 @@ using ImageDataBuffer = UniqueResource<void*, ImageDataBufferDeleter>;
 struct Image : Resource<Image>
 {
   /// Path to image
-  asset::path path;
+  asset::path path = {};
   /// Image load options
-  ImageOptions options;
+  ImageOptions options = {};
   /// Image shape
-  ImageShape shape;
+  ImageShape shape = {};
   /// Image data (in memory)
-  ImageDataBuffer data_buffer;
+  ImageDataBuffer data_buffer = ImageDataBuffer{nullptr};
 
   auto field_list()
   {
-    return std::make_tuple(
-      (Field{"path", path}), (Field{"options", options}), (Field{"shape", shape}), (_Stub{"data_buffer", data_buffer}));
+    return FieldList(
+      Field{"path", path}, Field{"options", options}, Field{"shape", shape}, _Stub{"data_buffer", data_buffer});
   }
 
   /**

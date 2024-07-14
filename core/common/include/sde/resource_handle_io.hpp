@@ -12,21 +12,16 @@
 namespace sde::serial
 {
 
-template <typename Archive, typename T, typename IdentifierT, IdentifierT kNullValue>
-struct save<Archive, ResourceHandle<T, IdentifierT, kNullValue>>
+template <typename Archive, typename T> struct save<Archive, ResourceHandle<T>>
 {
-  void operator()(Archive& ar, const ResourceHandle<T, IdentifierT, kNullValue>& handle) const
-  {
-    ar << named{"id", handle.id()};
-  }
+  void operator()(Archive& ar, const ResourceHandle<T>& handle) const { ar << named{"id", handle.id()}; }
 };
 
-template <typename Archive, typename T, typename IdentifierT, IdentifierT kNullValue>
-struct load<Archive, ResourceHandle<T, IdentifierT, kNullValue>>
+template <typename Archive, typename T> struct load<Archive, ResourceHandle<T>>
 {
-  void operator()(Archive& ar, ResourceHandle<T, IdentifierT, kNullValue>& handle) const
+  void operator()(Archive& ar, ResourceHandle<T>& handle) const
   {
-    IdentifierT id{};
+    auto id = handle.id();
     ar >> named{"id", id};
     handle = id;
   }

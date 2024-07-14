@@ -10,6 +10,7 @@
 
 // SDE
 #include "sde/resource.hpp"
+#include "sde/resource_cache_io.hpp"
 #include "sde/resource_handle_io.hpp"
 #include "sde/serialization.hpp"
 
@@ -20,7 +21,7 @@ template <typename Archive, typename T> struct serialize<Archive, Field<T>>
 {
   void operator()(Archive& ar, Field<T>& field) const
   {
-    if constexpr (is_resource_v<T> or is_resource_handle_v<T>)
+    if constexpr (has_fundemental_v<T>)
     {
       ar& named{field.name, field->fundemental()};
     }

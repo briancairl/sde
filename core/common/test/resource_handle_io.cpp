@@ -13,21 +13,21 @@ TEST(ResourceHandleIO, ResourceHandle)
 {
   const ResourceHandle<std::size_t> target_value{1234};
 
-  if (auto ofs_or_error = file_ostream::create("Mat.bin"); ofs_or_error.has_value())
+  if (auto ofs_or_error = file_ostream::create("ResourceHandle.bin"); ofs_or_error.has_value())
   {
     binary_oarchive oar{*ofs_or_error};
-    ASSERT_NO_THROW((oar << named{"mat", target_value}));
+    ASSERT_NO_THROW((oar << named{"handle", target_value.fundemental()}));
   }
   else
   {
     FAIL() << ofs_or_error.error();
   }
 
-  if (auto ifs_or_error = file_istream::create("Mat.bin"); ifs_or_error.has_value())
+  if (auto ifs_or_error = file_istream::create("ResourceHandle.bin"); ifs_or_error.has_value())
   {
     binary_iarchive iar{*ifs_or_error};
     ResourceHandle<std::size_t> read_value;
-    ASSERT_NO_THROW((iar >> named{"mat", read_value}));
+    ASSERT_NO_THROW((iar >> named{"handle", read_value.fundemental()}));
 
     ASSERT_EQ(target_value, read_value);
   }

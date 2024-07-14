@@ -12,7 +12,7 @@
 // SDE
 #include "sde/app_properties.hpp"
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/window.hpp"
 #include "sde/keyboard.hpp"
 #include "sde/time.hpp"

@@ -4,7 +4,7 @@
 #include <string>
 
 // SDE
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 
 using namespace sde;
 

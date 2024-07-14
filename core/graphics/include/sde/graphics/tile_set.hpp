@@ -13,7 +13,7 @@
 #include "sde/expected.hpp"
 
 // SDE
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/tile_set_fwd.hpp"

@@ -13,7 +13,7 @@
 #include "sde/audio/sound_fwd.hpp"
 #include "sde/audio/typedef.hpp"
 #include "sde/expected.hpp"
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/resource_wrapper.hpp"
 #include "sde/view.hpp"
 

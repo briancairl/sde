@@ -6,7 +6,7 @@
 #pragma once
 
 // SDE
-#include "sde/geometry_types.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
 #include "sde/graphics/tile_set_handle.hpp"

@@ -109,10 +109,10 @@ using NativeShaderID = UniqueResource<native_shader_id_t, NativeShaderDeleter>;
  */
 struct Shader : Resource<Shader>
 {
-  asset::path path;
-  ShaderComponents components;
-  ShaderVariables variables;
-  NativeShaderID native_id;
+  asset::path path = {};
+  ShaderComponents components = {};
+  ShaderVariables variables = {};
+  NativeShaderID native_id = NativeShaderID{0};
 
   auto field_list()
   {
@@ -125,8 +125,6 @@ struct Shader : Resource<Shader>
 
   [[nodiscard]] constexpr bool isValid() const { return ::sde::graphics::isValid(components); }
 };
-
-std::ostream& operator<<(std::ostream& os, const Shader& error);
 
 [[nodiscard]] bool hasLayout(const Shader& info, std::string_view key, ShaderVariableType type, std::size_t index);
 

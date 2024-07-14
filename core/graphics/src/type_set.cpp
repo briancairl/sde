@@ -59,7 +59,7 @@ expected<void, TypeSetError> loadGlyphsFromFont(std::vector<Glyph>& glyph_lut, c
   static constexpr int kWidthFromHeight = 0;
   if (FT_Set_Pixel_Sizes(face, kWidthFromHeight, glyph_height) != kFreeTypeSuccess)
   {
-    SDE_LOG_DEBUG("GlyphSizeInvalid");
+    SDE_LOG_DEBUG_FMT("GlyphSizeInvalid (font: %p, height: %lu)", face, glyph_height);
     return make_unexpected(TypeSetError::kGlyphSizeInvalid);
   }
   for (std::size_t char_index = 0; char_index < kDefaultGlyphs.size(); ++char_index)
@@ -106,7 +106,8 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
 
   // clang-format off
   auto glyph_atlas_or_error = 
-  texture_cache.create(
+  texture_cache.find_or_emplace(
+    glyph_atlas,
     TypeCode::kUInt8,
     TextureShape{.value=texture_dimensions},
     TextureLayout::kR,
@@ -121,7 +122,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
 
   if (!glyph_atlas_or_error.has_value())
   {
-    SDE_LOG_DEBUG("GlyphAtlasTextureCreationFailed");
+    SDE_LOG_DEBUG_FMT("GlyphAtlasTextureCreationFailed: %d", static_cast<int>(glyph_atlas_or_error.error()));
     return make_unexpected(TypeSetError::kGlyphAtlasTextureCreationFailed);
   }
 
@@ -198,10 +199,18 @@ const Bounds2i TypeSet::getTextBounds(std::string_view text) const
 expected<void, TypeSetError> TypeSetCache::reload(TypeSet& type_set)
 {
   const auto* font = fonts_->get_if(type_set.font);
+
   if (font == nullptr)
   {
     return make_unexpected(TypeSetError::kInvalidFont);
   }
+
+  SDE_LOG_DEBUG_FMT(
+    "TypeSet from Font(%lu:%p) %s (of %lu available)",
+    type_set.font.id(),
+    font->native_id.value(),
+    font->path.string().c_str(),
+    fonts_->size());
 
   if (auto ok_or_error = loadGlyphsFromFont(type_set.glyphs, *font, static_cast<int>(type_set.options.height_px));
       !ok_or_error.has_value())

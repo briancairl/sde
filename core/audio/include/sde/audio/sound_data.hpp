@@ -52,7 +52,7 @@ struct SoundData : Resource<SoundData>
   asset::path path;
 
   /// Sound samples
-  SoundDataBuffer buffered_samples;
+  SoundDataBuffer buffered_samples = SoundDataBuffer{nullptr};
 
   /// Length of buffer, in bytes
   std::size_t buffer_length = 0;

@@ -87,7 +87,7 @@ public:
   {
     if (handle.isNull())
     {
-      return make_unexpected(error_type::kInvalidHandle);
+      return create(std::forward<CreateArgTs>(args)...);
     }
 
     const auto current_version = HashMany(args...);
@@ -108,11 +108,9 @@ public:
     if (added)
     {
       handle_lower_bound_ = std::max(handle_lower_bound_, handle);
-      return element_ref{itr->first, std::addressof(itr->second.value)};
     }
 
-    // Element was a duplicate
-    return make_unexpected(error_type::kElementAlreadyExists);
+    return element_ref{itr->first, std::addressof(itr->second.value)};
   }
 
   template <typename... CreateArgTs>
@@ -232,5 +230,11 @@ protected:
   /// Map of {resource_handle, resource_value} objects
   CacheMap handle_to_value_cache_;
 };
+
+template <typename T> struct is_resource_cache : std::is_base_of<ResourceCache<T>, T>
+{};
+
+template <typename R> constexpr bool is_resource_cache_v = is_resource_cache<std::remove_const_t<R>>::value;
+
 
 }  // namespace sde
