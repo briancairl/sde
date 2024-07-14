@@ -13,6 +13,7 @@
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_io.hpp"
+#include "sde/serial/std/filesystem.hpp"
 #include "sde/serial/std/string.hpp"
 #include "sde/serial/std/vector.hpp"
 #include "sde/serialization.hpp"

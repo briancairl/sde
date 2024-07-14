@@ -52,7 +52,7 @@ private:
     return true;
   }
 
-  bool onInitialize(Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  bool onInitialize(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     if (!assets.assign(
           rain_frames_atlas_, "/home/brian/dev/assets/sprites/weather/weather_effects/light_rain.png"_path))
@@ -129,7 +129,8 @@ private:
     return true;
   }
 
-  expected<void, ScriptError> onUpdate(Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  expected<void, ScriptError>
+  onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     return {};
   }

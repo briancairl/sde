@@ -9,6 +9,7 @@ namespace sde
 {
 
 struct AppProperties;
+struct AppState;
 class App;
 
 }  // namespace sde

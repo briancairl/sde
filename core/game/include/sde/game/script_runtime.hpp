@@ -34,9 +34,10 @@ public:
 
   virtual bool onSave(OArchive& ar, SharedAssets& assets) = 0;
 
-  virtual bool onInitialize(Systems& systems, Assets& assets, const AppProperties& app) = 0;
+  virtual bool onInitialize(Systems& systems, Assets& assets, AppState& app_state, const AppProperties& app_props) = 0;
 
-  virtual expected<void, ScriptError> onUpdate(Systems& systems, Assets& assets, const AppProperties& app) = 0;
+  virtual expected<void, ScriptError>
+  onUpdate(Systems& systems, Assets& assets, AppState& app_state, const AppProperties& app_props) = 0;
 
   const std::string& getIdentity() const { return script_name_; }
 

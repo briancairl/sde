@@ -55,6 +55,10 @@ public:
     version_type version;
     value_type value;
 
+    const value_type& get() const { return value; }
+    const value_type& operator*() const { return get(); }
+    const value_type* operator->() const { return std::addressof(value); }
+
     template <typename... ValueArgTs>
     explicit element_storage(version_type _version, ValueArgTs&&... args) :
         version{_version}, value{std::forward<ValueArgTs>(args)...}

@@ -22,6 +22,7 @@
 // RED
 #include "red/background_music.hpp"
 #include "red/components.hpp"
+#include "red/imgui.hpp"
 #include "red/player_character.hpp"
 #include "red/renderer.hpp"
 #include "red/weather.hpp"
@@ -45,10 +46,11 @@ int main(int argc, char** argv)
   game::Assets assets{systems};
 
   std::vector<sde::game::ScriptRuntime::UPtr> scripts;
+  scripts.push_back(createRenderer());
   scripts.push_back(createBackgroundMusic());
   scripts.push_back(createPlayerCharacter());
-  scripts.push_back(createRenderer());
   scripts.push_back(createWeather());
+  scripts.push_back(createImGui());
 
   if (auto ifs_or_error = serial::file_istream::create("/tmp/game.bin"); ifs_or_error.has_value())
   {
@@ -82,13 +84,15 @@ int main(int argc, char** argv)
   // app_or_error->window().setIcon(icon_or_error->value->ref());
   // app_or_error->window().setCursor(cursor_or_error->value->ref());
 
-  app_or_error->spin([&](const auto& window) {
+  app_or_error->spin([&](auto& app_state, const auto& app_properties) {
     assets.registry.view<Position, Dynamics>().each(
-      [dt = toSeconds(window.time_delta)](Position& pos, const Dynamics& state) { pos.center += state.velocity * dt; });
+      [dt = toSeconds(app_properties.time_delta)](Position& pos, const Dynamics& state) {
+        pos.center += state.velocity * dt;
+      });
 
     for (auto& script : scripts)
     {
-      if (!script->update(systems, assets, window))
+      if (!script->update(systems, assets, app_state, app_properties))
       {
         SDE_LOG_ERROR_FMT("script->update(...) failed: %s", script->identity().data());
         return AppDirective::kClose;

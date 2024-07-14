@@ -124,7 +124,7 @@ private:
     return true;
   }
 
-  bool onInitialize(Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  bool onInitialize(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     if (!assets.assign(front_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png"_path))
     {
@@ -186,8 +186,13 @@ private:
     return true;
   }
 
-  expected<void, ScriptError> onUpdate(Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  expected<void, ScriptError>
+  onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
+    if (!app_state.enabled)
+    {
+      return {};
+    }
     auto entity = assets.entities.get_if(entity_);
     auto [size, position, state, sprite] =
       assets.registry.get<Size, Position, Dynamics, graphics::AnimatedSprite>(entity->id);

@@ -3,17 +3,7 @@
 
 // SDE
 #include "sde/game/script_impl.hpp"
-#include "sde/graphics/colors.hpp"
-#include "sde/graphics/render_buffer.hpp"
-#include "sde/graphics/renderer.hpp"
-#include "sde/graphics/sprite.hpp"
-#include "sde/graphics/type_set.hpp"
-#include "sde/graphics/type_setter.hpp"
 #include "sde/logging.hpp"
-
-// RED
-#include "red/components.hpp"
-#include "red/renderer.hpp"
 
 using namespace sde;
 using namespace sde::game;
@@ -44,7 +34,7 @@ private:
     return true;
   }
 
-  bool onInitialize(Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  bool onInitialize(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     if (!assets.assign(music_, "/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav"_path))
     {
@@ -72,7 +62,8 @@ private:
     return true;
   }
 
-  expected<void, ScriptError> onUpdate(Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  expected<void, ScriptError>
+  onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     return {};
   }

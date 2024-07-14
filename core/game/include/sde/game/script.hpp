@@ -65,15 +65,16 @@ public:
     return make_unexpected(ScriptError::kSaveFailed);
   }
 
-  expected<void, ScriptError> update(Systems& systems, SharedAssets& assets, const AppProperties& app)
+  expected<void, ScriptError>
+  update(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app_props)
   {
     if (t_init_.has_value())
     {
-      return this->derived().onUpdate(systems, assets, app);
+      return this->derived().onUpdate(systems, assets, app_state, app_props);
     }
-    else if (this->derived().onInitialize(systems, assets, app))
+    else if (this->derived().onInitialize(systems, assets, app_state, app_props))
     {
-      t_init_ = app.time;
+      t_init_ = app_props.time;
       return {};
     }
     return make_unexpected(ScriptError::kInitializationFailed);

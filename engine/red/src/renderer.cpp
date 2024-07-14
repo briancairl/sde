@@ -57,7 +57,7 @@ private:
     return true;
   }
 
-  bool onInitialize(Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  bool onInitialize(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     if (!assets.assign(render_target_))
     {
@@ -93,8 +93,14 @@ private:
     return true;
   }
 
-  expected<void, ScriptError> onUpdate(Systems& systems, SharedAssets& assets, const AppProperties& app) override
+  expected<void, ScriptError>
+  onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
+    if (!app_state.enabled)
+    {
+      return {};
+    }
+
     // Handle screen zoom
     static constexpr float kScaleRate = 500.0;
     const float scroll_sensitivity = std::clamp(scaling_, 1e-4F, 1e-2F);
