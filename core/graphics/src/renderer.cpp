@@ -451,7 +451,8 @@ public:
     va_.reserve(options.buffers.size());
     for (const auto& options : options.buffers)
     {
-      va_.emplace_back(3UL * options.max_triangle_count_per_render_pass, options.mode == VertexBufferMode::kStatic);
+      va_.emplace_back(
+        kElementsPerTriangle * options.max_triangle_count_per_render_pass, options.mode == VertexBufferMode::kStatic);
     }
   }
 
@@ -788,22 +789,5 @@ expected<RenderPass, RenderPassError> RenderPass::create(
 
   return render_pass;
 }
-
-std::ostream& operator<<(std::ostream& os, const RenderResources& resources)
-{
-  return os << "shader: " << resources.shader;
-}
-
-std::ostream& operator<<(std::ostream& os, const RenderUniforms& uniforms)
-{
-  // clang-format off
-  return os << "world_from_camera:\n" << uniforms.world_from_camera
-            << "\ntime: " << uniforms.time
-            << " (delta: " << uniforms.time_delta << ')'
-            << "\nscaling: " << uniforms.scaling;
-  // clang-format on
-}
-
-std::ostream& operator<<(std::ostream& os, const RenderPass& render_pass) { return os; }
 
 }  // namespace sde::graphics
