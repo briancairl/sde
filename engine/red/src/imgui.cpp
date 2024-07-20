@@ -201,6 +201,26 @@ private:
         }
       }
       ImGui::End();
+
+      ImGui::Begin("tile_sets");
+      app_state.enabled = !ImGui::IsWindowHovered(ImGuiFocusedFlags_AnyWindow);
+      for (const auto& [handle, element] : assets.graphics.tile_sets)
+      {
+        ImGui::Text("TileSet[%lu] from (%lu)", handle.id(), element->tile_atlas.id());
+        auto atlas_texture = assets.graphics.textures(element->tile_atlas);
+        for (const auto& bounds : element->tile_bounds)
+        {
+          static constexpr float kTileWidth = 100.0F;
+          ImGui::Image(
+            reinterpret_cast<void*>(atlas_texture->native_id.value()),
+            ImVec2{kTileWidth, kTileWidth},
+            ImVec2{bounds.max().x(), bounds.max().y()},
+            ImVec2{bounds.min().x(), bounds.min().y()});
+          ImGui::SameLine();
+        }
+        ImGui::NewLine();
+      }
+      ImGui::End();
     }
 
     ImGui::Render();
@@ -209,4 +229,4 @@ private:
   }
 };
 
-std::unique_ptr<sde::game::ScriptRuntime> createImGui() { return std::make_unique<ImGuiWrapper>(); }
+std::unique_ptr<ScriptRuntime> createImGui() { return std::make_unique<ImGuiWrapper>(); }

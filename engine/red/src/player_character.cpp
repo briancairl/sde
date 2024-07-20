@@ -367,4 +367,4 @@ bool PlayerCharacter::AssignMovementTileSets(
   return true;
 }
 
-std::unique_ptr<sde::game::ScriptRuntime> createPlayerCharacter() { return std::make_unique<PlayerCharacter>(); }
+std::unique_ptr<ScriptRuntime> createPlayerCharacter() { return std::make_unique<PlayerCharacter>(); }

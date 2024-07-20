@@ -37,18 +37,18 @@ private:
   bool onLoad(IArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
-    ar >> named{"rain_frames_atlas", rain_frames_atlas_};
-    ar >> named{"rain_frames", rain_frames_};
-    ar >> named{"rain_sound", rain_sound_};
+    ar >> Field{"rain_frames_atlas", rain_frames_atlas_};
+    ar >> Field{"rain_frames", rain_frames_};
+    ar >> Field{"rain_sound", rain_sound_};
     return true;
   }
 
   bool onSave(OArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
-    ar << named{"rain_frames_atlas", rain_frames_atlas_};
-    ar << named{"rain_frames", rain_frames_};
-    ar << named{"rain_sound", rain_sound_};
+    ar << Field{"rain_frames_atlas", rain_frames_atlas_};
+    ar << Field{"rain_frames", rain_frames_};
+    ar << Field{"rain_sound", rain_sound_};
     return true;
   }
 
@@ -136,4 +136,4 @@ private:
   }
 };
 
-std::unique_ptr<sde::game::ScriptRuntime> createWeather() { return std::make_unique<Weather>(); }
+std::unique_ptr<ScriptRuntime> createWeather() { return std::make_unique<Weather>(); }

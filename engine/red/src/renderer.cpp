@@ -36,24 +36,24 @@ private:
   bool onLoad(IArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
-    ar >> named{"scaling", scaling_};
-    ar >> named{"render_target", render_target_};
-    ar >> named{"sprite_shader", sprite_shader_};
-    ar >> named{"player_text_font", player_text_font_};
-    ar >> named{"player_text_type_set", player_text_type_set_};
-    ar >> named{"player_text_shader", player_text_shader_};
+    ar >> Field{"scaling", scaling_};
+    ar >> Field{"render_target", render_target_};
+    ar >> Field{"sprite_shader", sprite_shader_};
+    ar >> Field{"player_text_font", player_text_font_};
+    ar >> Field{"player_text_type_set", player_text_type_set_};
+    ar >> Field{"player_text_shader", player_text_shader_};
     return true;
   }
 
   bool onSave(OArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
-    ar << named{"scaling", scaling_};
-    ar << named{"render_target", render_target_};
-    ar << named{"sprite_shader", sprite_shader_};
-    ar << named{"player_text_font", player_text_font_};
-    ar << named{"player_text_type_set", player_text_type_set_};
-    ar << named{"player_text_shader", player_text_shader_};
+    ar << Field{"scaling", scaling_};
+    ar << Field{"render_target", render_target_};
+    ar << Field{"sprite_shader", sprite_shader_};
+    ar << Field{"player_text_font", player_text_font_};
+    ar << Field{"player_text_type_set", player_text_type_set_};
+    ar << Field{"player_text_shader", player_text_shader_};
     return true;
   }
 
@@ -185,4 +185,4 @@ private:
   }
 };
 
-std::unique_ptr<sde::game::ScriptRuntime> createRenderer() { return std::make_unique<Renderer>(); }
+std::unique_ptr<ScriptRuntime> createRenderer() { return std::make_unique<Renderer>(); }

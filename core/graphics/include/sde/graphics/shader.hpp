@@ -116,7 +116,7 @@ struct Shader : Resource<Shader>
 
   auto field_list()
   {
-    return std::make_tuple(
+    return FieldList(
       (Field{"path", path}),
       (_Stub{"components", components}),
       (_Stub{"variables", variables}),

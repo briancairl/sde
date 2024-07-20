@@ -26,6 +26,7 @@
 #include "red/player_character.hpp"
 #include "red/renderer.hpp"
 #include "red/weather.hpp"
+#include "red/world.hpp"
 
 
 using namespace sde;
@@ -45,27 +46,27 @@ int main(int argc, char** argv)
 
   game::Assets assets{systems};
 
-  std::vector<sde::game::ScriptRuntime::UPtr> scripts;
-  scripts.push_back(createRenderer());
-  scripts.push_back(createBackgroundMusic());
-  scripts.push_back(createPlayerCharacter());
-  scripts.push_back(createWeather());
-  scripts.push_back(createImGui());
+  std::vector<std::pair<std::string, sde::game::ScriptRuntime::UPtr>> scripts;
+  scripts.emplace_back("imgui", createImGui());
+  scripts.emplace_back("renderer", createRenderer());
+  scripts.emplace_back("bg_music", createBackgroundMusic());
+  scripts.emplace_back("player", createPlayerCharacter());
+  scripts.emplace_back("weather", createWeather());
+  // scripts.emplace_back("world", createWorld());
 
-  if (auto ifs_or_error = serial::file_istream::create("/tmp/game.bin"); ifs_or_error.has_value())
+  if (auto ifs_or_error = serial::file_istream::create("/tmp/assets.bin"); ifs_or_error.has_value())
   {
     serial::binary_iarchive iar{*ifs_or_error};
     iar >> serial::named{"assets", sde::_R(assets)};
-    if (auto ok_or_error = assets.refresh())
+    SDE_ASSERT_OK(assets.refresh());
+  }
+
+  for (auto& [script_name, script] : scripts)
+  {
+    if (auto ifs_or_error = serial::file_istream::create("/tmp/" + script_name + ".bin"); ifs_or_error.has_value())
     {
-      for (auto& script : scripts)
-      {
-        script->load(iar, assets);
-      }
-    }
-    else
-    {
-      SDE_FAIL("failed asset resolution");
+      serial::binary_iarchive iar{*ifs_or_error};
+      script->load(iar, assets);
     }
   }
 
@@ -90,11 +91,11 @@ int main(int argc, char** argv)
         pos.center += state.velocity * dt;
       });
 
-    for (auto& script : scripts)
+    for (auto& [name, script] : scripts)
     {
       if (!script->update(systems, assets, app_state, app_properties))
       {
-        SDE_LOG_ERROR_FMT("script->update(...) failed: %s", script->identity().data());
+        SDE_LOG_ERROR_FMT("[%s]->update(...) failed: %s", name.c_str(), script->identity().data());
         return AppDirective::kClose;
       }
     }
@@ -103,12 +104,17 @@ int main(int argc, char** argv)
 
   SDE_LOG_INFO("done.");
 
-  if (auto ofs_or_error = serial::file_ostream::create("/tmp/game.bin"); ofs_or_error.has_value())
+  if (auto ofs_or_error = serial::file_ostream::create("/tmp/assets.bin"); ofs_or_error.has_value())
   {
     serial::binary_oarchive oar{*ofs_or_error};
     oar << serial::named{"assets", sde::_R(assets)};
-    for (auto& script : scripts)
+  }
+
+  for (auto& [script_name, script] : scripts)
+  {
+    if (auto ofs_or_error = serial::file_ostream::create("/tmp/" + script_name + ".bin"); ofs_or_error.has_value())
     {
+      serial::binary_oarchive oar{*ofs_or_error};
       script->save(oar, assets);
     }
   }

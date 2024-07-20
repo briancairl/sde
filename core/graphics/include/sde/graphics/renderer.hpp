@@ -6,13 +6,12 @@
 #pragma once
 
 // C++ Standard Library
-#include <array>
 #include <cstdint>
 #include <iosfwd>
 #include <string_view>
+#include <vector>
 
 // SDE
-
 #include "sde/expected.hpp"
 #include "sde/geometry.hpp"
 #include "sde/graphics/assets_fwd.hpp"
@@ -80,8 +79,7 @@ struct VertexBufferOptions
  */
 struct Renderer2DOptions
 {
-  static constexpr std::size_t kVetexArrayCount = 4;
-  std::array<VertexBufferOptions, kVetexArrayCount> buffers;
+  std::vector<VertexBufferOptions> buffers = {VertexBufferOptions{}, VertexBufferOptions{}};
 };
 
 struct RenderBackend

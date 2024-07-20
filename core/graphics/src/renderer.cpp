@@ -448,11 +448,10 @@ class OpenGLBackend : public RenderBackend
 public:
   OpenGLBackend(const Renderer2DOptions& options) : va_active_{nullptr}
   {
-    auto va_opt_itr = std::begin(options.buffers);
-    for (auto va_itr = std::begin(va_); va_itr != std::end(va_); ++va_itr, ++va_opt_itr)
+    va_.reserve(options.buffers.size());
+    for (const auto& options : options.buffers)
     {
-      va_itr->emplace(
-        3UL * va_opt_itr->max_triangle_count_per_render_pass, va_opt_itr->mode == VertexBufferMode::kStatic);
+      va_.emplace_back(3UL * options.max_triangle_count_per_render_pass, options.mode == VertexBufferMode::kStatic);
     }
   }
 
@@ -460,7 +459,7 @@ public:
 
   void start(std::size_t active_buffer_index)
   {
-    va_active_ = std::addressof(*va_[active_buffer_index]);
+    va_active_ = std::addressof(va_[active_buffer_index]);
     va_active_->reset();
     va_active_->map();
   }
@@ -556,7 +555,7 @@ public:
 
 private:
   VertexArray* va_active_ = nullptr;
-  std::array<std::optional<VertexArray>, Renderer2DOptions::kVetexArrayCount> va_;
+  std::vector<VertexArray> va_;
 };
 
 std::optional<OpenGLBackend> backend__opengl;

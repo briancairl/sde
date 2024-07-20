@@ -69,4 +69,4 @@ private:
   }
 };
 
-std::unique_ptr<sde::game::ScriptRuntime> createBackgroundMusic() { return std::make_unique<BackgroundMusic>(); }
+std::unique_ptr<ScriptRuntime> createBackgroundMusic() { return std::make_unique<BackgroundMusic>(); }

@@ -6,6 +6,7 @@ cc_library(
     "include/red/player_character.hpp",
     "include/red/renderer.hpp",
     "include/red/weather.hpp",
+    "include/red/world.hpp",
     "include/red/imgui.hpp",
   ],
   srcs=[
@@ -13,6 +14,7 @@ cc_library(
     "src/player_character.cpp",
     "src/renderer.cpp",
     "src/weather.cpp",
+    "src/world.cpp",
     "src/imgui.cpp",
   ],
   strip_include_prefix="include",
