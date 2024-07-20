@@ -34,7 +34,7 @@ private:
     return true;
   }
 
-  bool onInitialize(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     if (!assets.assign(music_, "/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav"_path))
     {
@@ -62,8 +62,7 @@ private:
     return true;
   }
 
-  expected<void, ScriptError>
-  onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  expected<void, ScriptError> onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     return {};
   }

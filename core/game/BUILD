@@ -6,16 +6,19 @@ cc_library(
     "include/sde/game/entity.hpp",
     "include/sde/game/entity_fwd.hpp",
     "include/sde/game/entity_handle.hpp",
+    "include/sde/game/scene.hpp",
     "include/sde/game/script.hpp",
     "include/sde/game/script_fwd.hpp",
     "include/sde/game/script_impl.hpp",
     "include/sde/game/script_runtime.hpp",
+    "include/sde/game/script_runtime_fwd.hpp",
     "include/sde/game/systems.hpp",
     "include/sde/game/systems_fwd.hpp",
   ],
   srcs=[
     "src/assets.cpp",
     "src/entity.cpp",
+    "src/scene.cpp",
     "src/systems.cpp",
   ],
   strip_include_prefix="include",
@@ -24,6 +27,7 @@ cc_library(
     "//core/audio",
     "//core/graphics",
     "@entt//:entt",
+    "@nlohmann//:json",
   ],
   visibility=["//visibility:public"]
 )

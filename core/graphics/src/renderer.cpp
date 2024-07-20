@@ -576,10 +576,13 @@ Mat3f RenderUniforms::getWorldFromViewportMatrix(const Vec2i& viewport_size) con
 
 expected<Renderer2D, RendererError> Renderer2D::create(const Renderer2DOptions& options)
 {
+  SDE_LOG_ERROR("poop");
+
   if (backend__opengl.has_value())
   {
     return make_unexpected(RendererError::kRendererPreviouslyInitialized);
   }
+  SDE_LOG_ERROR("peep");
 
   // Initialize rendering backend
   backend__opengl.emplace(options);
@@ -591,10 +594,13 @@ expected<Renderer2D, RendererError> Renderer2D::create(const Renderer2DOptions& 
 
 Renderer2D::~Renderer2D()
 {
+  SDE_LOG_ERROR_FMT("%p", backend_);
+
   if ((backend_ == nullptr) or (!backend__opengl.has_value()))
   {
     return;
   }
+  SDE_LOG_ERROR("----");
   backend__opengl.reset();
 }
 

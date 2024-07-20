@@ -62,7 +62,7 @@ private:
     return true;
   }
 
-  bool onInitialize(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     if (auto status_or_error = assets.assign(entity_); !status_or_error)
     {
@@ -76,8 +76,7 @@ private:
     return true;
   }
 
-  expected<void, ScriptError>
-  onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  expected<void, ScriptError> onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     return {};
   }

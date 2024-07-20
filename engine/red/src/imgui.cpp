@@ -76,19 +76,12 @@ class ImGuiWrapper final : public ScriptRuntime
 public:
   ImGuiWrapper() : ScriptRuntime{"ImGui"} {}
 
-  ~ImGuiWrapper()
-  {
-    if (imgui_context_ == nullptr)
-    {
-      return;
-    }
-    ImGui::DestroyContext(imgui_context_);
-  }
+  ~ImGuiWrapper() {}
 
 private:
-  ImGuiContext* imgui_context_ = nullptr;
   asset::path imgui_ini_path_ = {};
-  bool imgui_overlay_enabled_ = false;
+  bool imgui_overlay_enabled_ = true;
+  bool imgui_frame_open_ = false;
 
   bool onLoad(IArchive& ar, SharedAssets& assets) override
   {
@@ -107,40 +100,39 @@ private:
     return true;
   }
 
-  bool onInitialize(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     IMGUI_CHECKVERSION();
-
-    if (imgui_context_ = ImGui::CreateContext(); imgui_context_ == nullptr)
-    {
-      return false;
-    }
-
-    if (asset::exists(imgui_ini_path_))
-    {
-      // ImGui::LoadIniSettingsFromDisk(imgui_ini_path_.string().c_str());
-    }
-    else
-    {
-      imgui_ini_path_ = "/tmp/imgui.ini";
-      imgui_overlay_enabled_ = true;
-
-      // Setup style
-      ImGui::StyleColorsDark();
-    }
-
-    ImGui::SetCurrentContext(imgui_context_);
-    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-    ImGui_ImplGlfw_InitForOpenGL(static_cast<GLFWwindow*>(app.window), true);
-    ImGui_ImplOpenGL3_Init(kGLSLVersion);
-
     return true;
   }
 
-  expected<void, ScriptError>
-  onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  expected<void, ScriptError> onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
+    if (assets->contains<ImGuiContext*>())
+    {
+      ImGui::SetCurrentContext(assets->get<ImGuiContext*>());
+    }
+    else
+    {
+      ImGuiContext* imgui_context = ImGui::CreateContext();
+      ImGui::SetCurrentContext(imgui_context);
+      ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+      ImGui::StyleColorsDark();
+      ImGui_ImplGlfw_InitForOpenGL(static_cast<GLFWwindow*>(app.window), true);
+      ImGui_ImplOpenGL3_Init(kGLSLVersion);
+      assets->emplace<ImGuiContext*>(imgui_context);
+    }
+
+    if (imgui_frame_open_)
+    {
+      ImGui::Render();
+      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    }
+    else
+    {
+      imgui_frame_open_ = true;
+    }
+
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -222,9 +214,6 @@ private:
       }
       ImGui::End();
     }
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     return {};
   }
 };

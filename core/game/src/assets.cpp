@@ -1,6 +1,9 @@
 // C++ Standard Library
 #include <ostream>
 
+/// EnTT
+#include <entt/entt.hpp>
+
 // SDE
 #include "sde/game/assets.hpp"
 #include "sde/logging.hpp"
@@ -8,7 +11,7 @@
 namespace sde::game
 {
 
-Assets::Assets([[maybe_unused]] Systems& systems) : entities{registry} {}
+Assets::Assets() : registry{}, entities{registry} {}
 
 expected<void, AssetError> Assets::refresh()
 {

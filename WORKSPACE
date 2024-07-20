@@ -87,13 +87,13 @@ new_git_repository(
   build_file="@//external:tl_expected.BUILD",
 )
 
-# Parachute
+# JSON
 new_git_repository(
-  name="parachute",
-  remote="https://github.com/briancairl/parachute.git",
-  commit="3630d1fcf1b8851dc1cd6fb3114e2e65ebeb4717",
-  shallow_since="1697406458 -0400",
-  build_file="@//external:parachute.BUILD",
+  name="nlohmann",
+  remote="https://github.com/nlohmann/json.git",
+  commit="960b763ecd144f156d05ec61f577b04107290137",
+  shallow_since="1720340537 +0200",
+  build_file="@//external:nlohmann.BUILD",
 )
 
 # GTest/GMock

@@ -1,9 +1,0 @@
-cc_library(
-    name="parachute",
-    hdrs=glob(["include/**/*.hpp"]),
-    srcs=glob(["src/*.cpp"]),
-    copts=["-DPARACHUTE_COMPILED"],
-    strip_include_prefix="include",
-    include_prefix="",
-    visibility=["//visibility:public"],
-)

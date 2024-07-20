@@ -6,7 +6,6 @@
 #pragma once
 
 // C++ Standard Library
-#include <memory>
 #include <string>
 
 // EnTT
@@ -16,6 +15,7 @@
 #include "sde/app_properties.hpp"
 #include "sde/game/script.hpp"
 #include "sde/game/script_fwd.hpp"
+#include "sde/game/script_runtime_fwd.hpp"
 #include "sde/serialization_binary_file_fwd.hpp"
 
 namespace sde::game
@@ -24,7 +24,7 @@ namespace sde::game
 class ScriptRuntime : public Script<ScriptRuntime>
 {
 public:
-  using UPtr = std::unique_ptr<ScriptRuntime>;
+  using UPtr = ScriptRuntimeUPtr;
   using OArchive = serial::binary_ofarchive;
   using IArchive = serial::binary_ifarchive;
 
@@ -34,18 +34,16 @@ public:
 
   virtual bool onSave(OArchive& ar, SharedAssets& assets) = 0;
 
-  virtual bool onInitialize(Systems& systems, Assets& assets, AppState& app_state, const AppProperties& app_props) = 0;
+  virtual bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app_props) = 0;
 
   virtual expected<void, ScriptError>
-  onUpdate(Systems& systems, Assets& assets, AppState& app_state, const AppProperties& app_props) = 0;
+  onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app_props) = 0;
 
-  const std::string& getIdentity() const { return script_name_; }
+  const std::string& type() const { return script_type_name_; }
 
 protected:
-  ScriptRuntime(std::string script_name) : script_name_{std::move(script_name)} {}
-
-private:
-  std::string script_name_;
+  explicit ScriptRuntime(std::string script_type_name) : script_type_name_{std::move(script_type_name)} {}
+  std::string script_type_name_;
 };
 
 }  // namespace sde::game

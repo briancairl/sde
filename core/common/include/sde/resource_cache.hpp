@@ -199,7 +199,7 @@ public:
     return this->derived().reload(handle_to_value_itr->second.value);
   }
 
-  expected<void, error_type> relinquish()
+  [[nodiscard]] expected<void, error_type> relinquish()
   {
     for (auto& [handle, element] : handle_to_value_cache_)
     {
@@ -211,7 +211,7 @@ public:
     return {};
   }
 
-  expected<void, error_type> relinquish(handle_type handle)
+  [[nodiscard]] expected<void, error_type> relinquish(handle_type handle)
   {
     const auto handle_to_value_itr = handle_to_value_cache_.find(handle);
     if (handle_to_value_itr == handle_to_value_cache_.end())

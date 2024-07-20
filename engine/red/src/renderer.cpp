@@ -1,4 +1,5 @@
 // C++ Standard Library
+#include <optional>
 #include <ostream>
 
 // SDE
@@ -11,6 +12,9 @@
 #include "sde/graphics/type_setter.hpp"
 #include "sde/logging.hpp"
 
+// ImGui
+#include <imgui.h>
+
 // RED
 #include "red/components.hpp"
 #include "red/renderer.hpp"
@@ -19,13 +23,70 @@ using namespace sde;
 using namespace sde::game;
 using namespace sde::graphics;
 
+namespace sde::serial
+{
+
+template <typename Archive> struct load<Archive, VertexBufferOptions> : load<Archive, Resource<VertexBufferOptions>>
+{};
+
+template <typename Archive> struct save<Archive, VertexBufferOptions> : save<Archive, Resource<VertexBufferOptions>>
+{};
+
+}  // sde::serial
+
+struct ImGuiFieldFormatter
+{
+  template <typename T> void operator()(std::size_t depth, const BasicField<T>& field)
+  {
+    ImGui::Dummy(ImVec2(depth * 10, 0.0));
+    ImGui::SameLine();
+
+    using U = std::remove_const_t<T>;
+    if constexpr (is_resource_cache_v<T>)
+    {
+      ImGui::Text("%s : ...", field.name);
+      for (const auto& [handle, element] : field.get())
+      {
+        Visit(element, ImGuiFieldFormatter{}, depth + 1);
+      }
+    }
+    if constexpr (std::is_same_v<U, asset::path>)
+    {
+      ImGui::Text("%s : %s", field.name, field->string().c_str());
+    }
+    else if constexpr (std::is_same_v<U, Vec2i>)
+    {
+      ImGui::Text("%s : (%d x %d)", field.name, field->x(), field->y());
+    }
+    else if constexpr (std::is_same_v<U, Hash>)
+    {
+      ImGui::Text("%s : {%lu}", field.name, field->value);
+    }
+    else if constexpr (std::is_enum_v<U>)
+    {
+      ImGui::Text("%s : %d", field.name, static_cast<int>(field.get()));
+    }
+    else if constexpr (std::is_integral_v<U>)
+    {
+      ImGui::Text("%s : %d", field.name, static_cast<int>(field.get()));
+    }
+    else
+    {
+      ImGui::Text("%s : ...", field.name);
+    }
+  }
+};
+
 class Renderer final : public ScriptRuntime
 {
 public:
   Renderer() : ScriptRuntime{"Renderer"} {}
 
 private:
+  std::optional<Renderer2D> renderer_;
+
   float scaling_ = 1.0F;
+  Renderer2DOptions renderer_options_;
   RenderBuffer render_buffer_;
   ShaderHandle sprite_shader_;
   FontHandle player_text_font_;
@@ -37,6 +98,7 @@ private:
   {
     using namespace sde::serial;
     ar >> Field{"scaling", scaling_};
+    ar >> Field{"renderer_options", renderer_options_};
     ar >> Field{"render_target", render_target_};
     ar >> Field{"sprite_shader", sprite_shader_};
     ar >> Field{"player_text_font", player_text_font_};
@@ -49,6 +111,7 @@ private:
   {
     using namespace sde::serial;
     ar << Field{"scaling", scaling_};
+    ar << Field{"renderer_options", renderer_options_};
     ar << Field{"render_target", render_target_};
     ar << Field{"sprite_shader", sprite_shader_};
     ar << Field{"player_text_font", player_text_font_};
@@ -57,7 +120,7 @@ private:
     return true;
   }
 
-  bool onInitialize(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     if (!assets.assign(render_target_))
     {
@@ -90,12 +153,27 @@ private:
     }
 
     render_buffer_.reset();
+
+    if (auto renderer_or_error = Renderer2D::create(renderer_options_); renderer_or_error.has_value())
+    {
+      renderer_.emplace(std::move(renderer_or_error).value());
+    }
+    else
+    {
+      SDE_LOG_ERROR("Failed to create renderer");
+      return false;
+    }
     return true;
   }
 
-  expected<void, ScriptError>
-  onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  expected<void, ScriptError> onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
+    if (auto ok_or_error = onEdit(assets);
+        !ok_or_error.has_value() and (ok_or_error.error() == ScriptError::kCriticalUpdateFailure))
+    {
+      return ok_or_error;
+    }
+
     using namespace sde::graphics;
 
     RenderResources render_resources;
@@ -127,7 +205,7 @@ private:
       [&](const Position& pos) { uniforms.world_from_camera.block<2, 1>(0, 2) = pos.center; });
 
     if (auto render_pass_or_error = RenderPass::create(
-          render_buffer_, systems.renderer, assets.graphics, uniforms, render_resources, app.viewport_size);
+          render_buffer_, *renderer_, assets.graphics, uniforms, render_resources, app.viewport_size);
         render_pass_or_error.has_value())
     {
       render_pass_or_error->clear(Black());
@@ -148,7 +226,7 @@ private:
 
     render_resources.shader = player_text_shader_;
     if (auto render_pass_or_error = RenderPass::create(
-          render_buffer_, systems.renderer, assets.graphics, uniforms, render_resources, app.viewport_size);
+          render_buffer_, *renderer_, assets.graphics, uniforms, render_resources, app.viewport_size);
         render_pass_or_error.has_value())
     {
       TypeSetter type_setter{player_text_type_set_};
@@ -181,6 +259,71 @@ private:
         });
     }
 
+    return {};
+  }
+
+  expected<void, ScriptError> onEdit(SharedAssets& assets)
+  {
+    if (!assets->contains<ImGuiContext*>())
+    {
+      return make_unexpected(ScriptError::kNonCriticalUpdateFailure);
+    }
+
+    static Renderer2DOptions e__renderer_options{renderer_options_};
+
+    ImGui::SetCurrentContext(assets->get<ImGuiContext*>());
+    ImGui::Begin("renderer-options");
+
+    if (renderer_options_ == e__renderer_options)
+    {
+      ImGui::Text("renderer up to date");
+    }
+    else if (ImGui::Button("reset renderer"))
+    {
+      renderer_options_ = e__renderer_options;
+      if (auto renderer_or_error = Renderer2D::create(renderer_options_); renderer_or_error.has_value())
+      {
+        renderer_.reset();
+        renderer_.emplace(std::move(renderer_or_error).value());
+      }
+      else
+      {
+        SDE_LOG_ERROR("Failed to reset renderer");
+        return make_unexpected(ScriptError::kCriticalUpdateFailure);
+      }
+    }
+
+    static int n_buffers = e__renderer_options.buffers.size();
+    if (ImGui::InputInt("n_buffers", &n_buffers, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
+    {
+      n_buffers = std::clamp(n_buffers, 1, 10);
+      e__renderer_options.buffers.resize(n_buffers);
+    }
+
+    for (std::size_t i = 0; i < e__renderer_options.buffers.size(); ++i)
+    {
+      auto& options = e__renderer_options.buffers[i];
+      ImGui::PushID(i);
+      ImGui::Text("buffer[%lu]", i);
+      {
+        ImGui::Dummy(ImVec2{5, 1});
+        ImGui::SameLine();
+        int max_triangle_count_per_render_pass = options.max_triangle_count_per_render_pass;
+        ImGui::InputInt(
+          "max_triangle_count", &max_triangle_count_per_render_pass, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
+        options.max_triangle_count_per_render_pass = max_triangle_count_per_render_pass;
+      }
+      {
+        ImGui::Dummy(ImVec2{5, 1});
+        ImGui::SameLine();
+        bool is_dynamic = options.mode == VertexBufferMode::kDynamic;
+        ImGui::Checkbox("dynamic", &is_dynamic);
+        options.mode = (is_dynamic) ? VertexBufferMode::kDynamic : VertexBufferMode::kStatic;
+      }
+      ImGui::PopID();
+    }
+
+    ImGui::End();
     return {};
   }
 };

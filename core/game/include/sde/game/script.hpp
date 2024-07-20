@@ -42,8 +42,6 @@ public:
   Script(Script&& other) = default;
   Script& operator=(Script&& other) = default;
 
-  std::string_view identity() const { return this->derived().getIdentity(); }
-
   void reset() { t_init_.reset(); }
 
   template <typename Archive> expected<void, ScriptError> load(Archive& ar, SharedAssets& assets)
@@ -65,14 +63,13 @@ public:
     return make_unexpected(ScriptError::kSaveFailed);
   }
 
-  expected<void, ScriptError>
-  update(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app_props)
+  expected<void, ScriptError> update(SharedAssets& assets, AppState& app_state, const AppProperties& app_props)
   {
     if (t_init_.has_value())
     {
-      return this->derived().onUpdate(systems, assets, app_state, app_props);
+      return this->derived().onUpdate(assets, app_state, app_props);
     }
-    else if (this->derived().onInitialize(systems, assets, app_state, app_props))
+    else if (this->derived().onInitialize(assets, app_state, app_props))
     {
       t_init_ = app_props.time;
       return {};

@@ -48,8 +48,10 @@ expected<void, AssetError> Assets::refresh()
     SDE_LOG_DEBUG("FailedRenderTargetLoading");
     return make_unexpected(AssetError::kFailedRenderTargetLoading);
   }
-  images.relinquish();
   return {};
 }
+
+void Assets::strip() { SDE_ASSERT_OK(images.relinquish()); }
+
 
 }  // namespace sde::graphics
