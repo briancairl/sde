@@ -34,49 +34,6 @@ template <typename Archive> struct save<Archive, VertexBufferOptions> : save<Arc
 
 }  // sde::serial
 
-struct ImGuiFieldFormatter
-{
-  template <typename T> void operator()(std::size_t depth, const BasicField<T>& field)
-  {
-    ImGui::Dummy(ImVec2(depth * 10, 0.0));
-    ImGui::SameLine();
-
-    using U = std::remove_const_t<T>;
-    if constexpr (is_resource_cache_v<T>)
-    {
-      ImGui::Text("%s : ...", field.name);
-      for (const auto& [handle, element] : field.get())
-      {
-        Visit(element, ImGuiFieldFormatter{}, depth + 1);
-      }
-    }
-    if constexpr (std::is_same_v<U, asset::path>)
-    {
-      ImGui::Text("%s : %s", field.name, field->string().c_str());
-    }
-    else if constexpr (std::is_same_v<U, Vec2i>)
-    {
-      ImGui::Text("%s : (%d x %d)", field.name, field->x(), field->y());
-    }
-    else if constexpr (std::is_same_v<U, Hash>)
-    {
-      ImGui::Text("%s : {%lu}", field.name, field->value);
-    }
-    else if constexpr (std::is_enum_v<U>)
-    {
-      ImGui::Text("%s : %d", field.name, static_cast<int>(field.get()));
-    }
-    else if constexpr (std::is_integral_v<U>)
-    {
-      ImGui::Text("%s : %d", field.name, static_cast<int>(field.get()));
-    }
-    else
-    {
-      ImGui::Text("%s : ...", field.name);
-    }
-  }
-};
-
 class Renderer final : public ScriptRuntime
 {
 public:
@@ -269,60 +226,67 @@ private:
       return make_unexpected(ScriptError::kNonCriticalUpdateFailure);
     }
 
-    static Renderer2DOptions e__renderer_options{renderer_options_};
+    static Renderer2DOptions s__renderer_options{renderer_options_};
 
     ImGui::SetCurrentContext(assets->get<ImGuiContext*>());
-    ImGui::Begin("renderer-options");
-
-    if (renderer_options_ == e__renderer_options)
+    ImGui::Begin("renderer");
     {
-      ImGui::Text("renderer up to date");
-    }
-    else if (ImGui::Button("reset renderer"))
-    {
-      renderer_options_ = e__renderer_options;
-      if (auto renderer_or_error = Renderer2D::create(renderer_options_); renderer_or_error.has_value())
+      ImGui::BeginChild("reset", ImVec2{0, 40}, true);
       {
-        renderer_.reset();
-        renderer_.emplace(std::move(renderer_or_error).value());
+        if (renderer_options_ == s__renderer_options)
+        {
+          ImGui::Text("renderer up to date");
+        }
+        else if (ImGui::Button("restart renderer with settings"))
+        {
+          renderer_options_ = s__renderer_options;
+          renderer_.reset();
+          if (auto renderer_or_error = Renderer2D::create(renderer_options_); renderer_or_error.has_value())
+          {
+            renderer_.emplace(std::move(renderer_or_error).value());
+          }
+          else
+          {
+            SDE_LOG_ERROR("Failed to reset renderer");
+            return make_unexpected(ScriptError::kCriticalUpdateFailure);
+          }
+        }
       }
-      else
-      {
-        SDE_LOG_ERROR("Failed to reset renderer");
-        return make_unexpected(ScriptError::kCriticalUpdateFailure);
-      }
-    }
+      ImGui::EndChild();
 
-    static int n_buffers = e__renderer_options.buffers.size();
-    if (ImGui::InputInt("n_buffers", &n_buffers, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
-    {
-      n_buffers = std::clamp(n_buffers, 1, 10);
-      e__renderer_options.buffers.resize(n_buffers);
-    }
-
-    for (std::size_t i = 0; i < e__renderer_options.buffers.size(); ++i)
-    {
-      auto& options = e__renderer_options.buffers[i];
-      ImGui::PushID(i);
-      ImGui::Text("buffer[%lu]", i);
       {
-        ImGui::Dummy(ImVec2{5, 1});
-        ImGui::SameLine();
-        int max_triangle_count_per_render_pass = options.max_triangle_count_per_render_pass;
-        ImGui::InputInt(
-          "max_triangle_count", &max_triangle_count_per_render_pass, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
-        options.max_triangle_count_per_render_pass = max_triangle_count_per_render_pass;
+        static int n_buffers = s__renderer_options.buffers.size();
+        if (ImGui::InputInt("n_buffers", &n_buffers, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+          n_buffers = std::clamp(n_buffers, 1, 10);
+          s__renderer_options.buffers.resize(n_buffers);
+        }
       }
-      {
-        ImGui::Dummy(ImVec2{5, 1});
-        ImGui::SameLine();
-        bool is_dynamic = options.mode == VertexBufferMode::kDynamic;
-        ImGui::Checkbox("dynamic", &is_dynamic);
-        options.mode = (is_dynamic) ? VertexBufferMode::kDynamic : VertexBufferMode::kStatic;
-      }
-      ImGui::PopID();
-    }
 
+      ImGui::BeginChild("buffers", ImVec2{0, 0}, true);
+      {
+        for (std::size_t i = 0; i < s__renderer_options.buffers.size(); ++i)
+        {
+          auto& options = s__renderer_options.buffers[i];
+          ImGui::PushID(i);
+          ImGui::Text("buffer[%lu]", i);
+          {
+            int max_triangle_count_per_render_pass = options.max_triangle_count_per_render_pass;
+            ImGui::InputInt(
+              "max_triangle_count", &max_triangle_count_per_render_pass, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
+            options.max_triangle_count_per_render_pass = max_triangle_count_per_render_pass;
+          }
+          {
+            bool is_dynamic = options.mode == VertexBufferMode::kDynamic;
+            ImGui::Checkbox("dynamic", &is_dynamic);
+            options.mode = (is_dynamic) ? VertexBufferMode::kDynamic : VertexBufferMode::kStatic;
+          }
+          ImGui::PopID();
+          ImGui::Separator();
+        }
+      }
+      ImGui::EndChild();
+    }
     ImGui::End();
     return {};
   }
