@@ -221,10 +221,6 @@ public:
     return this->derived().unload(handle_to_value_itr->second.value);
   }
 
-  [[nodiscard]] ResourceCache& fundemental() { return *this; }
-
-  [[nodiscard]] const ResourceCache& fundemental() const { return *this; }
-
   ResourceCache() = default;
   ResourceCache(ResourceCache&&) = default;
   ResourceCache& operator=(ResourceCache&&) = default;

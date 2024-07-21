@@ -16,7 +16,7 @@ TEST(ResourceHandleIO, ResourceHandle)
   if (auto ofs_or_error = file_ostream::create("ResourceHandle.bin"); ofs_or_error.has_value())
   {
     binary_oarchive oar{*ofs_or_error};
-    ASSERT_NO_THROW((oar << named{"handle", target_value.fundemental()}));
+    ASSERT_NO_THROW((oar << named{"handle", target_value}));
   }
   else
   {
@@ -27,7 +27,7 @@ TEST(ResourceHandleIO, ResourceHandle)
   {
     binary_iarchive iar{*ifs_or_error};
     ResourceHandle<std::size_t> read_value;
-    ASSERT_NO_THROW((iar >> named{"handle", read_value.fundemental()}));
+    ASSERT_NO_THROW((iar >> named{"handle", read_value}));
 
     ASSERT_EQ(target_value, read_value);
   }
