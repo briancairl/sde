@@ -1,12 +1,12 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file player.hpp
+ * @file mixer.hpp
  */
 #pragma once
 
 // C++ Standard Library
-#include <array>
+#include <string>
 #include <vector>
 
 // SDE
@@ -14,6 +14,7 @@
 #include "sde/audio/typedef.hpp"
 #include "sde/expected.hpp"
 #include "sde/geometry.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_wrapper.hpp"
 #include "sde/view.hpp"
 
@@ -46,7 +47,7 @@ struct QueuedSoundDeleter
   void operator()(buffer_handle_t& id) const { id = 0; }
 };
 
-struct TrackOptions
+struct TrackOptions : Resource<TrackOptions>
 {
   Vec3f position = Vec3f::Zero();
   Vec3f velocity = Vec3f::Zero();
@@ -55,6 +56,18 @@ struct TrackOptions
   float pitch = 1.F;
   float cutoff_distance = 0.0F;
   bool looped = false;
+
+  auto field_list()
+  {
+    return FieldList(
+      Field{"position", position},
+      Field{"velocity", velocity},
+      Field{"orientation", orientation},
+      Field{"volume", volume},
+      Field{"pitch", pitch},
+      Field{"cutoff_distance", cutoff_distance},
+      Field{"looped", looped});
+  }
 };
 
 class TrackPlayback;
@@ -108,18 +121,30 @@ enum class ListenerError
   kBackendTrackCreationFailure,
 };
 
-struct ListenerState
+struct ListenerState : Resource<ListenerState>
 {
   float gain = 0.5F;
   Vec3f position = Vec3f::Zero();
   Vec3f velocity = Vec3f::Zero();
   Vec3f orientation_at = Vec3f::UnitX();
   Vec3f orientation_up = Vec3f::UnitZ();
+
+  auto field_list()
+  {
+    return FieldList(
+      Field{"gain", gain},
+      Field{"position", position},
+      Field{"velocity", velocity},
+      Field{"orientation_at", orientation_at},
+      Field{"orientation_up", orientation_up});
+  }
 };
 
-struct ListenerOptions
+struct ListenerOptions : Resource<ListenerState>
 {
   std::size_t track_count = 16;
+
+  auto field_list() { return FieldList(Field{"track_count", track_count}); }
 };
 
 class ListenerTarget;
@@ -187,10 +212,17 @@ private:
   Listener* l_ = nullptr;
 };
 
-struct MixerOptions
+struct MixerOptions : Resource<MixerOptions>
 {
-  const char* device_name = nullptr;
-  std::vector<ListenerOptions> listener_options = {ListenerOptions{2}, ListenerOptions{16}};
+  std::string device_name = {};
+  std::vector<ListenerOptions> listener_options = {
+    ListenerOptions{.track_count = 2},
+    ListenerOptions{.track_count = 16}};
+
+  auto field_list()
+  {
+    return FieldList(_Stub{"device_name", device_name}, Field{"listener_options", listener_options});
+  }
 };
 
 enum class MixerError
