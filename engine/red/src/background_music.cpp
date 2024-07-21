@@ -26,7 +26,7 @@ private:
     return true;
   }
 
-  bool onSave(OArchive& ar, SharedAssets& assets) override
+  bool onSave(OArchive& ar, const SharedAssets& assets) const override
   {
     using namespace sde::serial;
     ar << Field{"music", music_};

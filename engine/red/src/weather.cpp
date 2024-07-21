@@ -43,7 +43,7 @@ private:
     return true;
   }
 
-  bool onSave(OArchive& ar, SharedAssets& assets) override
+  bool onSave(OArchive& ar, const SharedAssets& assets) const override
   {
     using namespace sde::serial;
     ar << Field{"rain_frames_atlas", rain_frames_atlas_};

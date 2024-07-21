@@ -11,12 +11,11 @@
 // SDE
 #include "sde/crtp.hpp"
 #include "sde/hash.hpp"
-#include "sde/resource_tag.hpp"
 
 namespace sde
 {
 
-template <typename T> struct BasicField : resource_tag
+template <typename T> struct BasicField
 {
   static_assert(!std::is_reference_v<T> and !std::is_pointer_v<T>);
 
@@ -36,6 +35,11 @@ template <typename T> struct BasicField : resource_tag
 
   constexpr BasicField(const char* _name, T* _value) : name{_name}, value{_value} {}
 };
+
+template <typename T> constexpr Hash Version(const BasicField<T>& field)
+{
+  return ComputeHash(std::string_view{field.name}) + ComputeTypeHash<T>();
+}
 
 template <typename L, typename R> constexpr bool operator==(const BasicField<L>& lhs, const BasicField<R>& rhs)
 {
@@ -70,11 +74,11 @@ template <typename... FieldTs> auto to_const(const std::tuple<FieldTs...>& field
   return std::apply([](auto&... field) { return std::make_tuple(to_const(field)...); }, fields);
 }
 
-template <typename ResourceT> struct Resource : crtp_base<Resource<ResourceT>>, resource_tag
+template <typename ResourceT> struct Resource : crtp_base<Resource<ResourceT>>
 {
-  constexpr auto fields() { return this->derived().field_list(); }
+  constexpr decltype(auto) fields() { return this->derived().field_list(); }
 
-  constexpr auto fields() const { return to_const(const_cast<Resource*>(this)->derived().field_list()); }
+  constexpr decltype(auto) fields() const { return to_const(const_cast<Resource*>(this)->derived().field_list()); }
 
   constexpr auto values()
   {
@@ -129,11 +133,16 @@ template <typename T> struct is_resource : std::is_base_of<Resource<T>, T>
 
 template <typename T> constexpr bool is_resource_v = is_resource<std::remove_const_t<T>>::value;
 
+template <typename T> Hash Version(const Resource<T>& rsc)
+{
+  return std::apply([](const auto&... fields) { return (Version(fields) + ...); }, rsc.fields());
+}
+
 struct ResourceHasher
 {
   template <typename ResourceT> auto operator()(const Resource<ResourceT>& rsc) const
   {
-    return std::apply([](const auto&... fields) { return HashMany(fields...); }, rsc.fields());
+    return std::apply([](const auto&... fields) { return ComputeHash(fields...); }, rsc.fields());
   }
 };
 
@@ -174,6 +183,17 @@ std::size_t Visit(const Resource<ResourceT>& resource, VisitorT visitor, std::si
 {
   return std::apply(
     [&](const auto&... fields) { return ((Visit(fields, visitor, depth), 1UL) + ...); }, resource.fields());
+}
+
+template <typename ResourceT, typename VisitorT>
+bool IterateUntil(const Resource<ResourceT>& resource, VisitorT visitor)
+{
+  return std::apply([&](const auto&... fields) { return (visitor(fields) and ...); }, resource.fields());
+}
+
+template <typename ResourceT, typename VisitorT> bool IterateUntil(Resource<ResourceT>& resource, VisitorT visitor)
+{
+  return std::apply([&](auto&&... fields) { return (visitor(fields) and ...); }, resource.fields());
 }
 
 template <typename ResourceT> auto& _R(Resource<ResourceT>& resource) { return resource; }

@@ -38,6 +38,10 @@ constexpr bool operator==(Hash lhs, Hash rhs) { return lhs.value == rhs.value; }
 
 constexpr bool operator!=(Hash lhs, Hash rhs) { return lhs.value != rhs.value; }
 
+constexpr bool operator==(Hash lhs, std::size_t rhs_value) { return lhs.value == rhs_value; }
+
+constexpr bool operator!=(Hash lhs, std::size_t rhs_value) { return lhs.value != rhs_value; }
+
 template <typename T> struct Hasher
 {
   constexpr Hash operator()(const T& v) const { return {std::hash<T>{}(v)}; }
@@ -46,11 +50,21 @@ template <typename T> struct Hasher
 
 template <typename T> using hashable_t = std::remove_const_t<std::remove_reference_t<T>>;
 
-constexpr Hash HashMany() { return {}; }
-
-template <typename FirstT, typename... OtherTs> Hash HashMany(const FirstT& first, OtherTs&&... others)
+template <typename T> constexpr std::size_t ComputeTypeHashValue()
 {
-  return Hasher<FirstT>{}(first) + HashMany(others...);
+  return std::hash<std::string_view>{}(std::string_view{__PRETTY_FUNCTION__});
+}
+
+template <typename T> constexpr Hash ComputeTypeHash()
+{
+  return {ComputeTypeHashValue<std::remove_reference_t<std::remove_const_t<T>>>()};
+}
+
+constexpr Hash ComputeHash() { return {}; }
+
+template <typename FirstT, typename... OtherTs> constexpr Hash ComputeHash(const FirstT& first, OtherTs&&... others)
+{
+  return Hasher<FirstT>{}(first) + ComputeHash(others...);
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Hash& hash) { return os << "{ hash: " << hash.value << " }"; }

@@ -6,10 +6,14 @@
 #pragma once
 
 // C++ Standard Library
+#include <functional>
 #include <string>
 
 // EnTT
 #include <entt/fwd.hpp>
+
+// JSON
+#include <nlohmann/json_fwd.hpp>
 
 // SDE
 #include "sde/app_properties.hpp"
@@ -32,7 +36,7 @@ public:
 
   virtual bool onLoad(IArchive& ar, SharedAssets& assets) = 0;
 
-  virtual bool onSave(OArchive& ar, SharedAssets& assets) = 0;
+  virtual bool onSave(OArchive& ar, const SharedAssets& assets) const = 0;
 
   virtual bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app_props) = 0;
 
@@ -44,6 +48,13 @@ public:
 protected:
   explicit ScriptRuntime(std::string script_type_name) : script_type_name_{std::move(script_type_name)} {}
   std::string script_type_name_;
+};
+
+struct ScriptRuntimeLoader
+{
+  static void
+  add(const std::string& script_name, std::function<ScriptRuntimeUPtr(const nlohmann::json&)> script_loader);
+  static ScriptRuntimeUPtr load(const std::string& script_name, const nlohmann::json& script_loader_manifest);
 };
 
 }  // namespace sde::game

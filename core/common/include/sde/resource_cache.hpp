@@ -16,7 +16,6 @@
 #include "sde/hash.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_handle.hpp"
-#include "sde/resource_tag.hpp"
 
 namespace sde
 {
@@ -31,8 +30,7 @@ enum class ResourceStatus
   kExisted
 };
 
-template <typename ResourceCacheT>
-class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>, public resource_tag
+template <typename ResourceCacheT> class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>
 {
 public:
   using type_info = ResourceCacheTypes<ResourceCacheT>;
@@ -100,7 +98,7 @@ public:
       return create_at_handle(handle, std::forward<CreateArgTs>(args)...);
     }
 
-    const auto current_version = HashMany(args...);
+    const auto current_version = ComputeHash(args...);
 
     if (current_version == current_itr->second.version)
     {
@@ -229,7 +227,7 @@ private:
   template <typename... CreateArgTs>
   [[nodiscard]] expected<element_ref, error_type> create_at_handle(handle_type handle, CreateArgTs&&... args)
   {
-    const auto current_version = HashMany(args...);
+    const auto current_version = ComputeHash(args...);
 
     // Create a new element
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
@@ -256,7 +254,7 @@ private:
   template <typename Iterator, typename... CreateArgTs>
   [[nodiscard]] expected<element_ref, error_type> replace_at_position(Iterator itr, CreateArgTs&&... args)
   {
-    const auto current_version = HashMany(args...);
+    const auto current_version = ComputeHash(args...);
 
     // Create a new element
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);

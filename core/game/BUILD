@@ -19,6 +19,7 @@ cc_library(
     "src/assets.cpp",
     "src/entity.cpp",
     "src/scene.cpp",
+    "src/script_runtime.cpp",
     "src/systems.cpp",
   ],
   strip_include_prefix="include",

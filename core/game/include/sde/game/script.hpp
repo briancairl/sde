@@ -18,6 +18,7 @@
 #include "sde/expected.hpp"
 #include "sde/game/assets_fwd.hpp"
 #include "sde/game/systems_fwd.hpp"
+#include "sde/hash.hpp"
 #include "sde/time.hpp"
 
 namespace sde::game
@@ -44,6 +45,8 @@ public:
 
   void reset() { t_init_.reset(); }
 
+  Hash version() { return Hash{}; }
+
   template <typename Archive> expected<void, ScriptError> load(Archive& ar, SharedAssets& assets)
   {
     if (not_loaded_ and this->derived().onLoad(ar, assets))
@@ -54,7 +57,7 @@ public:
     return make_unexpected(ScriptError::kLoadFailed);
   }
 
-  template <typename Archive> expected<void, ScriptError> save(Archive& ar, SharedAssets& assets)
+  template <typename Archive> expected<void, ScriptError> save(Archive& ar, const SharedAssets& assets) const
   {
     if (this->derived().onSave(ar, assets))
     {

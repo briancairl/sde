@@ -32,6 +32,15 @@ struct ScriptData : public Resource<ScriptData>
   auto field_list() { return FieldList(Field{"name", name}, _Stub{"script", script}); }
 };
 
+enum class SceneError
+{
+  kPathInvalid,
+  kPathMissingFiles,
+  kPathFailedToCreate,
+  kFailedToSave,
+  kFailedToLoad,
+};
+
 /**
  * @brief All active game data
  */
@@ -40,9 +49,9 @@ class Scene : public Resource<Scene>
   friend fundemental_type;
 
 public:
-  void save(const asset::path& path) const;
+  expected<void, SceneError> save(const asset::path& path) const;
 
-  void load(const asset::path& path);
+  expected<void, SceneError> load(const asset::path& path);
 
   void addScript(std::string name, ScriptRuntimeUPtr script);
 

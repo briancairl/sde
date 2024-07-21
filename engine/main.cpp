@@ -1,23 +1,15 @@
 // C++ Standard Library
 #include <cmath>
 #include <ostream>
-#include <vector>
 
 // SDE
 #include "sde/app.hpp"
-#include "sde/audio/assets.hpp"
-#include "sde/audio/mixer.hpp"
-#include "sde/game/assets.hpp"
-#include "sde/game/script.hpp"
-#include "sde/game/systems.hpp"
-#include "sde/geometry_io.hpp"
+#include "sde/game/scene.hpp"
 #include "sde/logging.hpp"
-#include "sde/resource_cache_io.hpp"
-#include "sde/resource_io.hpp"
-#include "sde/serial/std/filesystem.hpp"
-#include "sde/serial/std/vector.hpp"
-#include "sde/serialization_binary_file.hpp"
 // #include "sde/view.hpp"
+
+// JSON
+#include <nlohmann/json.hpp>
 
 // RED
 //#include "red/background_music.hpp"
@@ -33,22 +25,24 @@ using namespace sde;
 
 int main(int argc, char** argv)
 {
-  using namespace sde::audio;
-  using namespace sde::graphics;
+  game::ScriptRuntimeLoader::add("renderer", [](const auto& manifest) { return createRenderer(); });
+  game::ScriptRuntimeLoader::add("imgui", [](const auto& manifest) { return createImGui(); });
 
   SDE_LOG_INFO("starting...");
-
 
   auto app_or_error = App::create({.initial_size = {1000, 500}});
   SDE_ASSERT_TRUE(app_or_error.has_value());
 
   // game::Systems systems{game::Systems::create().value()};
 
-  game::Assets assets;
+  game::Scene scene;
 
-  std::vector<std::pair<std::string, sde::game::ScriptRuntime::UPtr>> scripts;
-  scripts.emplace_back("renderer", createRenderer());
-  scripts.emplace_back("imgui", createImGui());
+  if (!scene.load("/tmp/test"))
+  {
+    scene.addScript("renderer", game::ScriptRuntimeLoader::load("renderer", {}));
+    scene.addScript("imgui", game::ScriptRuntimeLoader::load("imgui", {}));
+  }
+
   // scripts.emplace_back("bg_music", createBackgroundMusic());
   // scripts.emplace_back("player", createPlayerCharacter());
   // scripts.emplace_back("weather", createWeather());
@@ -91,18 +85,17 @@ int main(int argc, char** argv)
     //     pos.center += state.velocity * dt;
     //   });
 
-    for (auto& [name, script] : scripts)
+    if (scene.tick(app_state, app_properties))
     {
-      if (!script->update(assets, app_state, app_properties))
-      {
-        SDE_LOG_ERROR_FMT("[%s]->update(...) failed", name.c_str());
-        return AppDirective::kClose;
-      }
+      return AppDirective::kContinue;
     }
-    return AppDirective::kContinue;
+    return AppDirective::kClose;
   });
 
   SDE_LOG_INFO("done.");
+
+
+  SDE_ASSERT_OK(scene.save("/tmp/test"));
 
   // if (auto ofs_or_error = serial::file_ostream::create("/tmp/assets.bin"); ofs_or_error.has_value())
   // {

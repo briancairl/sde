@@ -13,12 +13,11 @@
 // SDE
 #include "sde/crtp.hpp"
 #include "sde/hash.hpp"
-#include "sde/resource_tag.hpp"
 
 namespace sde
 {
 
-template <typename T> struct ResourceHandle : crtp_base<ResourceHandle<T>>, resource_tag
+template <typename T> struct ResourceHandle : crtp_base<ResourceHandle<T>>
 {
   friend class fundemental_type;
 

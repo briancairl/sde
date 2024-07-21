@@ -100,6 +100,6 @@ TEST(Resource, NestedHash)
 TEST(Resource, MultiHash)
 {
   NestedResource nested{.a = {.a = 1.F, .b = 2}, .b = 2};
-  const auto h = HashMany(nested, nested, nested.a);
+  const auto h = ComputeHash(nested, nested, nested.a);
   EXPECT_EQ(h, Hash{153977938277603241UL}) << nested;
 }
