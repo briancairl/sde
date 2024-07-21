@@ -221,7 +221,7 @@ struct MixerOptions : Resource<MixerOptions>
 
   auto field_list()
   {
-    return FieldList(_Stub{"device_name", device_name}, Field{"listener_options", listener_options});
+    return FieldList(Field{"device_name", device_name}, Field{"listener_options", listener_options});
   }
 };
 
