@@ -106,11 +106,13 @@ bool saveWithManifest(
   const Assets& assets)
 {
   using namespace sde::serial;
+  auto arr = nlohmann::json::array();
   for (const auto& [script_name, script_ptr] : scripts)
   {
     const auto script_data_path = parent_path / std::string{format("%s.bin", script_name.c_str())};
 
-    manifest[script_name] = {{"data", script_data_path.string()}, {"version", script_ptr->version().value}};
+    nlohmann::json m = {
+      {"type", script_name}, {"data", script_data_path.string()}, {"version", script_ptr->version().value}};
 
     if (auto ofs_or_error = file_ostream::create(script_data_path); ofs_or_error.has_value())
     {
@@ -122,8 +124,11 @@ bool saveWithManifest(
       }
       SDE_LOG_DEBUG_FMT("saved: %s(%p)", script_name.c_str(), script_ptr.get());
     }
+
+    arr.push_back(std::move(m));
     SDE_LOG_DEBUG_FMT("failed to open: %s", script_data_path.string().c_str());
   }
+  manifest = std::move(arr);
   return true;
 }
 
@@ -134,8 +139,15 @@ bool loadWithManifest(
   Assets& assets)
 {
   using namespace sde::serial;
-  for (const auto& [script_name, script_element_json] : manifest.items())
+  for (const auto& script_element_json : manifest)
   {
+    const auto type_json = script_element_json["type"];
+    if (type_json.is_null())
+    {
+      SDE_LOG_DEBUG("field missing 'data' entry");
+      return false;
+    }
+
     const auto data_json = script_element_json["data"];
     if (data_json.is_null())
     {
@@ -150,28 +162,28 @@ bool loadWithManifest(
       return false;
     }
 
-    const auto assets_data_path = parent_path / std::string{format("%s.bin", script_name.c_str())};
+    const auto assets_data_path = parent_path / static_cast<std::string>(data_json);
+    const std::string script_type{type_json};
 
-    auto script_ptr = game::ScriptRuntimeLoader::load(script_name, script_element_json);
+    auto script_ptr = game::ScriptRuntimeLoader::load(script_type, script_element_json);
 
     if (const std::size_t previous_version = version_json; script_ptr->version() != previous_version)
     {
       SDE_LOG_DEBUG_FMT(
-        "script[%s] 'version' mismatch %lu vs %lu", script_name.c_str(), script_ptr->version().value, previous_version);
+        "script[%s] 'version' mismatch %lu vs %lu", script_type.c_str(), script_ptr->version().value, previous_version);
       return false;
     }
 
-
     if (auto ifs_or_error = file_istream::create(assets_data_path); ifs_or_error.has_value())
     {
-      SDE_LOG_DEBUG_FMT("loading: %s", script_name.c_str());
+      SDE_LOG_DEBUG_FMT("loading: %s", script_type.c_str());
       binary_iarchive iar{*ifs_or_error};
       if (auto ok_or_error = script_ptr->load(iar, assets); !ok_or_error.has_value())
       {
         return false;
       }
-      SDE_LOG_DEBUG_FMT("loaded: %s", script_name.c_str());
-      scripts.emplace_back(std::string{script_name}, std::move(script_ptr));
+      SDE_LOG_DEBUG_FMT("loaded: %s", script_type.c_str());
+      scripts.emplace_back(std::string{script_type}, std::move(script_ptr));
     }
   }
   return true;
@@ -268,6 +280,13 @@ expected<void, SceneError> Scene::load(const asset::path& path)
     return make_unexpected(SceneError::kFailedToLoad);
   }
 
+  // Reload assets
+  if (auto ok_or_error = assets_.refresh(); !ok_or_error.has_value())
+  {
+    SDE_LOG_DEBUG("SceneError::kFailedToLoad");
+    return make_unexpected(SceneError::kFailedToLoad);
+  }
+
   const auto script_manifest = scene_manifest["scripts"];
   if (script_manifest.is_null())
   {
@@ -302,6 +321,10 @@ void Scene::removeScript(const std::string& name)
 
 bool Scene::tick(AppState& state, const AppProperties& properties)
 {
+  if (scripts_.empty())
+  {
+    return false;
+  }
   for (auto& [name, script] : scripts_)
   {
     if (!script->update(assets_, state, properties))
