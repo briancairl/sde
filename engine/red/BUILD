@@ -7,7 +7,10 @@ cc_library(
     "include/red/renderer.hpp",
     #"include/red/weather.hpp",
     #"include/red/world.hpp",
-    "include/red/imgui.hpp",
+    "include/red/imgui_start.hpp",
+    "include/red/imgui_end.hpp",
+    "include/red/tile_set_editor.hpp",
+    "include/red/texture_viewer.hpp",
   ],
   srcs=[
     #"src/background_music.cpp",
@@ -15,7 +18,10 @@ cc_library(
     "src/renderer.cpp",
     #"src/weather.cpp",
     #"src/world.cpp",
-    "src/imgui.cpp",
+    "src/imgui_start.cpp",
+    "src/imgui_end.cpp",
+    "src/tile_set_editor.cpp",
+    "src/texture_viewer.cpp",
   ],
   strip_include_prefix="include",
   deps=[

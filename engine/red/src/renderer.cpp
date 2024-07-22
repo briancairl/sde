@@ -125,11 +125,11 @@ private:
 
   expected<void, ScriptError> onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
-    if (auto ok_or_error = onEdit(assets);
-        !ok_or_error.has_value() and (ok_or_error.error() == ScriptError::kCriticalUpdateFailure))
-    {
-      return ok_or_error;
-    }
+    // if (auto ok_or_error = onEdit(assets);
+    //     !ok_or_error.has_value() and (ok_or_error.error() == ScriptError::kCriticalUpdateFailure))
+    // {
+    //   return ok_or_error;
+    // }
 
     using namespace sde::graphics;
 

@@ -96,6 +96,8 @@ template <typename ResourceT> struct Resource : crtp_base<Resource<ResourceT>>
   {
     return std::apply([](auto... field) { return std::make_tuple(field.name...); }, this->fields());
   }
+
+  constexpr auto field_count() const { return std::tuple_size_v<decltype(fields())>; }
 };
 
 template <typename ResourceT> bool operator==(const Resource<ResourceT>& lhs, const Resource<ResourceT>& rhs)
@@ -165,35 +167,49 @@ template <typename... FieldTs> auto FieldList(FieldTs&&... fields)
   return std::make_tuple(std::forward<FieldTs>(fields)...);
 }
 
-template <typename T, typename VisitorT> void Visit(const BasicField<T>& field, VisitorT visitor, std::size_t depth)
+template <typename T, typename VisitorT> bool Visit(const BasicField<T>& field, VisitorT visitor, std::size_t depth)
 {
   if constexpr (is_resource_v<T>)
   {
-    visitor(depth, field);
-    Visit(field.get(), visitor, depth + 1);
+    if (visitor(depth, field))
+    {
+      return Visit(field.get(), visitor, depth + 1);
+    }
   }
   else
   {
-    visitor(depth, field);
+    return visitor(depth, field);
   }
+  return false;
 }
 
 template <typename ResourceT, typename VisitorT>
-std::size_t Visit(const Resource<ResourceT>& resource, VisitorT visitor, std::size_t depth = 0UL)
+bool Visit(const Resource<ResourceT>& resource, VisitorT visitor, std::size_t depth = 0UL)
 {
   return std::apply(
-    [&](const auto&... fields) { return ((Visit(fields, visitor, depth), 1UL) + ...); }, resource.fields());
+    [&](const auto&... fields) -> bool { return (Visit(fields, visitor, depth) + ...); }, resource.fields());
 }
+
+template <typename ResourceT> std::size_t TotalFields(const Resource<ResourceT>& resource)
+{
+  std::size_t count = 0;
+  Visit(resource, [&count](std::size_t depth, const auto& field) -> bool {
+    ++count;
+    return true;
+  });
+  return count;
+}
+
 
 template <typename ResourceT, typename VisitorT>
 bool IterateUntil(const Resource<ResourceT>& resource, VisitorT visitor)
 {
-  return std::apply([&](const auto&... fields) { return (visitor(fields) and ...); }, resource.fields());
+  return std::apply([&](const auto&... fields) { return (visitor(fields) + ...); }, resource.fields());
 }
 
 template <typename ResourceT, typename VisitorT> bool IterateUntil(Resource<ResourceT>& resource, VisitorT visitor)
 {
-  return std::apply([&](auto&&... fields) { return (visitor(fields) and ...); }, resource.fields());
+  return std::apply([&](auto&&... fields) { return (visitor(fields) + ...); }, resource.fields());
 }
 
 template <typename ResourceT> auto& _R(Resource<ResourceT>& resource) { return resource; }
@@ -244,7 +260,7 @@ template <typename T> std::ostream& operator<<(std::ostream& os, const _Stub<T>&
 
 template <typename ResourceT> std::ostream& operator<<(std::ostream& os, const Resource<ResourceT>& resource)
 {
-  Visit(resource, [&os](std::size_t depth, const auto& field) {
+  Visit(resource, [&os](std::size_t depth, const auto& field) -> bool {
     for (std::size_t c = 0; c < depth; ++c)
     {
       os << ' ';
@@ -260,6 +276,7 @@ template <typename ResourceT> std::ostream& operator<<(std::ostream& os, const R
     {
       os << field.name << ": " << field.get() << '\n';
     }
+    return true;
   });
   return os;
 }

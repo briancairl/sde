@@ -14,9 +14,12 @@
 // RED
 //#include "red/background_music.hpp"
 //#include "red/components.hpp"
-#include "red/imgui.hpp"
+#include "red/imgui_end.hpp"
+#include "red/imgui_start.hpp"
 //#include "red/player_character.hpp"
 #include "red/renderer.hpp"
+#include "red/texture_viewer.hpp"
+#include "red/tile_set_editor.hpp"
 // #include "red/weather.hpp"
 // #include "red/world.hpp"
 
@@ -26,7 +29,10 @@ using namespace sde;
 int main(int argc, char** argv)
 {
   game::ScriptRuntimeLoader::add("renderer", [](const auto& manifest) { return createRenderer(); });
-  game::ScriptRuntimeLoader::add("imgui", [](const auto& manifest) { return createImGui(); });
+  game::ScriptRuntimeLoader::add("imgui_start", [](const auto& manifest) { return _ImGuiStart(); });
+  game::ScriptRuntimeLoader::add("imgui_end", [](const auto& manifest) { return _ImGuiEnd(); });
+  game::ScriptRuntimeLoader::add("tile_set_editor", [](const auto& manifest) { return _TileSetEditor(); });
+  game::ScriptRuntimeLoader::add("texture_viewer", [](const auto& manifest) { return _TextureViewer(); });
 
   SDE_LOG_INFO("starting...");
 
@@ -40,7 +46,10 @@ int main(int argc, char** argv)
   if (!scene.load("/tmp/test"))
   {
     scene.addScript("renderer", game::ScriptRuntimeLoader::load("renderer", {}));
-    scene.addScript("imgui", game::ScriptRuntimeLoader::load("imgui", {}));
+    scene.addScript("imgui_start", game::ScriptRuntimeLoader::load("imgui_start", {}));
+    scene.addScript("tile_set_editor", game::ScriptRuntimeLoader::load("tile_set_editor", {}));
+    scene.addScript("texture_viewer", game::ScriptRuntimeLoader::load("texture_viewer", {}));
+    scene.addScript("imgui_end", game::ScriptRuntimeLoader::load("imgui_end", {}));
   }
 
   // scripts.emplace_back("bg_music", createBackgroundMusic());
