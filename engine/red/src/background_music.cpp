@@ -5,6 +5,9 @@
 #include "sde/game/script_impl.hpp"
 #include "sde/logging.hpp"
 
+// RED
+#include "red/imgui_end.hpp"
+
 using namespace sde;
 using namespace sde::game;
 using namespace sde::audio;

@@ -35,6 +35,12 @@ public:
 
   ResourceHandle& operator=(const ResourceHandle&) = default;
 
+  ResourceHandle& operator=([[maybe_unused]] std::nullptr_t _)
+  {
+    this->reset();
+    return *this;
+  }
+
   ResourceHandle& operator=(ResourceHandle&& other)
   {
     id_ = other.id_;
@@ -53,6 +59,8 @@ public:
     id_ = T::next_unique(id_);
     return *this;
   }
+
+  constexpr void reset() { id_ = kNullValue; }
 
   constexpr id_type id() const { return id_; }
 
@@ -108,5 +116,10 @@ template <typename T> inline std::ostream& operator<<(std::ostream& os, const Re
     return os << "{ id: " << handle.id() << " }";
   }
 }
+
+template <typename T> struct is_resource_handle : std::is_base_of<ResourceHandle<T>, T>
+{};
+
+template <typename T> constexpr bool is_resource_handle_v = is_resource_handle<std::remove_const_t<T>>::value;
 
 }  // namespace sde

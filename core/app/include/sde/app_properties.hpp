@@ -5,7 +5,11 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <vector>
+
 // SDE
+#include "sde/asset.hpp"
 #include "sde/geometry.hpp"
 #include "sde/graphics/window_fwd.hpp"
 #include "sde/keyboard.hpp"
@@ -13,6 +17,12 @@
 
 namespace sde
 {
+
+struct AppDragAndDropPayload
+{
+  Vec2d mouse_position_on_drop;
+  asset::path path;
+};
 
 struct AppState
 {
@@ -31,6 +41,8 @@ struct AppProperties
   Vec2d mouse_scroll = {0.0, 0.0};
 
   KeyStates keys;
+
+  std::vector<AppDragAndDropPayload> drag_and_drop_payloads;
 
   Vec2f getMousePositionViewport(Vec2i viewport_size) const
   {

@@ -45,7 +45,7 @@ public:
     handle_type handle;
     const value_type* value;
 
-    operator bool() const { return handle.isValid(); }
+    operator bool() const { return value != nullptr; }
     const value_type& get() const { return *value; }
     const value_type& operator*() const { return get(); }
     const value_type* operator->() const { return value; }

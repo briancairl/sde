@@ -90,7 +90,7 @@ struct TextureShape : Resource<TextureShape>
 {
   Vec2i value = {};
 
-  float aspect() const { return static_cast<float>(value.x()) / static_cast<float>(value.y()); }
+  float aspect() const { return static_cast<float>(value.y()) / static_cast<float>(value.x()); }
   auto width() const { return value.x(); }
   auto height() const { return value.y(); }
   auto texels() const { return value.size(); }

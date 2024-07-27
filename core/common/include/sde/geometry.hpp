@@ -45,6 +45,10 @@ using Mat4i = Mat<int, 4>;
 using Mat4f = Mat<float, 4>;
 using Mat4d = Mat<double, 4>;
 
+using MatXi = Mat<int, Eigen::Dynamic>;
+using MatXf = Mat<float, Eigen::Dynamic>;
+using MatXd = Mat<double, Eigen::Dynamic>;
+
 using Bounds2i = Bounds<int, 2>;
 using Bounds2f = Bounds<float, 2>;
 

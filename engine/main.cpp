@@ -14,6 +14,7 @@
 // RED
 //#include "red/background_music.hpp"
 //#include "red/components.hpp"
+#include "red/drag_and_drop_asset_loader.hpp"
 #include "red/imgui_end.hpp"
 #include "red/imgui_start.hpp"
 //#include "red/player_character.hpp"
@@ -33,6 +34,7 @@ int main(int argc, char** argv)
   game::ScriptRuntimeLoader::add("imgui_end", [](const auto& manifest) { return _ImGuiEnd(); });
   game::ScriptRuntimeLoader::add("tile_set_editor", [](const auto& manifest) { return _TileSetEditor(); });
   game::ScriptRuntimeLoader::add("texture_viewer", [](const auto& manifest) { return _TextureViewer(); });
+  game::ScriptRuntimeLoader::add("drag_and_drop", [](const auto& manifest) { return _DragAndDropAssetLoader(); });
 
   SDE_LOG_INFO("starting...");
 
@@ -45,6 +47,7 @@ int main(int argc, char** argv)
 
   if (!scene.load("/tmp/test"))
   {
+    scene.addScript("drag_and_drop", game::ScriptRuntimeLoader::load("drag_and_drop", {}));
     scene.addScript("renderer", game::ScriptRuntimeLoader::load("renderer", {}));
     scene.addScript("imgui_start", game::ScriptRuntimeLoader::load("imgui_start", {}));
     scene.addScript("tile_set_editor", game::ScriptRuntimeLoader::load("tile_set_editor", {}));
