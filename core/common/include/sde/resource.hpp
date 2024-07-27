@@ -11,6 +11,7 @@
 // SDE
 #include "sde/crtp.hpp"
 #include "sde/hash.hpp"
+#include "sde/traits.hpp"
 
 namespace sde
 {
@@ -212,30 +213,9 @@ template <typename ResourceT, typename VisitorT> bool IterateUntil(Resource<Reso
   return std::apply([&](auto&&... fields) { return (visitor(fields) + ...); }, resource.fields());
 }
 
-template <typename ResourceT> auto& _R(Resource<ResourceT>& resource) { return resource; }
-
-template <typename ResourceT> const auto& _R(const Resource<ResourceT>& resource) { return resource; }
-
-namespace detail
-{
-
-template <typename T, typename Eval = decltype((std::declval<std::ostream&>() << std::declval<const T&>()))>
-constexpr bool call_ostream_overload([[maybe_unused]] const T* _)
-{
-  return true;
-}
-
-constexpr bool call_ostream_overload(...) { return false; }
-
-}  // namespace detail
-
-template <typename T>
-using has_ostream_overload =
-  std::integral_constant<bool, detail::call_ostream_overload(std::add_pointer_t<T>{nullptr})>;
-
 template <typename T> std::ostream& operator<<(std::ostream& os, const Field<T>& field)
 {
-  if constexpr (has_ostream_overload<T>())
+  if constexpr (has_std_ostream_overload<T>())
   {
     return os << field.name << ": " << field.get();
   }
@@ -247,7 +227,7 @@ template <typename T> std::ostream& operator<<(std::ostream& os, const Field<T>&
 
 template <typename T> std::ostream& operator<<(std::ostream& os, const _Stub<T>& field)
 {
-  if constexpr (has_ostream_overload<T>())
+  if constexpr (has_std_ostream_overload<T>())
   {
     return os << field.name << ": [?] " << field.get();
   }

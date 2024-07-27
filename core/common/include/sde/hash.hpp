@@ -10,38 +10,11 @@
 #include <iosfwd>
 #include <type_traits>
 
+// SDE
+#include "sde/traits.hpp"
+
 namespace sde
 {
-namespace detail
-{
-
-template <typename T, typename Eval = decltype((std::begin(std::declval<T>()) == std::end(std::declval<T>())))>
-constexpr bool test_iterable([[maybe_unused]] const T* _)
-{
-  return true;
-}
-
-constexpr bool test_iterable(...) { return false; }
-
-template <typename T, typename Eval = decltype(std::hash<T>{}(std::declval<T>()))>
-constexpr bool test_std_hash([[maybe_unused]] const T* _)
-{
-  return true;
-}
-
-constexpr bool test_std_hash(...) { return false; }
-
-}  // namespace detail
-
-template <typename T>
-struct is_iterable : std::integral_constant<bool, detail::test_iterable(std::add_pointer_t<T>{nullptr})>
-{};
-
-template <typename T>
-struct has_std_hash : std::integral_constant<bool, detail::test_std_hash(std::add_pointer_t<T>{nullptr})>
-{};
-
-
 constexpr std::size_t kHashOffset{0x9e3779b9};
 
 constexpr std::size_t hash_digest(std::size_t h) { return h + kHashOffset; }
@@ -76,18 +49,15 @@ template <typename T> struct Hasher
 {
   constexpr Hash operator()(const T& v) const
   {
-    static_assert(has_std_hash<T>() or is_iterable<T>());
-    if constexpr (has_std_hash<T>())
+    static_assert(has_std_hash_specialization<T>() or is_iterable<T>());
+    if constexpr (has_std_hash_specialization<T>())
     {
       return {std::hash<T>{}(v)};
     }
     else if constexpr (is_iterable<T>())
     {
       Hash h;
-      std::for_each(std::begin(v), std::end(v), [&h](const auto& v) {
-        using ValueType = std::remove_const_t<std::remove_reference_t<decltype(v)>>;
-        h += Hasher<ValueType>{}(v);
-      });
+      std::for_each(std::begin(v), std::end(v), [&h](const auto& v) { h += Hasher<bare_t<decltype(v)>>{}(v); });
       return h;
     }
     return {0};
