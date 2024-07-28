@@ -73,6 +73,7 @@ private:
   TextureHandle atlas_texture_selected_;
   Vec2i atlas_tile_size_ = {32, 32};
   MatXi atlas_tile_selected_ = {};
+  int next_index_ = 0;
 
   bool onLoad(IArchive& ar, SharedAssets& assets) override
   {
@@ -131,7 +132,7 @@ private:
 
       const ImVec2 atlas_texture_display_size{atlas_display_width, atlas_display_width * texture->shape.aspect()};
       ImGui::Image(
-        reinterpret_cast<void*>(texture->native_id.value()), atlas_texture_display_size, ImVec2{0, 1}, ImVec2{1, 0});
+        reinterpret_cast<void*>(texture->native_id.value()), atlas_texture_display_size, ImVec2{0, 0}, ImVec2{1, 1});
 
       TileSetEditor::handleTextureDragAndDrop(assets);
 
@@ -156,26 +157,30 @@ private:
           {
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
             {
-              atlas_tile_selected_(i, j) = 0;
+              if (atlas_tile_selected_(i, j) != 0)
+              {
+                --next_index_;
+                atlas_tile_selected_(i, j) = 0;
+              }
             }
-            else if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
             {
               drawlist->AddRectFilled(min_pos, max_pos, ImColor{1.0F, 0.0F, 0.0F, 0.3F});
-              atlas_tile_selected_(i, j) = (atlas_tile_selected_(i, j) == 0);
-            }
-            else if (const auto delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-                     (std::abs(delta.x) > 1.f) or (std::abs(delta.y) > 1.f))
-            {
-              atlas_tile_selected_(i, j) = 0;
+              if (atlas_tile_selected_(i, j) == 0)
+              {
+                ++next_index_;
+                atlas_tile_selected_(i, j) = next_index_;
+              }
             }
             else
             {
               drawlist->AddRectFilled(min_pos, max_pos, ImColor{1.0F, 1.0F, 0.0F, 0.3F});
             }
           }
-          else if (atlas_tile_selected_(i, j))
+          else if (const int index = atlas_tile_selected_(i, j); index > 0)
           {
             drawlist->AddRectFilled(min_pos, max_pos, ImColor{0.0F, 1.0F, 1.0F, 0.3F});
+            drawlist->AddText(min_pos, ImColor{1.0F, 0.0F, 0.0F, 1.0F}, format("%d", index));
           }
           drawlist->AddRect(min_pos, max_pos, tile_grid_border_color);
         }
@@ -183,24 +188,34 @@ private:
 
       if (ImGui::Button("create"))
       {
+        next_index_ = 0;
         const Vec2f tex_coord_rates =
           atlas_tile_size_.array().cast<float>() / texture->shape.value.array().cast<float>();
-        std::vector<Bounds2f> bounds;
+        std::vector<std::pair<int, Bounds2f>> indexed_bounds;
         for (int i = 0; i < atlas_tile_selected_.rows(); ++i)
         {
           for (int j = 0; j < atlas_tile_selected_.cols(); ++j)
           {
-            if (atlas_tile_selected_(i, j))
+            if (const int index = atlas_tile_selected_(i, j); index > 0)
             {
-              const Vec2f min_tex{1.0F - tex_coord_rates.x() * (i + 0), 1.0F - tex_coord_rates.y() * (j + 0)};
-              const Vec2f max_tex{1.0F - tex_coord_rates.x() * (i + 1), 1.0F - tex_coord_rates.y() * (j + 1)};
-              bounds.emplace_back(min_tex, max_tex);
+              const Vec2f min_tex{tex_coord_rates.x() * (i + 0), tex_coord_rates.y() * (j + 0)};
+              const Vec2f max_tex{tex_coord_rates.x() * (i + 1), tex_coord_rates.y() * (j + 1)};
+              indexed_bounds.emplace_back(index, Bounds2f{min_tex, max_tex});
               atlas_tile_selected_(i, j) = 0;
             }
           }
         }
-        if (!bounds.empty())
+        if (!indexed_bounds.empty())
         {
+          std::sort(std::begin(indexed_bounds), std::end(indexed_bounds), [](const auto& lhs, const auto& rhs) {
+            return std::get<0>(lhs) < std::get<0>(rhs);
+          });
+          std::vector<Bounds2f> bounds;
+          bounds.reserve(indexed_bounds.size());
+          std::transform(
+            std::begin(indexed_bounds), std::end(indexed_bounds), std::back_inserter(bounds), [](const auto& v) {
+              return std::get<1>(v);
+            });
           if (auto ok_or_error = assets.graphics.tile_sets.create(atlas_texture_selected_, std::move(bounds));
               !ok_or_error.has_value())
           {
@@ -239,13 +254,11 @@ private:
 
       ImGui::BeginChild("tile-set-previewer", ImVec2{0.F, 100.F}, true, ImGuiWindowFlags_HorizontalScrollbar);
       {
-        const auto max_size = ImGui::GetWindowContentRegionMax() - ImGui::GetWindowContentRegionMin();
-        const auto min_extent = std::min(max_size.x, max_size.y);
         for (const auto& bounds : element->tile_bounds)
         {
           ImGui::Image(
             reinterpret_cast<void*>(atlas_texture->native_id.value()),
-            ImVec2{min_extent, min_extent},
+            ImVec2{70.0F, 70.0F},
             ImVec2{bounds.min().x(), bounds.min().y()},
             ImVec2{bounds.max().x(), bounds.max().y()});
           ImGui::SameLine();

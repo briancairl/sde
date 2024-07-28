@@ -79,8 +79,8 @@ void TexturePreviewImage(const Texture& texture, const ImVec2& tile_size)
       reinterpret_cast<void*>(texture.native_id.value()),
       pos + centering,
       pos + centering + display_size,
-      ImVec2{0, 1},
-      ImVec2{1, 0},
+      ImVec2{0, 0},
+      ImVec2{1, 1},
       IM_COL32_WHITE);
   }
   else
@@ -92,8 +92,8 @@ void TexturePreviewImage(const Texture& texture, const ImVec2& tile_size)
       reinterpret_cast<void*>(texture.native_id.value()),
       pos + centering,
       pos + centering + display_size,
-      ImVec2{0, 1},
-      ImVec2{1, 0},
+      ImVec2{0, 0},
+      ImVec2{1, 1},
       IM_COL32_WHITE);
   }
   if (ImGui::IsMouseHoveringRect(pos, pos + tile_size))
