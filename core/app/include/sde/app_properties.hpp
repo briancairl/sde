@@ -44,7 +44,7 @@ struct AppProperties
 
   std::vector<AppDragAndDropPayload> drag_and_drop_payloads;
 
-  Vec2f getMousePositionViewport(Vec2i viewport_size) const
+  Vec2f getMousePositionViewport() const
   {
     return {
       static_cast<float>(2.0 * mouse_position_px.x() / static_cast<double>(viewport_size.x()) - 1.0),

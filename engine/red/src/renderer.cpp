@@ -4,10 +4,12 @@
 
 // SDE
 #include "sde/game/script_impl.hpp"
+#include "sde/geometry_utils.hpp"
 #include "sde/graphics/colors.hpp"
 #include "sde/graphics/render_buffer.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/sprite.hpp"
+#include "sde/graphics/tile_map.hpp"
 #include "sde/graphics/type_set.hpp"
 #include "sde/graphics/type_setter.hpp"
 #include "sde/logging.hpp"
@@ -166,6 +168,13 @@ private:
         render_pass_or_error.has_value())
     {
       render_pass_or_error->clear(Black());
+
+      assets.registry.view<TransformQuery>().each(
+        [&rp = *render_pass_or_error](auto& query) { query.world_from_viewport = rp.getWorldFromViewportMatrix(); });
+
+      assets.registry.view<Position, TileMap>().each(
+        [&](const Position& pos, const TileMap& tile_map) { tile_map.draw(*render_pass_or_error, pos.center); });
+
       assets.registry.view<Midground, Size, Position, AnimatedSprite>().each(
         [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
           const Vec2f min_corner{pos.center - 0.5F * size.extent};
@@ -182,6 +191,7 @@ private:
     }
 
     render_resources.shader = player_text_shader_;
+
     if (auto render_pass_or_error = RenderPass::create(
           render_buffer_, *renderer_, assets.graphics, uniforms, render_resources, app.viewport_size);
         render_pass_or_error.has_value())

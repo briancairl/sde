@@ -12,55 +12,12 @@
 #include "sde/logging.hpp"
 
 // RED
+#include "red/imgui_common.hpp"
 #include "red/tile_set_editor.hpp"
 
 using namespace sde;
 using namespace sde::game;
 using namespace sde::graphics;
-
-
-struct ImGuiFieldFormatter
-{
-  template <typename T> bool operator()(std::size_t depth, const BasicField<T>& field)
-  {
-    if (depth > 0)
-    {
-      ImGui::Dummy(ImVec2(depth * 10, 0.0));
-      ImGui::SameLine();
-    }
-
-    using U = std::remove_const_t<T>;
-    if constexpr (std::is_same_v<U, asset::path>)
-    {
-      ImGui::Text("%s : %s", field.name, field->string().c_str());
-    }
-    else if constexpr (std::is_same_v<U, Vec2i>)
-    {
-      ImGui::Text("%s : (%d x %d)", field.name, field->x(), field->y());
-    }
-    else if constexpr (std::is_same_v<U, Hash>)
-    {
-      ImGui::Text("%s : {%lu}", field.name, field->value);
-    }
-    else if constexpr (std::is_enum_v<U>)
-    {
-      ImGui::Text("%s : %d", field.name, static_cast<int>(field.get()));
-    }
-    else if constexpr (std::is_integral_v<U>)
-    {
-      ImGui::Text("%s : %d", field.name, static_cast<int>(field.get()));
-    }
-    else if constexpr (is_resource_v<T>)
-    {
-      return ImGui::CollapsingHeader(format("%s : ...", field.name));
-    }
-    else
-    {
-      ImGui::Text("%s : ...", field.name);
-    }
-    return true;
-  }
-};
 
 
 class TileSetEditor final : public ScriptRuntime
@@ -107,6 +64,43 @@ private:
     }
   }
 
+  void onCreatePressed(SharedAssets& assets, const Texture& texture)
+  {
+    next_index_ = 0;
+    const Vec2f tex_coord_rates = atlas_tile_size_.array().cast<float>() / texture.shape.value.array().cast<float>();
+    std::vector<std::pair<int, Bounds2f>> indexed_bounds;
+    for (int i = 0; i < atlas_tile_selected_.rows(); ++i)
+    {
+      for (int j = 0; j < atlas_tile_selected_.cols(); ++j)
+      {
+        if (const int index = atlas_tile_selected_(i, j); index > 0)
+        {
+          const Vec2f min_tex{tex_coord_rates.x() * (i + 0), tex_coord_rates.y() * (j + 0)};
+          const Vec2f max_tex{tex_coord_rates.x() * (i + 1), tex_coord_rates.y() * (j + 1)};
+          indexed_bounds.emplace_back(index, Bounds2f{min_tex, max_tex});
+          atlas_tile_selected_(i, j) = 0;
+        }
+      }
+    }
+    if (!indexed_bounds.empty())
+    {
+      std::sort(std::begin(indexed_bounds), std::end(indexed_bounds), [](const auto& lhs, const auto& rhs) {
+        return std::get<0>(lhs) < std::get<0>(rhs);
+      });
+      std::vector<Bounds2f> bounds;
+      bounds.reserve(indexed_bounds.size());
+      std::transform(
+        std::begin(indexed_bounds), std::end(indexed_bounds), std::back_inserter(bounds), [](const auto& v) {
+          return std::get<1>(v);
+        });
+      if (auto ok_or_error = assets.graphics.tile_sets.create(atlas_texture_selected_, std::move(bounds));
+          !ok_or_error.has_value())
+      {
+        SDE_LOG_ERROR("failed to create tile set");
+      }
+    }
+  }
+
   void updateTileSelector(SharedAssets& assets, const AppProperties& app)
   {
     ImGui::Begin("tile-set-selector");
@@ -120,14 +114,24 @@ private:
         atlas_tile_selected_.setZero();
       }
 
-      if (ImGui::InputInt2("tile size (px)", atlas_tile_size_.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+      if (ImGui::Button("create"))
+      {
+        onCreatePressed(assets, *texture);
+      }
+
+      ImGui::SameLine();
+
+      if (ImGui::InputInt2(
+            "tile size (px)",
+            atlas_tile_size_.data(),
+            ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AlwaysOverwrite))
       {
         const Vec2i dims = texture->shape.value.array() / atlas_tile_size_.array();
         atlas_tile_selected_.resize(dims.x(), dims.y());
         atlas_tile_selected_.setZero();
       }
 
-      const auto atlas_display_width = (ImGui::GetWindowContentRegionMax() - ImGui::GetWindowContentRegionMin()).x;
+      const auto atlas_display_width = std::max(1.F, ImGui::GetWindowWidth() - 2.F * ImGui::GetStyle().ScrollbarSize);
       const auto atlas_texture_image_pos = ImGui::GetCursorScreenPos();
 
       const ImVec2 atlas_texture_display_size{atlas_display_width, atlas_display_width * texture->shape.aspect()};
@@ -185,44 +189,6 @@ private:
           drawlist->AddRect(min_pos, max_pos, tile_grid_border_color);
         }
       }
-
-      if (ImGui::Button("create"))
-      {
-        next_index_ = 0;
-        const Vec2f tex_coord_rates =
-          atlas_tile_size_.array().cast<float>() / texture->shape.value.array().cast<float>();
-        std::vector<std::pair<int, Bounds2f>> indexed_bounds;
-        for (int i = 0; i < atlas_tile_selected_.rows(); ++i)
-        {
-          for (int j = 0; j < atlas_tile_selected_.cols(); ++j)
-          {
-            if (const int index = atlas_tile_selected_(i, j); index > 0)
-            {
-              const Vec2f min_tex{tex_coord_rates.x() * (i + 0), tex_coord_rates.y() * (j + 0)};
-              const Vec2f max_tex{tex_coord_rates.x() * (i + 1), tex_coord_rates.y() * (j + 1)};
-              indexed_bounds.emplace_back(index, Bounds2f{min_tex, max_tex});
-              atlas_tile_selected_(i, j) = 0;
-            }
-          }
-        }
-        if (!indexed_bounds.empty())
-        {
-          std::sort(std::begin(indexed_bounds), std::end(indexed_bounds), [](const auto& lhs, const auto& rhs) {
-            return std::get<0>(lhs) < std::get<0>(rhs);
-          });
-          std::vector<Bounds2f> bounds;
-          bounds.reserve(indexed_bounds.size());
-          std::transform(
-            std::begin(indexed_bounds), std::end(indexed_bounds), std::back_inserter(bounds), [](const auto& v) {
-              return std::get<1>(v);
-            });
-          if (auto ok_or_error = assets.graphics.tile_sets.create(atlas_texture_selected_, std::move(bounds));
-              !ok_or_error.has_value())
-          {
-            SDE_LOG_ERROR("failed to create tile set");
-          }
-        }
-      }
     }
     else
     {
@@ -246,25 +212,35 @@ private:
         ImGui::Text("tile-set[%lu] from texture[%lu] (MISSING!)", handle.id(), element->tile_atlas.id());
         continue;
       }
-      else
-      {
-        ImGui::Text("tile-set[%lu] from texture[%lu]", handle.id(), element->tile_atlas.id());
-      }
-      ImGui::PushID(handle.id());
 
-      ImGui::BeginChild("tile-set-previewer", ImVec2{0.F, 100.F}, true, ImGuiWindowFlags_HorizontalScrollbar);
+      ImGui::PushID(handle.id());
+      ImGui::BeginChild("tile-set", ImVec2{0.F, 100.F}, true, ImGuiWindowFlags_HorizontalScrollbar);
       {
+        const auto tile_display_height =
+          std::max(1.F, ImGui::GetWindowHeight() - 2.F * ImGui::GetStyle().ScrollbarSize);
         for (const auto& bounds : element->tile_bounds)
         {
           ImGui::Image(
             reinterpret_cast<void*>(atlas_texture->native_id.value()),
-            ImVec2{70.0F, 70.0F},
+            ImVec2{tile_display_height, tile_display_height},
             ImVec2{bounds.min().x(), bounds.min().y()},
             ImVec2{bounds.max().x(), bounds.max().y()});
           ImGui::SameLine();
         }
       }
       ImGui::EndChild();
+      ImGui::PopID();
+
+      ImGui::Text("tile-set[%lu] from texture[%lu]", handle.id(), element->tile_atlas.id());
+      if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+      {
+        const ImVec4 tint =
+          ImGui::SetDragDropPayload("SDE_TILESET_ASSET", std::addressof(handle), sizeof(handle), /*cond = */ 0)
+          ? ImVec4{0, 1, 0, 1}
+          : ImVec4{1, 1, 1, 1};
+        ImGui::TextColored(tint, "tile-set[%lu]", handle.id());
+        ImGui::EndDragDropSource();
+      }
 
       if (ImGui::IsItemClicked(ImGuiMouseButton_Right) and !ImGui::IsPopupOpen("tile-set-pop-up"))
       {
@@ -284,8 +260,6 @@ private:
         Visit(element, ImGuiFieldFormatter{});
         ImGui::EndPopup();
       }
-
-      ImGui::PopID();
     }
     ImGui::End();
 

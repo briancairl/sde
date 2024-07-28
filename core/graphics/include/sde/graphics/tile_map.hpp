@@ -24,9 +24,11 @@ namespace sde::graphics
 struct TileMapOptions : Resource<TileMapOptions>
 {
   Vec4f tint_color = Vec4f::Ones();
-  Vec2i shape = Vec2i::Zero();
-  Vec2f tile_size = Vec2f::Zero();
+  Vec2i shape = {10, 10};
+  Vec2f tile_size = {0.1F, 0.1F};
   TileSetHandle tile_set = TileSetHandle::null();
+
+  Vec2f mapSize() const { return Vec2f{shape.cast<float>().array() * tile_size.array()}; }
 
   auto field_list()
   {
@@ -37,10 +39,6 @@ struct TileMapOptions : Resource<TileMapOptions>
       (Field{"tile_set", tile_set}));
   }
 };
-
-std::ostream& operator<<(std::ostream& os, const TileMapOptions& tile_map_options);
-
-bool operator==(const TileMapOptions& lhs, const TileMapOptions& rhs);
 
 class TileMap : public Resource<TileMap>
 {
@@ -70,6 +68,8 @@ public:
 
   TileIndex& operator[](const Vec2i indices) { return tile_indices_[indices.y() * options_.shape.y() + indices.x()]; }
 
+  Vec2f mapSize() const { return options_.mapSize(); }
+
   void swap(TileMap& other);
 
   void setup(const TileMapOptions& options);
@@ -77,6 +77,13 @@ public:
   void setTileSize(const Vec2f& tile_size) { options_.tile_size = tile_size; }
 
   void setTileSet(TileSetHandle tile_set) { options_.tile_set = tile_set; }
+
+  Vec2i getTileIndex(const Vec2f& pos_map) const { return (pos_map.array() / options_.tile_size.array()).cast<int>(); }
+
+  bool within(const Vec2i& index) const
+  {
+    return ((index.array() >= 0) and (index.array() < options_.shape.array())).all();
+  }
 
 private:
   auto field_list() { return std::tuple_cat(options_.field_list(), FieldList(Field{"tile_indices", tile_indices_})); }

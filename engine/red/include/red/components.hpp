@@ -30,6 +30,12 @@ struct Position : Resource<Position>
   auto field_list() { return FieldList(Field{"center", center}); }
 };
 
+struct TransformQuery : Resource<TransformQuery>
+{
+  Mat3f world_from_viewport = Mat3f::Identity();
+  auto field_list() { return FieldList(Field{"world_from_viewport", world_from_viewport}); }
+};
+
 struct Dynamics : Resource<Dynamics>
 {
   Vec2f velocity;

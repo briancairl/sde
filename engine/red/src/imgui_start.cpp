@@ -81,7 +81,7 @@ private:
     ImGui::NewFrame();
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-    app_state.enabled = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+    app_state.enabled = !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 
     return {};
   }

@@ -20,6 +20,7 @@
 //#include "red/player_character.hpp"
 #include "red/renderer.hpp"
 #include "red/texture_viewer.hpp"
+#include "red/tile_map_editor.hpp"
 #include "red/tile_set_editor.hpp"
 // #include "red/weather.hpp"
 // #include "red/world.hpp"
@@ -33,6 +34,7 @@ int main(int argc, char** argv)
   game::ScriptRuntimeLoader::add("imgui_start", [](const auto& manifest) { return _ImGuiStart(); });
   game::ScriptRuntimeLoader::add("imgui_end", [](const auto& manifest) { return _ImGuiEnd(); });
   game::ScriptRuntimeLoader::add("tile_set_editor", [](const auto& manifest) { return _TileSetEditor(); });
+  game::ScriptRuntimeLoader::add("tile_map_editor", [](const auto& manifest) { return _TileMapEditor(); });
   game::ScriptRuntimeLoader::add("texture_viewer", [](const auto& manifest) { return _TextureViewer(); });
   game::ScriptRuntimeLoader::add("drag_and_drop", [](const auto& manifest) { return _DragAndDropAssetLoader(); });
 
@@ -51,6 +53,7 @@ int main(int argc, char** argv)
     scene.addScript("renderer", game::ScriptRuntimeLoader::load("renderer", {}));
     scene.addScript("imgui_start", game::ScriptRuntimeLoader::load("imgui_start", {}));
     scene.addScript("tile_set_editor", game::ScriptRuntimeLoader::load("tile_set_editor", {}));
+    scene.addScript("tile_map_editor", game::ScriptRuntimeLoader::load("tile_map_editor", {}));
     scene.addScript("texture_viewer", game::ScriptRuntimeLoader::load("texture_viewer", {}));
     scene.addScript("imgui_end", game::ScriptRuntimeLoader::load("imgui_end", {}));
   }

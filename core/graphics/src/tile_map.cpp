@@ -13,22 +13,6 @@
 namespace sde::graphics
 {
 
-std::ostream& operator<<(std::ostream& os, const TileMapOptions& options)
-{
-  os << "{ ";
-  os << "tint_color: " << options.tint_color.transpose() << ", ";
-  os << "shape: " << options.shape.transpose() << ", ";
-  os << "tile_size: " << options.tile_size.transpose() << ", ";
-  os << "tile_set: " << options.tile_set << " }";
-  return os;
-}
-
-bool operator==(const TileMapOptions& lhs, const TileMapOptions& rhs)
-{
-  return (lhs.tint_color == rhs.tint_color) && (lhs.shape == rhs.shape) && (lhs.tile_size == rhs.tile_size) &&
-    (lhs.tile_set == rhs.tile_set);
-}
-
 TileMap::TileMap(const TileMapOptions& options) { this->setup(options); }
 
 TileMap::TileMap(TileMap&& other) : tile_indices_{} { this->swap(other); }
@@ -56,9 +40,7 @@ void TileMap::setup(const TileMapOptions& options)
 
 void TileMap::draw(RenderPass& rp, const Vec2f& origin) const
 {
-  const Bounds2f aabb_clipped{
-    rp.getViewportInWorldBounds() &
-    Bounds2f{origin, origin + Vec2f{options_.shape.cast<float>().array() * options_.tile_size.array()}}};
+  const Bounds2f aabb_clipped{rp.getViewportInWorldBounds() & Bounds2f{origin, origin + options_.mapSize()}};
   if (aabb_clipped.volume() == 0)
   {
     return;
