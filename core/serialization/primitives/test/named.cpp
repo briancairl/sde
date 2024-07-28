@@ -16,6 +16,7 @@
 #include "sde/serial/file_istream.hpp"
 #include "sde/serial/file_ostream.hpp"
 #include "sde/serial/named.hpp"
+#include "sde/serial/packet.hpp"
 
 using namespace sde::serial;
 
@@ -40,14 +41,24 @@ TEST(Named, PrimitiveElementValue)
   }
 }
 
+struct Trivial
+{
+  int x;
+  float y, z;
+};
+
+template <typename Archive> struct save<Archive, ::Trivial>
+{
+  void operator()(Archive& ar, const ::Trivial& target) { ar << make_packet(&target); }
+};
+
+template <typename Archive> struct load<Archive, ::Trivial>
+{
+  void operator()(Archive& ar, ::Trivial& target) { ar >> make_packet(&target); }
+};
+
 TEST(Named, TrivialValue)
 {
-  struct Trivial
-  {
-    int x;
-    float y, z;
-  };
-
   static const Trivial TARGET_VALUE = {1, 123.f, 321.f};
 
   {

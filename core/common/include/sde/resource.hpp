@@ -252,9 +252,13 @@ template <typename ResourceT> std::ostream& operator<<(std::ostream& os, const R
     {
       os << field.name << ": {...}\n";
     }
-    else
+    else if constexpr (has_std_ostream_overload<ValueType>())
     {
       os << field.name << ": " << field.get() << '\n';
+    }
+    else if constexpr (has_std_ostream_overload<ValueType>())
+    {
+      os << field.name << ": ? \n";
     }
     return true;
   });

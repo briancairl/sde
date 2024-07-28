@@ -21,7 +21,7 @@ TEST(SpriteIO, SpriteOptions)
   if (auto ofs_or_error = file_ostream::create("SpriteOptions.bin"); ofs_or_error.has_value())
   {
     binary_oarchive oar{*ofs_or_error};
-    ASSERT_NO_THROW((oar << named{"sprite_options", _R(target_value)}));
+    ASSERT_NO_THROW((oar << named{"sprite_options", target_value}));
   }
   else
   {
@@ -32,7 +32,7 @@ TEST(SpriteIO, SpriteOptions)
   {
     binary_iarchive iar{*ifs_or_error};
     SpriteOptions read_value;
-    ASSERT_NO_THROW((iar >> named{"sprite_options", _R(read_value)}));
+    ASSERT_NO_THROW((iar >> named{"sprite_options", read_value}));
 
     ASSERT_EQ(read_value, target_value);
   }
@@ -49,7 +49,7 @@ TEST(SpriteIO, AnimatedSpriteOptions)
   if (auto ofs_or_error = file_ostream::create("AnimatedSpriteOptions.bin"); ofs_or_error.has_value())
   {
     binary_oarchive oar{*ofs_or_error};
-    ASSERT_NO_THROW((oar << named{"animated_sprite_options", _R(target_value)}));
+    ASSERT_NO_THROW((oar << named{"animated_sprite_options", target_value}));
   }
   else
   {
@@ -60,7 +60,7 @@ TEST(SpriteIO, AnimatedSpriteOptions)
   {
     binary_iarchive iar{*ifs_or_error};
     AnimatedSpriteOptions read_value;
-    ASSERT_NO_THROW((iar >> named{"animated_sprite_options", _R(read_value)}));
+    ASSERT_NO_THROW((iar >> named{"animated_sprite_options", read_value}));
 
     ASSERT_EQ(read_value, target_value);
   }
@@ -77,7 +77,7 @@ TEST(SpriteIO, Sprite)
   if (auto ofs_or_error = file_ostream::create("Sprite.bin"); ofs_or_error.has_value())
   {
     binary_oarchive oar{*ofs_or_error};
-    ASSERT_NO_THROW((oar << named{"sprite", _R(target_value)}));
+    ASSERT_NO_THROW((oar << named{"sprite", target_value}));
   }
   else
   {
@@ -88,7 +88,7 @@ TEST(SpriteIO, Sprite)
   {
     binary_iarchive iar{*ifs_or_error};
     Sprite read_value;
-    ASSERT_NO_THROW((iar >> named{"sprite", _R(read_value)}));
+    ASSERT_NO_THROW((iar >> named{"sprite", read_value}));
 
     ASSERT_EQ(read_value, target_value);
   }
@@ -105,7 +105,7 @@ TEST(SpriteIO, AnimatedSprite)
   if (auto ofs_or_error = file_ostream::create("AnimatedSprite.bin"); ofs_or_error.has_value())
   {
     binary_oarchive oar{*ofs_or_error};
-    ASSERT_NO_THROW((oar << named{"animated_sprite", _R(target_value)}));
+    ASSERT_NO_THROW((oar << named{"animated_sprite", target_value}));
   }
   else
   {
@@ -116,7 +116,7 @@ TEST(SpriteIO, AnimatedSprite)
   {
     binary_iarchive iar{*ifs_or_error};
     AnimatedSprite read_value;
-    ASSERT_NO_THROW((iar >> named{"animated_sprite", _R(read_value)}));
+    ASSERT_NO_THROW((iar >> named{"animated_sprite", read_value}));
 
     ASSERT_EQ(read_value, target_value);
   }

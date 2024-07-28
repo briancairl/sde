@@ -18,7 +18,7 @@ TEST(TextureIO, TextureOptions)
   if (auto ofs_or_error = file_ostream::create("TextureOptions.bin"); ofs_or_error.has_value())
   {
     binary_oarchive oar{*ofs_or_error};
-    ASSERT_NO_THROW((oar << named{"texture_options", _R(target_value)}));
+    ASSERT_NO_THROW((oar << named{"texture_options", target_value}));
   }
   else
   {
@@ -29,7 +29,7 @@ TEST(TextureIO, TextureOptions)
   {
     binary_iarchive iar{*ifs_or_error};
     TextureOptions read_value;
-    ASSERT_NO_THROW((iar >> named{"texture_options", _R(read_value)}));
+    ASSERT_NO_THROW((iar >> named{"texture_options", read_value}));
 
     ASSERT_EQ(read_value, target_value);
   }

@@ -33,6 +33,16 @@ struct NonTrivialStruct
 namespace sde::serial
 {
 
+template <typename Archive> struct load<Archive, ::TrivialStruct>
+{
+  void operator()(Archive& ar, ::TrivialStruct& target) { ar >> make_packet(&target); }
+};
+
+template <typename Archive> struct save<Archive, ::TrivialStruct>
+{
+  void operator()(Archive& ar, const ::TrivialStruct& target) { ar << make_packet(&target); }
+};
+
 template <typename OArchive> struct save<OArchive, ::NonTrivialStruct>
 {
   void operator()(OArchive& ar, const ::NonTrivialStruct& target)

@@ -52,7 +52,7 @@ TEST(ResourceIO, SimpleResource)
   if (auto ofs_or_error = file_ostream::create("SimpleResource.bin"); ofs_or_error.has_value())
   {
     binary_oarchive oar{*ofs_or_error};
-    ASSERT_NO_THROW((oar << named{"simple", _R(simple)}));
+    ASSERT_NO_THROW((oar << named{"simple", simple}));
   }
   else
   {
@@ -65,7 +65,7 @@ TEST(ResourceIO, SimpleResource)
     binary_iarchive iar{*ifs_or_error};
     SimpleResource read_value;
 
-    ASSERT_NO_THROW((iar >> named{"simple", _R(read_value)}));
+    ASSERT_NO_THROW((iar >> named{"simple", read_value}));
 
     std::cerr << simple << std::endl;
 
@@ -85,7 +85,7 @@ TEST(ResourceIO, NestedResource)
   if (auto ofs_or_error = file_ostream::create("NestedResource.bin"); ofs_or_error.has_value())
   {
     binary_oarchive oar{*ofs_or_error};
-    ASSERT_NO_THROW((oar << named{"nested", _R(nested)}));
+    ASSERT_NO_THROW((oar << named{"nested", nested}));
   }
   else
   {
@@ -98,7 +98,7 @@ TEST(ResourceIO, NestedResource)
     binary_iarchive iar{*ifs_or_error};
     NestedResource read_value;
 
-    ASSERT_NO_THROW((iar >> named{"nested", _R(read_value)}));
+    ASSERT_NO_THROW((iar >> named{"nested", read_value}));
 
     std::cerr << nested << std::endl;
 
