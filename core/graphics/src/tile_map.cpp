@@ -65,13 +65,14 @@ void TileMap::draw(RenderPass& rp, const Vec2f& origin) const
   {
     for (int x = min_indices.x(); x < max_indices.x(); ++x)
     {
-      const TileIndex tile_index = (*this)[Vec2i{x, y}];
+      const Vec2i tile_coords{x, y};
+      const TileIndex tile_index = (*this)[tile_coords];
 
-      const Vec2f rect_min{origin + Vec2f{x * options_.tile_size.x(), y * options_.tile_size.y()}};
+      const Vec2f rect_min{origin.array() + tile_coords.array().cast<float>() * options_.tile_size.array()};
       const Vec2f rect_max{rect_min + options_.tile_size};
 
       rp->textured_quads.push_back(
-        {.rect = Bounds2f{rect_min, rect_max},
+        {.rect = Bounds2f{rect_max, rect_min},
          .rect_texture = tile_set->tile_bounds[tile_index],
          .color = options_.tint_color,
          .texture_unit = (*texture_unit_opt)});

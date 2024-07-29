@@ -225,22 +225,36 @@ private:
             ImVec2{tile_display_height, tile_display_height},
             ImVec2{bounds.min().x(), bounds.min().y()},
             ImVec2{bounds.max().x(), bounds.max().y()});
+
+          if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+          {
+            const ImVec4 tint =
+              ImGui::SetDragDropPayload("SDE_TILESET_ASSET", std::addressof(handle), sizeof(handle), /*cond = */ 0)
+              ? ImVec4{0, 1, 0, 1}
+              : ImVec4{1, 1, 1, 1};
+            ImGui::TextColored(tint, "tile-set[%lu]", handle.id());
+
+            static constexpr std::size_t kPreviewTilesCount{4UL};
+            static constexpr float kPreviewTilesSize{25.F};
+            for (std::size_t i = 0; i < std::min(kPreviewTilesCount, element->tile_bounds.size()); ++i)
+            {
+              const auto& bounds = element->tile_bounds[i];
+              const float alpha = static_cast<float>(kPreviewTilesCount - i) / static_cast<float>(kPreviewTilesCount);
+              ImGui::Image(
+                reinterpret_cast<void*>(atlas_texture->native_id.value()),
+                ImVec2{kPreviewTilesSize, kPreviewTilesSize},
+                ImVec2{bounds.min().x(), bounds.min().y()},
+                ImVec2{bounds.max().x(), bounds.max().y()},
+                ImVec4{1.0F, 1.0F, 1.0F, alpha});
+              ImGui::SameLine();
+            }
+            ImGui::EndDragDropSource();
+          }
+
           ImGui::SameLine();
         }
       }
       ImGui::EndChild();
-      ImGui::PopID();
-
-      ImGui::Text("tile-set[%lu] from texture[%lu]", handle.id(), element->tile_atlas.id());
-      if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-      {
-        const ImVec4 tint =
-          ImGui::SetDragDropPayload("SDE_TILESET_ASSET", std::addressof(handle), sizeof(handle), /*cond = */ 0)
-          ? ImVec4{0, 1, 0, 1}
-          : ImVec4{1, 1, 1, 1};
-        ImGui::TextColored(tint, "tile-set[%lu]", handle.id());
-        ImGui::EndDragDropSource();
-      }
 
       if (ImGui::IsItemClicked(ImGuiMouseButton_Right) and !ImGui::IsPopupOpen("tile-set-pop-up"))
       {
@@ -260,6 +274,7 @@ private:
         Visit(element, ImGuiFieldFormatter{});
         ImGui::EndPopup();
       }
+      ImGui::PopID();
     }
     ImGui::End();
 

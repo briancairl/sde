@@ -190,6 +190,28 @@ private:
         });
     }
 
+    render_resources.buffer_group = 1;
+    render_resources.shader = sprite_shader_;
+
+    if (auto render_pass_or_error = RenderPass::create(
+          render_buffer_, *renderer_, assets.graphics, uniforms, render_resources, app.viewport_size);
+        render_pass_or_error.has_value())
+    {
+      assets.registry.view<Position, TileMap, DebugWireFrame>().each(
+        [&](const Position& pos, const TileMap& tile_map, const DebugWireFrame& debug) {
+          render_buffer_.quads.push_back(
+            {.rect = Bounds2f{pos.center, pos.center + tile_map.mapSize()}, .color = debug.color});
+        });
+
+      assets.registry.view<Size, Position, DebugWireFrame>().each(
+        [&](const Size& size, const Position& pos, const DebugWireFrame& debug) {
+          const Vec2f min_corner{pos.center - 0.5F * size.extent};
+          const Vec2f max_corner{pos.center + 0.5F * size.extent};
+          render_buffer_.quads.push_back({.rect = Bounds2f{min_corner, max_corner}, .color = debug.color});
+        });
+    }
+
+    render_resources.buffer_group = 0;
     render_resources.shader = player_text_shader_;
 
     if (auto render_pass_or_error = RenderPass::create(
@@ -287,9 +309,9 @@ private:
             options.max_triangle_count_per_render_pass = max_triangle_count_per_render_pass;
           }
           {
-            bool is_dynamic = options.mode == VertexBufferMode::kDynamic;
+            bool is_dynamic = options.buffer_mode == VertexBufferMode::kDynamic;
             ImGui::Checkbox("dynamic", &is_dynamic);
-            options.mode = (is_dynamic) ? VertexBufferMode::kDynamic : VertexBufferMode::kStatic;
+            options.buffer_mode = (is_dynamic) ? VertexBufferMode::kDynamic : VertexBufferMode::kStatic;
           }
           ImGui::PopID();
           ImGui::Separator();

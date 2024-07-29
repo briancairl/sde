@@ -5,64 +5,64 @@
  */
 #pragma once
 
-// C++ Standard Library
-#include <iosfwd>
 
 // SDE
 #include "sde/geometry.hpp"
+#include "sde/resource.hpp"
 
 namespace sde::graphics
 {
 
-using Point = Vec2f;
-
-struct Line
+struct Line : Resource<Line>
 {
-  Point tail = Point::Zero();
-  Point head = Point::Zero();
+  Vec2f tail = Vec2f::Zero();
+  Vec2f head = Vec2f::Zero();
+
+  auto field_list() { return FieldList(Field{"tail", tail}, Field{"head", head}); }
 };
 
-std::ostream& operator<<(std::ostream& os, const Line& line);
-
-using Rect = Bounds2f;
-
-std::ostream& operator<<(std::ostream& os, const Rect& rect);
-
-struct Quad
+struct Quad : Resource<Quad>
 {
-  Rect rect = {};
+  Bounds2f rect = {};
   Vec4f color = Vec4f::Ones();
 
   const Bounds2f& bounds() const { return rect; }
+
+  auto field_list() { return FieldList(Field{"rect", rect}, Field{"color", color}); }
 };
 
-std::ostream& operator<<(std::ostream& os, const Quad& quad);
-
-struct Circle
+struct Circle : Resource<Circle>
 {
-  Point center = {};
+  Vec2f center = {};
   float radius = 1.0F;
   Vec4f color = Vec4f::Ones();
 
   const Bounds2f bounds() const
   {
-    const Point extents{radius, radius};
+    const Vec2f extents{radius, radius};
     return Bounds2f{center - extents, center + extents};
   }
+
+  auto field_list() { return FieldList(Field{"center", center}, Field{"radius", radius}, Field{"color", color}); }
 };
 
-std::ostream& operator<<(std::ostream& os, const Circle& circle);
-
-struct TexturedQuad
+struct TexturedQuad : Resource<TexturedQuad>
 {
-  Rect rect;
-  Rect rect_texture;
+  Bounds2f rect;
+  Bounds2f rect_texture;
   Vec4f color = Vec4f::Ones();
   std::size_t texture_unit;
 
   const Bounds2f& bounds() const { return rect; }
-};
 
-std::ostream& operator<<(std::ostream& os, const TexturedQuad& quad);
+  auto field_list()
+  {
+    return FieldList(
+      Field{"rect", rect},
+      Field{"rect_texture", rect_texture},
+      Field{"color", color},
+      Field{"texture_unit", texture_unit});
+  }
+};
 
 }  // namespace sde::graphics

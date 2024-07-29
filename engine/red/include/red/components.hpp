@@ -23,6 +23,12 @@ struct Size : Resource<Size>
   auto field_list() { return FieldList(Field{"extent", extent}); }
 };
 
+struct DebugWireFrame : Resource<DebugWireFrame>
+{
+  Vec4f color;
+  auto field_list() { return FieldList(Field{"color", color}); }
+};
+
 struct Position : Resource<Position>
 {
   Vec2f center;

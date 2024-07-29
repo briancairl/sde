@@ -87,6 +87,7 @@ private:
       auto id = assets.registry.create();
       assets.registry.emplace<TileMap>(id, tile_map_active_options_);
       assets.registry.emplace<Position>(id, Position{.center = {0, 0}});
+      assets.registry.emplace<DebugWireFrame>(id, DebugWireFrame{.color = Vec4f{1.F, 0.F, 0.F, 1.F}});
       tile_map_active_ = id;
       tile_inspect_coords_.reset();
       tile_inspect_index_.reset();
@@ -114,7 +115,7 @@ private:
         tile_inspect_index_.reset();
       }
 
-      if (tm.within(ti) and ImGui::IsMouseClicked(ImGuiMouseButton_Left) and tile_inspect_index_.has_value())
+      if (tm.within(ti) and ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) and tile_inspect_index_.has_value())
       {
         tm[ti] = (*tile_inspect_index_);
       }

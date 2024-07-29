@@ -76,18 +76,33 @@ enum class VertexBufferMode
 };
 
 /**
+ * @brief Buffer mode
+ */
+enum class VertexDrawMode
+{
+  kFilled,
+  kWireFrame,
+};
+
+/**
  * @brief Texture creation options
  */
 struct VertexBufferOptions : Resource<VertexBufferOptions>
 {
-  std::size_t max_triangle_count_per_render_pass = 10000UL;
-  VertexBufferMode mode = VertexBufferMode::kDynamic;
+  std::size_t max_triangle_count_per_render_pass = 1000UL;
+  VertexBufferMode buffer_mode = VertexBufferMode::kDynamic;
+  VertexDrawMode draw_mode = VertexDrawMode::kFilled;
 
+  // clang-format off
   auto field_list()
   {
     return FieldList(
-      Field{"max_triangle_count_per_render_pass", max_triangle_count_per_render_pass}, Field{"mode", mode});
+      Field{"max_triangle_count_per_render_pass", max_triangle_count_per_render_pass},
+      Field{"buffer_mode", buffer_mode},
+      Field{"draw_mode", draw_mode}
+    );
   }
+  // clang-format on
 };
 
 
@@ -96,7 +111,12 @@ struct VertexBufferOptions : Resource<VertexBufferOptions>
  */
 struct Renderer2DOptions : Resource<Renderer2DOptions>
 {
-  std::vector<VertexBufferOptions> buffers = {VertexBufferOptions{}, VertexBufferOptions{}};
+  // clang-format off
+  std::vector<VertexBufferOptions> buffers = {
+    VertexBufferOptions{.draw_mode=VertexDrawMode::kFilled},
+    VertexBufferOptions{.draw_mode=VertexDrawMode::kWireFrame}
+  };
+  // clang-format on
 
   auto field_list() { return FieldList(Field{"buffers", buffers}); }
 };

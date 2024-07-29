@@ -42,64 +42,43 @@ enum class VertexAccessMode
 };
 
 template <
-  std::size_t Index,
   typename ElementT,
   std::size_t ElementCount,
+  typename ValueT = ElementT,
   std::size_t InstanceDivisor = 0,
   VertexAccessMode AccessMode = VertexAccessMode::kDirect>
 struct VertexAttribute
 {
-  static constexpr std::size_t kElementCount = ElementCount;
-  static constexpr std::size_t kIndex = Index;
-  static constexpr std::size_t kBytesPerVertex = ElementCount * sizeof(ElementT);
+  static_assert(std::is_same<ElementT, ValueT>() or (sizeof(ValueT) == ElementCount * sizeof(ElementT)));
 
-  /// Vertex count
-  std::size_t vertex_count;
+  static constexpr std::size_t kElementCount{ElementCount};
+  static constexpr std::size_t kBytesPerVertex{ElementCount * sizeof(ElementT)};
 
-  explicit VertexAttribute(const std::size_t _vertex_count) : vertex_count{_vertex_count} {}
+  using ValueType = ValueT;
+
+  static void setup(std::size_t layout_index, std::size_t offset_bytes)
+  {
+    static constexpr std::uint8_t* kOffsetStart{nullptr};
+
+    glEnableVertexAttribArray(layout_index);
+
+    glVertexAttribPointer(
+      layout_index,  // layout index
+      kElementCount,  // elementcount
+      to_native_typecode(typecode<ElementT>()),  // typecode
+      to_native_bool(AccessMode == VertexAccessMode::kNormalized),  // normalized
+      kBytesPerVertex,  // stride
+      static_cast<const GLvoid*>(kOffsetStart + offset_bytes)  // offset in buffer
+    );
+
+    glVertexAttribDivisor(layout_index, InstanceDivisor);
+  }
 };
-
-template <
-  std::size_t Index,
-  typename ElementT,
-  std::size_t ElementCount,
-  std::size_t InstanceDivisor,
-  VertexAccessMode AccessMode>
-std::size_t setAttribute(
-  std::size_t offset_bytes,
-  const VertexAttribute<Index, ElementT, ElementCount, InstanceDivisor, AccessMode>& attribute)
-{
-  static constexpr std::uint8_t* kOffsetStart = nullptr;
-  static constexpr std::size_t kBytesPerVertex = ElementCount * sizeof(ElementT);
-
-  const std::size_t total_bytes = kBytesPerVertex * attribute.vertex_count;
-
-  glEnableVertexAttribArray(Index);
-
-  glVertexAttribPointer(
-    Index,  // layout index
-    ElementCount,  // elementcount
-    to_native_typecode(typecode<ElementT>()),  // typecode
-    to_native_bool(AccessMode == VertexAccessMode::kNormalized),  // normalized
-    kBytesPerVertex,  // stride
-    static_cast<const GLvoid*>(kOffsetStart + offset_bytes)  // offset in buffer
-  );
-
-  glVertexAttribDivisor(Index, InstanceDivisor);
-
-  return total_bytes;
-}
 
 constexpr std::size_t kElementsPerTriangle{3UL};
 constexpr std::size_t kVerticesPerQuad{4UL};
 constexpr std::size_t kVerticesPerCircleOuter{16UL};
 constexpr std::size_t kVerticesPerCircle{1UL + kVerticesPerCircleOuter};
-
-constexpr std::size_t kVertexAttributeCount{4};
-using PositionAttribute = VertexAttribute<0, float, 2>;
-using TexCoordAttribute = VertexAttribute<1, float, 2>;
-using TexUnitAttribute = VertexAttribute<2, float, 1>;
-using TintColorAttribute = VertexAttribute<3, float, 4>;
 
 
 std::array<Vec2f, kVerticesPerCircle> kUnitCircleLookup{[] {
@@ -123,9 +102,18 @@ std::array<Vec2f, kVerticesPerCircle> kUnitCircleLookup{[] {
 Vec2f* fillQuadPositions(Vec2f* target, const Vec2f& min, const Vec2f& max)
 {
   target[0] = min;
-  target[1] = {min.x(), max.y()};
+  target[1] = {max.x(), min.y()};
   target[2] = max;
-  target[3] = {max.x(), min.y()};
+  target[3] = {min.x(), max.y()};
+  return target + kVerticesPerQuad;
+}
+
+Vec2f* fillQuadPositionsT(Vec2f* target, const Vec2f& min, const Vec2f& max)
+{
+  target[0] = {max.x(), min.y()};
+  target[1] = min;
+  target[2] = {min.x(), max.y()};
+  target[3] = max;
   return target + kVerticesPerQuad;
 }
 
@@ -168,6 +156,15 @@ enum class ElementLayout
 };
 
 
+template <typename ShapeT> ElementLayout element_layout_of();
+
+template <> ElementLayout element_layout_of<Quad>() { return ElementLayout::kQuad; }
+
+template <> ElementLayout element_layout_of<TexturedQuad>() { return ElementLayout::kQuad; }
+
+template <> ElementLayout element_layout_of<Circle>() { return ElementLayout::kCircle; }
+
+
 struct ElementLayoutBuffer
 {
   ElementLayout type;
@@ -177,7 +174,7 @@ struct ElementLayoutBuffer
 
 
 [[nodiscard]] std::tuple<GLuint*, std::size_t>
-addElementsQuad(GLuint* elements, std::size_t vertex_count, std::size_t n)
+addTriangleElementsQuad(GLuint* elements, std::size_t vertex_count, std::size_t n)
 {
   for (std::size_t i = 0; i < n; ++i, vertex_count += kVerticesPerQuad)
   {
@@ -198,7 +195,7 @@ addElementsQuad(GLuint* elements, std::size_t vertex_count, std::size_t n)
 
 
 [[nodiscard]] std::tuple<GLuint*, std::size_t>
-addElementsCircle(GLuint* elements, std::size_t vertex_count, std::size_t n)
+addTriangleElementsCircle(GLuint* elements, std::size_t vertex_count, std::size_t n)
 {
   for (std::size_t i = 0; i < n; ++i)
   {
@@ -217,85 +214,137 @@ addElementsCircle(GLuint* elements, std::size_t vertex_count, std::size_t n)
 }
 
 
-struct VertexAttributeBuffer
+[[nodiscard]] std::tuple<GLuint*, std::size_t>
+addLineElementsQuad(GLuint* elements, std::size_t vertex_count, std::size_t n)
 {
-  Vec2f* position = nullptr;
-  Vec2f* texcoord = nullptr;
-  float* texunit = nullptr;
-  Vec4f* tint = nullptr;
-};
+  for (std::size_t i = 0; i < n; ++i, vertex_count += kVerticesPerQuad, elements += 8)
+  {
+    elements[0] = vertex_count + 0;
+    elements[1] = vertex_count + 1;
+
+    elements[2] = vertex_count + 1;
+    elements[3] = vertex_count + 2;
+
+    elements[4] = vertex_count + 2;
+    elements[5] = vertex_count + 3;
+
+    elements[6] = vertex_count + 3;
+    elements[7] = vertex_count + 0;
+  }
+  return {elements, vertex_count};
+}
+
+[[nodiscard]] std::tuple<GLuint*, std::size_t>
+addLineElementsCircle(GLuint* elements, std::size_t vertex_count, std::size_t n)
+{
+  for (std::size_t i = 0; i < n; ++i, vertex_count += kVerticesPerCircle)
+  {
+    for (std::size_t j = 1; j < kVerticesPerCircle; ++j)
+    {
+      elements[0] = j - 1;
+      elements[1] = j;
+      elements += 2;
+    }
+    {
+      elements[0] = kVerticesPerCircle - 1;
+      elements[1] = 0;
+      elements += 2;
+    }
+  }
+  return {elements, vertex_count};
+}
+
+GLenum toGLDrawMode(VertexDrawMode mode)
+{
+  switch (mode)
+  {
+  case VertexDrawMode::kFilled:
+    return GL_TRIANGLES;
+  case VertexDrawMode::kWireFrame:
+    return GL_LINES;
+  }
+  return GL_TRIANGLES;
+}
 
 
-class VertexArray
+GLenum toGLBufferMode(VertexBufferMode mode)
+{
+  switch (mode)
+  {
+  case VertexBufferMode::kStatic:
+    return GL_STATIC_DRAW;
+  case VertexBufferMode::kDynamic:
+    return GL_DYNAMIC_DRAW;
+  }
+  return GL_DYNAMIC_DRAW;
+}
+
+
+template <typename... Attributes> class VertexArray
 {
 public:
-  VertexArray(std::size_t max_vertex_count, bool is_static) : VertexArray{}
-  {
-    vertex_count_max_ = max_vertex_count;
+  static constexpr std::size_t kVertexAttributeCount{sizeof...(Attributes)};
 
+  VertexArray(std::size_t max_vertex_count, VertexBufferMode buffer_mode, VertexDrawMode draw_mode) :
+      VertexArray{max_vertex_count, draw_mode}
+  {
     glGenVertexArrays(1, &vao_);
     glBindVertexArray(vao_);
 
     glGenBuffers(1, &vbo_);
-    glGenBuffers(1, &ebo_);
 
     // Allocate vertex buffer
-    {
-      glBindBuffer(GL_ARRAY_BUFFER, vbo_);
-      std::size_t total_bytes = 0;
-      vertex_attribute_byte_offsets_[PositionAttribute::kIndex] = total_bytes;
-      total_bytes += setAttribute(total_bytes, PositionAttribute{max_vertex_count});
-      vertex_attribute_byte_offsets_[TexCoordAttribute::kIndex] = total_bytes;
-      total_bytes += setAttribute(total_bytes, TexCoordAttribute{max_vertex_count});
-      vertex_attribute_byte_offsets_[TexUnitAttribute::kIndex] = total_bytes;
-      total_bytes += setAttribute(total_bytes, TexUnitAttribute{max_vertex_count});
-      vertex_attribute_byte_offsets_[TintColorAttribute::kIndex] = total_bytes;
-      total_bytes += setAttribute(total_bytes, TintColorAttribute{max_vertex_count});
-      glBufferData(GL_ARRAY_BUFFER, total_bytes, nullptr, is_static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
-      glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
-
-    // Allocate element buffer
-    {
-      static constexpr std::size_t kBytesPerElement = sizeof(GLuint);
-      const std::size_t total_bytes = vertex_count_max_ * kElementsPerTriangle * kBytesPerElement;
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER, total_bytes, nullptr, is_static ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-
-    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+    const auto total_bytes = std::apply(
+      [&](auto... attrs) -> std::size_t {
+        std::size_t total_bytes_accum = 0;
+        std::size_t layout_index_accum = 0;
+        auto fn = [&](auto attr) {
+          using AttrType = bare_t<decltype(attr)>;
+          AttrType::setup(layout_index_accum, total_bytes_accum);
+          vertex_attribute_byte_offsets_[layout_index_accum] = total_bytes_accum;
+          total_bytes_accum += AttrType::kBytesPerVertex * max_vertex_count;
+          ++layout_index_accum;
+          return 1;
+        };
+        [[maybe_unused]] const auto _ = (fn(attrs) + ...);
+        return total_bytes_accum;
+      },
+      std::tuple<Attributes...>{});
+    glBufferData(GL_ARRAY_BUFFER, total_bytes, nullptr, toGLBufferMode(buffer_mode));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
   VertexArray(VertexArray&& other) :
       vao_{other.vao_},
       vbo_{other.vbo_},
-      ebo_{other.ebo_},
       vertex_buffer_mapped_{other.vertex_buffer_mapped_},
       vertex_count_{other.vertex_count_},
-      vertex_attribute_byte_offsets_{other.vertex_attribute_byte_offsets_},
-      element_layout_buffer_{std::move(other.element_layout_buffer_)}
+      vertex_attribute_byte_offsets_{other.vertex_attribute_byte_offsets_}
   {
     other.vao_ = 0;
     other.vbo_ = 0;
-    other.ebo_ = 0;
     other.vertex_buffer_mapped_ = nullptr;
   }
 
   ~VertexArray()
   {
-    unmap_if_mapped();
+    if (vertex_buffer_mapped_ != nullptr)
+    {
+      unmap();
+      vertex_buffer_mapped_ = nullptr;
+    }
     if (vao_ != 0)
     {
-      glDeleteBuffers(1, &ebo_);
       glDeleteBuffers(1, &vbo_);
       glDeleteVertexArrays(1, &vao_);
     }
   }
 
-  template <typename ShapeT> void size_after_add(std::size_t shape_count);
-
-  template <typename ShapeT> void add(std::size_t shape_count);
+  template <typename ShapeT> void add(std::size_t shape_count)
+  {
+    vertex_count_ += vertex_count_of<ShapeT>(shape_count);
+  }
 
   template <typename ShapeT> void add(const View<const ShapeT>& views) { add<ShapeT>(views.size()); }
 
@@ -304,6 +353,8 @@ public:
   std::size_t size() const { return vertex_count_; }
 
   std::size_t capacity() const { return vertex_count_max_; }
+
+  VertexDrawMode draw_mode() const { return vertex_draw_mode_; }
 
   void map()
   {
@@ -319,55 +370,94 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
-  void unmap_if_mapped()
-  {
-    if (vertex_buffer_mapped_ == nullptr)
-    {
-      return;
-    }
-    unmap();
-  }
+  void draw() { glDrawArrays(toGLDrawMode(draw_mode()), 0, vertex_count_); }
 
-  void draw()
+  auto attributes()
   {
-    digest();
-    glDrawElements(GL_TRIANGLES, element_count_, GL_UNSIGNED_INT, 0);
-  }
-
-  template <typename R, typename VertexAttributeT, typename ByteT>
-  [[nodiscard]] static R*
-  getVertexAttributeBuffer(const std::array<std::size_t, kVertexAttributeCount>& byte_offsets, ByteT* mapped_buffer)
-  {
-    static_assert(sizeof(R) == VertexAttributeT::kBytesPerVertex);
-    return reinterpret_cast<R*>(
-      reinterpret_cast<std::uint8_t*>(mapped_buffer) + byte_offsets[VertexAttributeT::kIndex]);
-  }
-
-  VertexAttributeBuffer getVertexAttributeBuffer()
-  {
-    return {
-      .position =
-        getVertexAttributeBuffer<Vec2f, PositionAttribute>(vertex_attribute_byte_offsets_, vertex_buffer_mapped_) +
-        vertex_count_,
-      .texcoord =
-        getVertexAttributeBuffer<Vec2f, TexCoordAttribute>(vertex_attribute_byte_offsets_, vertex_buffer_mapped_) +
-        vertex_count_,
-      .texunit =
-        getVertexAttributeBuffer<float, TexUnitAttribute>(vertex_attribute_byte_offsets_, vertex_buffer_mapped_) +
-        vertex_count_,
-      .tint =
-        getVertexAttributeBuffer<Vec4f, TintColorAttribute>(vertex_attribute_byte_offsets_, vertex_buffer_mapped_) +
-        vertex_count_};
+    auto offset_itr = std::begin(vertex_attribute_byte_offsets_);
+    return std::make_tuple((mapped_attribute<Attributes>(*(offset_itr++), vertex_buffer_mapped_) + vertex_count_)...);
   }
 
 private:
-  VertexArray() = default;
+  explicit VertexArray(std::size_t vertex_count_max, VertexDrawMode draw_mode) :
+      vertex_count_max_{vertex_count_max}, vertex_draw_mode_{draw_mode}
+  {}
 
-  template <ElementLayout kLayout> void add_element_layout(std::size_t count)
+  template <typename VertexAttributeT, typename ByteT>
+  [[nodiscard]] static auto* mapped_attribute(const std::size_t offset, ByteT* mapped_buffer)
   {
-    if (element_layout_buffer_.empty() or (element_layout_buffer_.back().type != kLayout))
+    using R = typename VertexAttributeT::ValueType;
+    static_assert(sizeof(R) == VertexAttributeT::kBytesPerVertex);
+    return reinterpret_cast<R*>(reinterpret_cast<std::uint8_t*>(mapped_buffer) + offset);
+  }
+
+  GLuint vao_ = 0;
+  GLuint vbo_ = 0;
+  void* vertex_buffer_mapped_ = nullptr;
+  std::size_t vertex_count_ = 0;
+  std::size_t vertex_count_max_ = 0;
+  VertexDrawMode vertex_draw_mode_ = VertexDrawMode::kFilled;
+  std::array<std::size_t, kVertexAttributeCount> vertex_attribute_byte_offsets_;
+};
+
+
+template <typename... Attributes> class ElementVertexArray : public VertexArray<Attributes...>
+{
+public:
+  using Base = VertexArray<Attributes...>;
+  static constexpr std::size_t kVertexAttributeCount{sizeof...(Attributes)};
+
+  ElementVertexArray(std::size_t max_vertex_count, VertexBufferMode buffer_mode, VertexDrawMode draw_mode) :
+      Base{max_vertex_count, buffer_mode, draw_mode}
+  {
+    glGenBuffers(1, &ebo_);
+
+    static constexpr std::size_t kBytesPerElement = sizeof(GLuint);
+    const std::size_t total_bytes = max_vertex_count * kElementsPerTriangle * kBytesPerElement;
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, total_bytes, nullptr, toGLBufferMode(buffer_mode));
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  }
+
+  ElementVertexArray(ElementVertexArray&& other) :
+      Base{std::move(static_cast<Base&>(other))},
+      ebo_{other.ebo_},
+      element_layout_buffer_{std::move(other.element_layout_buffer_)}
+  {
+    other.ebo_ = 0;
+  }
+
+  ~ElementVertexArray()
+  {
+    if (ebo_ != 0)
     {
-      element_layout_buffer_.emplace_back(kLayout, count);
+      glDeleteBuffers(1, &ebo_);
+    }
+  }
+
+  template <typename ShapeT> void add(std::size_t shape_count)
+  {
+    Base::template add<ShapeT>(shape_count);
+    this->template add_element_layout<ShapeT>(shape_count);
+  }
+
+  template <typename ShapeT> void add(const View<const ShapeT>& views) { this->add<ShapeT>(views.size()); }
+
+  void draw()
+  {
+    flush();
+    glDrawElements(toGLDrawMode(this->draw_mode()), element_count_, GL_UNSIGNED_INT, 0);
+  }
+
+private:
+  using Base::add;
+  using Base::draw;
+
+  template <typename ShapeT> void add_element_layout(std::size_t count)
+  {
+    if (element_layout_buffer_.empty() or (element_layout_buffer_.back().type != element_layout_of<ShapeT>()))
+    {
+      element_layout_buffer_.emplace_back(element_layout_of<ShapeT>(), count);
     }
     else
     {
@@ -375,7 +465,7 @@ private:
     }
   }
 
-  void digest()
+  void flush()
   {
     if (element_layout_buffer_.empty())
     {
@@ -389,19 +479,40 @@ private:
     auto* elements_begin = reinterpret_cast<GLuint*>(glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY));
     auto* elements_end = elements_begin;
     std::size_t vertex_count = 0;
-    for (const auto& [type, n] : element_layout_buffer_)
+    switch (this->draw_mode())
     {
-      switch (type)
+    case VertexDrawMode::kFilled: {
+      for (const auto& [type, n] : element_layout_buffer_)
       {
-      case ElementLayout::kQuad:
-        std::tie(elements_end, vertex_count) = addElementsQuad(elements_end, vertex_count, n);
-        break;
-      case ElementLayout::kCircle:
-        std::tie(elements_end, vertex_count) = addElementsCircle(elements_end, vertex_count, n);
-        break;
+        switch (type)
+        {
+        case ElementLayout::kQuad:
+          std::tie(elements_end, vertex_count) = addTriangleElementsQuad(elements_end, vertex_count, n);
+          break;
+        case ElementLayout::kCircle:
+          std::tie(elements_end, vertex_count) = addTriangleElementsCircle(elements_end, vertex_count, n);
+          break;
+        }
       }
+      break;
     }
-    SDE_ASSERT_EQ(vertex_count, vertex_count_);
+    case VertexDrawMode::kWireFrame: {
+      for (const auto& [type, n] : element_layout_buffer_)
+      {
+        switch (type)
+        {
+        case ElementLayout::kQuad:
+          std::tie(elements_end, vertex_count) = addLineElementsQuad(elements_end, vertex_count, n);
+          break;
+        case ElementLayout::kCircle:
+          std::tie(elements_end, vertex_count) = addLineElementsCircle(elements_end, vertex_count, n);
+          break;
+        }
+      }
+      break;
+    }
+    }
+    SDE_ASSERT_EQ(vertex_count, Base::size());
 
     // Count the number of added vertex elements
     element_count_ = static_cast<std::size_t>(std::distance(elements_begin, elements_end));
@@ -409,39 +520,21 @@ private:
     // Un-map vertex element buffer to make it inactive
     glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 
-    // Remove elements to digest
+    // Remove elements to flush
     element_layout_buffer_.clear();
   }
 
-  GLuint vao_ = 0;
-  GLuint vbo_ = 0;
   GLuint ebo_ = 0;
-  void* vertex_buffer_mapped_ = nullptr;
-  std::size_t vertex_count_ = 0;
-  std::size_t vertex_count_max_ = 0;
   std::size_t element_count_ = 0;
-  std::array<std::size_t, kVertexAttributeCount> vertex_attribute_byte_offsets_;
   std::vector<ElementLayoutBuffer> element_layout_buffer_ = {};
 };
 
-
-template <> void VertexArray::add<Quad>(std::size_t shape_count)
-{
-  vertex_count_ += vertex_count_of<Quad>(shape_count);
-  this->template add_element_layout<ElementLayout::kQuad>(shape_count);
-}
-
-template <> void VertexArray::add<TexturedQuad>(std::size_t shape_count)
-{
-  vertex_count_ += vertex_count_of<Quad>(shape_count);
-  this->template add_element_layout<ElementLayout::kQuad>(shape_count);
-}
-
-template <> void VertexArray::add<Circle>(std::size_t shape_count)
-{
-  vertex_count_ += vertex_count_of<Circle>(shape_count);
-  this->template add_element_layout<ElementLayout::kCircle>(shape_count);
-}
+using BatchVertexArray = ElementVertexArray<
+  VertexAttribute<float, 2, Vec2f>,  // position
+  VertexAttribute<float, 2, Vec2f>,  // tex-coord
+  VertexAttribute<float, 1, float>,  // tex-unit
+  VertexAttribute<float, 4, Vec4f>  // tint color
+  >;
 
 class OpenGLBackend : public RenderBackend
 {
@@ -452,7 +545,7 @@ public:
     for (const auto& options : options.buffers)
     {
       va_.emplace_back(
-        kElementsPerTriangle * options.max_triangle_count_per_render_pass, options.mode == VertexBufferMode::kStatic);
+        kElementsPerTriangle * options.max_triangle_count_per_render_pass, options.buffer_mode, options.draw_mode);
     }
   }
 
@@ -460,7 +553,8 @@ public:
 
   void start(std::size_t active_buffer_index)
   {
-    va_active_ = std::addressof(va_[active_buffer_index]);
+    SDE_ASSERT_LT(active_buffer_index, va_.size());
+    va_active_ = (va_.data() + active_buffer_index);
     va_active_->reset();
     va_active_->map();
   }
@@ -469,7 +563,6 @@ public:
   {
     // Un-map vertex attribute buffer to make it inactive
     va_active_->unmap();
-
     // Draw elements
     va_active_->draw();
   }
@@ -483,16 +576,16 @@ public:
     }
 
     // Add vertex attribute data
-    auto buffers = va_active_->getVertexAttributeBuffer();
+    auto [position, texcoord, texunit, tint] = va_active_->attributes();
     for (const auto& q : quads)
     {
       static constexpr float kNoTextureUnitAssigned = -1.0F;
 
       // clang-format off
-      buffers.position = fillQuadPositions(buffers.position, q.rect.min(), q.rect.max());
-      buffers.texcoord = std::fill_n(buffers.texcoord, kVerticesPerQuad, Vec2f::Zero());
-      buffers.texunit = std::fill_n(buffers.texunit, kVerticesPerQuad, kNoTextureUnitAssigned);
-      buffers.tint = std::fill_n(buffers.tint, kVerticesPerQuad, q.color);
+      position = fillQuadPositions(position, q.rect.min(), q.rect.max());
+      texcoord = std::fill_n(texcoord, kVerticesPerQuad, Vec2f::Zero());
+      texunit = std::fill_n(texunit, kVerticesPerQuad, kNoTextureUnitAssigned);
+      tint = std::fill_n(tint, kVerticesPerQuad, q.color);
       // clang-format on
     }
 
@@ -510,14 +603,14 @@ public:
     }
 
     // Add vertex attribute data
-    auto buffers = va_active_->getVertexAttributeBuffer();
+    auto [position, texcoord, texunit, tint] = va_active_->attributes();
     for (const auto& tq : textured_quads)
     {
       // clang-format off
-      buffers.position = fillQuadPositions(buffers.position, tq.rect.min(), tq.rect.max());
-      buffers.texcoord = fillQuadPositions(buffers.texcoord, tq.rect_texture.min(), tq.rect_texture.max());
-      buffers.texunit = std::fill_n(buffers.texunit, kVerticesPerQuad, static_cast<float>(tq.texture_unit));
-      buffers.tint = std::fill_n(buffers.tint, kVerticesPerQuad, tq.color);
+      position = fillQuadPositions(position, tq.rect.min(), tq.rect.max());
+      texcoord = fillQuadPositionsT(texcoord, tq.rect_texture.min(), tq.rect_texture.max());
+      texunit = std::fill_n(texunit, kVerticesPerQuad, static_cast<float>(tq.texture_unit));
+      tint = std::fill_n(tint, kVerticesPerQuad, tq.color);
       // clang-format on
     }
 
@@ -535,17 +628,17 @@ public:
     }
 
     // Add vertex attribute data
-    auto buffers = va_active_->getVertexAttributeBuffer();
+    auto [position, texcoord, texunit, tint] = va_active_->attributes();
     for (const auto& c : circles)
     {
       static constexpr float kNoTextureUnitAssigned = -1.0F;
 
       // clang-format off
-      buffers.position = std::transform(std::begin(kUnitCircleLookup), std::end(kUnitCircleLookup), buffers.position,
+      position = std::transform(std::begin(kUnitCircleLookup), std::end(kUnitCircleLookup), position,
                                         [&c](const Vec2f& unit) { return c.center + c.radius * unit; });
-      buffers.texcoord = std::copy(std::begin(kUnitCircleLookup), std::end(kUnitCircleLookup), buffers.texcoord);
-      buffers.texunit = std::fill_n(buffers.texunit, kVerticesPerCircle, kNoTextureUnitAssigned);
-      buffers.tint = std::fill_n(buffers.tint, kVerticesPerCircle, c.color);
+      texcoord = std::copy(std::begin(kUnitCircleLookup), std::end(kUnitCircleLookup), texcoord);
+      texunit = std::fill_n(texunit, kVerticesPerCircle, kNoTextureUnitAssigned);
+      tint = std::fill_n(tint, kVerticesPerCircle, c.color);
       // clang-format on
     }
 
@@ -555,8 +648,8 @@ public:
   }
 
 private:
-  VertexArray* va_active_ = nullptr;
-  std::vector<VertexArray> va_;
+  BatchVertexArray* va_active_ = nullptr;
+  std::vector<BatchVertexArray> va_;
 };
 
 std::optional<OpenGLBackend> backend__opengl;
