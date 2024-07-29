@@ -215,7 +215,13 @@ private:
 
       ImGui::PushID(handle.id());
       ImGui::BeginChild("tile-set", ImVec2{0.F, 70.F}, true, ImGuiWindowFlags_HorizontalScrollbar);
-      PreviewImage(*element, *atlas_texture, ImVec2{50.f, 50.f});
+      Preview(*element, *atlas_texture, ImVec2{50.f, 50.f});
+      if (ImGui::IsItemHovered())
+      {
+        const auto p_min = ImGui::GetItemRectMin();
+        const auto p_max = ImGui::GetItemRectMax();
+        ImGui::GetWindowDrawList()->AddRectFilled(p_min, p_max, ImColor{1.0F, 1.0F, 0.0F, 0.25F});
+      }
 
       if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
       {
@@ -224,7 +230,7 @@ private:
           ? ImVec4{0, 1, 0, 1}
           : ImVec4{1, 1, 1, 1};
         ImGui::TextColored(tint, "tile-set[%lu]", handle.id());
-        PreviewImage(*element, *atlas_texture, ImVec2{25.f, 25.f}, ImVec2{5.f, 5.f}, 4UL);
+        Preview(*element, *atlas_texture, ImVec2{25.f, 25.f}, ImVec2{5.f, 5.f}, 4UL);
         ImGui::EndDragDropSource();
       }
       ImGui::EndChild();

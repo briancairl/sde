@@ -60,7 +60,13 @@ private:
       ImGui::PushID(handle.id());
 
       const auto max_size_x = std::max(1.F, ImGui::GetWindowWidth() - 2.F * ImGui::GetStyle().ScrollbarSize);
-      PreviewImage(*element, {max_size_x, max_size_x});
+      Preview(*element, {max_size_x, max_size_x});
+      if (ImGui::IsItemHovered())
+      {
+        const auto p_min = ImGui::GetItemRectMin();
+        const auto p_max = ImGui::GetItemRectMax();
+        ImGui::GetWindowDrawList()->AddRectFilled(p_min, p_max, ImColor{1.0F, 1.0F, 0.0F, 0.25F});
+      }
 
       if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
       {
@@ -69,7 +75,7 @@ private:
           ? ImVec4{0, 1, 0, 1}
           : ImVec4{1, 1, 1, 1};
         ImGui::TextColored(tint, "texture[%lu]", handle.id());
-        PreviewImage(*element, {100.0F, 100.0F});
+        Preview(*element, {100.0F, 100.0F});
         ImGui::EndDragDropSource();
       }
 

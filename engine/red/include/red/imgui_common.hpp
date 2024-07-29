@@ -80,10 +80,7 @@ struct ImGuiFieldFormatter
 };
 
 
-inline bool PreviewImage(
-  const sde::graphics::Texture& texture,
-  const ImVec2& preview_size,
-  const ImColor& hovering_tint_color = ImColor{1.0F, 1.0F, 0.0F, 0.2F})
+inline bool Preview(const sde::graphics::Texture& texture, const ImVec2& preview_size)
 {
   const ImColor border_color{ImGui::GetStyle().Colors[ImGuiCol_Border]};
   auto* drawlist = ImGui::GetWindowDrawList();
@@ -117,16 +114,11 @@ inline bool PreviewImage(
       ImVec2{1, 1},
       IM_COL32_WHITE);
   }
-  if (ImGui::IsMouseHoveringRect(pos, pos + preview_size))
-  {
-    drawlist->AddRectFilled(pos, pos + preview_size, hovering_tint_color);
-    return true;
-  }
   return false;
 }
 
 
-inline void PreviewImage(
+inline void Preview(
   const sde::graphics::TileSet& tileset,
   const sde::graphics::Texture& texture,
   const ImVec2& preview_tile_size,

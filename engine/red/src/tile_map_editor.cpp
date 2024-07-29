@@ -66,7 +66,24 @@ private:
     ImGui::ColorEdit4("tint color", tile_map_active_options_.tint_color.data());
     ImGui::InputInt2("shape", tile_map_active_options_.shape.data());
     ImGui::InputFloat2("tile size", tile_map_active_options_.tile_size.data());
-    ImGui::Text("tile set: %lu", tile_map_active_options_.tile_set.id());
+
+    if (auto h = tile_map_active_options_.tile_set; !h.isValid())
+    {
+      ImGui::TextUnformatted("tile-set: not set");
+    }
+    else if (auto tile_set = assets.graphics.tile_sets(h); !tile_set)
+    {
+      ImGui::TextUnformatted("tile-set: missing");
+    }
+    else if (auto tile_set_atlas_texture = assets.graphics.textures(tile_set->tile_atlas); !tile_set_atlas_texture)
+    {
+      ImGui::TextUnformatted("tile-set: missing atlas texture");
+    }
+    else
+    {
+      ImGui::Text("tile-set[%lu] (atlas texture[%lu])", h.id(), tile_set->tile_atlas.id());
+      Preview(*tile_set, *tile_set_atlas_texture, ImVec2{50.f, 50.f}, ImVec2{5.f, 5.f}, 4);
+    }
 
     if (ImGui::BeginDragDropTarget())
     {
@@ -165,6 +182,7 @@ private:
           {
             tm[*tile_inspect_coords_] = tile_index;
             tile_inspect_index_ = tile_index;
+            ImGui::CloseCurrentPopup();
           }
         }
         ImGui::EndChild();
