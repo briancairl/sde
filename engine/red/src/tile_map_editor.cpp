@@ -110,10 +110,11 @@ private:
       tile_inspect_index_.reset();
     }
 
+    const auto& tf = assets.registry.get<TransformQuery>(transform_query_id_);
+    const auto& pick_pos = sde::transform(tf.world_from_viewport, app.getMousePositionViewport());
+
     if (tile_map_active_.has_value())
     {
-      const auto& tf = assets.registry.get<TransformQuery>(transform_query_id_);
-      const auto& pick_pos = sde::transform(tf.world_from_viewport, app.getMousePositionViewport());
       auto [tm, tm_pos] = assets.registry.get<TileMap, Position>(*tile_map_active_);
       const auto ti = tm.getTileIndex(pick_pos - tm_pos.center);
 
@@ -205,6 +206,22 @@ private:
       }
       ImGui::EndPopup();
     }
+
+    assets.registry.view<TileMap, Position, DebugWireFrame>().each(
+      [this, &pick_pos](entt::entity tm_id, const TileMap& tm, const Position& pos, DebugWireFrame& wireframe) {
+        if (
+          Bounds2f{Vec2f::Zero(), tm.mapSize()}.contains(pick_pos - pos.center) and
+          ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        {
+          tile_map_active_ = tm_id;
+          tile_map_active_options_ = tm.options();
+          wireframe.color = Vec4f{1.F, 0.F, 0.F, 1.F};
+        }
+        else if (tile_map_active_ != tm_id)
+        {
+          wireframe.color = Vec4f{0.F, 0.F, 0.F, 0.F};
+        }
+      });
 
     ImGui::End();
 
