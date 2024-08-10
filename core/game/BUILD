@@ -1,12 +1,15 @@
 cc_library(
   name="game",
   hdrs=[
+    "include/sde/game/archive.hpp",
+    "include/sde/game/archive_fwd.hpp",
     "include/sde/game/assets.hpp",
     "include/sde/game/assets_fwd.hpp",
     "include/sde/game/entity.hpp",
     "include/sde/game/entity_fwd.hpp",
     "include/sde/game/entity_handle.hpp",
     "include/sde/game/scene.hpp",
+    "include/sde/game/scene_fwd.hpp",
     "include/sde/game/script.hpp",
     "include/sde/game/script_fwd.hpp",
     "include/sde/game/script_impl.hpp",

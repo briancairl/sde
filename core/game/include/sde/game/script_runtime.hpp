@@ -17,10 +17,10 @@
 
 // SDE
 #include "sde/app_properties.hpp"
+#include "sde/game/archive_fwd.hpp"
 #include "sde/game/script.hpp"
 #include "sde/game/script_fwd.hpp"
 #include "sde/game/script_runtime_fwd.hpp"
-#include "sde/serialization_binary_file_fwd.hpp"
 
 namespace sde::game
 {
@@ -29,8 +29,6 @@ class ScriptRuntime : public Script<ScriptRuntime>
 {
 public:
   using UPtr = ScriptRuntimeUPtr;
-  using OArchive = serial::binary_ofarchive;
-  using IArchive = serial::binary_ifarchive;
 
   virtual ~ScriptRuntime() = default;
 

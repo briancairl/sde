@@ -18,6 +18,7 @@
 #include "red/imgui_end.hpp"
 #include "red/imgui_start.hpp"
 //#include "red/player_character.hpp"
+#include "red/components.hpp"
 #include "red/renderer.hpp"
 #include "red/texture_viewer.hpp"
 #include "red/tile_map_editor.hpp"
@@ -46,6 +47,8 @@ int main(int argc, char** argv)
   // game::Systems systems{game::Systems::create().value()};
 
   game::Scene scene;
+
+  addComponentsToScene(scene);
 
   if (!scene.load("/tmp/test"))
   {

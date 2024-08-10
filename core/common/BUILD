@@ -82,6 +82,7 @@ cc_library(
     "include/sde/time_io.hpp",
     "include/sde/time_ostream.hpp",
     "include/sde/type.hpp",
+    "include/sde/type_name.hpp",
     "include/sde/traits.hpp",
     "include/sde/view.hpp",
   ],

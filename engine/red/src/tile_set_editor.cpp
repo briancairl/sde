@@ -115,10 +115,7 @@ private:
         atlas_tile_selected_.setZero();
       }
 
-      if (ImGui::InputInt2(
-            "tile size (px)",
-            atlas_tile_size_.data(),
-            ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AlwaysOverwrite))
+      if (ImGui::InputInt2("tile size (px)", atlas_tile_size_.data()) and (atlas_tile_size_.array() > 0).all())
       {
         const Vec2i dims = texture->shape.value.array() / atlas_tile_size_.array();
         atlas_tile_selected_.resize(dims.x(), dims.y());

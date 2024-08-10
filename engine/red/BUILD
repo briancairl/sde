@@ -16,6 +16,7 @@ cc_library(
     "include/red/texture_viewer.hpp",
   ],
   srcs=[
+    "src/components.cpp",
     #"src/background_music.cpp",
     #"src/player_character.cpp",
     "src/drag_and_drop_asset_loader.cpp",

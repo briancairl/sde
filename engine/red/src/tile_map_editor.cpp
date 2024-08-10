@@ -101,13 +101,17 @@ private:
 
     if (ImGui::Button("create") and tile_map_active_options_.tile_set.isValid())
     {
-      auto id = assets.registry.create();
-      assets.registry.emplace<TileMap>(id, tile_map_active_options_);
-      assets.registry.emplace<Position>(id, Position{.center = {0, 0}});
-      assets.registry.emplace<DebugWireFrame>(id, DebugWireFrame{.color = Vec4f{1.F, 0.F, 0.F, 1.F}});
-      tile_map_active_ = id;
-      tile_inspect_coords_.reset();
-      tile_inspect_index_.reset();
+      auto value_or_error = assets.entities.create();
+      if (value_or_error.has_value())
+      {
+        auto& e = *value_or_error;
+        assets.entities.attach<TileMap>(e.handle, tile_map_active_options_);
+        assets.entities.attach<Position>(e.handle, Position{.center = {0, 0}});
+        assets.entities.attach<DebugWireFrame>(e.handle, DebugWireFrame{.color = Vec4f{1.F, 0.F, 0.F, 1.F}});
+        tile_map_active_ = e->id;
+        tile_inspect_coords_.reset();
+        tile_inspect_index_.reset();
+      }
     }
 
     const auto& tf = assets.registry.get<TransformQuery>(transform_query_id_);
@@ -141,10 +145,18 @@ private:
         if (tm.within(ti))
         {
           tile_inspect_coords_ = ti;
+          if (!ImGui::IsPopupOpen("tile-selection"))
+          {
+            ImGui::OpenPopup("tile-selection");
+          }
         }
         else
         {
           tile_inspect_coords_.reset();
+          if (!ImGui::IsPopupOpen("tile-map-edit"))
+          {
+            ImGui::OpenPopup("tile-map-edit");
+          }
         }
         tile_inspect_index_.reset();
       }
@@ -153,58 +165,58 @@ private:
       {
         tm[ti] = (*tile_inspect_index_);
       }
+
+      static constexpr auto kPopUpFlags = ImGuiWindowFlags_None;
+      if (ImGui::BeginPopup("tile-selection", kPopUpFlags))
+      {
+        auto& tm = assets.registry.get<TileMap>(*tile_map_active_);
+
+        if (auto tile_set = assets.graphics.tile_sets(tm.options().tile_set); !tile_set)
+        {
+          ImGui::Text("%s", "missing tilset");
+        }
+        else if (auto tile_set_atlas_texture = assets.graphics.textures(tile_set->tile_atlas); !tile_set_atlas_texture)
+        {
+          ImGui::Text("%s", "missing tilset altas");
+        }
+        else
+        {
+          static constexpr float kTileHeightPx = 50.F;
+          const float aspect = tm.options().tile_size.y() / tm.options().tile_size.x();
+          ImGui::BeginChild(
+            "tile-browser",
+            ImVec2{
+              kTileHeightPx * aspect + 2.F * ImGui::GetStyle().ScrollbarSize,
+              std::min(tile_set->tile_bounds.size(), 3UL) * kTileHeightPx});
+          for (std::size_t tile_index = 0; tile_index < tile_set->tile_bounds.size(); ++tile_index)
+          {
+            const auto& bounds = tile_set->tile_bounds[tile_index];
+            ImGui::Image(
+              reinterpret_cast<void*>(tile_set_atlas_texture->native_id.value()),
+              ImVec2{kTileHeightPx * aspect, kTileHeightPx},
+              ImVec2{bounds.min().x(), bounds.min().y()},
+              ImVec2{bounds.max().x(), bounds.max().y()});
+            if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+            {
+              tm[*tile_inspect_coords_] = tile_index;
+              tile_inspect_index_ = tile_index;
+              ImGui::CloseCurrentPopup();
+            }
+          }
+          ImGui::EndChild();
+        }
+        ImGui::EndPopup();
+      }
+
+      if (ImGui::BeginPopup("tile-map-edit", kPopUpFlags))
+      {
+
+        ImGui::EndPopup();
+      }
     }
     else
     {
       tile_inspect_coords_.reset();
-    }
-
-    if (
-      tile_inspect_coords_.has_value() and ImGui::IsMouseClicked(ImGuiMouseButton_Right) and
-      !ImGui::IsPopupOpen("tile-selection"))
-    {
-      ImGui::OpenPopup("tile-selection");
-    }
-    static constexpr auto kPopUpFlags = ImGuiWindowFlags_None;
-    if (ImGui::BeginPopup("tile-selection", kPopUpFlags))
-    {
-      auto& tm = assets.registry.get<TileMap>(*tile_map_active_);
-
-      if (auto tile_set = assets.graphics.tile_sets(tm.options().tile_set); !tile_set)
-      {
-        ImGui::Text("%s", "missing tilset");
-      }
-      else if (auto tile_set_atlas_texture = assets.graphics.textures(tile_set->tile_atlas); !tile_set_atlas_texture)
-      {
-        ImGui::Text("%s", "missing tilset altas");
-      }
-      else
-      {
-        static constexpr float kTileHeightPx = 50.F;
-        const float aspect = tm.options().tile_size.y() / tm.options().tile_size.x();
-        ImGui::BeginChild(
-          "tile-browser",
-          ImVec2{
-            kTileHeightPx * aspect + 2.F * ImGui::GetStyle().ScrollbarSize,
-            std::min(tile_set->tile_bounds.size(), 3UL) * kTileHeightPx});
-        for (std::size_t tile_index = 0; tile_index < tile_set->tile_bounds.size(); ++tile_index)
-        {
-          const auto& bounds = tile_set->tile_bounds[tile_index];
-          ImGui::Image(
-            reinterpret_cast<void*>(tile_set_atlas_texture->native_id.value()),
-            ImVec2{kTileHeightPx * aspect, kTileHeightPx},
-            ImVec2{bounds.min().x(), bounds.min().y()},
-            ImVec2{bounds.max().x(), bounds.max().y()});
-          if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
-          {
-            tm[*tile_inspect_coords_] = tile_index;
-            tile_inspect_index_ = tile_index;
-            ImGui::CloseCurrentPopup();
-          }
-        }
-        ImGui::EndChild();
-      }
-      ImGui::EndPopup();
     }
 
     assets.registry.view<TileMap, Position, DebugWireFrame>().each(
