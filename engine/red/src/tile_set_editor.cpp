@@ -36,12 +36,22 @@ private:
   bool onLoad(IArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
+    ar >> Field{"selected_tile_set", selected_tile_set_};
+    ar >> Field{"atlas_texture_selected", atlas_texture_selected_};
+    ar >> Field{"atlas_tile_size", atlas_tile_size_};
+    ar >> Field{"atlas_tile_selected", atlas_tile_selected_};
+    ar >> Field{"atlas_tile_display_width", atlas_tile_display_width_};
     return true;
   }
 
   bool onSave(OArchive& ar, const SharedAssets& assets) const override
   {
     using namespace sde::serial;
+    ar << Field{"selected_tile_set", selected_tile_set_};
+    ar << Field{"atlas_texture_selected", atlas_texture_selected_};
+    ar << Field{"atlas_tile_size", atlas_tile_size_};
+    ar << Field{"atlas_tile_selected", atlas_tile_selected_};
+    ar << Field{"atlas_tile_display_width", atlas_tile_display_width_};
     return true;
   }
 
@@ -143,7 +153,7 @@ private:
       ImGui::BeginChild("#editor", ImVec2{max_display_width, 0.F}, false, ImGuiWindowFlags_HorizontalScrollbar);
 
       const ImVec2 atlas_texture_display_size{
-        atlas_tile_display_width_, atlas_tile_display_width_ * texture->shape.aspect()};
+        atlas_tile_display_width_, atlas_tile_display_width_ / texture->shape.aspect()};
 
       const auto atlas_texture_image_pos = ImGui::GetCursorScreenPos();
       ImGui::Image(

@@ -31,6 +31,7 @@ public:
 private:
   entt::entity transform_query_id_;
   std::optional<entt::entity> tile_map_active_;
+
   std::optional<Vec2i> tile_inspect_coords_;
   std::optional<std::size_t> tile_inspect_index_;
   TileMapOptions tile_map_active_options_;
@@ -38,12 +39,18 @@ private:
   bool onLoad(IArchive& ar, SharedAssets& assets) override
   {
     using namespace sde::serial;
+    ar >> Field{"tile_inspect_coords", tile_inspect_coords_};
+    ar >> Field{"tile_inspect_index", tile_inspect_index_};
+    ar >> Field{"tile_map_active_options", tile_map_active_options_};
     return true;
   }
 
   bool onSave(OArchive& ar, const SharedAssets& assets) const override
   {
     using namespace sde::serial;
+    ar << Field{"tile_inspect_coords", tile_inspect_coords_};
+    ar << Field{"tile_inspect_index", tile_inspect_index_};
+    ar << Field{"tile_map_active_options", tile_map_active_options_};
     return true;
   }
 
@@ -101,14 +108,15 @@ private:
 
     if (ImGui::Button("create") and tile_map_active_options_.tile_set.isValid())
     {
-      auto value_or_error = assets.entities.create();
-      if (value_or_error.has_value())
+
+      const auto id_or_error = assets.entities.make_entity([this](EntityCache& cache, Entity& e) {
+        cache.attach<TileMap>(e, tile_map_active_options_);
+        cache.attach<Position>(e, Position{.center = {0, 0}});
+        cache.attach<DebugWireFrame>(e, DebugWireFrame{.color = Vec4f{1.F, 0.F, 0.F, 1.F}});
+      });
+      if (id_or_error.has_value())
       {
-        auto& e = *value_or_error;
-        assets.entities.attach<TileMap>(e.handle, tile_map_active_options_);
-        assets.entities.attach<Position>(e.handle, Position{.center = {0, 0}});
-        assets.entities.attach<DebugWireFrame>(e.handle, DebugWireFrame{.color = Vec4f{1.F, 0.F, 0.F, 1.F}});
-        tile_map_active_ = e->id;
+        tile_map_active_ = (*id_or_error)->id;
         tile_inspect_coords_.reset();
         tile_inspect_index_.reset();
       }
@@ -122,7 +130,6 @@ private:
       auto [tm, tm_pos] = assets.registry.get<TileMap, Position>(*tile_map_active_);
       const auto ti = tm.getTileIndex(pick_pos - tm_pos.center);
 
-      ImGui::InputFloat2("origin", tm_pos.center.data());
       if (app.keys.isPressed(KeyCode::kA))
       {
         tm_pos.center.x() -= tile_map_active_options_.tile_size.x();
@@ -210,7 +217,20 @@ private:
 
       if (ImGui::BeginPopup("tile-map-edit", kPopUpFlags))
       {
-
+        ImGui::InputFloat2("origin", tm_pos.center.data());
+        if (ImGui::Button("deselect"))
+        {
+          tile_map_active_.reset();
+          tile_inspect_coords_.reset();
+          tile_inspect_index_.reset();
+        }
+        if (ImGui::Button("delete"))
+        {
+          assets.entities.remove(*tile_map_active_);
+          tile_map_active_.reset();
+          tile_inspect_coords_.reset();
+          tile_inspect_index_.reset();
+        }
         ImGui::EndPopup();
       }
     }

@@ -31,6 +31,16 @@ using namespace sde;
 
 int main(int argc, char** argv)
 {
+  if (argc < 2)
+  {
+    SDE_LOG_ERROR_FMT("%s <dir>", argv[0]);
+    return 1;
+  }
+  else
+  {
+    SDE_LOG_INFO_FMT("%s %s", argv[0], argv[1]);
+  }
+
   game::ScriptRuntimeLoader::add("renderer", [](const auto& manifest) { return createRenderer(); });
   game::ScriptRuntimeLoader::add("imgui_start", [](const auto& manifest) { return _ImGuiStart(); });
   game::ScriptRuntimeLoader::add("imgui_end", [](const auto& manifest) { return _ImGuiEnd(); });
@@ -50,7 +60,7 @@ int main(int argc, char** argv)
 
   addComponentsToScene(scene);
 
-  if (!scene.load("/tmp/test"))
+  if (!scene.load(argv[1]))
   {
     scene.addScript("drag_and_drop", game::ScriptRuntimeLoader::load("drag_and_drop", {}));
     scene.addScript("renderer", game::ScriptRuntimeLoader::load("renderer", {}));
@@ -113,7 +123,7 @@ int main(int argc, char** argv)
   SDE_LOG_INFO("done.");
 
 
-  SDE_ASSERT_OK(scene.save("/tmp/test"));
+  SDE_ASSERT_OK(scene.save(argv[1]));
 
   // if (auto ofs_or_error = serial::file_ostream::create("/tmp/assets.bin"); ofs_or_error.has_value())
   // {

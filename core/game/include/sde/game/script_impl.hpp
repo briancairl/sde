@@ -10,10 +10,12 @@
 
 // Common
 #include "sde/expected.hpp"
+#include "sde/geometry_io.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_io.hpp"
 #include "sde/serial/std/filesystem.hpp"
+#include "sde/serial/std/optional.hpp"
 #include "sde/serial/std/string.hpp"
 #include "sde/serial/std/vector.hpp"
 #include "sde/serialization.hpp"
