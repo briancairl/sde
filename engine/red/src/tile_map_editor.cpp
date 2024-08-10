@@ -118,6 +118,22 @@ private:
       const auto ti = tm.getTileIndex(pick_pos - tm_pos.center);
 
       ImGui::InputFloat2("origin", tm_pos.center.data());
+      if (app.keys.isPressed(KeyCode::kA))
+      {
+        tm_pos.center.x() -= tile_map_active_options_.tile_size.x();
+      }
+      if (app.keys.isPressed(KeyCode::kD))
+      {
+        tm_pos.center.x() += tile_map_active_options_.tile_size.x();
+      }
+      if (app.keys.isPressed(KeyCode::kW))
+      {
+        tm_pos.center.y() += tile_map_active_options_.tile_size.y();
+      }
+      if (app.keys.isPressed(KeyCode::kS))
+      {
+        tm_pos.center.y() -= tile_map_active_options_.tile_size.y();
+      }
 
       if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
       {

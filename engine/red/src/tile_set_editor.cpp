@@ -30,6 +30,7 @@ private:
   TextureHandle atlas_texture_selected_;
   Vec2i atlas_tile_size_ = {32, 32};
   MatXi atlas_tile_selected_ = {};
+  float atlas_tile_display_width_ = 0;
   int next_index_ = 0;
 
   bool onLoad(IArchive& ar, SharedAssets& assets) override
@@ -114,13 +115,6 @@ private:
         atlas_tile_selected_.setZero();
       }
 
-      if (ImGui::Button("create"))
-      {
-        onCreatePressed(assets, *texture);
-      }
-
-      ImGui::SameLine();
-
       if (ImGui::InputInt2(
             "tile size (px)",
             atlas_tile_size_.data(),
@@ -131,16 +125,36 @@ private:
         atlas_tile_selected_.setZero();
       }
 
-      const auto atlas_display_width = std::max(1.F, ImGui::GetWindowWidth() - 2.F * ImGui::GetStyle().ScrollbarSize);
-      const auto atlas_texture_image_pos = ImGui::GetCursorScreenPos();
+      const auto max_display_width = std::max(1.F, ImGui::GetWindowWidth() - 2.F * ImGui::GetStyle().ScrollbarSize);
+      if (atlas_tile_display_width_ < 1)
+      {
+        atlas_tile_display_width_ = max_display_width;
+      }
 
-      const ImVec2 atlas_texture_display_size{atlas_display_width, atlas_display_width * texture->shape.aspect()};
+      ImGui::SliderFloat("display width (px)", &atlas_tile_display_width_, max_display_width, 10000.0);
+
+      if (ImGui::Button("create"))
+      {
+        onCreatePressed(assets, *texture);
+      }
+      ImGui::SameLine();
+      if (ImGui::Button("reset"))
+      {
+        atlas_tile_selected_.setZero();
+      }
+
+      ImGui::BeginChild("#editor", ImVec2{max_display_width, 0.F}, false, ImGuiWindowFlags_HorizontalScrollbar);
+
+      const ImVec2 atlas_texture_display_size{
+        atlas_tile_display_width_, atlas_tile_display_width_ * texture->shape.aspect()};
+
+      const auto atlas_texture_image_pos = ImGui::GetCursorScreenPos();
       ImGui::Image(
         reinterpret_cast<void*>(texture->native_id.value()), atlas_texture_display_size, ImVec2{0, 0}, ImVec2{1, 1});
 
       TileSetEditor::handleTextureDragAndDrop(assets);
 
-      const float scaling = atlas_display_width / texture->shape.value.x();
+      const float scaling = atlas_tile_display_width_ / texture->shape.value.x();
       const ImVec2 atlas_tile_display_size{scaling * atlas_tile_size_.x(), scaling * atlas_tile_size_.y()};
 
       auto* drawlist = ImGui::GetWindowDrawList();
@@ -189,6 +203,8 @@ private:
           drawlist->AddRect(min_pos, max_pos, tile_grid_border_color);
         }
       }
+
+      ImGui::EndChild();
     }
     else
     {
@@ -214,7 +230,7 @@ private:
       }
 
       ImGui::PushID(handle.id());
-      ImGui::BeginChild("tile-set", ImVec2{0.F, 70.F}, true, ImGuiWindowFlags_HorizontalScrollbar);
+      ImGui::BeginChild("tile-set", ImVec2{0.F, 80.F}, true, ImGuiWindowFlags_HorizontalScrollbar);
       Preview(*element, *atlas_texture, ImVec2{50.f, 50.f});
       if (ImGui::IsItemHovered())
       {

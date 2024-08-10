@@ -22,6 +22,7 @@ cc_library(
     "src/renderer.cpp",
     #"src/weather.cpp",
     #"src/world.cpp",
+    "src/imgui_common.cpp",
     "src/imgui_start.cpp",
     "src/imgui_end.cpp",
     "src/tile_map_editor.cpp",
