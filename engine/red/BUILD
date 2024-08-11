@@ -3,7 +3,7 @@ cc_library(
   hdrs=[
     "include/red/components.hpp",
     #"include/red/background_music.hpp",
-    #"include/red/player_character.hpp",
+    "include/red/player_character.hpp",
     "include/red/renderer.hpp",
     "include/red/drag_and_drop_asset_loader.hpp",
     #"include/red/weather.hpp",
@@ -18,7 +18,7 @@ cc_library(
   srcs=[
     "src/components.cpp",
     #"src/background_music.cpp",
-    #"src/player_character.cpp",
+    "src/player_character.cpp",
     "src/drag_and_drop_asset_loader.cpp",
     "src/renderer.cpp",
     #"src/weather.cpp",

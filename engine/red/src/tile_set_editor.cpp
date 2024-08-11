@@ -31,6 +31,10 @@ private:
   Vec2i atlas_tile_size_ = {32, 32};
   MatXi atlas_tile_selected_ = {};
   float atlas_tile_display_width_ = 0;
+  bool flip_horizontal_ = false;
+  bool flip_vertical_ = false;
+  std::vector<std::pair<int, Rect2f>> candidate_index_and_tiles_;
+  std::vector<Rect2f> candidate_tiles_;
   int next_index_ = 0;
 
   bool onLoad(IArchive& ar, SharedAssets& assets) override
@@ -75,11 +79,11 @@ private:
     }
   }
 
-  void onCreatePressed(SharedAssets& assets, const Texture& texture)
+  void onPreview(SharedAssets& assets, const Texture& texture)
   {
-    next_index_ = 0;
+    candidate_index_and_tiles_.clear();
     const Vec2f tex_coord_rates = atlas_tile_size_.array().cast<float>() / texture.shape.value.array().cast<float>();
-    std::vector<std::pair<int, Bounds2f>> indexed_bounds;
+
     for (int i = 0; i < atlas_tile_selected_.rows(); ++i)
     {
       for (int j = 0; j < atlas_tile_selected_.cols(); ++j)
@@ -88,28 +92,57 @@ private:
         {
           const Vec2f min_tex{tex_coord_rates.x() * (i + 0), tex_coord_rates.y() * (j + 0)};
           const Vec2f max_tex{tex_coord_rates.x() * (i + 1), tex_coord_rates.y() * (j + 1)};
-          indexed_bounds.emplace_back(index, Bounds2f{min_tex, max_tex});
-          atlas_tile_selected_(i, j) = 0;
+          candidate_index_and_tiles_.emplace_back(index, Rect2f{min_tex, max_tex});
         }
       }
     }
-    if (!indexed_bounds.empty())
+
+    if (flip_vertical_)
     {
-      std::sort(std::begin(indexed_bounds), std::end(indexed_bounds), [](const auto& lhs, const auto& rhs) {
-        return std::get<0>(lhs) < std::get<0>(rhs);
-      });
-      std::vector<Bounds2f> bounds;
-      bounds.reserve(indexed_bounds.size());
-      std::transform(
-        std::begin(indexed_bounds), std::end(indexed_bounds), std::back_inserter(bounds), [](const auto& v) {
-          return std::get<1>(v);
-        });
-      if (auto ok_or_error = assets.graphics.tile_sets.create(atlas_texture_selected_, std::move(bounds));
-          !ok_or_error.has_value())
+      for (auto& [index, rect] : candidate_index_and_tiles_)
       {
-        SDE_LOG_ERROR("failed to create tile set");
+        std::swap(rect.pt0.y(), rect.pt1.y());
       }
     }
+
+    if (flip_horizontal_)
+    {
+      for (auto& [index, rect] : candidate_index_and_tiles_)
+      {
+        std::swap(rect.pt0.x(), rect.pt1.x());
+      }
+    }
+
+    if (!candidate_index_and_tiles_.empty())
+    {
+      candidate_tiles_.clear();
+      std::sort(
+        std::begin(candidate_index_and_tiles_),
+        std::end(candidate_index_and_tiles_),
+        [](const auto& lhs, const auto& rhs) { return std::get<0>(lhs) < std::get<0>(rhs); });
+      candidate_tiles_.reserve(candidate_index_and_tiles_.size());
+      std::transform(
+        std::begin(candidate_index_and_tiles_),
+        std::end(candidate_index_and_tiles_),
+        std::back_inserter(candidate_tiles_),
+        [](const auto& v) { return std::get<1>(v); });
+    }
+    Preview(candidate_tiles_, texture, toImVec2(atlas_tile_size_.cast<float>()), ImVec2{5.f, 5.f});
+  }
+
+  void onCreatePressed(SharedAssets& assets, const Texture& texture)
+  {
+    if (candidate_tiles_.empty())
+    {
+      return;
+    }
+    next_index_ = 0;
+    if (auto ok_or_error = assets.graphics.tile_sets.create(atlas_texture_selected_, std::move(candidate_tiles_));
+        !ok_or_error.has_value())
+    {
+      SDE_LOG_ERROR("failed to create tile set");
+    }
+    atlas_tile_selected_.setZero();
   }
 
   void updateTileSelector(SharedAssets& assets, const AppProperties& app)
@@ -139,6 +172,10 @@ private:
       }
 
       ImGui::SliderFloat("display width (px)", &atlas_tile_display_width_, max_display_width, 10000.0);
+      ImGui::Checkbox("flip horizontal", &flip_horizontal_);
+      ImGui::Checkbox("flip vertical", &flip_vertical_);
+
+      onPreview(assets, *texture);
 
       if (ImGui::Button("create"))
       {
@@ -180,7 +217,7 @@ private:
               static_cast<float>(atlas_tile_display_size.y * (j + 1))};
           if (ImGui::IsMouseHoveringRect(min_pos, max_pos))
           {
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
             {
               if (atlas_tile_selected_(i, j) != 0)
               {
@@ -188,7 +225,7 @@ private:
                 atlas_tile_selected_(i, j) = 0;
               }
             }
-            else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            else if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
             {
               drawlist->AddRectFilled(min_pos, max_pos, ImColor{1.0F, 0.0F, 0.0F, 0.3F});
               if (atlas_tile_selected_(i, j) == 0)
@@ -237,7 +274,7 @@ private:
       }
 
       ImGui::PushID(handle.id());
-      ImGui::BeginChild("tile-set", ImVec2{0.F, 80.F}, true, ImGuiWindowFlags_HorizontalScrollbar);
+      ImGui::BeginChild("tile-set", ImVec2{0.F, 80.F}, false, ImGuiWindowFlags_HorizontalScrollbar);
       Preview(*element, *atlas_texture, ImVec2{50.f, 50.f});
       if (ImGui::IsItemHovered())
       {

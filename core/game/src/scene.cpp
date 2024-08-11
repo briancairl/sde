@@ -119,6 +119,7 @@ bool saveWithManifest(
       {
         if (const auto itr = component_data.find(c.type); itr != component_data.end())
         {
+          SDE_LOG_DEBUG_FMT("saved component: %s", c.type.c_str());
           itr->second.save(oar, entity->id, assets.registry);
         }
         else
@@ -171,6 +172,7 @@ bool loadWithManifest(
         if (const auto itr = component_data.find(c.type); itr != component_data.end())
         {
           itr->second.load(iar, entity->id, assets.registry);
+          SDE_LOG_DEBUG_FMT("loaded component: %s", c.type.c_str());
         }
         else
         {
@@ -211,9 +213,12 @@ bool saveWithManifest(
       }
       SDE_LOG_DEBUG_FMT("saved: %s(%p)", script_name.c_str(), script_ptr.get());
     }
-
+    else
+    {
+      SDE_LOG_DEBUG_FMT("failed to open: %s", script_data_path.string().c_str());
+      return false;
+    }
     arr.push_back(std::move(m));
-    SDE_LOG_DEBUG_FMT("failed to open: %s", script_data_path.string().c_str());
   }
   manifest = std::move(arr);
   return true;

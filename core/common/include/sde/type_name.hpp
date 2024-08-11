@@ -18,12 +18,17 @@ template <typename T> std::string_view type_name()
 {
   constexpr std::string_view kPrettyFunction{__PRETTY_FUNCTION__};
   constexpr std::string_view kToken{"T = "};
+
   constexpr auto kNameStartOffset = kPrettyFunction.find(kToken);
   static_assert(kNameStartOffset != std::string_view::npos);
+
   constexpr auto kNameEndOffset = kPrettyFunction.find(";", kNameStartOffset);
   if constexpr (kNameEndOffset == std::string_view::npos)
   {
-    return kPrettyFunction.substr(kNameStartOffset + kToken.size(), kNameEndOffset);
+    constexpr auto kNameEndOffsetAlt = kPrettyFunction.find("]", kNameStartOffset);
+    static_assert(kNameEndOffsetAlt != std::string_view::npos);
+    return kPrettyFunction.substr(
+      kNameStartOffset + kToken.size(), kNameEndOffsetAlt - kNameStartOffset - kToken.size());
   }
   else
   {

@@ -14,9 +14,9 @@ namespace sde::graphics
 
 Sprite::Sprite(const Options& options) : options_{options} {}
 
-void Sprite::draw(RenderPass& rp, const Bounds2f& rect) const
+void Sprite::draw(RenderPass& rp, const Rect2f& rect) const
 {
-  if (!rp.visible(rect))
+  if (!rp.visible(rect.bounds()))
   {
     return;
   }
@@ -52,9 +52,9 @@ bool operator==(const Sprite& lhs, const Sprite& rhs) { return lhs.options() == 
 
 AnimatedSprite::AnimatedSprite(const Options& options) : options_{options} {}
 
-void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect) const
+void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Rect2f& rect) const
 {
-  if (!rp.visible(rect))
+  if (!rp.visible(rect.bounds()))
   {
     return;
   }

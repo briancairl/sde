@@ -200,14 +200,14 @@ private:
       assets.registry.view<Position, TileMap, DebugWireFrame>().each(
         [&](const Position& pos, const TileMap& tile_map, const DebugWireFrame& debug) {
           render_buffer_.quads.push_back(
-            {.rect = Bounds2f{pos.center, pos.center + tile_map.mapSize()}, .color = debug.color});
+            {.rect = Rect2f{pos.center, pos.center + tile_map.mapSize()}, .color = debug.color});
         });
 
       assets.registry.view<Size, Position, DebugWireFrame>().each(
         [&](const Size& size, const Position& pos, const DebugWireFrame& debug) {
           const Vec2f min_corner{pos.center - 0.5F * size.extent};
           const Vec2f max_corner{pos.center + 0.5F * size.extent};
-          render_buffer_.quads.push_back({.rect = Bounds2f{min_corner, max_corner}, .color = debug.color});
+          render_buffer_.quads.push_back({.rect = Rect2f{min_corner, max_corner}, .color = debug.color});
         });
     }
 

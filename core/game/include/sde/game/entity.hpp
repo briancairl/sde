@@ -112,9 +112,18 @@ public:
       return make_unexpected(EntityError::kComponentAlreadyAttached);
     }
 
-    auto& c = registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...);
     entity.components.push_back(Component{.type = std::string{type_name<ComponentT>()}});
-    return std::addressof(c);
+    using ReturnT = decltype(registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...));
+    if constexpr (std::is_void_v<ReturnT>)
+    {
+      registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...);
+      return nullptr;
+    }
+    else
+    {
+      auto& c = registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...);
+      return std::addressof(c);
+    }
   }
 
   /**

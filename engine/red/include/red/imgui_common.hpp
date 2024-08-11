@@ -1,3 +1,6 @@
+// C++ Standard Library
+#include <vector>
+
 // ImGui
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
@@ -43,6 +46,16 @@ struct ImGuiFieldFormatter
         field->max().x(),
         field->max().y());
     }
+    else if constexpr (std::is_same_v<U, sde::Rect2f>)
+    {
+      ImGui::Text(
+        "%s : [(%.02f x %.02f), (%.02f x %.02f)]",
+        field.name,
+        field->pt0.x(),
+        field->pt0.y(),
+        field->pt1.x(),
+        field->pt1.y());
+    }
     else if constexpr (std::is_same_v<U, sde::Hash>)
     {
       ImGui::Text("%s : {%lu}", field.name, field->value);
@@ -82,6 +95,14 @@ struct ImGuiFieldFormatter
 
 
 bool Preview(const sde::graphics::Texture& texture, const ImVec2& preview_size);
+
+
+void Preview(
+  const std::vector<sde::Rect2f>& texcoords,
+  const sde::graphics::Texture& texture,
+  const ImVec2& preview_tile_size,
+  const ImVec2& preview_tile_spacing = ImVec2{10, 10},
+  std::size_t max_tile_count = 0);
 
 
 void Preview(

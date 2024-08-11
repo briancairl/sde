@@ -70,4 +70,13 @@ template <typename Archive, typename T, int D> struct load<Archive, Bounds<T, D>
   }
 };
 
+template <typename Archive, typename PointT> struct serialize<Archive, Rect<PointT>>
+{
+  void operator()(Archive& ar, Rect<PointT>& rect) const
+  {
+    ar& named{"pt0", rect.pt0};
+    ar& named{"pt1", rect.pt1};
+  }
+};
+
 }  // namespace sde::serial

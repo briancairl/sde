@@ -201,8 +201,8 @@ private:
             ImGui::Image(
               reinterpret_cast<void*>(tile_set_atlas_texture->native_id.value()),
               ImVec2{kTileHeightPx * aspect, kTileHeightPx},
-              ImVec2{bounds.min().x(), bounds.min().y()},
-              ImVec2{bounds.max().x(), bounds.max().y()});
+              toImVec2(bounds.pt0),
+              toImVec2(bounds.pt1));
             if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
             {
               tm[*tile_inspect_coords_] = tile_index;

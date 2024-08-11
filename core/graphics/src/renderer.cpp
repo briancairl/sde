@@ -101,9 +101,9 @@ std::array<Vec2f, kVerticesPerCircle> kUnitCircleLookup{[] {
 
 Vec2f* fillQuadPositions(Vec2f* target, const Vec2f& min, const Vec2f& max)
 {
-  target[0] = min;
+  target[0] = max;
   target[1] = {max.x(), min.y()};
-  target[2] = max;
+  target[2] = min;
   target[3] = {min.x(), max.y()};
   return target + kVerticesPerQuad;
 }
@@ -111,9 +111,9 @@ Vec2f* fillQuadPositions(Vec2f* target, const Vec2f& min, const Vec2f& max)
 Vec2f* fillQuadPositionsT(Vec2f* target, const Vec2f& min, const Vec2f& max)
 {
   target[0] = {max.x(), min.y()};
-  target[1] = min;
+  target[1] = max;
   target[2] = {min.x(), max.y()};
-  target[3] = max;
+  target[3] = min;
   return target + kVerticesPerQuad;
 }
 
@@ -375,7 +375,12 @@ public:
   auto attributes()
   {
     auto offset_itr = std::begin(vertex_attribute_byte_offsets_);
-    return std::make_tuple((mapped_attribute<Attributes>(*(offset_itr++), vertex_buffer_mapped_) + vertex_count_)...);
+    const auto get_offset = [&offset_itr]() -> std::size_t {
+      auto curr_itr = offset_itr;
+      ++offset_itr;
+      return *curr_itr;
+    };
+    return std::make_tuple((mapped_attribute<Attributes>(get_offset(), vertex_buffer_mapped_) + vertex_count_)...);
   }
 
 private:
@@ -582,7 +587,7 @@ public:
       static constexpr float kNoTextureUnitAssigned = -1.0F;
 
       // clang-format off
-      position = fillQuadPositions(position, q.rect.min(), q.rect.max());
+      position = fillQuadPositions(position, q.rect.pt0, q.rect.pt1);
       texcoord = std::fill_n(texcoord, kVerticesPerQuad, Vec2f::Zero());
       texunit = std::fill_n(texunit, kVerticesPerQuad, kNoTextureUnitAssigned);
       tint = std::fill_n(tint, kVerticesPerQuad, q.color);
@@ -607,8 +612,8 @@ public:
     for (const auto& tq : textured_quads)
     {
       // clang-format off
-      position = fillQuadPositions(position, tq.rect.min(), tq.rect.max());
-      texcoord = fillQuadPositionsT(texcoord, tq.rect_texture.min(), tq.rect_texture.max());
+      position = fillQuadPositions(position, tq.rect.pt0, tq.rect.pt1);
+      texcoord = fillQuadPositionsT(texcoord, tq.rect_texture.pt0, tq.rect_texture.pt1);
       texunit = std::fill_n(texunit, kVerticesPerQuad, static_cast<float>(tq.texture_unit));
       tint = std::fill_n(tint, kVerticesPerQuad, tq.color);
       // clang-format on

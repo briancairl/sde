@@ -72,7 +72,7 @@ void TileMap::draw(RenderPass& rp, const Vec2f& origin) const
       const Vec2f rect_max{rect_min + options_.tile_size};
 
       rp->textured_quads.push_back(
-        {.rect = Bounds2f{rect_max, rect_min},
+        {.rect = Rect2f{rect_max, rect_min},
          .rect_texture = tile_set->tile_bounds[tile_index],
          .color = options_.tint_color,
          .texture_unit = (*texture_unit_opt)});

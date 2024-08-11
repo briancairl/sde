@@ -30,7 +30,7 @@ struct Glyph
   Vec2i size_px;
   Vec2i bearing_px;
   float advance_px;
-  Bounds2f atlas_bounds = Bounds2f{};
+  Rect2f atlas_bounds = Rect2f{};
 };
 
 struct TypeSetOptions : Resource<TypeSetOptions>

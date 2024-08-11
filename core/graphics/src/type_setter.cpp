@@ -53,9 +53,9 @@ void TypeSetter::draw(
     text_pos.y() -= 0.5F * text_height_px * text_scaling;
   }
 
-  const Bounds2f text_aabb{text_pos + text_bounds.min().cast<float>(), text_pos + text_bounds.max().cast<float>()};
+  const Rect2f text_aabb{text_pos + text_bounds.min().cast<float>(), text_pos + text_bounds.max().cast<float>()};
 
-  if (!rp.visible(text_aabb))
+  if (!rp.visible(text_aabb.bounds()))
   {
     return;
   }
@@ -76,7 +76,7 @@ void TypeSetter::draw(
     const Vec2f pos_rect_max = pos_rect_min + glyph.size_px.cast<float>() * text_scaling;
 
     rp->textured_quads.push_back(
-      {.rect = Bounds2f{pos_rect_min, pos_rect_max},
+      {.rect = Rect2f{pos_rect_min, pos_rect_max},
        .rect_texture = glyph.atlas_bounds,
        .color = color,
        .texture_unit = (*texture_unit_opt)});

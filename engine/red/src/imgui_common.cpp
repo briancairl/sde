@@ -51,15 +51,15 @@ bool Preview(const sde::graphics::Texture& texture, const ImVec2& preview_size)
   return false;
 }
 
+
 void Preview(
-  const sde::graphics::TileSet& tileset,
+  const std::vector<sde::Rect2f>& texcoords,
   const sde::graphics::Texture& texture,
   const ImVec2& preview_tile_size,
   const ImVec2& preview_tile_spacing,
   std::size_t max_tile_count)
 {
-  const float n_tiles =
-    (max_tile_count == 0) ? tileset.tile_bounds.size() : std::min(max_tile_count, tileset.tile_bounds.size());
+  const float n_tiles = (max_tile_count == 0) ? texcoords.size() : std::min(max_tile_count, texcoords.size());
   const float alpha_decay = (max_tile_count == 0) ? 0.F : (1.F / n_tiles);
 
   const ImColor border_color{ImGui::GetStyle().Colors[ImGuiCol_Border]};
@@ -69,39 +69,49 @@ void Preview(
   const ImVec2 full_size{(preview_tile_size.x + preview_tile_spacing.x) * n_tiles, preview_tile_size.y};
   ImGui::Dummy(full_size);
 
-  const float texture_aspect = texture.shape.aspect();
   for (std::size_t i = 0; i < n_tiles; ++i)
   {
-    const auto& bounds = tileset.tile_bounds[i];
+    const auto& bounds = texcoords[i];
     const ImVec2 pos{origin.x + (preview_tile_size.x + preview_tile_spacing.x) * i, origin.y};
     drawlist->AddRect(pos, pos + preview_tile_size, border_color);
 
-    const sde::Vec2f extents{bounds.max() - bounds.min()};
+    const sde::Vec2f extents{(bounds.pt1 - bounds.pt0).array().abs() * texture.shape.value.array().cast<float>()};
     if (extents.x() > extents.y())
     {
-      const float aspect = texture_aspect * extents.y() / extents.x();
+      const float aspect = extents.y() / extents.x();
       const ImVec2 display_size{preview_tile_size.x, preview_tile_size.x * aspect};
       const ImVec2 centering{(preview_tile_size - display_size) * 0.5F};
       drawlist->AddImage(
         reinterpret_cast<void*>(texture.native_id.value()),
         pos + centering,
         pos + centering + display_size,
-        toImVec2(bounds.min()),
-        toImVec2(bounds.max()),
+        toImVec2(bounds.pt0),
+        toImVec2(bounds.pt1),
         ImColor{1.f, 1.f, 1.f, (1.f - alpha_decay * i)});
     }
     else
     {
-      const float aspect = texture_aspect * extents.x() / extents.y();
+      const float aspect = extents.x() / extents.y();
       const ImVec2 display_size{preview_tile_size.y * aspect, preview_tile_size.y};
       const ImVec2 centering{(preview_tile_size - display_size) * 0.5F};
       drawlist->AddImage(
         reinterpret_cast<void*>(texture.native_id.value()),
         pos + centering,
         pos + centering + display_size,
-        toImVec2(bounds.min()),
-        toImVec2(bounds.max()),
+        toImVec2(bounds.pt0),
+        toImVec2(bounds.pt1),
         ImColor{1.f, 1.f, 1.f, (1.f - alpha_decay * i)});
     }
   }
+}
+
+
+void Preview(
+  const sde::graphics::TileSet& tileset,
+  const sde::graphics::Texture& texture,
+  const ImVec2& preview_tile_size,
+  const ImVec2& preview_tile_spacing,
+  std::size_t max_tile_count)
+{
+  Preview(tileset.tile_bounds, texture, preview_tile_size, preview_tile_spacing, max_tile_count);
 }

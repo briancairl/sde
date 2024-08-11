@@ -82,6 +82,40 @@ template <typename T, int Dim> struct Hasher<Eigen::AlignedBox<T, Dim>>
   auto operator()(const Eigen::AlignedBox<T, Dim>& box) const { return ComputeHash(box.min(), box.max()); }
 };
 
+template <typename CornerT> struct Rect
+{
+  CornerT pt0;
+  CornerT pt1;
+
+  template <typename TranslationT> Rect& operator+=(const TranslationT& translation)
+  {
+    this->pt0 += translation;
+    this->pt1 += translation;
+    return *this;
+  }
+
+  template <typename TranslationT> Rect& operator-=(const TranslationT& translation)
+  {
+    this->pt0 -= translation;
+    this->pt1 -= translation;
+    return *this;
+  }
+
+  auto bounds() const
+  {
+    using Scalar = typename CornerT::Scalar;
+    return Bounds<Scalar, CornerT::RowsAtCompileTime>{pt0, pt1};
+  }
+};
+
+using Rect2i = Rect<Vec2i>;
+using Rect2f = Rect<Vec2f>;
+
+template <typename CornerT> struct Hasher<Rect<CornerT>>
+{
+  auto operator()(const Rect<CornerT>& rect) const { return ComputeHash(rect.pt0, rect.pt1); }
+};
+
 }  // namespace sde
 
 namespace Eigen

@@ -40,11 +40,11 @@ std::ostream& operator<<(std::ostream& os, TileSetError tile_set_error);
 struct TileSet : Resource<TileSet>
 {
   TextureHandle tile_atlas;
-  std::vector<Bounds2f> tile_bounds;
+  std::vector<Rect2f> tile_bounds;
 
   auto field_list() { return FieldList((Field{"tile_atlas", tile_atlas}), (Field{"tile_bounds", tile_bounds})); }
 
-  const Bounds2f& operator[](const std::size_t index) const { return tile_bounds[index]; };
+  const Rect2f& operator[](const std::size_t index) const { return tile_bounds[index]; };
 };
 
 enum class TileSliceDirection
@@ -121,7 +121,7 @@ private:
 
   expected<TileSet, TileSetError> generate(const TextureHandle& texture, const TileSetSliceUniform& slice);
 
-  expected<TileSet, TileSetError> generate(const TextureHandle& texture, std::vector<Bounds2f>&& tile_bounds);
+  expected<TileSet, TileSetError> generate(const TextureHandle& texture, std::vector<Rect2f>&& tile_bounds);
 };
 
 }  // namespace sde::graphics
