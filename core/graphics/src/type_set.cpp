@@ -76,7 +76,7 @@ expected<void, TypeSetError> loadGlyphsFromFont(std::vector<Glyph>& glyph_lut, c
         .size_px = Vec2i{static_cast<float>(face->glyph->bitmap.width), static_cast<float>(face->glyph->bitmap.rows)},
         .bearing_px = Vec2i{static_cast<float>(face->glyph->bitmap_left), static_cast<float>(face->glyph->bitmap_top)},
         .advance_px = static_cast<float>(face->glyph->advance.x) / 64.0F,
-        .atlas_bounds = Bounds2f{},
+        .atlas_bounds = Rect2f{},
       };
     }
   }
@@ -163,7 +163,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
     const Vec2f tex_coord_min{tex_coord_min_px.array().cast<float>() / texture_dimensions.array().cast<float>()};
     const Vec2f tex_coord_max{tex_coord_max_px.array().cast<float>() / texture_dimensions.array().cast<float>()};
 
-    g.atlas_bounds = Bounds2f{Vec2f{tex_coord_min.x(), tex_coord_max.y()}, Vec2f{tex_coord_max.x(), tex_coord_min.y()}};
+    g.atlas_bounds = Rect2f{Vec2f{tex_coord_min.x(), tex_coord_max.y()}, Vec2f{tex_coord_max.x(), tex_coord_min.y()}};
 
     prex_px_y += g.size_px.y();
   }

@@ -36,7 +36,7 @@ struct RenderTarget : Resource<RenderTarget>
 
   auto field_list()
   {
-    return std::make_tuple((Field{"color_attachment", color_attachment}), (_Stub{"native_id", native_id}));
+    return FieldList((Field{"color_attachment", color_attachment}), (_Stub{"native_id", native_id}));
   }
 };
 

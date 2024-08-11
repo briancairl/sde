@@ -31,10 +31,4 @@ std::ostream& operator<<(std::ostream& os, SoundChannelBitDepth element_type)
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const SoundChannelFormat& format)
-{
-  return os << "{ count: " << format.count << ", element_type: " << format.count
-            << ", bits_per_second: " << format.bits_per_second << " }";
-}
-
 }  // namespace sde::audio

@@ -9,6 +9,9 @@
 #include <type_traits>
 #include <utility>
 
+// SDE
+#include "sde/crtp.hpp"
+
 namespace sde::serial
 {
 
@@ -38,11 +41,22 @@ template <typename SerializeImpl> struct load_implicit_from_serialize : private 
 struct load_not_implemented
 {};
 
+
+template <typename IArchiveT, typename ObjectT> struct load_via_fundemental
+{
+  void operator()(IArchiveT& ar, ObjectT& object) { ar >> object.fundemental(); }
+};
+
+template <typename IArchiveT, typename ObjectT>
+struct load_implicit_default
+    : std::conditional_t<has_fundemental_v<ObjectT>, load_via_fundemental<IArchiveT, ObjectT>, load_not_implemented>
+{};
+
 template <typename IArchiveT, typename ObjectT>
 struct load : std::conditional_t<
                 serialize_is_implemented_v<IArchiveT, ObjectT>,
                 load_implicit_from_serialize<serialize<IArchiveT, ObjectT>>,
-                load_not_implemented>
+                load_implicit_default<IArchiveT, ObjectT>>
 {};
 
 template <typename IArchiveT, typename ObjectT>
@@ -65,11 +79,22 @@ template <typename SerializeImpl> struct save_implicit_from_serialize : private 
   }
 };
 
+
+template <typename OArchiveT, typename ObjectT> struct save_via_fundemental
+{
+  void operator()(OArchiveT& ar, const ObjectT& object) { ar << object.fundemental(); }
+};
+
+template <typename OArchiveT, typename ObjectT>
+struct save_implicit_default
+    : std::conditional_t<has_fundemental_v<ObjectT>, save_via_fundemental<OArchiveT, ObjectT>, save_not_implemented>
+{};
+
 template <typename OArchiveT, typename ObjectT>
 struct save : std::conditional_t<
                 serialize_is_implemented_v<OArchiveT, ObjectT>,
                 save_implicit_from_serialize<serialize<OArchiveT, ObjectT>>,
-                save_not_implemented>
+                save_implicit_default<OArchiveT, ObjectT>>
 {};
 
 template <typename OArchiveT, typename ObjectT>

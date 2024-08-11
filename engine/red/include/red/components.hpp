@@ -4,6 +4,7 @@
 #include <string>
 
 // SDE
+#include "sde/game/scene_fwd.hpp"
 #include "sde/geometry.hpp"
 #include "sde/resource.hpp"
 
@@ -23,11 +24,23 @@ struct Size : Resource<Size>
   auto field_list() { return FieldList(Field{"extent", extent}); }
 };
 
+struct DebugWireFrame : Resource<DebugWireFrame>
+{
+  Vec4f color;
+  auto field_list() { return FieldList(Field{"color", color}); }
+};
+
 struct Position : Resource<Position>
 {
   Vec2f center;
 
   auto field_list() { return FieldList(Field{"center", center}); }
+};
+
+struct TransformQuery : Resource<TransformQuery>
+{
+  Mat3f world_from_viewport = Mat3f::Identity();
+  auto field_list() { return FieldList(Field{"world_from_viewport", world_from_viewport}); }
 };
 
 struct Dynamics : Resource<Dynamics>
@@ -52,3 +65,6 @@ struct Foreground
 
 static constexpr std::size_t kGlobalListener = 0;
 static constexpr std::size_t kPlayerListener = 1;
+
+
+void addComponentsToScene(sde::game::Scene& scene);

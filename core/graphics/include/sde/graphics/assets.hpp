@@ -57,6 +57,8 @@ struct Assets : Resource<Assets>
 
   expected<void, AssetError> refresh();
 
+  void strip();
+
   auto field_list()
   {
     return FieldList(

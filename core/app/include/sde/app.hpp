@@ -10,6 +10,7 @@
 #include <functional>
 
 // SDE
+#include "sde/app_fwd.hpp"
 #include "sde/app_properties.hpp"
 #include "sde/expected.hpp"
 #include "sde/geometry.hpp"

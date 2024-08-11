@@ -35,8 +35,7 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 
 TileSetCache::TileSetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
 
-expected<TileSet, TileSetError>
-TileSetCache::generate(const TextureHandle& texture, std::vector<Bounds2f>&& tile_bounds)
+expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& texture, std::vector<Rect2f>&& tile_bounds)
 {
   if (!textures_->exists(texture))
   {
@@ -72,30 +71,30 @@ expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& text
 
   const Vec2f axis_rates{1.0F / texture_info->shape.value.array().cast<float>()};
 
-  const auto toTileBounds = [&slice, &axis_rates](int x_lb, int y_lb, int x_ub, int y_ub) -> Bounds2f {
+  const auto toTileBounds = [&slice, &axis_rates](int x_lb, int y_lb, int x_ub, int y_ub) -> Rect2f {
     if (
       (slice.tile_orientation_x == TileOrientation::kFlipped) and
       (slice.tile_orientation_y == TileOrientation::kFlipped))
     {
-      return Bounds2f{
+      return Rect2f{
         Vec2f{static_cast<float>(x_ub), static_cast<float>(y_ub)}.array() * axis_rates.array(),
         Vec2f{static_cast<float>(x_lb), static_cast<float>(y_lb)}.array() * axis_rates.array()};
     }
     else if (slice.tile_orientation_x == TileOrientation::kFlipped)
     {
-      return Bounds2f{
+      return Rect2f{
         Vec2f{static_cast<float>(x_ub), static_cast<float>(y_lb)}.array() * axis_rates.array(),
         Vec2f{static_cast<float>(x_lb), static_cast<float>(y_ub)}.array() * axis_rates.array()};
     }
     else if (slice.tile_orientation_y == TileOrientation::kFlipped)
     {
-      return Bounds2f{
+      return Rect2f{
         Vec2f{static_cast<float>(x_lb), static_cast<float>(y_ub)}.array() * axis_rates.array(),
         Vec2f{static_cast<float>(x_ub), static_cast<float>(y_lb)}.array() * axis_rates.array()};
     }
     else
     {
-      return Bounds2f{
+      return Rect2f{
         Vec2f{static_cast<float>(x_lb), static_cast<float>(y_lb)}.array() * axis_rates.array(),
         Vec2f{static_cast<float>(x_ub), static_cast<float>(y_ub)}.array() * axis_rates.array()};
     }
@@ -108,7 +107,7 @@ expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& text
 
   std::size_t skip_countdown = slice.start_offset;
 
-  std::vector<Bounds2f> tile_bounds;
+  std::vector<Rect2f> tile_bounds;
   tile_bounds.reserve(tile_count_max);
   if (slice.direction == TileSliceDirection::kColWise)
   {

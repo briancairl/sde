@@ -6,13 +6,12 @@
 #pragma once
 
 /// EnTT
-#include <entt/entt.hpp>
+#include <entt/entity/registry.hpp>
 
 // SDE
 #include "sde/asset.hpp"
 #include "sde/audio/assets.hpp"
 #include "sde/game/entity.hpp"
-#include "sde/game/systems_fwd.hpp"
 #include "sde/graphics/assets.hpp"
 #include "sde/resource.hpp"
 
@@ -34,16 +33,22 @@ class Assets : public Resource<Assets>
   friend fundemental_type;
 
 public:
-  /// Holds entities / components comprising the majoriy of the game state
+  /// Holds game state
   entt::registry registry;
+
   /// Holds absolute references to entities
   EntityCache entities;
+
   /// Collection of active audio assets
   audio::Assets audio;
+
   /// Collection of graphics audio assets
   graphics::Assets graphics;
 
-  explicit Assets(Systems& systems);
+  auto* operator->() { return std::addressof(registry.ctx()); }
+  const auto* operator->() const { return std::addressof(registry.ctx()); }
+
+  [[nodiscard]] Assets();
 
   [[nodiscard]] expected<void, AssetError> refresh();
 

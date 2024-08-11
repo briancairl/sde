@@ -14,6 +14,7 @@
 #include "sde/crtp.hpp"
 #include "sde/expected.hpp"
 #include "sde/hash.hpp"
+#include "sde/resource.hpp"
 #include "sde/resource_handle.hpp"
 
 namespace sde
@@ -44,13 +45,13 @@ public:
     handle_type handle;
     const value_type* value;
 
-    operator bool() const { return handle.isValid(); }
+    operator bool() const { return value != nullptr; }
     const value_type& get() const { return *value; }
     const value_type& operator*() const { return get(); }
     const value_type* operator->() const { return value; }
   };
 
-  struct element_storage
+  struct element_storage : Resource<element_storage>
   {
     version_type version;
     value_type value;
@@ -63,6 +64,8 @@ public:
     explicit element_storage(version_type _version, ValueArgTs&&... args) :
         version{_version}, value{std::forward<ValueArgTs>(args)...}
     {}
+
+    auto field_list() { return FieldList(Field{"version", version}, Field{"value", value}); }
   };
 
   struct handle_type_hash
@@ -95,7 +98,7 @@ public:
       return create_at_handle(handle, std::forward<CreateArgTs>(args)...);
     }
 
-    const auto current_version = HashMany(args...);
+    const auto current_version = ComputeHash(args...);
 
     if (current_version == current_itr->second.version)
     {
@@ -194,7 +197,7 @@ public:
     return this->derived().reload(handle_to_value_itr->second.value);
   }
 
-  expected<void, error_type> relinquish()
+  [[nodiscard]] expected<void, error_type> relinquish()
   {
     for (auto& [handle, element] : handle_to_value_cache_)
     {
@@ -206,7 +209,7 @@ public:
     return {};
   }
 
-  expected<void, error_type> relinquish(handle_type handle)
+  [[nodiscard]] expected<void, error_type> relinquish(handle_type handle)
   {
     const auto handle_to_value_itr = handle_to_value_cache_.find(handle);
     if (handle_to_value_itr == handle_to_value_cache_.end())
@@ -216,10 +219,6 @@ public:
     return this->derived().unload(handle_to_value_itr->second.value);
   }
 
-  [[nodiscard]] ResourceCache& fundemental() { return *this; }
-
-  [[nodiscard]] const ResourceCache& fundemental() const { return *this; }
-
   ResourceCache() = default;
   ResourceCache(ResourceCache&&) = default;
   ResourceCache& operator=(ResourceCache&&) = default;
@@ -228,7 +227,7 @@ private:
   template <typename... CreateArgTs>
   [[nodiscard]] expected<element_ref, error_type> create_at_handle(handle_type handle, CreateArgTs&&... args)
   {
-    const auto current_version = HashMany(args...);
+    const auto current_version = ComputeHash(args...);
 
     // Create a new element
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
@@ -255,7 +254,7 @@ private:
   template <typename Iterator, typename... CreateArgTs>
   [[nodiscard]] expected<element_ref, error_type> replace_at_position(Iterator itr, CreateArgTs&&... args)
   {
-    const auto current_version = HashMany(args...);
+    const auto current_version = ComputeHash(args...);
 
     // Create a new element
     auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);

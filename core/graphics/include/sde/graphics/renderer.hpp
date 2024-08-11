@@ -6,13 +6,12 @@
 #pragma once
 
 // C++ Standard Library
-#include <array>
 #include <cstdint>
 #include <iosfwd>
 #include <string_view>
+#include <vector>
 
 // SDE
-
 #include "sde/expected.hpp"
 #include "sde/geometry.hpp"
 #include "sde/graphics/assets_fwd.hpp"
@@ -22,6 +21,7 @@
 #include "sde/graphics/shapes_fwd.hpp"
 #include "sde/graphics/texture_units.hpp"
 #include "sde/graphics/typedef.hpp"
+#include "sde/resource.hpp"
 #include "sde/time.hpp"
 #include "sde/view.hpp"
 
@@ -30,31 +30,41 @@ namespace sde::graphics
 /**
  * @brief Resources used during a render pass
  */
-struct RenderResources
+struct RenderResources : Resource<RenderResources>
 {
   RenderTargetHandle target = RenderTargetHandle::null();
   ShaderHandle shader = ShaderHandle::null();
   std::size_t buffer_group = 0UL;
+
+  auto field_list()
+  {
+    return FieldList(Field{"target", target}, Field{"shader", shader}, Field{"buffer_group", buffer_group});
+  }
+
   bool isValid() const { return shader.isValid(); }
 };
-
-std::ostream& operator<<(std::ostream& os, const RenderResources& resources);
-
 
 /**
  * @brief Standard values passed to shaders on render pass
  */
-struct RenderUniforms
+struct RenderUniforms : Resource<RenderUniforms>
 {
   Mat3f world_from_camera = Mat3f::Identity();
   float scaling = 1.0F;
   TimeOffset time = TimeOffset::zero();
   TimeOffset time_delta = TimeOffset::zero();
+
+  auto field_list()
+  {
+    return FieldList(
+      Field{"world_from_camera", world_from_camera},
+      Field{"scaling", scaling},
+      Field{"time", time},
+      Field{"time_delta", time_delta});
+  }
+
   Mat3f getWorldFromViewportMatrix(const Vec2i& viewport_size) const;
 };
-
-std::ostream& operator<<(std::ostream& os, const RenderUniforms& uniforms);
-
 
 /**
  * @brief Buffer mode
@@ -66,22 +76,49 @@ enum class VertexBufferMode
 };
 
 /**
+ * @brief Buffer mode
+ */
+enum class VertexDrawMode
+{
+  kFilled,
+  kWireFrame,
+};
+
+/**
  * @brief Texture creation options
  */
-struct VertexBufferOptions
+struct VertexBufferOptions : Resource<VertexBufferOptions>
 {
-  std::size_t max_triangle_count_per_render_pass = 10000UL;
-  VertexBufferMode mode = VertexBufferMode::kDynamic;
+  std::size_t max_triangle_count_per_render_pass = 1000UL;
+  VertexBufferMode buffer_mode = VertexBufferMode::kDynamic;
+  VertexDrawMode draw_mode = VertexDrawMode::kFilled;
+
+  // clang-format off
+  auto field_list()
+  {
+    return FieldList(
+      Field{"max_triangle_count_per_render_pass", max_triangle_count_per_render_pass},
+      Field{"buffer_mode", buffer_mode},
+      Field{"draw_mode", draw_mode}
+    );
+  }
+  // clang-format on
 };
 
 
 /**
  * @brief Texture creation options
  */
-struct Renderer2DOptions
+struct Renderer2DOptions : Resource<Renderer2DOptions>
 {
-  static constexpr std::size_t kVetexArrayCount = 4;
-  std::array<VertexBufferOptions, kVetexArrayCount> buffers;
+  // clang-format off
+  std::vector<VertexBufferOptions> buffers = {
+    VertexBufferOptions{.draw_mode=VertexDrawMode::kFilled},
+    VertexBufferOptions{.draw_mode=VertexDrawMode::kWireFrame}
+  };
+  // clang-format on
+
+  auto field_list() { return FieldList(Field{"buffers", buffers}); }
 };
 
 struct RenderBackend
@@ -180,8 +217,5 @@ private:
   Mat3f viewport_from_world_;
   Bounds2f viewport_in_world_bounds_;
 };
-
-std::ostream& operator<<(std::ostream& os, const RenderPass& layer);
-
 
 }  // namespace sde::graphics

@@ -3,4 +3,4 @@
 // SDE
 #include "sde/game/script_runtime.hpp"
 
-sde::game::ScriptRuntime::UPtr createImGui();
+sde::game::ScriptRuntime::UPtr _TextureViewer();

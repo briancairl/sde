@@ -40,7 +40,7 @@ public:
   Sprite() = default;
   explicit Sprite(const Options& options);
 
-  void draw(RenderPass& rp, const Bounds2f& rect) const;
+  void draw(RenderPass& rp, const Rect2f& rect) const;
 
   void setup(const Options& options) { options_ = options; }
   void setTintColor(const Vec4f& color) { options_.tint_color = color; }
@@ -94,7 +94,7 @@ public:
   AnimatedSprite() = default;
   explicit AnimatedSprite(const Options& options);
 
-  void draw(RenderPass& rp, TimeOffset t, const Bounds2f& rect) const;
+  void draw(RenderPass& rp, TimeOffset t, const Rect2f& rect) const;
 
   void setup(const Options& options) { options_ = options; }
   void setTintColor(const Vec4f& color) { options_.tint_color = color; }

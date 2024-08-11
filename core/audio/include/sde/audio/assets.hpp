@@ -30,6 +30,8 @@ struct Assets : Resource<Assets>
 
   [[nodiscard]] expected<void, AssetError> refresh();
 
+  void strip();
+
   auto field_list() { return FieldList(Field{"sound_data", sound_data}, Field{"sounds", sounds}); }
 };
 

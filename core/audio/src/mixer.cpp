@@ -300,7 +300,7 @@ expected<Mixer, MixerError> Mixer::create(const MixerOptions& options)
 
   // Initalize sound device
   const auto native_device_handle = [&options] {
-    if (options.device_name == nullptr)
+    if (options.device_name.empty())
     {
       const char* default_device_name = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
       SDE_LOG_DEBUG_FMT("alcOpenDevice: %s", default_device_name);
@@ -308,7 +308,7 @@ expected<Mixer, MixerError> Mixer::create(const MixerOptions& options)
     }
     else
     {
-      return alcOpenDevice(options.device_name);
+      return alcOpenDevice(options.device_name.c_str());
     }
   }();
   if (native_device_handle == nullptr)

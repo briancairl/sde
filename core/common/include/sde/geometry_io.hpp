@@ -14,17 +14,40 @@ namespace sde::serial
 
 template <typename Archive, typename T, int N, int M> struct save<Archive, Mat<T, N, M>>
 {
-  static_assert((N > 0) and (M > 0), "dimensions must be positive values");
+  static_assert((N != 0) and (M != 0), "dimensions must be non-zero values");
   void operator()(Archive& ar, const Mat<T, N, M>& mat) const
   {
-    ar << named{"data", make_packet(mat.data(), mat.size())};
+    if constexpr (N < 0 or M < 0)
+    {
+      ar << named{"rows", mat.rows()};
+      ar << named{"cols", mat.cols()};
+      ar << named{"data", make_packet(mat.data(), mat.size())};
+    }
+    else
+    {
+      ar << named{"data", make_packet(mat.data(), mat.size())};
+    }
   }
 };
 
 template <typename Archive, typename T, int N, int M> struct load<Archive, Mat<T, N, M>>
 {
-  static_assert((N > 0) and (M > 0), "dimensions must be positive values");
-  void operator()(Archive& ar, Mat<T, N, M>& mat) const { ar >> named{"data", make_packet(mat.data(), mat.size())}; }
+  static_assert((N != 0) and (M != 0), "dimensions must be non-zero values");
+  void operator()(Archive& ar, Mat<T, N, M>& mat) const
+  {
+    if constexpr (N < 0 or M < 0)
+    {
+      Eigen::Index rows, cols;
+      ar >> named{"rows", rows};
+      ar >> named{"cols", cols};
+      mat.resize(rows, cols);
+      ar >> named{"data", make_packet(mat.data(), mat.size())};
+    }
+    else
+    {
+      ar >> named{"data", make_packet(mat.data(), mat.size())};
+    }
+  }
 };
 
 template <typename Archive, typename T, int D> struct save<Archive, Bounds<T, D>>
@@ -44,6 +67,15 @@ template <typename Archive, typename T, int D> struct load<Archive, Bounds<T, D>
     ar >> named{"min", p_min};
     ar >> named{"max", p_max};
     bounds = Bounds<T, D>{p_min, p_max};
+  }
+};
+
+template <typename Archive, typename PointT> struct serialize<Archive, Rect<PointT>>
+{
+  void operator()(Archive& ar, Rect<PointT>& rect) const
+  {
+    ar& named{"pt0", rect.pt0};
+    ar& named{"pt1", rect.pt1};
   }
 };
 

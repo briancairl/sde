@@ -11,6 +11,7 @@
 // SDE
 #include "sde/crtp.hpp"
 #include "sde/hash.hpp"
+#include "sde/traits.hpp"
 
 namespace sde
 {
@@ -18,6 +19,8 @@ namespace sde
 template <typename T> struct BasicField
 {
   static_assert(!std::is_reference_v<T> and !std::is_pointer_v<T>);
+
+  using value_type = T;
 
   const char* name;
   T* value;
@@ -33,6 +36,11 @@ template <typename T> struct BasicField
 
   constexpr BasicField(const char* _name, T* _value) : name{_name}, value{_value} {}
 };
+
+template <typename T> constexpr Hash Version(const BasicField<T>& field)
+{
+  return ComputeHash(std::string_view{field.name}) + ComputeTypeHash<T>();
+}
 
 template <typename L, typename R> constexpr bool operator==(const BasicField<L>& lhs, const BasicField<R>& rhs)
 {
@@ -58,15 +66,6 @@ template <typename T> struct is_field<Field<T>> : std::true_type
 template <typename T> struct is_field<_Stub<T>> : std::true_type
 {};
 
-template <typename F> struct is_field_serializable : std::false_type
-{};
-
-template <typename T> struct is_field_serializable<Field<T>> : std::true_type
-{};
-
-template <typename T> struct is_field_serializable<_Stub<T>> : std::false_type
-{};
-
 template <typename T> auto to_const(Field<T> field) { return Field<const T>{field.name, field.get()}; }
 
 template <typename T> auto to_const(_Stub<T> stub) { return _Stub<const T>{stub.name, stub.get()}; }
@@ -78,9 +77,9 @@ template <typename... FieldTs> auto to_const(const std::tuple<FieldTs...>& field
 
 template <typename ResourceT> struct Resource : crtp_base<Resource<ResourceT>>
 {
-  constexpr auto fields() { return this->derived().field_list(); }
+  constexpr decltype(auto) fields() { return this->derived().field_list(); }
 
-  constexpr auto fields() const { return to_const(const_cast<Resource*>(this)->derived().field_list()); }
+  constexpr decltype(auto) fields() const { return to_const(const_cast<Resource*>(this)->derived().field_list()); }
 
   constexpr auto values()
   {
@@ -98,6 +97,8 @@ template <typename ResourceT> struct Resource : crtp_base<Resource<ResourceT>>
   {
     return std::apply([](auto... field) { return std::make_tuple(field.name...); }, this->fields());
   }
+
+  constexpr auto field_count() const { return std::tuple_size_v<decltype(fields())>; }
 };
 
 template <typename ResourceT> bool operator==(const Resource<ResourceT>& lhs, const Resource<ResourceT>& rhs)
@@ -133,13 +134,18 @@ template <typename ResourceT> bool operator>=(const Resource<ResourceT>& lhs, co
 template <typename T> struct is_resource : std::is_base_of<Resource<T>, T>
 {};
 
-template <typename R> constexpr bool is_resource_v = is_resource<std::remove_const_t<R>>::value;
+template <typename T> constexpr bool is_resource_v = is_resource<std::remove_const_t<T>>::value;
+
+template <typename T> Hash Version(const Resource<T>& rsc)
+{
+  return std::apply([](const auto&... fields) { return (Version(fields) + ...); }, rsc.fields());
+}
 
 struct ResourceHasher
 {
   template <typename ResourceT> auto operator()(const Resource<ResourceT>& rsc) const
   {
-    return std::apply([](const auto&... fields) { return HashMany(fields...); }, rsc.fields());
+    return std::apply([](const auto&... fields) { return ComputeHash(fields...); }, rsc.fields());
   }
 };
 
@@ -162,31 +168,54 @@ template <typename... FieldTs> auto FieldList(FieldTs&&... fields)
   return std::make_tuple(std::forward<FieldTs>(fields)...);
 }
 
-template <typename ResourceT> auto& _R(Resource<ResourceT>& resource) { return resource; }
-
-template <typename ResourceT> const auto& _R(const Resource<ResourceT>& resource) { return resource; }
-
-namespace detail
+template <typename T, typename VisitorT> bool Visit(const BasicField<T>& field, VisitorT visitor, std::size_t depth)
 {
-
-template <typename T, typename Eval = decltype((std::declval<std::ostream&>() << std::declval<const T&>()))>
-constexpr bool call_ostream_overload([[maybe_unused]] const T* _)
-{
-  return true;
+  if constexpr (is_resource_v<T>)
+  {
+    if (visitor(depth, field))
+    {
+      return Visit(field.get(), visitor, depth + 1);
+    }
+  }
+  else
+  {
+    return visitor(depth, field);
+  }
+  return false;
 }
 
-constexpr bool call_ostream_overload(...) { return false; }
+template <typename ResourceT, typename VisitorT>
+bool Visit(const Resource<ResourceT>& resource, VisitorT visitor, std::size_t depth = 0UL)
+{
+  return std::apply(
+    [&](const auto&... fields) -> bool { return (Visit(fields, visitor, depth) + ...); }, resource.fields());
+}
 
-}  // namespace detail
+template <typename ResourceT> std::size_t TotalFields(const Resource<ResourceT>& resource)
+{
+  std::size_t count = 0;
+  Visit(resource, [&count](std::size_t depth, const auto& field) -> bool {
+    ++count;
+    return true;
+  });
+  return count;
+}
 
-template <typename T>
-using has_ostream_overload =
-  std::integral_constant<bool, detail::call_ostream_overload(std::add_pointer_t<T>{nullptr})>;
 
+template <typename ResourceT, typename VisitorT>
+bool IterateUntil(const Resource<ResourceT>& resource, VisitorT visitor)
+{
+  return std::apply([&](const auto&... fields) { return (visitor(fields) + ...); }, resource.fields());
+}
+
+template <typename ResourceT, typename VisitorT> bool IterateUntil(Resource<ResourceT>& resource, VisitorT visitor)
+{
+  return std::apply([&](auto&&... fields) { return (visitor(fields) + ...); }, resource.fields());
+}
 
 template <typename T> std::ostream& operator<<(std::ostream& os, const Field<T>& field)
 {
-  if constexpr (has_ostream_overload<T>())
+  if constexpr (has_std_ostream_overload<T>())
   {
     return os << field.name << ": " << field.get();
   }
@@ -198,7 +227,7 @@ template <typename T> std::ostream& operator<<(std::ostream& os, const Field<T>&
 
 template <typename T> std::ostream& operator<<(std::ostream& os, const _Stub<T>& field)
 {
-  if constexpr (has_ostream_overload<T>())
+  if constexpr (has_std_ostream_overload<T>())
   {
     return os << field.name << ": [?] " << field.get();
   }
@@ -208,12 +237,31 @@ template <typename T> std::ostream& operator<<(std::ostream& os, const _Stub<T>&
   }
 }
 
-template <typename ResourceT> std::ostream& operator<<(std::ostream& os, const Resource<ResourceT>& rsc)
+
+template <typename ResourceT> std::ostream& operator<<(std::ostream& os, const Resource<ResourceT>& resource)
 {
-  os << '{';
-  std::apply(
-    [&os](const auto&... fields) { [[maybe_unused]] auto _ = (((os << fields << ", "), 0) + ...); }, rsc.fields());
-  os << '}';
+  Visit(resource, [&os](std::size_t depth, const auto& field) -> bool {
+    for (std::size_t c = 0; c < depth; ++c)
+    {
+      os << ' ';
+      os << ' ';
+    }
+    using FieldType = std::remove_reference_t<decltype(field)>;
+    using ValueType = std::remove_const_t<typename FieldType::value_type>;
+    if constexpr (is_resource_v<ValueType>)
+    {
+      os << field.name << ": {...}\n";
+    }
+    else if constexpr (has_std_ostream_overload<ValueType>())
+    {
+      os << field.name << ": " << field.get() << '\n';
+    }
+    else if constexpr (has_std_ostream_overload<ValueType>())
+    {
+      os << field.name << ": ? \n";
+    }
+    return true;
+  });
   return os;
 }
 

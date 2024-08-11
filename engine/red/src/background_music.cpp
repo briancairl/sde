@@ -5,6 +5,9 @@
 #include "sde/game/script_impl.hpp"
 #include "sde/logging.hpp"
 
+// RED
+#include "red/imgui_end.hpp"
+
 using namespace sde;
 using namespace sde::game;
 using namespace sde::audio;
@@ -18,7 +21,7 @@ private:
   SoundHandle music_;
   SoundHandle ambiance_;
 
-  bool onLoad(IArchive& ar, SharedAssets& assets) override
+  bool onLoad(IArchive& ar) override
   {
     using namespace sde::serial;
     ar >> Field{"music", music_};
@@ -26,7 +29,7 @@ private:
     return true;
   }
 
-  bool onSave(OArchive& ar, SharedAssets& assets) override
+  bool onSave(OArchive& ar) const override
   {
     using namespace sde::serial;
     ar << Field{"music", music_};
@@ -34,7 +37,7 @@ private:
     return true;
   }
 
-  bool onInitialize(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     if (!assets.assign(music_, "/home/brian/dev/assets/sounds/tracks/OldTempleLoop.wav"_path))
     {
@@ -62,11 +65,10 @@ private:
     return true;
   }
 
-  expected<void, ScriptError>
-  onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  expected<void, ScriptError> onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     return {};
   }
 };
 
-std::unique_ptr<sde::game::ScriptRuntime> createBackgroundMusic() { return std::make_unique<BackgroundMusic>(); }
+std::unique_ptr<ScriptRuntime> createBackgroundMusic() { return std::make_unique<BackgroundMusic>(); }

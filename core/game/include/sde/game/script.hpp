@@ -18,6 +18,7 @@
 #include "sde/expected.hpp"
 #include "sde/game/assets_fwd.hpp"
 #include "sde/game/systems_fwd.hpp"
+#include "sde/hash.hpp"
 #include "sde/time.hpp"
 
 namespace sde::game
@@ -42,13 +43,13 @@ public:
   Script(Script&& other) = default;
   Script& operator=(Script&& other) = default;
 
-  std::string_view identity() const { return this->derived().getIdentity(); }
-
   void reset() { t_init_.reset(); }
 
-  template <typename Archive> expected<void, ScriptError> load(Archive& ar, SharedAssets& assets)
+  Hash version() { return Hash{}; }
+
+  template <typename Archive> expected<void, ScriptError> load(Archive& ar)
   {
-    if (not_loaded_ and this->derived().onLoad(ar, assets))
+    if (not_loaded_ and this->derived().onLoad(ar))
     {
       not_loaded_ = false;
       return {};
@@ -56,23 +57,22 @@ public:
     return make_unexpected(ScriptError::kLoadFailed);
   }
 
-  template <typename Archive> expected<void, ScriptError> save(Archive& ar, SharedAssets& assets)
+  template <typename Archive> expected<void, ScriptError> save(Archive& ar) const
   {
-    if (this->derived().onSave(ar, assets))
+    if (this->derived().onSave(ar))
     {
       return {};
     }
     return make_unexpected(ScriptError::kSaveFailed);
   }
 
-  expected<void, ScriptError>
-  update(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app_props)
+  expected<void, ScriptError> update(SharedAssets& assets, AppState& app_state, const AppProperties& app_props)
   {
     if (t_init_.has_value())
     {
-      return this->derived().onUpdate(systems, assets, app_state, app_props);
+      return this->derived().onUpdate(assets, app_state, app_props);
     }
-    else if (this->derived().onInitialize(systems, assets, app_state, app_props))
+    else if (this->derived().onInitialize(assets, app_state, app_props))
     {
       t_init_ = app_props.time;
       return {};

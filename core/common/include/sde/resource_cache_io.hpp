@@ -21,9 +21,9 @@ template <typename Archive, typename CacheT> struct save<Archive, ResourceCache<
     ar << named{"element_count", cache.size()};
     for (const auto& [handle, element] : cache)
     {
-      ar << named{"handle", handle.fundemental()};
+      ar << named{"handle", handle};
       ar << named{"version", element.version};
-      ar << named{"value", element.value.fundemental()};
+      ar << named{"value", element.value};
     }
   }
 };
@@ -41,11 +41,11 @@ template <typename Archive, typename CacheT> struct load<Archive, ResourceCache<
     for (std::size_t element_idx = 0; element_idx < element_count; ++element_idx)
     {
       handle_type handle;
-      ar >> named{"handle", handle.fundemental()};
+      ar >> named{"handle", handle};
       version_type version;
       ar >> named{"version", version};
       value_type value;
-      ar >> named{"value", value.fundemental()};
+      ar >> named{"value", value};
       auto _ = cache.insert(handle, version, std::move(value));
       (void)_;
     }

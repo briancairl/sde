@@ -5,6 +5,10 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <string>
+#include <vector>
+
 // EnTT
 #include <entt/entity/entity.hpp>
 #include <entt/fwd.hpp>
@@ -14,6 +18,7 @@
 #include "sde/game/entity_handle.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
+#include "sde/type_name.hpp"
 
 namespace sde::game
 {
@@ -21,15 +26,22 @@ namespace sde::game
 enum class EntityError
 {
   kElementAlreadyExists,
+  kComponentAlreadyAttached,
   kInvalidHandle,
   kCreationFailure,
+};
+
+struct Component : Resource<Component>
+{
+  std::string type;
+  auto field_list() { return FieldList(Field{"type", type}); }
 };
 
 struct Entity : Resource<Entity>
 {
   entt::entity id;
-
-  auto field_list() { return FieldList(Field{"id", id}); }
+  std::vector<Component> components;
+  auto field_list() { return FieldList(_Stub{"id", id}, Field{"components", components}); }
 };
 
 }  // namespace sde::game
@@ -60,6 +72,75 @@ class EntityCache : public ResourceCache<EntityCache>
 
 public:
   explicit EntityCache(entt::registry& registry);
+
+  /**
+   * @brief Creates a new entity and adds components
+   */
+  template <typename AttachComponentsT> decltype(auto) make_entity(AttachComponentsT attach_components)
+  {
+    auto value_or_error = this->create();
+    if (value_or_error.has_value())
+    {
+      auto entity_itr = handle_to_value_cache_.find(value_or_error->handle);
+      attach_components(*this, entity_itr->second.value);
+    }
+    return value_or_error;
+  }
+
+  /**
+   * @brief Attach a component to an existing entity
+   */
+  template <typename ComponentT, typename... CTorArgs>
+  expected<ComponentT*, EntityError> attach(EntityHandle handle, CTorArgs&&... args)
+  {
+    auto entity_itr = handle_to_value_cache_.find(handle);
+    if (entity_itr == handle_to_value_cache_.end())
+    {
+      return make_unexpected(EntityError::kInvalidHandle);
+    }
+    return attach(entity_itr->second, std::forward<CTorArgs>(args)...);
+  }
+
+  /**
+   * @brief Attach a component to an existing entity
+   */
+  template <typename ComponentT, typename... CTorArgs>
+  expected<ComponentT*, EntityError> attach(Entity& entity, CTorArgs&&... args)
+  {
+    if (registry_->template all_of<ComponentT>(entity.id))
+    {
+      return make_unexpected(EntityError::kComponentAlreadyAttached);
+    }
+
+    entity.components.push_back(Component{.type = std::string{type_name<ComponentT>()}});
+    using ReturnT = decltype(registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...));
+    if constexpr (std::is_void_v<ReturnT>)
+    {
+      registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...);
+      return nullptr;
+    }
+    else
+    {
+      auto& c = registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...);
+      return std::addressof(c);
+    }
+  }
+
+  /**
+   * @brief Removes an entity by its native ID
+   */
+  void remove(entt::entity e)
+  {
+    for (const auto& [handle, value] : handle_to_value_cache_)
+    {
+      if (value->id == e)
+      {
+        handle_to_value_cache_.erase(handle);
+        registry_->destroy(e);
+        return;
+      }
+    }
+  }
 
 private:
   entt::registry* registry_;

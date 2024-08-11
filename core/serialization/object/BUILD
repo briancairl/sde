@@ -5,5 +5,8 @@ cc_library(
     "include/sde/serial/object_fwd.hpp"
   ],
   strip_include_prefix="include",
+  deps=[
+    "//core/common:core",
+  ],
   visibility=["//visibility:public"]
 )

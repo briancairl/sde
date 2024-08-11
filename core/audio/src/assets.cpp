@@ -23,8 +23,9 @@ expected<void, AssetError> Assets::refresh()
     SDE_LOG_DEBUG("FailedSoundLoading");
     return make_unexpected(AssetError::kFailedSoundLoading);
   }
-  sound_data.relinquish();
   return {};
 }
+
+void Assets::strip() { SDE_ASSERT_OK(sound_data.relinquish()); }
 
 }  // namespace sde::audio

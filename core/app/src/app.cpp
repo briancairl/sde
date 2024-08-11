@@ -1,4 +1,5 @@
 // C++ Standard Library
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cstdio>
@@ -47,7 +48,7 @@ constexpr std::array<std::pair<int, std::size_t>, static_cast<size_t>(KeyCode::_
   {GLFW_KEY_RIGHT_ALT, static_cast<std::size_t>(KeyCode::kRAlt)},
 }};
 
-void glfwScanKeyStates(GLFWwindow* glfw_window, KeyStates& curr)
+void glfwImplScanKeyStates(GLFWwindow* glfw_window, KeyStates& curr)
 {
   auto prev_down = curr.down;
   for (const auto& [keycode, index] : kKeyScanPattern)
@@ -66,11 +67,30 @@ void glfwScanKeyStates(GLFWwindow* glfw_window, KeyStates& curr)
   curr.released = (prev_down & ~curr.down);
 }
 
-void glfwScrollEventHandler(GLFWwindow* glfw_window, double xoffset, double yoffset)
+void glfwImplScrollEventHandler(GLFWwindow* glfw_window, double xoffset, double yoffset)
 {
   auto* app_properties = reinterpret_cast<AppProperties*>(glfwGetWindowUserPointer(glfw_window));
   app_properties->mouse_scroll.x() = xoffset;
   app_properties->mouse_scroll.y() = yoffset;
+}
+
+void glfwImplDropCallback(GLFWwindow* glfw_window, int path_count, const char* paths[])
+{
+  auto* app_properties = reinterpret_cast<AppProperties*>(glfwGetWindowUserPointer(glfw_window));
+
+  // Set location of drop on screen
+  Vec2d drop_cursor_position;
+  glfwGetCursorPos(glfw_window, (drop_cursor_position.data() + 0), (drop_cursor_position.data() + 1));
+
+  // Set drop payload
+  app_properties->drag_and_drop_payloads.reserve(path_count);
+  std::transform(
+    paths,
+    paths + path_count,
+    std::back_inserter(app_properties->drag_and_drop_payloads),
+    [&drop_cursor_position](const char* path) -> AppDragAndDropPayload {
+      return {drop_cursor_position, asset::path{path}};
+    });
 }
 
 }  // namespace
@@ -111,7 +131,8 @@ void App::spin(OnUpdate on_update, const Rate spin_rate)
   auto t_next = t_start + spin_rate.period();
 
   glfwSetWindowUserPointer(glfw_window, reinterpret_cast<void*>(&app_properties));
-  glfwSetScrollCallback(glfw_window, glfwScrollEventHandler);
+  auto previous_scroll_callback = glfwSetScrollCallback(glfw_window, glfwImplScrollEventHandler);
+  auto previous_drop_callback = glfwSetDropCallback(glfw_window, glfwImplDropCallback);
 
   while (!glfwWindowShouldClose(glfw_window))
   {
@@ -123,7 +144,7 @@ void App::spin(OnUpdate on_update, const Rate spin_rate)
 
     glfwPollEvents();
 
-    glfwScanKeyStates(glfw_window, app_properties.keys);
+    glfwImplScanKeyStates(glfw_window, app_properties.keys);
 
     switch (on_update(app_state, app_properties))
     {
@@ -151,11 +172,14 @@ void App::spin(OnUpdate on_update, const Rate spin_rate)
       t_next += spin_rate.period();
     }
 
+    app_properties.drag_and_drop_payloads.clear();
     app_properties.mouse_scroll.setZero();
     app_properties.time = (t_now - t_start);
     app_properties.time_delta = (t_now - t_prev);
     t_prev = t_now;
   }
+  glfwSetDropCallback(glfw_window, previous_drop_callback);
+  glfwSetScrollCallback(glfw_window, previous_scroll_callback);
   glfwSetWindowUserPointer(glfw_window, nullptr);
 }
 

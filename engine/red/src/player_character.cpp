@@ -6,6 +6,11 @@
 // EnTT
 #include <entt/entt.hpp>
 
+// ImGui
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include <imgui.h>
+#include <imgui_internal.h>
+
 // SDE
 #include "sde/game/assets.hpp"
 #include "sde/game/script_impl.hpp"
@@ -38,38 +43,18 @@ constexpr std::size_t kFrontLeft{5};
 constexpr std::size_t kBackRight{6};
 constexpr std::size_t kBackLeft{7};
 
-}  // namespace
-
-class Components : public Resource<Components>
-{
-  friend fundemental_type;
-
-public:
-  explicit Components(entt::entity id, entt::registry& reg) : id_{id}, registry_{&reg}
-  {
-    registry_->emplace<Focused>(id_);
-    registry_->emplace<Midground>(id_);
-    registry_->emplace<Info>(id_, Info{.name = {"bob"}});
-    registry_->emplace<Size>(id_, Size{.extent = {1.5F, 1.5F}});
-    registry_->emplace<Position>(id_, Position{.center = Vec2f::Zero()});
-    registry_->emplace<Dynamics>(id_, Dynamics{.velocity = Vec2f::Zero(), .looking = {0, -1}});
-    registry_->emplace<AnimatedSprite>(id_).setMode(AnimatedSprite::Mode::kLooped);
-  }
-
-private:
-  entt::entity id_;
-  entt::registry* registry_;
-
-  auto field_list()
-  {
-    return FieldList(
-      Field{"info", registry_->get<Info>(id_)},
-      Field{"size", registry_->get<Size>(id_)},
-      Field{"position", registry_->get<Position>(id_)},
-      Field{"dynamics", registry_->get<Dynamics>(id_)},
-      Field{"sprite", registry_->get<AnimatedSprite>(id_)});
-  }
+constexpr std::array kDirectionLabels = {
+  "Front",
+  "Back",
+  "Right",
+  "Left",
+  "FrontRight",
+  "FrontLeft",
+  "BackRight",
+  "BackLeft",
 };
+
+}  // namespace
 
 class PlayerCharacter final : public ScriptRuntime
 {
@@ -77,122 +62,120 @@ public:
   PlayerCharacter() : ScriptRuntime{"PlayerCharacter"} {}
 
 private:
-  bool AssignMovementTileSets(
-    game::Assets& assets,
-    TileSetHandle* movement_tilsets,
-    std::size_t cardinal_start_offset,
-    std::size_t ordinal_start_offset) const;
+  EntityHandle entity_;
+  TileSetHandle idle_frames_[8UL];
+  TileSetHandle walk_frames_[8UL];
+  TileSetHandle run_frames_[8UL];
 
-  bool onLoad(IArchive& ar, SharedAssets& assets) override
+  bool onLoad(IArchive& ar) override
   {
     using namespace sde::serial;
     ar >> Field{"entity", entity_};
-    ar >> Field{"front_atlas", front_atlas_};
-    ar >> Field{"back_atlas", back_atlas_};
-    ar >> Field{"side_atlas", side_atlas_};
-    ar >> Field{"front_side_atlas", front_side_atlas_};
-    ar >> Field{"back_side_atlas", back_side_atlas_};
     ar >> Field{"idle_frames", idle_frames_};
     ar >> Field{"walk_frames", walk_frames_};
     ar >> Field{"run_frames", run_frames_};
-
-    if (auto entity = assets.entities.get_if(entity_); entity == nullptr)
-    {
-      return false;
-    }
-    else
-    {
-      components_.emplace(entity->id, assets.registry);
-      ar >> Field{"components", *components_};
-    }
     return true;
   }
 
-  bool onSave(OArchive& ar, SharedAssets& assets) override
+  bool onSave(OArchive& ar) const override
   {
     using namespace sde::serial;
     ar << Field{"entity", entity_};
-    ar << Field{"front_atlas", front_atlas_};
-    ar << Field{"back_atlas", back_atlas_};
-    ar << Field{"side_atlas", side_atlas_};
-    ar << Field{"front_side_atlas", front_side_atlas_};
-    ar << Field{"back_side_atlas", back_side_atlas_};
     ar << Field{"idle_frames", idle_frames_};
     ar << Field{"walk_frames", walk_frames_};
     ar << Field{"run_frames", run_frames_};
-    ar << Field{"components", *components_};
     return true;
   }
 
-  bool onInitialize(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
-    if (!assets.assign(front_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Front Movement.png"_path))
+    if (!entity_.isNull())
+    {
+      return true;
+    }
+    auto entity_or_error = assets.entities.make_entity([](EntityCache& cache, Entity& e) {
+      cache.attach<Size>(e, Size{.extent = {0.1, 0.1}});
+      cache.attach<Position>(e, Position{.center = {0, 0}});
+      cache.attach<Dynamics>(e, Dynamics{});
+      cache.attach<graphics::AnimatedSprite>(e);
+      cache.attach<Foreground>(e);
+    });
+    if (!entity_or_error.has_value())
     {
       SDE_LOG_ERROR("failed");
       return false;
     }
-
-    if (!assets.assign(back_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Back Movement.png"_path))
-    {
-      SDE_LOG_ERROR("failed");
-      return false;
-    }
-
-    if (!assets.assign(side_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/Side Movement.png"_path))
-    {
-      SDE_LOG_ERROR("failed");
-      return false;
-    }
-
-    if (!assets.assign(front_side_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/FrontSide Movement.png"_path))
-    {
-      SDE_LOG_ERROR("failed");
-      return false;
-    }
-
-    if (!assets.assign(back_side_atlas_, "/home/brian/dev/assets/sprites/red/Top Down/BackSide Movement.png"_path))
-    {
-      SDE_LOG_ERROR("failed");
-      return false;
-    }
-
-    if (!AssignMovementTileSets(assets, idle_frames_, 18UL, 12UL))
-    {
-      SDE_LOG_ERROR("failed");
-      return false;
-    }
-
-    if (!AssignMovementTileSets(assets, walk_frames_, 12UL, 12UL))
-    {
-      SDE_LOG_ERROR("failed");
-      return false;
-    }
-
-    if (!AssignMovementTileSets(assets, run_frames_, 6UL, 6UL))
-    {
-      SDE_LOG_ERROR("failed");
-      return false;
-    }
-
-    if (auto status_or_error = assets.assign(entity_); !status_or_error)
-    {
-      return false;
-    }
-    else if (*status_or_error == ResourceStatus::kCreated)
-    {
-      auto entity = assets.entities.get_if(entity_);
-      components_.emplace(entity->id, assets.registry);
-    }
+    entity_ = entity_or_error->handle;
     return true;
   }
 
-  expected<void, ScriptError>
-  onUpdate(Systems& systems, SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  void onEdit(SharedAssets& assets, AppState& app_state, const AppProperties& app)
   {
+    if (!assets->contains<ImGuiContext*>())
+    {
+      return;
+    }
+    ImGui::Begin("player");
+
+    auto entity = assets.entities.get_if(entity_);
+    auto [size, position, sprite] = assets.registry.get<Size, Position, graphics::AnimatedSprite>(entity->id);
+
+    ImGui::InputFloat2("size", size.extent.data());
+
+    std::array frames = {
+      std::make_pair("idle", idle_frames_),
+      std::make_pair("walk", walk_frames_),
+      std::make_pair("run", run_frames_),
+    };
+
+    for (auto& [frame_label, frames] : frames)
+    {
+      if (ImGui::CollapsingHeader(frame_label))
+      {
+        auto direction_label_itr = std::begin(kDirectionLabels);
+        for (auto frames_itr = frames; frames_itr != (frames + 8UL); ++frames_itr, ++direction_label_itr)
+        {
+          ImGui::Dummy(ImVec2{10, 10});
+          if (*frames_itr == sprite.options().frames)
+          {
+            ImGui::TextColored(ImVec4{0, 1, 0, 1}, "%s: %lu", *direction_label_itr, frames_itr->id());
+          }
+          else if (frames_itr->isNull())
+          {
+            ImGui::TextColored(ImVec4{1, 0, 0, 1}, "%s: %lu", *direction_label_itr, frames_itr->id());
+          }
+          else
+          {
+            ImGui::TextColored(ImVec4{1, 1, 1, 1}, "%s: %lu", *direction_label_itr, frames_itr->id());
+          }
+          if (ImGui::BeginDragDropTarget())
+          {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SDE_TILESET_ASSET"))
+            {
+              SDE_ASSERT_EQ(payload->DataSize, sizeof(TileSetHandle));
+              if (const auto h = *reinterpret_cast<const TileSetHandle*>(payload->Data);
+                  assets.graphics.tile_sets.exists(h))
+              {
+                (*frames_itr) = h;
+              }
+            }
+            ImGui::EndDragDropTarget();
+          }
+        }
+      }
+    }
+    ImGui::End();
+  }
+
+  expected<void, ScriptError> onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
+  {
+    onEdit(assets, app_state, app);
+
     if (!app_state.enabled)
     {
       return {};
     }
+
     auto entity = assets.entities.get_if(entity_);
     auto [size, position, state, sprite] =
       assets.registry.get<Size, Position, Dynamics, graphics::AnimatedSprite>(entity->id);
@@ -204,6 +187,7 @@ private:
     const float next_speed = app.keys.isDown(KeyCode::kLShift) ? kSpeedRunning : kSpeedWalking;
 
     state.velocity.setZero();
+    sprite.setMode(graphics::AnimatedSprite::Mode::kLooped);
 
     // Handle movement controls
     if (app.keys.isDown(KeyCode::kA))
@@ -302,69 +286,19 @@ private:
       sprite.setFrameRate(Hertz(kSpeedWalking * 15.0F));
     }
 
-    if (auto listener_or_err = audio::ListenerTarget::create(systems.mixer, kPlayerListener);
-        listener_or_err.has_value())
-    {
-      listener_or_err->set(audio::ListenerState{
-        .position = Vec3f{position.center.x(), position.center.y(), 1.0F},
-        .velocity = Vec3f{state.velocity.x(), state.velocity.y(), 0.0F},
-        .orientation_at = Vec3f::UnitY(),
-        .orientation_up = Vec3f::UnitZ(),
-      });
-    }
+    // if (auto listener_or_err = audio::ListenerTarget::create(systems.mixer, kPlayerListener);
+    //     listener_or_err.has_value())
+    // {
+    //   listener_or_err->set(audio::ListenerState{
+    //     .position = Vec3f{position.center.x(), position.center.y(), 1.0F},
+    //     .velocity = Vec3f{state.velocity.x(), state.velocity.y(), 0.0F},
+    //     .orientation_at = Vec3f::UnitY(),
+    //     .orientation_up = Vec3f::UnitZ(),
+    //   });
+    // }
 
     return {};
   }
-
-  EntityHandle entity_;
-  TextureHandle front_atlas_;
-  TextureHandle back_atlas_;
-  TextureHandle side_atlas_;
-  TextureHandle front_side_atlas_;
-  TextureHandle back_side_atlas_;
-  TileSetHandle idle_frames_[8UL];
-  TileSetHandle walk_frames_[8UL];
-  TileSetHandle run_frames_[8UL];
-  std::optional<Components> components_;
 };
 
-bool PlayerCharacter::AssignMovementTileSets(
-  game::Assets& assets,
-  TileSetHandle* movement_tilsets,
-  std::size_t cardinal_start_offset,
-  std::size_t ordinal_start_offset) const
-{
-  const std::array kFrameAssignments = {
-    std::make_tuple(kFront, front_atlas_, TileOrientation::kNormal),
-    std::make_tuple(kBack, back_atlas_, TileOrientation::kNormal),
-    std::make_tuple(kRight, side_atlas_, TileOrientation::kNormal),
-    std::make_tuple(kLeft, side_atlas_, TileOrientation::kFlipped),
-    std::make_tuple(kFrontRight, front_side_atlas_, TileOrientation::kNormal),
-    std::make_tuple(kFrontLeft, front_side_atlas_, TileOrientation::kFlipped),
-    std::make_tuple(kBackRight, back_side_atlas_, TileOrientation::kNormal),
-    std::make_tuple(kBackLeft, back_side_atlas_, TileOrientation::kFlipped),
-  };
-
-  for (const auto& [side_index, atlas, tile_orientation_x] : kFrameAssignments)
-  {
-    if (auto ok_or_error = assets.assign(
-          movement_tilsets[side_index],
-          atlas,
-          TileSetSliceUniform{
-            .tile_size_px = {64, 64},
-            .tile_orientation_x = tile_orientation_x,
-            .tile_orientation_y = TileOrientation::kNormal,
-            .direction = TileSliceDirection::kRowWise,
-            .start_offset = cardinal_start_offset,
-            .stop_after = 6,
-          });
-        !ok_or_error)
-    {
-      SDE_LOG_ERROR("failed");
-      return false;
-    }
-  }
-  return true;
-}
-
-std::unique_ptr<sde::game::ScriptRuntime> createPlayerCharacter() { return std::make_unique<PlayerCharacter>(); }
+std::unique_ptr<ScriptRuntime> _PlayerCharacter() { return std::make_unique<PlayerCharacter>(); }

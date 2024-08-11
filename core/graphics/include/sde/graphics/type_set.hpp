@@ -30,14 +30,14 @@ struct Glyph
   Vec2i size_px;
   Vec2i bearing_px;
   float advance_px;
-  Bounds2f atlas_bounds = Bounds2f{};
+  Rect2f atlas_bounds = Rect2f{};
 };
 
 struct TypeSetOptions : Resource<TypeSetOptions>
 {
   std::size_t height_px = 10;
 
-  auto field_list() { return std::make_tuple((Field{"height_px", height_px})); }
+  auto field_list() { return FieldList((Field{"height_px", height_px})); }
 };
 
 struct TypeSet : Resource<TypeSet>
@@ -49,7 +49,7 @@ struct TypeSet : Resource<TypeSet>
 
   auto field_list()
   {
-    return std::make_tuple(
+    return FieldList(
       (Field{"options", options}),
       (Field{"font", font}),
       (Field{"glyph_atlas", glyph_atlas}),

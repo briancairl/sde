@@ -425,7 +425,7 @@ template expected<Texture, TextureError> TextureCache::generate(
 
 expected<Texture, TextureError> TextureCache::generate(const asset::path& image_path, const TextureOptions& options)
 {
-  auto image_or_error = images_->create(image_path, ImageOptions{.flip_vertically = true});
+  auto image_or_error = images_->create(image_path, ImageOptions{.flip_vertically = false});
   if (!image_or_error.has_value())
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
