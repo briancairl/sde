@@ -324,4 +324,4 @@ private:
   }
 };
 
-std::unique_ptr<ScriptRuntime> createRenderer() { return std::make_unique<Renderer>(); }
+std::unique_ptr<ScriptRuntime> _Renderer() { return std::make_unique<Renderer>(); }

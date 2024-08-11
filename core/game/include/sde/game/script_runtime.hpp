@@ -32,11 +32,11 @@ public:
 
   virtual ~ScriptRuntime() = default;
 
-  virtual bool onLoad(IArchive& ar) = 0;
+  virtual bool onLoad(IArchive& ar) { return true; }
 
-  virtual bool onSave(OArchive& ar) const = 0;
+  virtual bool onSave(OArchive& ar) const { return true; }
 
-  virtual bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app_props) = 0;
+  virtual bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app_props) { return true; }
 
   virtual expected<void, ScriptError>
   onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app_props) = 0;

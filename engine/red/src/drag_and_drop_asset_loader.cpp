@@ -18,20 +18,6 @@ public:
   DragAndDropAssetLoader() : ScriptRuntime{"DragAndDropAssetLoader"} {}
 
 private:
-  bool onLoad(IArchive& ar) override
-  {
-    using namespace sde::serial;
-    return true;
-  }
-
-  bool onSave(OArchive& ar) const override
-  {
-    using namespace sde::serial;
-    return true;
-  }
-
-  bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app) override { return true; }
-
   expected<void, ScriptError> onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
     for (const auto& payload : app.drag_and_drop_payloads)

@@ -3,4 +3,4 @@
 // SDE
 #include "sde/game/script_runtime.hpp"
 
-sde::game::ScriptRuntime::UPtr _Renderer();
+sde::game::ScriptRuntime::UPtr _AudioManager();

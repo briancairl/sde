@@ -1,6 +1,7 @@
 cc_library(
   name="red",
   hdrs=[
+    "include/red/audio_manager.hpp",
     "include/red/components.hpp",
     #"include/red/background_music.hpp",
     "include/red/player_character.hpp",
@@ -16,6 +17,7 @@ cc_library(
     "include/red/texture_viewer.hpp",
   ],
   srcs=[
+    "src/audio_manager.cpp",
     "src/components.cpp",
     #"src/background_music.cpp",
     "src/player_character.cpp",

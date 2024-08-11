@@ -58,6 +58,16 @@ float Track::progress() const
   return static_cast<float>(byte_offset) / static_cast<float>(playback_buffer_length_);
 }
 
+void Track::jump(float p) const
+{
+  if (playback_buffer_length_ == 0)
+  {
+    return;
+  }
+  const ALint byte_offset = static_cast<ALint>(std::clamp(p, 0.0F, 1.0F) * playback_buffer_length_);
+  alSourcei(source_, AL_BYTE_OFFSET, byte_offset);
+}
+
 TrackPlayback Track::set(const Sound& sound, const TrackOptions& track_options)
 {
   ++instance_counter_;

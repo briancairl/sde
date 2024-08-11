@@ -81,6 +81,7 @@ public:
   bool stopped() const;
   bool playing() const;
   float progress() const;
+  void jump(float p) const;
 
   TrackPlayback set(const Sound& sound, const TrackOptions& track_options);
   void pop(std::vector<source_handle_t>& target);
@@ -109,6 +110,8 @@ public:
   bool resume() const;
   bool pause() const;
   bool stop();
+
+  const Track* track() const { return track_; }
 
 private:
   std::size_t instance_id_ = 0;
