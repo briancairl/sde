@@ -21,7 +21,7 @@ private:
   SoundHandle music_;
   SoundHandle ambiance_;
 
-  bool onLoad(IArchive& ar, SharedAssets& assets) override
+  bool onLoad(IArchive& ar) override
   {
     using namespace sde::serial;
     ar >> Field{"music", music_};
@@ -29,7 +29,7 @@ private:
     return true;
   }
 
-  bool onSave(OArchive& ar, const SharedAssets& assets) const override
+  bool onSave(OArchive& ar) const override
   {
     using namespace sde::serial;
     ar << Field{"music", music_};

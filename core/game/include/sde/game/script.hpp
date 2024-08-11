@@ -47,9 +47,9 @@ public:
 
   Hash version() { return Hash{}; }
 
-  template <typename Archive> expected<void, ScriptError> load(Archive& ar, SharedAssets& assets)
+  template <typename Archive> expected<void, ScriptError> load(Archive& ar)
   {
-    if (not_loaded_ and this->derived().onLoad(ar, assets))
+    if (not_loaded_ and this->derived().onLoad(ar))
     {
       not_loaded_ = false;
       return {};
@@ -57,9 +57,9 @@ public:
     return make_unexpected(ScriptError::kLoadFailed);
   }
 
-  template <typename Archive> expected<void, ScriptError> save(Archive& ar, const SharedAssets& assets) const
+  template <typename Archive> expected<void, ScriptError> save(Archive& ar) const
   {
-    if (this->derived().onSave(ar, assets))
+    if (this->derived().onSave(ar))
     {
       return {};
     }

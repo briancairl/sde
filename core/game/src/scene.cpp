@@ -106,15 +106,26 @@ bool saveWithManifest(
   const std::unordered_map<std::string, ComponentData>& component_data)
 {
   using namespace sde::serial;
-  const auto components_data_path = parent_path / "components.bin";
+
+  const asset::path components_data_path{parent_path / "components"};
+
+  // If path does not exist, create directories
+  if (std::error_code errc;
+      !asset::exists(components_data_path) and (!asset::create_directories(components_data_path) or errc))
+  {
+    return false;
+  }
+
   manifest["components"] = {{"data", components_data_path.string()}, {"version", 0}};
 
-  SDE_LOG_DEBUG("saving: components");
-  if (auto ofs_or_error = file_ostream::create(components_data_path); ofs_or_error.has_value())
+  for (const auto& [entity_handle, entity] : assets.entities)
   {
-    binary_oarchive oar{*ofs_or_error};
-    for (const auto& [entity_handle, entity] : assets.entities)
+    SDE_LOG_DEBUG_FMT("saving components: %s", format("%lu_%lu.bin", entity_handle.id(), entity.version.value));
+    const asset::path entity_path{
+      components_data_path / std::string{format("%lu_%lu.bin", entity_handle.id(), entity.version.value)}};
+    if (auto ofs_or_error = file_ostream::create(entity_path); ofs_or_error.has_value())
     {
+      binary_oarchive oar{*ofs_or_error};
       for (const auto& c : entity->components)
       {
         if (const auto itr = component_data.find(c.type); itr != component_data.end())
@@ -129,11 +140,13 @@ bool saveWithManifest(
         }
       }
     }
-    SDE_LOG_DEBUG("saved: components");
-    return true;
+    else
+    {
+      SDE_LOG_DEBUG_FMT("failed to save components: %s", entity_path.string().c_str());
+    }
   }
-  SDE_LOG_DEBUG("failed");
-  return false;
+  SDE_LOG_DEBUG("saved: components");
+  return true;
 }
 
 bool loadWithManifest(
@@ -159,14 +172,16 @@ bool loadWithManifest(
     return false;
   }
 
-  const asset::path components_data_path{std::string{components_data_json}};
+  const asset::path components_data_path{components_data_json};
 
-  SDE_LOG_DEBUG_FMT("%lu entities", assets.registry.size());
-  if (auto ifs_or_error = file_istream::create(components_data_path); ifs_or_error.has_value())
+  for (const auto& [entity_handle, entity] : assets.entities)
   {
-    binary_iarchive iar{*ifs_or_error};
-    for (const auto& [entity_handle, entity] : assets.entities)
+    SDE_LOG_DEBUG_FMT("loading components: %s", format("%lu_%lu.bin", entity_handle.id(), entity.version.value));
+    const asset::path entity_path{
+      components_data_path / std::string{format("%lu_%lu.bin", entity_handle.id(), entity.version.value)}};
+    if (auto ifs_or_error = file_istream::create(entity_path); ifs_or_error.has_value())
     {
+      binary_iarchive iar{*ifs_or_error};
       for (const auto& c : entity->components)
       {
         if (const auto itr = component_data.find(c.type); itr != component_data.end())
@@ -176,23 +191,19 @@ bool loadWithManifest(
         }
         else
         {
-          SDE_LOG_DEBUG("failed");
-          return false;
+          SDE_LOG_DEBUG_FMT("failed to load component: %s", c.type.c_str());
         }
       }
     }
-    SDE_LOG_DEBUG("saved: components");
-    return true;
+    else
+    {
+      SDE_LOG_DEBUG_FMT("failed to load components: %s", entity_path.string().c_str());
+    }
   }
-  SDE_LOG_DEBUG("failed");
-  return false;
+  return true;
 }
 
-bool saveWithManifest(
-  nlohmann::json& manifest,
-  const asset::path& parent_path,
-  const std::vector<ScriptData>& scripts,
-  const Assets& assets)
+bool saveWithManifest(nlohmann::json& manifest, const asset::path& parent_path, const std::vector<ScriptData>& scripts)
 {
   using namespace sde::serial;
   auto arr = nlohmann::json::array();
@@ -207,7 +218,7 @@ bool saveWithManifest(
     {
       SDE_LOG_DEBUG_FMT("saving: %s(%p)", script_name.c_str(), script_ptr.get());
       binary_oarchive oar{*ofs_or_error};
-      if (auto ok_or_error = script_ptr->save(oar, assets); !ok_or_error.has_value())
+      if (auto ok_or_error = script_ptr->save(oar); !ok_or_error.has_value())
       {
         return false;
       }
@@ -224,11 +235,7 @@ bool saveWithManifest(
   return true;
 }
 
-bool loadWithManifest(
-  const nlohmann::json& manifest,
-  const asset::path& parent_path,
-  std::vector<ScriptData>& scripts,
-  Assets& assets)
+bool loadWithManifest(const nlohmann::json& manifest, const asset::path& parent_path, std::vector<ScriptData>& scripts)
 {
   using namespace sde::serial;
   for (const auto& script_element_json : manifest)
@@ -270,7 +277,7 @@ bool loadWithManifest(
     {
       SDE_LOG_DEBUG_FMT("loading: %s", script_type.c_str());
       binary_iarchive iar{*ifs_or_error};
-      if (auto ok_or_error = script_ptr->load(iar, assets); !ok_or_error.has_value())
+      if (auto ok_or_error = script_ptr->load(iar); !ok_or_error.has_value())
       {
         return false;
       }
@@ -328,7 +335,7 @@ expected<void, SceneError> Scene::save(const asset::path& path) const
   }
 
   // Write script data
-  if (nlohmann::json script_manifest; saveWithManifest(script_manifest, scripts_path, scripts_, assets_))
+  if (nlohmann::json script_manifest; saveWithManifest(script_manifest, scripts_path, scripts_))
   {
     scene_manifest["scripts"] = std::move(script_manifest);
   }
@@ -403,7 +410,7 @@ expected<void, SceneError> Scene::load(const asset::path& path)
   const asset::path scripts_path = path / "scripts";
 
   // Read script data
-  if (!loadWithManifest(script_manifest, scripts_path, scripts_, assets_))
+  if (!loadWithManifest(script_manifest, scripts_path, scripts_))
   {
     SDE_LOG_DEBUG("SceneError::kFailedToLoad");
     return make_unexpected(SceneError::kFailedToLoad);

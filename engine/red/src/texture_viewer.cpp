@@ -27,13 +27,13 @@ public:
 private:
   TextureHandle selected_texture_;
 
-  bool onLoad(IArchive& ar, SharedAssets& assets) override
+  bool onLoad(IArchive& ar) override
   {
     using namespace sde::serial;
     return true;
   }
 
-  bool onSave(OArchive& ar, const SharedAssets& assets) const override
+  bool onSave(OArchive& ar) const override
   {
     using namespace sde::serial;
     return true;

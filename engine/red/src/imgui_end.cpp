@@ -28,9 +28,9 @@ public:
   ~ImGuiEnd() {}
 
 private:
-  bool onLoad(IArchive& ar, SharedAssets& assets) override { return true; }
+  bool onLoad(IArchive& ar) override { return true; }
 
-  bool onSave(OArchive& ar, const SharedAssets& assets) const override { return true; }
+  bool onSave(OArchive& ar) const override { return true; }
 
   bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {

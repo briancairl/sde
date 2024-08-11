@@ -67,7 +67,7 @@ private:
   TileSetHandle walk_frames_[8UL];
   TileSetHandle run_frames_[8UL];
 
-  bool onLoad(IArchive& ar, SharedAssets& assets) override
+  bool onLoad(IArchive& ar) override
   {
     using namespace sde::serial;
     ar >> Field{"entity", entity_};
@@ -77,7 +77,7 @@ private:
     return true;
   }
 
-  bool onSave(OArchive& ar, const SharedAssets& assets) const override
+  bool onSave(OArchive& ar) const override
   {
     using namespace sde::serial;
     ar << Field{"entity", entity_};

@@ -38,14 +38,14 @@ private:
   asset::path imgui_ini_path_ = {};
   ImGuiContext* imgui_context_managed_;
 
-  bool onLoad(IArchive& ar, SharedAssets& assets) override
+  bool onLoad(IArchive& ar) override
   {
     using namespace sde::serial;
     ar >> named{"imgui_ini_path", imgui_ini_path_};
     return true;
   }
 
-  bool onSave(OArchive& ar, const SharedAssets& assets) const override
+  bool onSave(OArchive& ar) const override
   {
     using namespace sde::serial;
     ar << named{"imgui_ini_path", imgui_ini_path_};

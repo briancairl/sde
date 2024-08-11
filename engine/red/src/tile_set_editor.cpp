@@ -37,7 +37,7 @@ private:
   std::vector<Rect2f> candidate_tiles_;
   int next_index_ = 0;
 
-  bool onLoad(IArchive& ar, SharedAssets& assets) override
+  bool onLoad(IArchive& ar) override
   {
     using namespace sde::serial;
     ar >> Field{"selected_tile_set", selected_tile_set_};
@@ -48,7 +48,7 @@ private:
     return true;
   }
 
-  bool onSave(OArchive& ar, const SharedAssets& assets) const override
+  bool onSave(OArchive& ar) const override
   {
     using namespace sde::serial;
     ar << Field{"selected_tile_set", selected_tile_set_};

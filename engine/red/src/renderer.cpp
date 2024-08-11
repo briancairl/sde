@@ -53,7 +53,7 @@ private:
   ShaderHandle player_text_shader_;
   RenderTargetHandle render_target_;
 
-  bool onLoad(IArchive& ar, SharedAssets& assets) override
+  bool onLoad(IArchive& ar) override
   {
     using namespace sde::serial;
     ar >> Field{"scaling", scaling_};
@@ -66,7 +66,7 @@ private:
     return true;
   }
 
-  bool onSave(OArchive& ar, const SharedAssets& assets) const override
+  bool onSave(OArchive& ar) const override
   {
     using namespace sde::serial;
     ar << Field{"scaling", scaling_};
