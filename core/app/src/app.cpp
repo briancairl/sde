@@ -11,6 +11,7 @@
 
 // SDE
 #include "sde/app.hpp"
+#include "sde/audio/sound_device.hpp"
 #include "sde/graphics/window.hpp"
 #include "sde/logging.hpp"
 
@@ -102,7 +103,7 @@ expected<App, AppError> App::create(Window&& window)
     SDE_LOG_DEBUG("WindowInvalid");
     return make_unexpected(AppError::kWindowInvalid);
   }
-  return App{std::move(window)};
+  return App{std::move(window), audio::SoundDevice::create()};
 }
 
 expected<App, AppError> App::create(const WindowOptions& options)
@@ -113,16 +114,19 @@ expected<App, AppError> App::create(const WindowOptions& options)
     SDE_LOG_DEBUG("WindowCreationFailure");
     return make_unexpected(AppError::kWindowCreationFailure);
   }
-  return App{std::move(window_or_error).value()};
+  return App{std::move(window_or_error).value(), audio::SoundDevice::create()};
 }
 
-App::App(Window&& window) : window_{std::move(window)} {}
+App::App(Window&& window, SoundDevice&& sound_device) :
+    window_{std::move(window)}, sound_device_{std::move(sound_device)}
+{}
 
 void App::spin(OnUpdate on_update, const Rate spin_rate)
 {
   AppState app_state;
   AppProperties app_properties;
   app_properties.window = window_.value();
+  app_properties.sound_device = sound_device_.handle();
 
   auto* glfw_window = reinterpret_cast<GLFWwindow*>(window_.value());
 

@@ -17,7 +17,6 @@
 #include "sde/game/archive_fwd.hpp"
 #include "sde/game/assets.hpp"
 #include "sde/game/script_runtime_fwd.hpp"
-#include "sde/game/systems_fwd.hpp"
 #include "sde/resource.hpp"
 #include "sde/type_name.hpp"
 

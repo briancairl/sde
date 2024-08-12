@@ -10,6 +10,7 @@
 
 // SDE
 #include "sde/asset.hpp"
+#include "sde/audio/sound_device_fwd.hpp"
 #include "sde/geometry.hpp"
 #include "sde/graphics/window_fwd.hpp"
 #include "sde/keyboard.hpp"
@@ -32,6 +33,7 @@ struct AppState
 struct AppProperties
 {
   graphics::NativeWindowHandle window{nullptr};
+  audio::NativeSoundDeviceHandle sound_device{nullptr};
 
   TimeOffset time = TimeOffset::zero();
   TimeOffset time_delta = TimeOffset::zero();

@@ -17,7 +17,6 @@
 #include "sde/crtp.hpp"
 #include "sde/expected.hpp"
 #include "sde/game/assets_fwd.hpp"
-#include "sde/game/systems_fwd.hpp"
 #include "sde/hash.hpp"
 #include "sde/time.hpp"
 

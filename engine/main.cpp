@@ -61,7 +61,7 @@ int main(int argc, char** argv)
 
   addComponentsToScene(scene);
 
-  if (!scene.load(argv[1]))
+  if (!asset::exists(argv[1]))
   {
     scene.addScript("drag_and_drop", game::ScriptRuntimeLoader::load("drag_and_drop", {}));
     scene.addScript("renderer", game::ScriptRuntimeLoader::load("renderer", {}));
@@ -72,6 +72,11 @@ int main(int argc, char** argv)
     scene.addScript("tile_map_editor", game::ScriptRuntimeLoader::load("tile_map_editor", {}));
     scene.addScript("texture_viewer", game::ScriptRuntimeLoader::load("texture_viewer", {}));
     scene.addScript("imgui_end", game::ScriptRuntimeLoader::load("imgui_end", {}));
+  }
+  else if (!scene.load(argv[1]))
+  {
+    SDE_LOG_ERROR_FMT("Failed to load game data from: %s", argv[1]);
+    return 1;
   }
 
   app_or_error->spin([&](auto& app_state, const auto& app_properties) {

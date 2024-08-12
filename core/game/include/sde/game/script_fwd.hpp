@@ -6,7 +6,6 @@
 #pragma once
 
 #include "sde/game/assets_fwd.hpp"
-#include "sde/game/systems_fwd.hpp"
 
 namespace sde::game
 {

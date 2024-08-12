@@ -12,6 +12,7 @@
 // SDE
 #include "sde/app_fwd.hpp"
 #include "sde/app_properties.hpp"
+#include "sde/audio/sound_device.hpp"
 #include "sde/expected.hpp"
 #include "sde/geometry.hpp"
 #include "sde/graphics/window.hpp"
@@ -37,6 +38,7 @@ enum class AppError
 class App
 {
 public:
+  using SoundDevice = audio::SoundDevice;
   using Window = graphics::Window;
   using WindowOptions = graphics::WindowOptions;
   using OnUpdate = std::function<AppDirective(AppState&, const AppProperties&)>;
@@ -52,9 +54,10 @@ public:
   static expected<App, AppError> create(const WindowOptions& window_options);
 
 private:
-  explicit App(Window&& window);
+  explicit App(Window&& window, SoundDevice&& sound_device);
   App(const App&) = delete;
   Window window_;
+  SoundDevice sound_device_;
 };
 
 }  // namespace sde

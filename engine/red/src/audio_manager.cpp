@@ -8,6 +8,7 @@
 #include <imgui_internal.h>
 
 // SDE
+#include "sde/audio/mixer.hpp"
 #include "sde/game/script_impl.hpp"
 #include "sde/logging.hpp"
 
@@ -54,7 +55,7 @@ private:
 
   bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
-    auto mixer_or_error = Mixer::create();
+    auto mixer_or_error = Mixer::create(app.sound_device);
     if (!mixer_or_error.has_value())
     {
       SDE_LOG_ERROR("Failed to create mixer");

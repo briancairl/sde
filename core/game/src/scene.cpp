@@ -18,7 +18,6 @@
 #include "sde/game/assets.hpp"
 #include "sde/game/scene.hpp"
 #include "sde/game/script.hpp"
-#include "sde/game/systems.hpp"
 #include "sde/geometry_io.hpp"
 #include "sde/resource_cache_io.hpp"
 #include "sde/resource_io.hpp"
@@ -379,6 +378,20 @@ expected<void, SceneError> Scene::load(const asset::path& path)
     return make_unexpected(SceneError::kFailedToLoad);
   }
 
+  // Read scripts
+  if (const auto script_manifest = scene_manifest["scripts"]; script_manifest.is_null())
+  {
+    SDE_LOG_DEBUG("SceneError::kFailedToLoad");
+    return make_unexpected(SceneError::kFailedToLoad);
+  }
+  // Read script data
+  else if (const asset::path scripts_path = (path / "scripts");
+           !loadWithManifest(script_manifest, scripts_path, scripts_))
+  {
+    SDE_LOG_DEBUG("SceneError::kFailedToLoad");
+    return make_unexpected(SceneError::kFailedToLoad);
+  }
+
   // Read asset data
   if (!loadWithManifest(scene_manifest, path, assets_))
   {
@@ -395,22 +408,6 @@ expected<void, SceneError> Scene::load(const asset::path& path)
 
   // Read components data
   if (!loadWithManifest(scene_manifest, path, assets_, components_))
-  {
-    SDE_LOG_DEBUG("SceneError::kFailedToLoad");
-    return make_unexpected(SceneError::kFailedToLoad);
-  }
-
-  const auto script_manifest = scene_manifest["scripts"];
-  if (script_manifest.is_null())
-  {
-    SDE_LOG_DEBUG("SceneError::kFailedToLoad");
-    return make_unexpected(SceneError::kFailedToLoad);
-  }
-
-  const asset::path scripts_path = path / "scripts";
-
-  // Read script data
-  if (!loadWithManifest(script_manifest, scripts_path, scripts_))
   {
     SDE_LOG_DEBUG("SceneError::kFailedToLoad");
     return make_unexpected(SceneError::kFailedToLoad);

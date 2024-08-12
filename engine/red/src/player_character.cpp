@@ -14,7 +14,6 @@
 // SDE
 #include "sde/game/assets.hpp"
 #include "sde/game/script_impl.hpp"
-#include "sde/game/systems.hpp"
 #include "sde/geometry_io.hpp"
 #include "sde/graphics/sprite.hpp"
 #include "sde/graphics/texture.hpp"

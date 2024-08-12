@@ -6,10 +6,10 @@
 #pragma once
 
 // C++ Standard Library
-#include <string>
 #include <vector>
 
 // SDE
+#include "sde/audio/sound_device_fwd.hpp"
 #include "sde/audio/sound_fwd.hpp"
 #include "sde/audio/typedef.hpp"
 #include "sde/expected.hpp"
@@ -20,13 +20,6 @@
 
 namespace sde::audio
 {
-
-struct NativeDeviceDeleter
-{
-  void operator()(device_handle_t id) const;
-};
-
-using NativeDevice = UniqueResource<device_handle_t, NativeDeviceDeleter>;
 
 struct NativeContextDeleter
 {
@@ -163,7 +156,7 @@ class Listener
 
 public:
   [[nodiscard]] static expected<Listener, ListenerError>
-  create(const NativeDevice& device, const ListenerOptions& options);
+  create(NativeSoundDeviceHandle device, const ListenerOptions& options);
 
   void set(const ListenerState& state) const;
   expected<TrackPlayback, TrackPlaybackError> set(const Sound& sound, const TrackOptions& options);
@@ -217,15 +210,11 @@ private:
 
 struct MixerOptions : Resource<MixerOptions>
 {
-  std::string device_name = {};
   std::vector<ListenerOptions> listener_options = {
     ListenerOptions{.track_count = 2},
     ListenerOptions{.track_count = 16}};
 
-  auto field_list()
-  {
-    return FieldList(Field{"device_name", device_name}, Field{"listener_options", listener_options});
-  }
+  auto field_list() { return FieldList(Field{"listener_options", listener_options}); }
 };
 
 enum class MixerError
@@ -246,16 +235,18 @@ public:
   ~Mixer() = default;
   Mixer(Mixer&& other) = default;
 
-  [[nodiscard]] static expected<Mixer, MixerError> create(const MixerOptions& options = {});
+  [[nodiscard]] static expected<Mixer, MixerError> create(const SoundDevice& device, const MixerOptions& options = {});
+
+  [[nodiscard]] static expected<Mixer, MixerError>
+  create(NativeSoundDeviceHandle device, const MixerOptions& options = {});
 
   std::size_t size() const { return listeners_.size(); }
 
 private:
-  Mixer(NativeDevice&& device, std::vector<Listener>&& listener);
+  explicit Mixer(std::vector<Listener>&& listener);
   Mixer() = delete;
   Mixer(const Mixer&) = delete;
 
-  NativeDevice device_;
   std::vector<Listener> listeners_;
   Listener* listener_active_ = nullptr;
 };

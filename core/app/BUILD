@@ -10,6 +10,7 @@ cc_library(
   strip_include_prefix="include",
   deps=[
     "//core/common:expected",
+    "//core/audio",
     "//core/graphics:graphics",
     "//core/graphics:window",
     "@glfw//:glfw",

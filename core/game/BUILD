@@ -15,15 +15,12 @@ cc_library(
     "include/sde/game/script_impl.hpp",
     "include/sde/game/script_runtime.hpp",
     "include/sde/game/script_runtime_fwd.hpp",
-    "include/sde/game/systems.hpp",
-    "include/sde/game/systems_fwd.hpp",
   ],
   srcs=[
     "src/assets.cpp",
     "src/entity.cpp",
     "src/scene.cpp",
     "src/script_runtime.cpp",
-    "src/systems.cpp",
   ],
   strip_include_prefix="include",
   deps=[

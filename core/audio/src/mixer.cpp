@@ -8,6 +8,7 @@
 // SDE
 #include "sde/audio/mixer.hpp"
 #include "sde/audio/sound.hpp"
+#include "sde/audio/sound_device.hpp"
 #include "sde/logging.hpp"
 #include "sde/resource_wrapper.hpp"
 
@@ -15,12 +16,6 @@ namespace sde::audio
 {
 
 void NativeSourceDeleter::operator()(source_handle_t id) const { alDeleteSources(1, &id); }
-
-void NativeDeviceDeleter::operator()(device_handle_t id) const
-{
-  SDE_LOG_DEBUG_FMT("device closed: %p", id);
-  alcCloseDevice(reinterpret_cast<ALCdevice*>(id));
-}
 
 void NativeContextDeleter::operator()(context_handle_t id) const
 {
@@ -187,11 +182,11 @@ bool TrackPlayback::stop()
   return true;
 }
 
-expected<Listener, ListenerError> Listener::create(const NativeDevice& device, const ListenerOptions& options)
+expected<Listener, ListenerError> Listener::create(NativeSoundDeviceHandle device, const ListenerOptions& options)
 {
   // Create listener context
-  const auto native_context_handle = alcCreateContext(reinterpret_cast<ALCdevice*>(device.value()), NULL);
-  SDE_LOG_DEBUG_FMT("alcCreateContext(%p, NULL) -> %p", device.value(), native_context_handle);
+  const auto native_context_handle = alcCreateContext(reinterpret_cast<ALCdevice*>(device), NULL);
+  SDE_LOG_DEBUG_FMT("alcCreateContext(%p, NULL) -> %p", device, native_context_handle);
   if (native_context_handle == nullptr)
   {
     SDE_LOG_DEBUG_FMT("alcCreateContext: %p", native_context_handle);
@@ -300,7 +295,12 @@ void Listener::stop()
   source_buffer_.clear();
 }
 
-expected<Mixer, MixerError> Mixer::create(const MixerOptions& options)
+expected<Mixer, MixerError> Mixer::create(const SoundDevice& sound_device, const MixerOptions& options)
+{
+  return Mixer::create(sound_device.handle(), options);
+}
+
+expected<Mixer, MixerError> Mixer::create(NativeSoundDeviceHandle sound_device, const MixerOptions& options)
 {
   if (options.listener_options.empty())
   {
@@ -308,34 +308,13 @@ expected<Mixer, MixerError> Mixer::create(const MixerOptions& options)
     return make_unexpected(MixerError::kListenerConfigInvalid);
   }
 
-  // Initalize sound device
-  const auto native_device_handle = [&options] {
-    if (options.device_name.empty())
-    {
-      const char* default_device_name = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
-      SDE_LOG_DEBUG_FMT("alcOpenDevice: %s", default_device_name);
-      return alcOpenDevice(default_device_name);
-    }
-    else
-    {
-      return alcOpenDevice(options.device_name.c_str());
-    }
-  }();
-  if (native_device_handle == nullptr)
-  {
-    SDE_LOG_DEBUG_FMT("alcOpenDevice: %p", native_device_handle);
-    return make_unexpected(MixerError::kBackendCannotOpenDevice);
-  }
-
-  NativeDevice device{reinterpret_cast<void*>(native_device_handle)};
-
   // Create mixer listener
   std::vector<Listener> listeners;
   listeners.reserve(options.listener_options.size());
   for (const auto& options : options.listener_options)
   {
     SDE_LOG_DEBUG_FMT("Listener::create(%lu)", listeners.size());
-    if (auto listener_or_error = Listener::create(device, options); listener_or_error.has_value())
+    if (auto listener_or_error = Listener::create(sound_device, options); listener_or_error.has_value())
     {
       listeners.push_back(std::move(listener_or_error).value());
     }
@@ -347,7 +326,7 @@ expected<Mixer, MixerError> Mixer::create(const MixerOptions& options)
   }
 
   // Create the mixer
-  return Mixer{std::move(device), std::move(listeners)};
+  return Mixer{std::move(listeners)};
 }
 
 expected<ListenerTarget, ListenerTargetError> ListenerTarget::create(Mixer& mixer, std::size_t listener_id)
@@ -399,8 +378,6 @@ void ListenerTarget::swap(ListenerTarget& other)
   std::swap(this->l_, other.l_);
 }
 
-Mixer::Mixer(NativeDevice&& device, std::vector<Listener>&& listeners) :
-    device_{std::move(device)}, listeners_{std::move(listeners)}
-{}
+Mixer::Mixer(std::vector<Listener>&& listeners) : listeners_{std::move(listeners)} {}
 
 }  // namespace sde::audio

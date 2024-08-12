@@ -25,4 +25,3 @@
 // Game
 #include "sde/game/assets.hpp"
 #include "sde/game/script_runtime.hpp"
-#include "sde/game/systems.hpp"

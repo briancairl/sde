@@ -59,7 +59,7 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
-    SDE_LOG_DEBUG("BackendBufferCreationFailure");
+    SDE_LOG_DEBUG_FMT("BackendBufferCreationFailure: %s", al_error_to_str(error));
     return make_unexpected(SoundError::kBackendBufferCreationFailure);
   }
 
@@ -73,7 +73,7 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
-    SDE_LOG_DEBUG("BackendBufferTransferFailure");
+    SDE_LOG_DEBUG_FMT("BackendBufferTransferFailure: %s", al_error_to_str(error));
     return make_unexpected(SoundError::kBackendBufferTransferFailure);
   }
 
