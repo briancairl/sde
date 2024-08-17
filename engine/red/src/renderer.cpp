@@ -127,11 +127,11 @@ private:
 
   expected<void, ScriptError> onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
   {
-    // if (auto ok_or_error = onEdit(assets);
-    //     !ok_or_error.has_value() and (ok_or_error.error() == ScriptError::kCriticalUpdateFailure))
-    // {
-    //   return ok_or_error;
-    // }
+    if (auto ok_or_error = onEdit(assets);
+        !ok_or_error.has_value() and (ok_or_error.error() == ScriptError::kCriticalUpdateFailure))
+    {
+      return ok_or_error;
+    }
 
     using namespace sde::graphics;
 
@@ -258,68 +258,74 @@ private:
       return make_unexpected(ScriptError::kNonCriticalUpdateFailure);
     }
 
-    static Renderer2DOptions s__renderer_options{renderer_options_};
-
-    ImGui::SetCurrentContext(assets->get<ImGuiContext*>());
-    ImGui::Begin("renderer");
-    {
-      ImGui::BeginChild("reset", ImVec2{0, 40}, true);
-      {
-        if (renderer_options_ == s__renderer_options)
-        {
-          ImGui::Text("renderer up to date");
-        }
-        else if (ImGui::Button("restart renderer with settings"))
-        {
-          renderer_options_ = s__renderer_options;
-          renderer_.reset();
-          if (auto renderer_or_error = Renderer2D::create(renderer_options_); renderer_or_error.has_value())
-          {
-            renderer_.emplace(std::move(renderer_or_error).value());
-          }
-          else
-          {
-            SDE_LOG_ERROR("Failed to reset renderer");
-            return make_unexpected(ScriptError::kCriticalUpdateFailure);
-          }
-        }
-      }
-      ImGui::EndChild();
-
-      {
-        static int n_buffers = s__renderer_options.buffers.size();
-        if (ImGui::InputInt("n_buffers", &n_buffers, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
-        {
-          n_buffers = std::clamp(n_buffers, 1, 10);
-          s__renderer_options.buffers.resize(n_buffers);
-        }
-      }
-
-      ImGui::BeginChild("buffers", ImVec2{0, 0}, true);
-      {
-        for (std::size_t i = 0; i < s__renderer_options.buffers.size(); ++i)
-        {
-          auto& options = s__renderer_options.buffers[i];
-          ImGui::PushID(i);
-          ImGui::Text("buffer[%lu]", i);
-          {
-            int max_triangle_count_per_render_pass = options.max_triangle_count_per_render_pass;
-            ImGui::InputInt(
-              "max_triangle_count", &max_triangle_count_per_render_pass, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue);
-            options.max_triangle_count_per_render_pass = max_triangle_count_per_render_pass;
-          }
-          {
-            bool is_dynamic = options.buffer_mode == VertexBufferMode::kDynamic;
-            ImGui::Checkbox("dynamic", &is_dynamic);
-            options.buffer_mode = (is_dynamic) ? VertexBufferMode::kDynamic : VertexBufferMode::kStatic;
-          }
-          ImGui::PopID();
-          ImGui::Separator();
-        }
-      }
-      ImGui::EndChild();
-    }
+    ImGui::Begin("renderer-stats");
+    ImGui::Text("max vertices: %lu", renderer_->stats().max_vertex_count);
+    ImGui::Text("max elements: %lu", renderer_->stats().max_element_count);
     ImGui::End();
+
+    // static Renderer2DOptions s__renderer_options{renderer_options_};
+
+    // ImGui::SetCurrentContext(assets->get<ImGuiContext*>());
+    // ImGui::Begin("renderer");
+    // {
+    //   ImGui::BeginChild("reset", ImVec2{0, 40}, true);
+    //   {
+    //     if (renderer_options_ == s__renderer_options)
+    //     {
+    //       ImGui::Text("renderer up to date");
+    //     }
+    //     else if (ImGui::Button("restart renderer with settings"))
+    //     {
+    //       renderer_options_ = s__renderer_options;
+    //       renderer_.reset();
+    //       if (auto renderer_or_error = Renderer2D::create(renderer_options_); renderer_or_error.has_value())
+    //       {
+    //         renderer_.emplace(std::move(renderer_or_error).value());
+    //       }
+    //       else
+    //       {
+    //         SDE_LOG_ERROR("Failed to reset renderer");
+    //         return make_unexpected(ScriptError::kCriticalUpdateFailure);
+    //       }
+    //     }
+    //   }
+    //   ImGui::EndChild();
+
+    //   {
+    //     static int n_buffers = s__renderer_options.buffers.size();
+    //     if (ImGui::InputInt("n_buffers", &n_buffers, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
+    //     {
+    //       n_buffers = std::clamp(n_buffers, 1, 10);
+    //       s__renderer_options.buffers.resize(n_buffers);
+    //     }
+    //   }
+
+    //   ImGui::BeginChild("buffers", ImVec2{0, 0}, true);
+    //   {
+    //     for (std::size_t i = 0; i < s__renderer_options.buffers.size(); ++i)
+    //     {
+    //       auto& options = s__renderer_options.buffers[i];
+    //       ImGui::PushID(i);
+    //       ImGui::Text("buffer[%lu]", i);
+    //       {
+    //         int max_triangle_count_per_render_pass = options.max_triangle_count_per_render_pass;
+    //         ImGui::InputInt(
+    //           "max_triangle_count", &max_triangle_count_per_render_pass, 1, 100,
+    //           ImGuiInputTextFlags_EnterReturnsTrue);
+    //         options.max_triangle_count_per_render_pass = max_triangle_count_per_render_pass;
+    //       }
+    //       {
+    //         bool is_dynamic = options.buffer_mode == VertexBufferMode::kDynamic;
+    //         ImGui::Checkbox("dynamic", &is_dynamic);
+    //         options.buffer_mode = (is_dynamic) ? VertexBufferMode::kDynamic : VertexBufferMode::kStatic;
+    //       }
+    //       ImGui::PopID();
+    //       ImGui::Separator();
+    //     }
+    //   }
+    //   ImGui::EndChild();
+    // }
+    // ImGui::End();
     return {};
   }
 };

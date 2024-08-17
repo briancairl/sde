@@ -350,9 +350,9 @@ public:
 
   void reset() { vertex_count_ = 0; }
 
-  std::size_t size() const { return vertex_count_; }
-
   std::size_t capacity() const { return vertex_count_max_; }
+
+  constexpr std::size_t vertex_count() const { return vertex_count_; }
 
   VertexDrawMode draw_mode() const { return vertex_draw_mode_; }
 
@@ -454,6 +454,8 @@ public:
     glDrawElements(toGLDrawMode(this->draw_mode()), element_count_, GL_UNSIGNED_INT, 0);
   }
 
+  constexpr std::size_t element_count() const { return element_count_; }
+
 private:
   using Base::add;
   using Base::draw;
@@ -517,7 +519,7 @@ private:
       break;
     }
     }
-    SDE_ASSERT_EQ(vertex_count, Base::size());
+    SDE_ASSERT_EQ(vertex_count, Base::vertex_count());
 
     // Count the number of added vertex elements
     element_count_ = static_cast<std::size_t>(std::distance(elements_begin, elements_end));
@@ -564,18 +566,22 @@ public:
     va_active_->map();
   }
 
-  void finish()
+  void finish(RenderStats& stats)
   {
     // Un-map vertex attribute buffer to make it inactive
     va_active_->unmap();
     // Draw elements
     va_active_->draw();
+
+    // Keep statistics
+    stats.max_vertex_count = std::max(stats.max_vertex_count, va_active_->vertex_count());
+    stats.max_element_count = std::max(stats.max_element_count, va_active_->element_count());
   }
 
   expected<void, RenderPassError> submit(View<const Quad> quads)
   {
     // Check that submission doesn't go over capacity
-    if ((va_active_->size() + vertex_count_of(quads)) > va_active_->capacity())
+    if ((va_active_->vertex_count() + vertex_count_of(quads)) > va_active_->capacity())
     {
       return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
     }
@@ -602,7 +608,7 @@ public:
   expected<void, RenderPassError> submit(View<const TexturedQuad> textured_quads)
   {
     // Check that submission doesn't go over capacity
-    if ((va_active_->size() + vertex_count_of(textured_quads)) > va_active_->capacity())
+    if ((va_active_->vertex_count() + vertex_count_of(textured_quads)) > va_active_->capacity())
     {
       return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
     }
@@ -627,7 +633,7 @@ public:
   expected<void, RenderPassError> submit(View<const Circle> circles)
   {
     // Check that submission doesn't go over capacity
-    if ((va_active_->size() + vertex_count_of(circles)) > va_active_->capacity())
+    if ((va_active_->vertex_count() + vertex_count_of(circles)) > va_active_->capacity())
     {
       return make_unexpected(RenderPassError::kMaxVertexCountExceeded);
     }
@@ -775,7 +781,7 @@ void Renderer2D::flush(const Assets& assets, const RenderUniforms& uniforms, con
   glUniformMatrix3fv(glGetUniformLocation(shader->native_id, "uCameraTransform"), 1, GL_FALSE, viewport_from_world.data());
   // clang-format on
 
-  backend__opengl->finish();
+  backend__opengl->finish(stats_);
 }
 
 expected<void, RenderPassError> RenderPass::submit(View<const Quad> quads) { return backend__opengl->submit(quads); }
