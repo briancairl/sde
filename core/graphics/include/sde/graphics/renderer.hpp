@@ -129,6 +129,12 @@ enum class RendererError
   kRendererPreviouslyInitialized,
 };
 
+struct RenderStats
+{
+  std::size_t max_vertex_count = 0;
+  std::size_t max_element_count = 0;
+};
+
 /**
  * @brief High-level interface into the rendering backend (for 2D objects)
  */
@@ -149,10 +155,13 @@ public:
 
   std::optional<std::size_t> assign(const TextureHandle& texture);
 
+  const RenderStats& stats() const { return stats_; }
+
 private:
   Renderer2D() = default;
   Renderer2D(const Renderer2D&) = delete;
 
+  RenderStats stats_;
   RenderResources last_active_resources_;
   RenderResources next_active_resources_;
   TextureUnits last_active_textures_;
