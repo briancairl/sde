@@ -17,11 +17,6 @@ namespace sde::audio
 
 void NativeSourceDeleter::operator()(source_handle_t id) const { alDeleteSources(1, &id); }
 
-void NativeContextDeleter::operator()(context_handle_t id) const
-{
-  alcDestroyContext(reinterpret_cast<ALCcontext*>(id));
-}
-
 Track::Track(NativeSource&& source) : source_{std::move(source)}, playback_queued_{false}, playback_buffer_length_{0} {}
 
 bool Track::stopped() const
@@ -295,40 +290,6 @@ void Listener::stop()
   source_buffer_.clear();
 }
 
-expected<Mixer, MixerError> Mixer::create(const SoundDevice& sound_device, const MixerOptions& options)
-{
-  return Mixer::create(sound_device.handle(), options);
-}
-
-expected<Mixer, MixerError> Mixer::create(NativeSoundDeviceHandle sound_device, const MixerOptions& options)
-{
-  if (options.listener_options.empty())
-  {
-    SDE_LOG_DEBUG("ListenerConfigInvalid");
-    return make_unexpected(MixerError::kListenerConfigInvalid);
-  }
-
-  // Create mixer listener
-  std::vector<Listener> listeners;
-  listeners.reserve(options.listener_options.size());
-  for (const auto& options : options.listener_options)
-  {
-    SDE_LOG_DEBUG_FMT("Listener::create(%lu)", listeners.size());
-    if (auto listener_or_error = Listener::create(sound_device, options); listener_or_error.has_value())
-    {
-      listeners.push_back(std::move(listener_or_error).value());
-    }
-    else
-    {
-      SDE_LOG_DEBUG("ListenerCreationFailure");
-      return make_unexpected(MixerError::kListenerCreationFailure);
-    }
-  }
-
-  // Create the mixer
-  return Mixer{std::move(listeners)};
-}
-
 expected<ListenerTarget, ListenerTargetError> ListenerTarget::create(Mixer& mixer, std::size_t listener_id)
 {
   if (mixer.listener_active_ != nullptr)
@@ -378,6 +339,42 @@ void ListenerTarget::swap(ListenerTarget& other)
   std::swap(this->l_, other.l_);
 }
 
+
+expected<Mixer, MixerError> Mixer::create(const SoundDevice& sound_device, const MixerOptions& options)
+{
+  return Mixer::create(sound_device.handle(), options);
+}
+
+expected<Mixer, MixerError> Mixer::create(NativeSoundDeviceHandle sound_device, const MixerOptions& options)
+{
+  if (options.listener_options.empty())
+  {
+    SDE_LOG_DEBUG("ListenerConfigInvalid");
+    return make_unexpected(MixerError::kListenerConfigInvalid);
+  }
+
+  // Create mixer listener
+  std::vector<Listener> listeners;
+  listeners.reserve(options.listener_options.size());
+  for (const auto& options : options.listener_options)
+  {
+    SDE_LOG_DEBUG_FMT("Listener::create(%lu)", listeners.size());
+    if (auto listener_or_error = Listener::create(sound_device, options); listener_or_error.has_value())
+    {
+      listeners.push_back(std::move(listener_or_error).value());
+    }
+    else
+    {
+      SDE_LOG_DEBUG("ListenerCreationFailure");
+      return make_unexpected(MixerError::kListenerCreationFailure);
+    }
+  }
+
+  // Create the mixer
+  return Mixer{std::move(listeners)};
+}
+
 Mixer::Mixer(std::vector<Listener>&& listeners) : listeners_{std::move(listeners)} {}
+
 
 }  // namespace sde::audio

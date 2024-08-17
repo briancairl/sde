@@ -33,6 +33,8 @@ enum class AppError
 {
   kWindowInvalid,
   kWindowCreationFailure,
+  kSoundDeviceInvalid,
+  kSoundDeviceCreationFailure,
 };
 
 class App
@@ -49,12 +51,12 @@ public:
 
   const Window& window() const { return window_; }
 
-  static expected<App, AppError> create(Window&& window);
+  static expected<App, AppError> create(Window&& window, SoundDevice&& sound_device);
 
   static expected<App, AppError> create(const WindowOptions& window_options);
 
 private:
-  explicit App(Window&& window, SoundDevice&& sound_device);
+  App(Window&& window, SoundDevice&& sound_device);
   App(const App&) = delete;
   Window window_;
   SoundDevice sound_device_;

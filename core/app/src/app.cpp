@@ -96,14 +96,14 @@ void glfwImplDropCallback(GLFWwindow* glfw_window, int path_count, const char* p
 
 }  // namespace
 
-expected<App, AppError> App::create(Window&& window)
+expected<App, AppError> App::create(Window&& window, SoundDevice&& sound_device)
 {
   if (window.isNull())
   {
     SDE_LOG_DEBUG("WindowInvalid");
     return make_unexpected(AppError::kWindowInvalid);
   }
-  return App{std::move(window), audio::SoundDevice::create()};
+  return App{std::move(window), std::move(sound_device)};
 }
 
 expected<App, AppError> App::create(const WindowOptions& options)
@@ -114,7 +114,15 @@ expected<App, AppError> App::create(const WindowOptions& options)
     SDE_LOG_DEBUG("WindowCreationFailure");
     return make_unexpected(AppError::kWindowCreationFailure);
   }
-  return App{std::move(window_or_error).value(), audio::SoundDevice::create()};
+
+  auto audio_or_error = audio::SoundDevice::create();
+  if (!audio_or_error.has_value())
+  {
+    SDE_LOG_DEBUG("SoundDeviceCreationFailure");
+    return make_unexpected(AppError::kSoundDeviceCreationFailure);
+  }
+
+  return App{std::move(window_or_error).value(), std::move(audio_or_error).value()};
 }
 
 App::App(Window&& window, SoundDevice&& sound_device) :

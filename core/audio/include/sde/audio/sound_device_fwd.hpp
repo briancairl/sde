@@ -10,7 +10,7 @@
 
 namespace sde::audio
 {
-
+using NativeSoundContextHandle = context_handle_t;
 using NativeSoundDeviceHandle = device_handle_t;
 
 struct SoundDevice;

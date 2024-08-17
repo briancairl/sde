@@ -9,7 +9,7 @@
 #include <vector>
 
 // SDE
-#include "sde/audio/sound_device_fwd.hpp"
+#include "sde/audio/sound_device.hpp"
 #include "sde/audio/sound_fwd.hpp"
 #include "sde/audio/typedef.hpp"
 #include "sde/expected.hpp"
@@ -21,12 +21,6 @@
 namespace sde::audio
 {
 
-struct NativeContextDeleter
-{
-  void operator()(context_handle_t id) const;
-};
-
-using NativeContext = UniqueResource<context_handle_t, NativeContextDeleter>;
 
 struct NativeSourceDeleter
 {
