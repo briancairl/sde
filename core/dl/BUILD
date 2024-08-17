@@ -1,0 +1,16 @@
+cc_library(
+  name="library",
+  hdrs=[
+    "include/sde/dl/library.hpp",
+  ],
+  srcs=[
+    "src/library.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    "//core/common:core",
+    "//core/common:resource",
+    "@libdl//:libdl",
+  ],
+  visibility=["//visibility:public"]
+)
