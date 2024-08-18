@@ -1,10 +1,84 @@
 cc_library(
-  name="game",
+  name="library",
   hdrs=[
-    "include/sde/game/archive.hpp",
-    "include/sde/game/archive_fwd.hpp",
+    "include/sde/game/library.hpp",
+    "include/sde/game/library_fwd.hpp",
+    "include/sde/game/library_handle.hpp",
+  ],
+  srcs=[
+    "src/library.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    "//core/dl:library",
+    "//core/common:resource",
+  ],
+  visibility=["//visibility:public"]
+)
+
+
+cc_library(
+  name="native_script_runtime_deps",
+  hdrs=[
     "include/sde/game/assets.hpp",
     "include/sde/game/assets_fwd.hpp",
+    "include/sde/game/archive.hpp",
+    "include/sde/game/archive_fwd.hpp",
+    "include/sde/game/entity.hpp",
+    "include/sde/game/entity_fwd.hpp",
+    "include/sde/game/entity_handle.hpp",
+  ],
+  srcs = [
+    "src/assets.cpp",
+    "src/entity.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    "//core/app",
+    "//core/audio",
+    "//core/graphics",
+    "//core/dl:export",
+    "@entt//:entt",
+  ],
+  visibility=["//visibility:private"]
+)
+
+cc_library(
+  name="native_script_runtime",
+  hdrs=[
+    "include/sde/game/native_script_runtime.hpp",
+    "include/sde/game/native_script_runtime_fwd.hpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    ":native_script_runtime_deps"
+  ],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
+  name="native_script",
+  hdrs=[
+    "include/sde/game/native_script.hpp",
+    "include/sde/game/native_script_fwd.hpp",
+    "include/sde/game/native_script_handle.hpp",
+  ],
+  srcs=[
+    "src/native_script.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    ":library",
+    ":native_script_runtime",
+    "//core/common:resource",
+  ],
+  visibility=["//visibility:public"]
+)
+
+
+cc_library(
+  name="game",
+  hdrs=[
     "include/sde/game/entity.hpp",
     "include/sde/game/entity_fwd.hpp",
     "include/sde/game/entity_handle.hpp",

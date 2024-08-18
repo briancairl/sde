@@ -9,6 +9,7 @@ cc_library(
     "src/libtest.cpp",
   ],
   strip_include_prefix="include",
+  deps=["//core/dl:export"],
   visibility=["//visibility:private"]
 )
 
