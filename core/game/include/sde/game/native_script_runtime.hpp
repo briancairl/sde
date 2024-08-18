@@ -1,0 +1,79 @@
+/**
+ * @copyright 2024-present Brian Cairl
+ *
+ * @file native_script_runtime.hpp
+ */
+#pragma once
+
+// Common
+#include "sde/app_properties.hpp"
+#include "sde/dl/export.hpp"
+#include "sde/expected.hpp"
+#include "sde/geometry_io.hpp"
+#include "sde/resource.hpp"
+#include "sde/resource_cache.hpp"
+#include "sde/resource_io.hpp"
+#include "sde/serial/std/filesystem.hpp"
+#include "sde/serial/std/optional.hpp"
+#include "sde/serial/std/string.hpp"
+#include "sde/serial/std/vector.hpp"
+#include "sde/serialization.hpp"
+#include "sde/serialization_binary_file.hpp"
+#include "sde/time_io.hpp"
+
+// Game
+#include "sde/game/archive.hpp"
+#include "sde/game/assets.hpp"
+#include "sde/game/entity.hpp"
+
+
+#define SDE_NATIVE_SCRIPT__REGISTER_CREATE(InstanceDataT)                                                              \
+  SDE_EXPORT void* on_create() { return reinterpret_cast<void*>(new InstanceDataT{}); }
+
+#define SDE_NATIVE_SCRIPT__REGISTER_DESTROY(InstanceDataT)                                                             \
+  SDE_EXPORT void on_destroy(void* self) { delete reinterpret_cast<InstanceDataT*>(self); }
+
+
+#define SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, f)                                                             \
+  SDE_EXPORT bool on_load(void* self, void* iarchive)                                                                  \
+  {                                                                                                                    \
+    return f(reinterpret_cast<InstanceDataT*>(self), *reinterpret_cast<::sde::game::IArchive*>(iarchive));             \
+  }
+
+#define SDE_NATIVE_SCRIPT__REGISTER_SAVE(InstanceDataT, f)                                                             \
+  SDE_EXPORT bool on_save(void* self, void* oarchive)                                                                  \
+  {                                                                                                                    \
+    return f(reinterpret_cast<InstanceDataT*>(self), *reinterpret_cast<::sde::game::OArchive*>(oarchive));             \
+  }
+
+#define SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(InstanceDataT, f)                                                       \
+  SDE_EXPORT bool on_initialize(void* self, void* assets, void* app_state, const void* app_properties)                 \
+  {                                                                                                                    \
+    return f(                                                                                                          \
+      reinterpret_cast<InstanceDataT*>(self),                                                                          \
+      *reinterpret_cast<::sde::game::Assets*>(assets),                                                                 \
+      *reinterpret_cast<::sde::AppState*>(app_state),                                                                  \
+      *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                                                 \
+  }
+
+#define SDE_NATIVE_SCRIPT__REGISTER_UPDATE(InstanceDataT, f)                                                           \
+  SDE_EXPORT bool on_update(void* self, void* assets, void* app_state, const void* app_properties)                     \
+  {                                                                                                                    \
+    return f(                                                                                                          \
+      reinterpret_cast<InstanceDataT*>(self),                                                                          \
+      *reinterpret_cast<::sde::game::Assets*>(assets),                                                                 \
+      *reinterpret_cast<::sde::AppState*>(app_state),                                                                  \
+      *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                                                 \
+  }
+
+#define SDE_NATIVE_SCRIPT__REGISTER(InstanceDataT, load, save, initialize, update)                                     \
+  SDE_NATIVE_SCRIPT__REGISTER_CREATE(InstanceDataT);                                                                   \
+  SDE_NATIVE_SCRIPT__REGISTER_DESTROY(InstanceDataT);                                                                  \
+  SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, load);                                                               \
+  SDE_NATIVE_SCRIPT__REGISTER_SAVE(InstanceDataT, save);                                                               \
+  SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(InstanceDataT, initialize);                                                   \
+  SDE_NATIVE_SCRIPT__REGISTER_UPDATE(InstanceDataT, update);
+
+
+#define SDE_NATIVE_SCRIPT__INSTANCE(InstanceDataT)                                                                     \
+  SDE_NATIVE_SCRIPT__REGISTER(InstanceDataT, load, save, initialize, update)

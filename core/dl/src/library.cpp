@@ -11,18 +11,27 @@
 namespace sde::dl
 {
 
-Library::~Library()
+Library::~Library() { this->reset(); }
+
+void Library::reset()
 {
   if (handle_ == nullptr)
   {
     return;
   }
   dlclose(handle_);
+  handle_ = nullptr;
 }
 
 void Library::swap(Library& other) { std::swap(other.handle_, this->handle_); }
 
 Library::Library(Library&& other) { this->swap(other); }
+
+Library& Library::operator=(Library&& other)
+{
+  this->swap(other);
+  return *this;
+}
 
 expected<Symbol, Error> Library::get(const char* symbol) const
 {

@@ -205,12 +205,12 @@ template <typename ResourceT> std::size_t TotalFields(const Resource<ResourceT>&
 template <typename ResourceT, typename VisitorT>
 bool IterateUntil(const Resource<ResourceT>& resource, VisitorT visitor)
 {
-  return std::apply([&](const auto&... fields) { return (visitor(fields) + ...); }, resource.fields());
+  return std::apply([&](const auto&... fields) { return (visitor(fields) and ...); }, resource.fields());
 }
 
 template <typename ResourceT, typename VisitorT> bool IterateUntil(Resource<ResourceT>& resource, VisitorT visitor)
 {
-  return std::apply([&](auto&&... fields) { return (visitor(fields) + ...); }, resource.fields());
+  return std::apply([&](auto&&... fields) { return (visitor(fields) and ...); }, resource.fields());
 }
 
 template <typename T> std::ostream& operator<<(std::ostream& os, const Field<T>& field)

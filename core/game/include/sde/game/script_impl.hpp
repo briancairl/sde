@@ -8,8 +8,11 @@
 // EnTT
 #include <entt/entt.hpp>
 
-// Common
+// SDE
+#include "sde/app_properties.hpp"
 #include "sde/expected.hpp"
+#include "sde/game/archive_fwd.hpp"
+#include "sde/game/assets.hpp"
 #include "sde/geometry_io.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
@@ -21,7 +24,3 @@
 #include "sde/serialization.hpp"
 #include "sde/serialization_binary_file.hpp"
 #include "sde/time_io.hpp"
-
-// Game
-#include "sde/game/assets.hpp"
-#include "sde/game/script_runtime.hpp"
