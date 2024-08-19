@@ -14,7 +14,7 @@ namespace sde
 /**
  * @brief Returns the full-qualified name of a type as a C-style string
  */
-template <typename T> std::string_view type_name()
+template <typename T> constexpr std::string_view type_name()
 {
   constexpr std::string_view kPrettyFunction{__PRETTY_FUNCTION__};
   constexpr std::string_view kToken{"T = "};

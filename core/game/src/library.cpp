@@ -28,6 +28,11 @@ expected<void, LibraryError> LibraryCache::unload(LibraryData& library)
 
 expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& path)
 {
+  if (asset_path_lookup_.count(path) > 0)
+  {
+    return make_unexpected(LibraryError::kLibraryAlreadyLoaded);
+  }
+
   LibraryData data{.path = path, .lib = {}};
 
   auto ok_or_error = reload(data);
@@ -37,6 +42,23 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
   }
 
   return data;
+}
+
+void LibraryCache::when_created([[maybe_unused]] LibraryHandle handle, const LibraryData* data)
+{
+  asset_path_lookup_.emplace(data->path, data);
+}
+
+void LibraryCache::when_removed(LibraryHandle handle, const LibraryData* data) { asset_path_lookup_.erase(data->path); }
+
+const LibraryData* LibraryCache::get_if(const asset::path& path) const
+{
+  const auto itr = asset_path_lookup_.find(path);
+  if (itr == std::end(asset_path_lookup_))
+  {
+    return nullptr;
+  }
+  return itr->second;
 }
 
 }  // namespace sde::game

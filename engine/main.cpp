@@ -42,15 +42,15 @@ int main(int argc, char** argv)
     SDE_LOG_INFO_FMT("%s %s", argv[0], argv[1]);
   }
 
-  game::ScriptRuntimeLoader::add("audio_manager", [](const auto& manifest) { return _AudioManager(); });
-  game::ScriptRuntimeLoader::add("renderer", [](const auto& manifest) { return _Renderer(); });
-  game::ScriptRuntimeLoader::add("imgui_start", [](const auto& manifest) { return _ImGuiStart(); });
-  game::ScriptRuntimeLoader::add("imgui_end", [](const auto& manifest) { return _ImGuiEnd(); });
-  game::ScriptRuntimeLoader::add("player_character", [](const auto& manifest) { return _PlayerCharacter(); });
-  game::ScriptRuntimeLoader::add("tile_set_editor", [](const auto& manifest) { return _TileSetEditor(); });
-  game::ScriptRuntimeLoader::add("tile_map_editor", [](const auto& manifest) { return _TileMapEditor(); });
-  game::ScriptRuntimeLoader::add("texture_viewer", [](const auto& manifest) { return _TextureViewer(); });
-  game::ScriptRuntimeLoader::add("drag_and_drop", [](const auto& manifest) { return _DragAndDropAssetLoader(); });
+  // game::ScriptRuntimeLoader::add("audio_manager", [](const auto& manifest) { return _AudioManager(); });
+  // game::ScriptRuntimeLoader::add("renderer", [](const auto& manifest) { return _Renderer(); });
+  // game::ScriptRuntimeLoader::add("imgui_start", [](const auto& manifest) { return _ImGuiStart(); });
+  // game::ScriptRuntimeLoader::add("imgui_end", [](const auto& manifest) { return _ImGuiEnd(); });
+  // game::ScriptRuntimeLoader::add("player_character", [](const auto& manifest) { return _PlayerCharacter(); });
+  // game::ScriptRuntimeLoader::add("tile_set_editor", [](const auto& manifest) { return _TileSetEditor(); });
+  // game::ScriptRuntimeLoader::add("tile_map_editor", [](const auto& manifest) { return _TileMapEditor(); });
+  // game::ScriptRuntimeLoader::add("texture_viewer", [](const auto& manifest) { return _TextureViewer(); });
+  // game::ScriptRuntimeLoader::add("drag_and_drop", [](const auto& manifest) { return _DragAndDropAssetLoader(); });
 
   SDE_LOG_INFO("starting...");
 

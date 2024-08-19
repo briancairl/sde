@@ -1,22 +1,21 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file components.hpp
+ * @file component.hpp
  */
 #pragma once
 
-// C++ Standard Library
-#include <functional>
-#include <string>
-#include <type_traits>
-#include <unordered_map>
+// EnTT
+#include <entt/fwd.hpp>
 
 // SDE
-#include "sde/app_fwd.hpp"
-#include "sde/format.hpp"
+#include "sde/asset.hpp"
+#include "sde/dl/library.hpp"
 #include "sde/game/archive_fwd.hpp"
-#include "sde/game/assets.hpp"
-#include "sde/game/script_runtime_fwd.hpp"
+#include "sde/game/component_fwd.hpp"
+#include "sde/game/component_handle.hpp"
+#include "sde/game/library_fwd.hpp"
+#include "sde/game/library_handle.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/type_name.hpp"
@@ -26,14 +25,57 @@ namespace sde::game
 
 enum class ComponentError
 {
-  kComponentAlreadyAdded,
+  kInvalidHandle,
+  kComponentLibraryInvalid,
+  kComponentLibraryMissingFunction,
+  kComponentAlreadyLoaded
+};
+
+class ComponentIO : public Resource<ComponentIO>
+{
+  friend fundemental_type;
+
+public:
+  ComponentIO() = default;
+  ~ComponentIO();
+
+  ComponentIO(ComponentIO&& other);
+  ComponentIO& operator=(ComponentIO&& other);
+
+  void swap(ComponentIO& other);
+
+  void reset();
+  bool reset(const dl::Library& library);
+
+  constexpr operator bool() const { return on_load_ and on_save_; }
+
+  const char* name() const { return name_(); }
+  bool load(IArchive& ar, entt::entity id, entt::registry& registry) const;
+  bool save(OArchive& ar, entt::entity id, const entt::registry& registry) const;
+
+private:
+  ComponentIO(const ComponentIO&) = delete;
+  ComponentIO& operator=(const ComponentIO&) = delete;
+
+  dl::Function<const char*(void)> name_;
+  dl::Function<bool(void*, void*, void*)> on_load_;
+  dl::Function<bool(void*, void*, const void*)> on_save_;
+
+  auto field_list()
+  {
+    // clang-format off
+    return FieldList(_Stub{"name", name_}, _Stub{"on_load", on_load_}, _Stub{"on_save", on_save_});
+    // clang-format on
+  }
 };
 
 struct ComponentData : Resource<ComponentData>
 {
-  std::string label;
-  std::function<void(IArchive&, entt::entity, entt::registry&)> load;
-  std::function<void(OArchive&, entt::entity, const entt::registry&)> save;
+  LibraryHandle library;
+  std::string name;
+  ComponentIO io;
+
+  auto field_list() { return FieldList(Field{"library", library}, Field{"name", name}, _Stub{"io", io}); }
 };
 
 }  // namespace sde::game
@@ -41,11 +83,11 @@ struct ComponentData : Resource<ComponentData>
 namespace sde
 {
 
-template <> struct ResourceCacheTypes<audio::SoundCache>
+template <> struct ResourceCacheTypes<game::ComponentCache>
 {
-  using error_type = audio::SoundError;
-  using handle_type = audio::SoundHandle;
-  using value_type = audio::Sound;
+  using error_type = game::ComponentError;
+  using handle_type = game::ComponentHandle;
+  using value_type = game::ComponentData;
 };
 
 }  // namespace sde
@@ -53,39 +95,29 @@ template <> struct ResourceCacheTypes<audio::SoundCache>
 namespace sde::game
 {
 
-struct Components : public Resource<Components>
+class ComponentCache : public ResourceCache<ComponentCache>
 {
+  friend fundemental_type;
+
 public:
-  expected<void, ComponentError> add(std::string name, ComponentData component);
+  explicit ComponentCache(LibraryCache& libraries);
 
-  template <typename ComponentT> expected<void, ComponentError> add()
-  {
-    ComponentData data{
-      .load =
-        [](IArchive& ar, entt::entity e, entt::registry& registry) {
-          if constexpr (std::is_void_v<decltype(registry.template emplace<ComponentT>(e))>)
-          {
-            registry.template emplace<ComponentT>(e);
-          }
-          else
-          {
-            ar >> registry.template emplace<ComponentT>(e);
-          }
-        },
-      .save =
-        [](OArchive& ar, entt::entity e, const entt::registry& registry) {
-          if constexpr (!std::is_void_v<decltype(registry.template get<ComponentT>(e))>)
-          {
-            ar << registry.template get<ComponentT>(e);
-          }
-        }};
-    return this->add(std::string{type_name<ComponentT>()}, std::move(data));
-  }
+  using fundemental_type::get_if;
 
-  void remove(const std::string& name);
+  const ComponentHandle get_handle(const std::string& name) const;
+
+  const ComponentData* get_if(const std::string& name) const;
 
 private:
-  std::unordered_map<std::string, ComponentData> components_;
-}
+  LibraryCache* libraries_;
+  std::unordered_map<std::string, ComponentHandle> type_name_to_component_handle_lookup_;
+  std::unordered_map<std::string, const ComponentData*> type_name_to_component_data_lookup_;
+  expected<void, ComponentError> reload(ComponentData& library);
+  expected<void, ComponentError> unload(ComponentData& library);
+  expected<ComponentData, ComponentError> generate(const asset::path& path);
+  expected<ComponentData, ComponentError> generate(LibraryHandle library);
+  void when_created(ComponentHandle handle, const ComponentData* data);
+  void when_removed(ComponentHandle handle, const ComponentData* data);
+};
 
 }  // namespace sde::game

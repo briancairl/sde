@@ -5,10 +5,14 @@
  */
 #pragma once
 
-// Common
+// SDE
 #include "sde/app_properties.hpp"
 #include "sde/dl/export.hpp"
 #include "sde/expected.hpp"
+#include "sde/game/archive.hpp"
+#include "sde/game/assets.hpp"
+#include "sde/game/entity.hpp"
+#include "sde/game/native_script_fwd.hpp"
 #include "sde/geometry_io.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
@@ -20,11 +24,6 @@
 #include "sde/serialization.hpp"
 #include "sde/serialization_binary_file.hpp"
 #include "sde/time_io.hpp"
-
-// Game
-#include "sde/game/archive.hpp"
-#include "sde/game/assets.hpp"
-#include "sde/game/entity.hpp"
 
 
 #define SDE_NATIVE_SCRIPT__REGISTER_CREATE(InstanceDataT)                                                              \
@@ -47,22 +46,22 @@
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(InstanceDataT, f)                                                       \
-  SDE_EXPORT bool on_initialize(void* self, void* assets, void* app_state, const void* app_properties)                 \
+  SDE_EXPORT bool on_initialize(void* self, void* cache, void* assets, const void* app_properties)                     \
   {                                                                                                                    \
     return f(                                                                                                          \
       reinterpret_cast<InstanceDataT*>(self),                                                                          \
+      *reinterpret_cast<::sde::game::NativeScriptCache*>(cache),                                                       \
       *reinterpret_cast<::sde::game::Assets*>(assets),                                                                 \
-      *reinterpret_cast<::sde::AppState*>(app_state),                                                                  \
       *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                                                 \
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_UPDATE(InstanceDataT, f)                                                           \
-  SDE_EXPORT bool on_update(void* self, void* assets, void* app_state, const void* app_properties)                     \
+  SDE_EXPORT bool on_update(void* self, void* cache, void* assets, const void* app_properties)                         \
   {                                                                                                                    \
     return f(                                                                                                          \
       reinterpret_cast<InstanceDataT*>(self),                                                                          \
+      *reinterpret_cast<::sde::game::NativeScriptCache*>(cache),                                                       \
       *reinterpret_cast<::sde::game::Assets*>(assets),                                                                 \
-      *reinterpret_cast<::sde::AppState*>(app_state),                                                                  \
       *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                                                 \
   }
 
@@ -75,5 +74,5 @@
   SDE_NATIVE_SCRIPT__REGISTER_UPDATE(InstanceDataT, update);
 
 
-#define SDE_NATIVE_SCRIPT__INSTANCE(InstanceDataT)                                                                     \
+#define SDE_NATIVE_SCRIPT__REGISTER_AUTO(InstanceDataT)                                                                \
   SDE_NATIVE_SCRIPT__REGISTER(InstanceDataT, load, save, initialize, update)

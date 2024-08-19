@@ -1,7 +1,7 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file library_handle.hpp
+ * @file native_script_handle.hpp
  */
 #pragma once
 

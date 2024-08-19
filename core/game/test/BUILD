@@ -6,8 +6,26 @@ cc_library(
     "src/script_library_test.cpp",
   ],
   strip_include_prefix="include",
-  deps=["//core/game:native_script_runtime"],
+  deps=["//core/game:native_script"],
   visibility=["//visibility:private"]
+)
+
+cc_library(
+  name="component_test",
+  srcs=[
+    "src/component_test.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=["//core/game:component"],
+  visibility=["//visibility:private"]
+)
+
+gtest(
+  name="test_component",
+  timeout = "short",
+  srcs=["test_component.cpp"],
+  deps=["//core/game:component", ":component_test"],
+  visibility=["//visibility:public"],
 )
 
 gtest(
