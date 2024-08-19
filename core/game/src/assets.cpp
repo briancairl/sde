@@ -11,7 +11,7 @@
 namespace sde::game
 {
 
-Assets::Assets() : registry{}, entities{registry} {}
+Assets::Assets() : registry{}, components{libraries}, entities{registry, components} {}
 
 expected<void, AssetError> Assets::refresh()
 {

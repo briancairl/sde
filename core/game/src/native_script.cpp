@@ -89,7 +89,7 @@ bool NativeScript::save(OArchive& ar) const
   return on_save_(reinterpret_cast<void*>(&ar));
 }
 
-bool NativeScript::call(Assets& assets, AppState& app_state, const AppProperties& app_properties)
+bool NativeScript::call(NativeScriptCache& scripts, Assets& assets, const AppProperties& app_properties)
 {
   SDE_ASSERT_TRUE(on_initialize_);
   SDE_ASSERT_TRUE(on_update_);
@@ -97,8 +97,8 @@ bool NativeScript::call(Assets& assets, AppState& app_state, const AppProperties
   if (
     !initialized_ and
     on_initialize_(
+      reinterpret_cast<void*>(&scripts),
       reinterpret_cast<void*>(&assets),
-      reinterpret_cast<void*>(&app_state),
       reinterpret_cast<const void*>(&app_properties)))
   {
     initialized_ = true;
@@ -106,8 +106,8 @@ bool NativeScript::call(Assets& assets, AppState& app_state, const AppProperties
 
   return initialized_ and
     on_update_(
+           reinterpret_cast<void*>(&scripts),
            reinterpret_cast<void*>(&assets),
-           reinterpret_cast<void*>(&app_state),
            reinterpret_cast<const void*>(&app_properties));
 }
 

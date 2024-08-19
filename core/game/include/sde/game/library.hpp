@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <unordered_map>
+
 // SDE
 #include "sde/asset.hpp"
 #include "sde/dl/library.hpp"
@@ -20,6 +23,7 @@ enum class LibraryError
 {
   kInvalidHandle,
   kLibraryMissing,
+  kLibraryAlreadyLoaded,
 };
 
 struct LibraryData : Resource<LibraryData>
@@ -52,10 +56,18 @@ class LibraryCache : public ResourceCache<LibraryCache>
   friend fundemental_type;
 
 public:
+  using fundemental_type::get_if;
+
+  const LibraryData* get_if(const asset::path& path) const;
+
 private:
+  std::unordered_map<asset::path, const LibraryData*> asset_path_lookup_;
+
   expected<void, LibraryError> reload(LibraryData& library);
   expected<void, LibraryError> unload(LibraryData& library);
   expected<LibraryData, LibraryError> generate(const asset::path& path);
+  void when_created(LibraryHandle handle, const LibraryData* data);
+  void when_removed(LibraryHandle handle, const LibraryData* data);
 };
 
 }  // namespace sde::game

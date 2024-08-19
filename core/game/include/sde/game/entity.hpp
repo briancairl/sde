@@ -14,6 +14,8 @@
 #include <entt/fwd.hpp>
 
 // SDE
+#include "sde/game/component_fwd.hpp"
+#include "sde/game/component_handle.hpp"
 #include "sde/game/entity_fwd.hpp"
 #include "sde/game/entity_handle.hpp"
 #include "sde/resource.hpp"
@@ -27,20 +29,15 @@ enum class EntityError
 {
   kElementAlreadyExists,
   kComponentAlreadyAttached,
+  kComponentNotRegistered,
   kInvalidHandle,
   kCreationFailure,
-};
-
-struct Component : Resource<Component>
-{
-  std::string type;
-  auto field_list() { return FieldList(Field{"type", type}); }
 };
 
 struct Entity : Resource<Entity>
 {
   entt::entity id;
-  std::vector<Component> components;
+  std::vector<ComponentHandle> components;
   auto field_list() { return FieldList(_Stub{"id", id}, Field{"components", components}); }
 };
 
@@ -71,7 +68,7 @@ class EntityCache : public ResourceCache<EntityCache>
   friend fundemental_type;
 
 public:
-  explicit EntityCache(entt::registry& registry);
+  EntityCache(entt::registry& registry, ComponentCache& components);
 
   /**
    * @brief Creates a new entity and adds components
@@ -112,7 +109,15 @@ public:
       return make_unexpected(EntityError::kComponentAlreadyAttached);
     }
 
-    entity.components.push_back(Component{.type = std::string{type_name<ComponentT>()}});
+    if (auto component = locate_component_if_registered(type_name<ComponentT>()))
+    {
+      entity.components.push_back(component);
+    }
+    else
+    {
+      return make_unexpected(EntityError::kComponentNotRegistered);
+    }
+
     using ReturnT = decltype(registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...));
     if constexpr (std::is_void_v<ReturnT>)
     {
@@ -144,6 +149,9 @@ public:
 
 private:
   entt::registry* registry_;
+  ComponentCache* components_;
+
+  ComponentHandle locate_component_if_registered(std::string_view name) const;
 
   expected<void, EntityError> reload(Entity& entity);
   expected<void, EntityError> unload(const Entity& entity);

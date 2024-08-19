@@ -5,13 +5,21 @@
 #include <entt/entt.hpp>
 
 // SDE
+#include "sde/game/component.hpp"
 #include "sde/game/entity.hpp"
 #include "sde/logging.hpp"
 
 namespace sde::game
 {
 
-EntityCache::EntityCache(entt::registry& registry) : registry_{std::addressof(registry)} {}
+EntityCache::EntityCache(entt::registry& registry, ComponentCache& components) :
+    registry_{std::addressof(registry)}, components_{std::addressof(components)}
+{}
+
+ComponentHandle EntityCache::locate_component_if_registered(std::string_view name) const
+{
+  return components_->get_handle(std::string{name});
+}
 
 expected<void, EntityError> EntityCache::reload(Entity& entity)
 {

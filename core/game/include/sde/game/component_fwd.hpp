@@ -1,14 +1,13 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file screne_fwd.hpp
+ * @file component_fwd.hpp
  */
 #pragma once
 
 namespace sde::game
 {
-struct SceneData;
-class Scene;
-class SceneHandle;
-class SceneCache;
+struct ComponentHandle;
+class ComponentIO;
+class ComponentCache;
 }  // namespace sde::game

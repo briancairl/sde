@@ -165,7 +165,14 @@ public:
 
   [[nodiscard]] const bool exists(handle_type handle) const { return handle_to_value_cache_.count(handle) != 0; }
 
-  void remove(handle_type handle) { handle_to_value_cache_.erase(handle); }
+  void remove(handle_type handle)
+  {
+    if (auto itr = handle_to_value_cache_.find(handle); itr != std::end(handle_to_value_cache_))
+    {
+      this->derived().when_removed(itr->first, std::addressof(itr->second.value));
+      handle_to_value_cache_.erase(itr);
+    }
+  }
 
   [[nodiscard]] const auto& cache() const { return handle_to_value_cache_; }
 
@@ -246,6 +253,7 @@ private:
     if (added)
     {
       handle_lower_bound_ = std::max(handle_lower_bound_, handle);
+      this->derived().when_created(itr->first, std::addressof(itr->second.value));
       return element_ref{ResourceStatus::kCreated, itr->first, std::addressof(itr->second.value)};
     }
     return make_unexpected(error_type::kInvalidHandle);
@@ -266,6 +274,7 @@ private:
     // Replace current value
     itr->second.version = current_version;
     itr->second.value = std::move(value_or_error).value();
+    this->derived().when_created(itr->first, std::addressof(itr->second.value));
     return element_ref{ResourceStatus::kReplaced, itr->first, std::addressof(itr->second.value)};
   }
 
@@ -286,6 +295,10 @@ private:
 protected:
   /// Map of {resource_handle, resource_value} objects
   CacheMap handle_to_value_cache_;
+
+private:
+  static void when_created([[maybe_unused]] handle_type h, [[maybe_unused]] const value_type* value) {}
+  static void when_removed([[maybe_unused]] handle_type h, [[maybe_unused]] const value_type* value) {}
 };
 
 template <typename T> struct is_resource_cache : std::is_base_of<ResourceCache<T>, T>

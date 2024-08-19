@@ -1,4 +1,19 @@
 cc_library(
+  name="runtime_headers",
+  hdrs=[
+    "include/sde/game/archive.hpp",
+    "include/sde/game/archive_fwd.hpp",
+  ],
+  srcs = [
+  ],
+  strip_include_prefix="include",
+  deps=[
+    "//core/serialization"
+  ],
+  visibility=["//visibility:private"]
+)
+
+cc_library(
   name="library",
   hdrs=[
     "include/sde/game/library.hpp",
@@ -16,20 +31,35 @@ cc_library(
   visibility=["//visibility:public"]
 )
 
+cc_library(
+  name="component",
+  hdrs=[
+    "include/sde/game/component_fwd.hpp",
+    "include/sde/game/component.hpp",
+    "include/sde/game/component_handle.hpp",
+    "include/sde/game/component_runtime.hpp",
+  ],
+  srcs=[
+    "src/component.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    ":library",
+    ":runtime_headers",
+    "//core/dl:export",
+    "@entt//:entt",
+  ],
+  visibility=["//visibility:public"]
+)
 
 cc_library(
-  name="native_script_runtime_deps",
+  name="entity",
   hdrs=[
-    "include/sde/game/assets.hpp",
-    "include/sde/game/assets_fwd.hpp",
-    "include/sde/game/archive.hpp",
-    "include/sde/game/archive_fwd.hpp",
     "include/sde/game/entity.hpp",
     "include/sde/game/entity_fwd.hpp",
     "include/sde/game/entity_handle.hpp",
   ],
   srcs = [
-    "src/assets.cpp",
     "src/entity.cpp",
   ],
   strip_include_prefix="include",
@@ -39,29 +69,44 @@ cc_library(
     "//core/graphics",
     "//core/dl:export",
     "@entt//:entt",
+    ":component",
+    ":runtime_headers",
+  ],
+  visibility=["//visibility:private"]
+)
+
+
+cc_library(
+  name="runtime",
+  hdrs=[
+    "include/sde/game/assets.hpp",
+    "include/sde/game/assets_fwd.hpp",
+  ],
+  srcs = [
+    "src/assets.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    "//core/app",
+    "//core/audio",
+    "//core/graphics",
+    "//core/dl:export",
+    "@entt//:entt",
+    ":entity",
+    ":component",
+    ":runtime_headers",
   ],
   visibility=["//visibility:private"]
 )
 
 cc_library(
-  name="native_script_runtime",
-  hdrs=[
-    "include/sde/game/native_script_runtime.hpp",
-    "include/sde/game/native_script_runtime_fwd.hpp",
-  ],
-  strip_include_prefix="include",
-  deps=[
-    ":native_script_runtime_deps"
-  ],
-  visibility=["//visibility:public"]
-)
-
-cc_library(
   name="native_script",
   hdrs=[
-    "include/sde/game/native_script.hpp",
     "include/sde/game/native_script_fwd.hpp",
+    "include/sde/game/native_script.hpp",
     "include/sde/game/native_script_handle.hpp",
+    "include/sde/game/native_script_runtime.hpp",
+    "include/sde/game/native_script_runtime_fwd.hpp",
   ],
   srcs=[
     "src/native_script.cpp",
@@ -69,40 +114,30 @@ cc_library(
   strip_include_prefix="include",
   deps=[
     ":library",
-    ":native_script_runtime",
-    "//core/common:resource",
+    ":runtime",
   ],
   visibility=["//visibility:public"]
 )
 
 
-cc_library(
-  name="game",
-  hdrs=[
-    "include/sde/game/entity.hpp",
-    "include/sde/game/entity_fwd.hpp",
-    "include/sde/game/entity_handle.hpp",
-    "include/sde/game/scene.hpp",
-    "include/sde/game/scene_fwd.hpp",
-    "include/sde/game/script.hpp",
-    "include/sde/game/script_fwd.hpp",
-    "include/sde/game/script_impl.hpp",
-    "include/sde/game/script_runtime.hpp",
-    "include/sde/game/script_runtime_fwd.hpp",
-  ],
-  srcs=[
-    "src/assets.cpp",
-    "src/entity.cpp",
-    "src/scene.cpp",
-    "src/script_runtime.cpp",
-  ],
-  strip_include_prefix="include",
-  deps=[
-    "//core/app",
-    "//core/audio",
-    "//core/graphics",
-    "@entt//:entt",
-    "@nlohmann//:json",
-  ],
-  visibility=["//visibility:public"]
-)
+
+# cc_library(
+#   name="entity",
+#   hdrs=[
+#     "include/sde/game/entity.hpp",
+#     "include/sde/game/entity_fwd.hpp",
+#     "include/sde/game/entity_handle.hpp",
+#   ],
+#   srcs=[
+#     "src/entity.cpp",
+#   ],
+#   strip_include_prefix="include",
+#   deps=[
+#     "//core/app",
+#     "//core/audio",
+#     "//core/graphics",
+#     "@entt//:entt",
+#     "@nlohmann//:json",
+#   ],
+#   visibility=["//visibility:public"]
+# )

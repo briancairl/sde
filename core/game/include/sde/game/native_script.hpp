@@ -46,7 +46,7 @@ public:
 
   bool load(IArchive& ar) const;
   bool save(OArchive& ar) const;
-  bool call(Assets& assets, AppState& app_state, const AppProperties& app_properties);
+  bool call(NativeScriptCache& scripts, Assets& assets, const AppProperties& app_properties);
 
 private:
   NativeScript(const NativeScript&) = delete;

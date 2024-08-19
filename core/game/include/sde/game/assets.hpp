@@ -11,7 +11,9 @@
 // SDE
 #include "sde/asset.hpp"
 #include "sde/audio/assets.hpp"
+#include "sde/game/component.hpp"
 #include "sde/game/entity.hpp"
+#include "sde/game/library.hpp"
 #include "sde/graphics/assets.hpp"
 #include "sde/resource.hpp"
 
@@ -33,8 +35,14 @@ class Assets : public Resource<Assets>
   friend fundemental_type;
 
 public:
-  /// Holds game state
+  /// Holds active game system/script data (passed between scripts)
   entt::registry registry;
+
+  /// Holds runtime loaded libraries
+  LibraryCache libraries;
+
+  /// Holds information about components assigned to entities
+  ComponentCache components;
 
   /// Holds absolute references to entities
   EntityCache entities;
