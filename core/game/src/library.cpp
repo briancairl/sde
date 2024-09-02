@@ -49,7 +49,10 @@ void LibraryCache::when_created([[maybe_unused]] LibraryHandle handle, const Lib
   asset_path_lookup_.emplace(data->path, data);
 }
 
-void LibraryCache::when_removed(LibraryHandle handle, const LibraryData* data) { asset_path_lookup_.erase(data->path); }
+void LibraryCache::when_removed([[maybe_unused]] LibraryHandle handle, const LibraryData* data)
+{
+  asset_path_lookup_.erase(data->path);
+}
 
 const LibraryData* LibraryCache::get_if(const asset::path& path) const
 {

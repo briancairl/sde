@@ -5,9 +5,6 @@
  */
 #pragma once
 
-/// EnTT
-#include <entt/entity/registry.hpp>
-
 // SDE
 #include "sde/asset.hpp"
 #include "sde/audio/assets.hpp"
@@ -15,8 +12,10 @@
 #include "sde/game/entity.hpp"
 #include "sde/game/library.hpp"
 #include "sde/game/native_script.hpp"
+#include "sde/game/registry.hpp"
 #include "sde/game/scene.hpp"
 #include "sde/graphics/assets.hpp"
+#include "sde/memory.hpp"
 #include "sde/resource.hpp"
 
 namespace sde::game
@@ -41,8 +40,14 @@ class Assets : public Resource<Assets>
   friend fundemental_type;
 
 public:
+  /// Collection of active audio assets
+  audio::Assets audio;
+
+  /// Collection of graphics audio assets
+  graphics::Assets graphics;
+
   /// Holds active game system/script data (passed between scripts)
-  entt::registry registry;
+  Registry registry;
 
   /// Holds information about components assigned to entities
   ComponentCache components;
@@ -53,17 +58,13 @@ public:
   /// Holds runtime loaded libraries
   LibraryCache libraries;
 
-  /// Collection of active audio assets
-  audio::Assets audio;
-
-  /// Collection of graphics audio assets
-  graphics::Assets graphics;
-
   /// Holds scipt data
   NativeScriptCache scripts;
 
   /// Holds scene data
   SceneCache scenes;
+
+  ~Assets();
 
   auto* operator->() { return std::addressof(registry.ctx()); }
   const auto* operator->() const { return std::addressof(registry.ctx()); }

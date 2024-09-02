@@ -186,5 +186,6 @@ cc_library(
     "//platform/glad:glad",
     "@glfw//:glfw",
   ],
-  visibility=["//visibility:public"]
+  visibility=["//visibility:public"],
+  linkstatic=False,
 )

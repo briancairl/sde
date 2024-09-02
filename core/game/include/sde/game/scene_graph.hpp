@@ -13,7 +13,6 @@
 #include "sde/game/scene_fwd.hpp"
 #include "sde/game/scene_handle.hpp"
 #include "sde/resource.hpp"
-#include "sde/resource_cache.hpp"
 #include "sde/type_name.hpp"
 
 namespace sde::game
@@ -21,6 +20,7 @@ namespace sde::game
 
 enum class SceneGraphErrorType
 {
+  kInvalidRoot,
   kPreScriptFailure,
   kPostScriptFailure,
 };
@@ -28,20 +28,22 @@ enum class SceneGraphErrorType
 struct SceneGraphError
 {
   SceneGraphErrorType error_type;
-  SceneHandle handle;
+  SceneHandle handle = SceneHandle::null();
 };
 
 
-class SceneGraph : public ResourceCache<SceneCache>
+class SceneGraph : public Resource<SceneGraph>
 {
   friend fundemental_type;
 
 public:
-  expected<void, SceneGraphError> tick(const SceneCache& scenes, Assets& assets, const AppProperties& properties) const;
+  expected<void, SceneGraphError> tick(Assets& assets, const AppProperties& properties) const;
+
+  void setRoot(SceneHandle root) { root_ = root; }
 
 private:
   static expected<void, SceneGraphError>
-  tick(const SceneHandle handle, const SceneCache& scenes, Assets& assets, const AppProperties& properties);
+  tick(const SceneHandle handle, Assets& assets, const AppProperties& properties);
 
   SceneHandle root_;
 

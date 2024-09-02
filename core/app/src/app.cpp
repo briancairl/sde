@@ -108,7 +108,7 @@ expected<App, AppError> App::create(Window&& window, SoundDevice&& sound_device)
 
 expected<App, AppError> App::create(const WindowOptions& options)
 {
-  auto window_or_error = Window::create(options);
+  auto window_or_error = graphics::Window::create(options);
   if (!window_or_error.has_value())
   {
     SDE_LOG_DEBUG("WindowCreationFailure");
@@ -131,7 +131,6 @@ App::App(Window&& window, SoundDevice&& sound_device) :
 
 void App::spin(OnUpdate on_update, const Rate spin_rate)
 {
-  AppState app_state;
   AppProperties app_properties;
   app_properties.window = window_.value();
   app_properties.sound_device = sound_device_.handle();
@@ -148,6 +147,9 @@ void App::spin(OnUpdate on_update, const Rate spin_rate)
 
   while (!glfwWindowShouldClose(glfw_window))
   {
+    // glClearColor(0.F, 0.F, 0.F, 0.F);
+    // glClear(GL_COLOR_BUFFER_BIT);
+
     glfwGetFramebufferSize(
       glfw_window, (app_properties.viewport_size.data() + 0), (app_properties.viewport_size.data() + 1));
 
@@ -158,7 +160,7 @@ void App::spin(OnUpdate on_update, const Rate spin_rate)
 
     glfwImplScanKeyStates(glfw_window, app_properties.keys);
 
-    switch (on_update(app_state, app_properties))
+    switch (on_update(app_properties))
     {
     case AppDirective::kContinue:
       break;

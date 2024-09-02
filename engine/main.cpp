@@ -4,7 +4,8 @@
 
 // SDE
 #include "sde/app.hpp"
-#include "sde/game/scene.hpp"
+#include "sde/game/assets.hpp"
+#include "sde/game/scene_graph.hpp"
 #include "sde/logging.hpp"
 // #include "sde/view.hpp"
 
@@ -14,16 +15,16 @@
 // RED
 //#include "red/background_music.hpp"
 //#include "red/components.hpp"
-#include "red/audio_manager.hpp"
-#include "red/components.hpp"
-#include "red/drag_and_drop_asset_loader.hpp"
-#include "red/imgui_end.hpp"
-#include "red/imgui_start.hpp"
-#include "red/player_character.hpp"
-#include "red/renderer.hpp"
-#include "red/texture_viewer.hpp"
-#include "red/tile_map_editor.hpp"
-#include "red/tile_set_editor.hpp"
+// #include "red/audio_manager.hpp"
+// #include "red/components.hpp"
+// #include "red/drag_and_drop_asset_loader.hpp"
+// #include "red/imgui_end.hpp"
+// #include "red/imgui_start.hpp"
+// #include "red/player_character.hpp"
+// #include "red/renderer.hpp"
+// #include "red/texture_viewer.hpp"
+// #include "red/tile_map_editor.hpp"
+// #include "red/tile_set_editor.hpp"
 // #include "red/weather.hpp"
 // #include "red/world.hpp"
 
@@ -57,37 +58,75 @@ int main(int argc, char** argv)
   auto app_or_error = App::create({.initial_size = {1000, 500}});
   SDE_ASSERT_TRUE(app_or_error.has_value());
 
-  game::Scene scene;
+  // game::Scene scene;
 
-  addComponentsToScene(scene);
+  // addComponentsToScene(scene);
 
-  if (!asset::exists(argv[1]))
+  // if (!asset::exists(argv[1]))
+  // {
+  //   scene.addScript("drag_and_drop", game::ScriptRuntimeLoader::load("drag_and_drop", {}));
+  //   scene.addScript("renderer", game::ScriptRuntimeLoader::load("renderer", {}));
+  //   scene.addScript("imgui_start", game::ScriptRuntimeLoader::load("imgui_start", {}));
+  //   scene.addScript("audio_manager", game::ScriptRuntimeLoader::load("audio_manager", {}));
+  //   scene.addScript("player_character", game::ScriptRuntimeLoader::load("player_character", {}));
+  //   scene.addScript("tile_set_editor", game::ScriptRuntimeLoader::load("tile_set_editor", {}));
+  //   scene.addScript("tile_map_editor", game::ScriptRuntimeLoader::load("tile_map_editor", {}));
+  //   scene.addScript("texture_viewer", game::ScriptRuntimeLoader::load("texture_viewer", {}));
+  //   scene.addScript("imgui_end", game::ScriptRuntimeLoader::load("imgui_end", {}));
+  // }
+  // else if (!scene.load(argv[1]))
+  // {
+  //   SDE_LOG_ERROR_FMT("Failed to load game data from: %s", argv[1]);
+  //   return 1;
+  // }
+
+  game::Assets assets = {};
+  game::SceneGraph scene_graph = {};
+
+  const auto renderer_or_error = assets.scripts.create(asset::path{"engine/red/librenderer.so"});
+  if (!renderer_or_error.has_value())
   {
-    scene.addScript("drag_and_drop", game::ScriptRuntimeLoader::load("drag_and_drop", {}));
-    scene.addScript("renderer", game::ScriptRuntimeLoader::load("renderer", {}));
-    scene.addScript("imgui_start", game::ScriptRuntimeLoader::load("imgui_start", {}));
-    scene.addScript("audio_manager", game::ScriptRuntimeLoader::load("audio_manager", {}));
-    scene.addScript("player_character", game::ScriptRuntimeLoader::load("player_character", {}));
-    scene.addScript("tile_set_editor", game::ScriptRuntimeLoader::load("tile_set_editor", {}));
-    scene.addScript("tile_map_editor", game::ScriptRuntimeLoader::load("tile_map_editor", {}));
-    scene.addScript("texture_viewer", game::ScriptRuntimeLoader::load("texture_viewer", {}));
-    scene.addScript("imgui_end", game::ScriptRuntimeLoader::load("imgui_end", {}));
-  }
-  else if (!scene.load(argv[1]))
-  {
-    SDE_LOG_ERROR_FMT("Failed to load game data from: %s", argv[1]);
+    SDE_LOG_INFO("failed to load library: renderer");
     return 1;
   }
 
-  app_or_error->spin([&](auto& app_state, const auto& app_properties) {
+  const auto imgui_start_or_error = assets.scripts.create(asset::path{"engine/red/libimgui_start.so"});
+  if (!imgui_start_or_error.has_value())
+  {
+    SDE_LOG_INFO("failed to load library: imgui_start");
+    return 1;
+  }
+
+  const auto imgui_end_or_error = assets.scripts.create(asset::path{"engine/red/libimgui_end.so"});
+  if (!imgui_end_or_error.has_value())
+  {
+    SDE_LOG_INFO("failed to load library: imgui_end");
+    return 1;
+  }
+
+  const auto root_scene_or_error = assets.scenes.create(
+    std::vector{renderer_or_error->handle, imgui_start_or_error->handle}, std::vector{imgui_end_or_error->handle});
+  if (!root_scene_or_error.has_value())
+  {
+    SDE_LOG_INFO("failed to create root scene");
+    return 1;
+  }
+
+  scene_graph.setRoot(root_scene_or_error->handle);
+
+  app_or_error->spin([&](const auto& app_properties) {
     // assets.registry.view<Position, Dynamics>().each(
     //   [dt = toSeconds(app_properties.time_delta)](Position& pos, const Dynamics& state) {
     //     pos.center += state.velocity * dt;
     //   });
 
-    if (scene.tick(app_state, app_properties))
+    if (const auto ok_or_error = scene_graph.tick(assets, app_properties); ok_or_error)
     {
       return AppDirective::kContinue;
+    }
+    else
+    {
+      SDE_LOG_INFO_FMT("%d", static_cast<int>(ok_or_error.error().error_type));
     }
     return AppDirective::kClose;
   });
@@ -95,7 +134,7 @@ int main(int argc, char** argv)
   SDE_LOG_INFO("done.");
 
 
-  SDE_ASSERT_OK(scene.save(argv[1]));
+  // SDE_ASSERT_OK(scene_graph.save(argv[1]));
 
   return 0;
 }

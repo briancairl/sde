@@ -16,3 +16,9 @@ struct NativeScriptHandle : ResourceHandle<NativeScriptHandle>
   explicit NativeScriptHandle(id_type id) : ResourceHandle<NativeScriptHandle>{id} {}
 };
 }  // namespace sde::game
+
+namespace sde
+{
+template <> struct Hasher<game::NativeScriptHandle> : ResourceHandleHash
+{};
+}  // namespace sde

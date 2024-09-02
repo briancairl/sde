@@ -1,40 +1,37 @@
 cc_library(
-  name="red",
+  name="red_common",
   hdrs=[
-    # "include/red/audio_manager.hpp",
-    # "include/red/components.hpp",
-    #"include/red/background_music.hpp",
-    # "include/red/player_character.hpp",
-    # "include/red/renderer.hpp",
-    # "include/red/drag_and_drop_asset_loader.hpp",
-    #"include/red/weather.hpp",
-    #"include/red/world.hpp",
+    "include/red/components.hpp",
     "include/red/imgui_common.hpp",
-    #"include/red/imgui_end.hpp",
-    # "include/red/tile_map_editor.hpp",
-    # "include/red/tile_set_editor.hpp",
-    # "include/red/texture_viewer.hpp",
-  ],
-  srcs=[
-    # "src/audio_manager.cpp",
-    # "src/components.cpp",
-    #"src/background_music.cpp",
-    # "src/player_character.cpp",
-    # "src/drag_and_drop_asset_loader.cpp",
-    # "src/renderer.cpp",
-    #"src/weather.cpp",
-    #"src/world.cpp",
-    # "src/imgui_common.cpp",
-    "src/imgui_start.cpp",
-    #"src/imgui_end.cpp",
-    # "src/tile_map_editor.cpp",
-    # "src/tile_set_editor.cpp",
-    # "src/texture_viewer.cpp",
   ],
   strip_include_prefix="include",
   deps=[
     "//core/game",
     "@imgui//:imgui"
   ],
+  visibility=["//visibility:private"]
+)
+
+cc_binary(
+  name="renderer",
+  srcs=["src/renderer.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="imgui_start",
+  srcs=["src/imgui_start.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="imgui_end",
+  srcs=["src/imgui_end.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
   visibility=["//visibility:public"]
 )

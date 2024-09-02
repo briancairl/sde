@@ -51,6 +51,14 @@ cc_library(
 )
 
 cc_library(
+  name="memory",
+  hdrs=["include/sde/memory.hpp"],
+  strip_include_prefix="include",
+  deps=[],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
   name="resource",
   hdrs=[
     "include/sde/resource.hpp",
@@ -65,6 +73,7 @@ cc_library(
   deps=[
     "//core/serialization",
     ":core",
+    ":memory",
     ":asset",
   ],
   visibility=["//visibility:public"]
