@@ -39,7 +39,7 @@ void NativeScript::reset()
   }
   else
   {
-    on_destroy_(instance_);
+    on_destroy_(std::free, instance_);
     SDE_LOG_ERROR_FMT("NativeScript[%p] destroyed", instance_);
     instance_ = nullptr;
     initialized_ = false;
@@ -70,7 +70,7 @@ bool NativeScript::reset(const dl::Library& library)
   {
     return false;
   }
-  else if (instance_ = on_create_(); instance_ == nullptr)
+  else if (instance_ = on_create_(std::malloc); instance_ == nullptr)
   {
     return false;
   }
@@ -89,26 +89,32 @@ bool NativeScript::save(OArchive& ar) const
   return on_save_(reinterpret_cast<void*>(&ar));
 }
 
-bool NativeScript::call(NativeScriptCache& scripts, Assets& assets, const AppProperties& app_properties)
+expected<void, NativeScriptCallError> NativeScript::call(Assets& assets, const AppProperties& app_properties) const
 {
   SDE_ASSERT_TRUE(on_initialize_);
   SDE_ASSERT_TRUE(on_update_);
 
-  if (
-    !initialized_ and
-    on_initialize_(
-      reinterpret_cast<void*>(&scripts),
-      reinterpret_cast<void*>(&assets),
-      reinterpret_cast<const void*>(&app_properties)))
+  // run initialization routine, if not already run successfully
+  initialized_ = initialized_ or
+    on_initialize_(reinterpret_cast<void*>(instance_),
+                   reinterpret_cast<void*>(&assets),
+                   reinterpret_cast<const void*>(&app_properties));
+
+  // abort if initialization failed
+  if (!initialized_)
   {
-    initialized_ = true;
+    return make_unexpected(NativeScriptCallError::kNotInitialized);
   }
 
-  return initialized_ and
-    on_update_(
-           reinterpret_cast<void*>(&scripts),
-           reinterpret_cast<void*>(&assets),
-           reinterpret_cast<const void*>(&app_properties));
+  // run update behavior
+  if (on_update_(
+        reinterpret_cast<void*>(instance_),
+        reinterpret_cast<void*>(&assets),
+        reinterpret_cast<const void*>(&app_properties)))
+  {
+    return {};
+  }
+  return make_unexpected(NativeScriptCallError::kNotUpdated);
 }
 
 
@@ -116,14 +122,15 @@ NativeScriptCache::NativeScriptCache(LibraryCache& libraries) : libraries_{std::
 
 expected<void, NativeScriptError> NativeScriptCache::reload(NativeScriptData& script)
 {
-  auto library_ptr = libraries_->get_if(script.library);
+  const auto* library_ptr = libraries_->get_if(script.library);
+
   if (library_ptr == nullptr)
   {
     SDE_LOG_ERROR("NativeScriptError::kScriptLibraryInvalid");
     return make_unexpected(NativeScriptError::kScriptLibraryInvalid);
   }
 
-  if (!script.instance.reset(library_ptr->lib))
+  if (!script.script.reset(library_ptr->lib))
   {
     SDE_LOG_ERROR("NativeScriptError::kScriptLibraryMissingFunction");
     return make_unexpected(NativeScriptError::kScriptLibraryMissingFunction);
@@ -134,7 +141,7 @@ expected<void, NativeScriptError> NativeScriptCache::reload(NativeScriptData& sc
 
 expected<void, NativeScriptError> NativeScriptCache::unload(NativeScriptData& script)
 {
-  script.instance.reset();
+  script.script.reset();
   return {};
 }
 
@@ -142,9 +149,7 @@ expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(Librar
 {
   NativeScriptData data{.library = library};
 
-  auto ok_or_error = reload(data);
-
-  if (!ok_or_error.has_value())
+  if (const auto ok_or_error = reload(data); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }
