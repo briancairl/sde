@@ -558,6 +558,7 @@ expected<void, ShaderError> ShaderCache::unload(Shader& shader)
 
 expected<Shader, ShaderError> ShaderCache::generate(const asset::path& path)
 {
+  SDE_LOG_INFO_FMT("loading: %s", path.string().c_str());
   Shader shader{.path = path, .components = {}, .variables = {}, .native_id = NativeShaderID{0}};
   if (auto ok_or_error = reload(shader); !ok_or_error.has_value())
   {

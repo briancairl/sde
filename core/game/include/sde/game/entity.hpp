@@ -10,7 +10,6 @@
 #include <vector>
 
 // EnTT
-#include <entt/entity/entity.hpp>
 #include <entt/fwd.hpp>
 
 // SDE
@@ -18,6 +17,7 @@
 #include "sde/game/component_handle.hpp"
 #include "sde/game/entity_fwd.hpp"
 #include "sde/game/entity_handle.hpp"
+#include "sde/game/registry.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/type_name.hpp"
@@ -34,9 +34,9 @@ enum class EntityError
   kCreationFailure,
 };
 
-struct Entity : Resource<Entity>
+struct EntityData : Resource<EntityData>
 {
-  entt::entity id;
+  EntityID id;
   std::vector<ComponentHandle> components;
   auto field_list() { return FieldList(_Stub{"id", id}, Field{"components", components}); }
 };
@@ -55,7 +55,7 @@ template <> struct ResourceCacheTypes<game::EntityCache>
 {
   using error_type = game::EntityError;
   using handle_type = game::EntityHandle;
-  using value_type = game::Entity;
+  using value_type = game::EntityData;
 };
 
 }  // namespace sde
@@ -68,7 +68,7 @@ class EntityCache : public ResourceCache<EntityCache>
   friend fundemental_type;
 
 public:
-  EntityCache(entt::registry& registry, ComponentCache& components);
+  EntityCache(Registry& registry, ComponentCache& components);
 
   /**
    * @brief Creates a new entity and adds components
@@ -102,7 +102,7 @@ public:
    * @brief Attach a component to an existing entity
    */
   template <typename ComponentT, typename... CTorArgs>
-  expected<ComponentT*, EntityError> attach(Entity& entity, CTorArgs&&... args)
+  expected<ComponentT*, EntityError> attach(EntityData& entity, CTorArgs&&... args)
   {
     if (registry_->template all_of<ComponentT>(entity.id))
     {
@@ -148,14 +148,14 @@ public:
   }
 
 private:
-  entt::registry* registry_;
+  Registry* registry_;
   ComponentCache* components_;
 
   ComponentHandle locate_component_if_registered(std::string_view name) const;
 
-  expected<void, EntityError> reload(Entity& entity);
-  expected<void, EntityError> unload(const Entity& entity);
-  expected<Entity, EntityError> generate();
+  expected<void, EntityError> reload(EntityData& entity);
+  expected<void, EntityError> unload(const EntityData& entity);
+  expected<EntityData, EntityError> generate();
 };
 
 }  // namespace sde::game

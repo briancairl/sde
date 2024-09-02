@@ -1,9 +1,6 @@
 // C++ Standard Library
 #include <ostream>
 
-// EnTT
-#include <entt/entt.hpp>
-
 // SDE
 #include "sde/game/component.hpp"
 #include "sde/game/entity.hpp"
@@ -12,7 +9,7 @@
 namespace sde::game
 {
 
-EntityCache::EntityCache(entt::registry& registry, ComponentCache& components) :
+EntityCache::EntityCache(Registry& registry, ComponentCache& components) :
     registry_{std::addressof(registry)}, components_{std::addressof(components)}
 {}
 
@@ -21,21 +18,21 @@ ComponentHandle EntityCache::locate_component_if_registered(std::string_view nam
   return components_->get_handle(std::string{name});
 }
 
-expected<void, EntityError> EntityCache::reload(Entity& entity)
+expected<void, EntityError> EntityCache::reload(EntityData& entity)
 {
   entity.id = registry_->create();
   return {};
 }
 
-expected<void, EntityError> EntityCache::unload(const Entity& entity)
+expected<void, EntityError> EntityCache::unload(const EntityData& entity)
 {
   registry_->destroy(entity.id);
   return {};
 }
 
-expected<Entity, EntityError> EntityCache::generate()
+expected<EntityData, EntityError> EntityCache::generate()
 {
-  Entity entity;
+  EntityData entity;
   if (auto ok_or_error = reload(entity))
   {
     return entity;

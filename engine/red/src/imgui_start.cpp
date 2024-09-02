@@ -60,23 +60,24 @@ bool initialize(imgui_start* self, sde::game::Assets& assets, const sde::AppProp
   ImGui_ImplGlfw_InitForOpenGL(static_cast<GLFWwindow*>(app.window), true);
   ImGui_ImplOpenGL3_Init(kGLSLVersion);
 
+  SDE_LOG_INFO("ImGui initialized");
   return true;
 }
 
 
 bool update(imgui_start* self, sde::game::Assets& assets, const sde::AppProperties& app)
 {
-  if (!assets->contains<ImGuiContext*>())
+  if (ImGui::GetCurrentContext() == nullptr)
   {
-    assets->emplace<ImGuiContext*>(self->imgui_context);
+    return false;
   }
-
-  ImGui::SetCurrentContext(self->imgui_context);
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
   ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+
+  ImGui::ShowMetricsWindow();
 
   // app_state.enabled = !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
   return true;

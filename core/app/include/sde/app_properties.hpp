@@ -25,11 +25,6 @@ struct AppDragAndDropPayload
   asset::path path;
 };
 
-struct AppState
-{
-  bool enabled = true;
-};
-
 struct AppProperties
 {
   graphics::NativeWindowHandle window{nullptr};

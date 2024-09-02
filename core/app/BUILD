@@ -13,6 +13,7 @@ cc_library(
     "//core/audio",
     "//core/graphics:graphics",
     "//core/graphics:window",
+    "//platform/glad:glad",
     "@glfw//:glfw",
   ],
   visibility=["//visibility:public"]

@@ -38,6 +38,9 @@ struct WindowDeleter
 class Window : public UniqueResource<NativeWindowHandle, WindowDeleter>
 {
 public:
+  static bool backend_initialized();
+  static bool try_backend_initialization();
+
   static expected<Window, WindowError> create(const WindowOptions& options);
 
   void activate() const;

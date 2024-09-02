@@ -5,11 +5,15 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <optional>
+
 // SDE
 #include "sde/expected.hpp"
 #include "sde/graphics/font.hpp"
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/render_target.hpp"
+#include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shader.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/graphics/tile_set.hpp"

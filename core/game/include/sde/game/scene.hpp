@@ -27,6 +27,7 @@ namespace sde::game
 
 enum class SceneError
 {
+  kInvalidHandle,
   kPathInvalid,
   kPathMissingFiles,
   kPathFailedToCreate,
@@ -79,12 +80,16 @@ class SceneCache : public ResourceCache<SceneCache>
 public:
   explicit SceneCache(NativeScriptCache& scripts);
 
-  constexpr const NativeScriptCache& scripts() const { return *scripts_; }
-
 private:
   NativeScriptCache* scripts_;
   expected<void, SceneError> reload(SceneData& library);
   expected<void, SceneError> unload(SceneData& library);
+  expected<SceneData, SceneError>
+  generate(NativeScriptHandle pre, NativeScriptHandle post, std::vector<SceneHandle> children = {});
+  expected<SceneData, SceneError> generate(
+    std::vector<NativeScriptHandle> pre,
+    std::vector<NativeScriptHandle> post,
+    std::vector<SceneHandle> children = {});
 };
 
 }  // namespace sde::game

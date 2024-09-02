@@ -43,7 +43,7 @@ public:
   using SoundDevice = audio::SoundDevice;
   using Window = graphics::Window;
   using WindowOptions = graphics::WindowOptions;
-  using OnUpdate = std::function<AppDirective(AppState&, const AppProperties&)>;
+  using OnUpdate = std::function<AppDirective(const AppProperties&)>;
 
   App(App&&) = default;
 

@@ -21,7 +21,7 @@ namespace sde::graphics
 {
 namespace
 {
-std::atomic_flag STATIC__glfw_is_initialized = {false};
+std::atomic_bool glfw_is_initialized = {false};
 
 #if defined(SDE_GLFW_DEBUG) && SDE_GLFW_DEBUG
 void glfwErrorCallback(int error, const char* description)
@@ -32,7 +32,7 @@ void glfwErrorCallback(int error, const char* description)
 
 bool glfwTryFirstInit()
 {
-  if (STATIC__glfw_is_initialized.test_and_set())
+  if (glfw_is_initialized.exchange(true))
   {
     SDE_LOG_DEBUG("GLFW previously initialized");
     return false;
@@ -76,6 +76,10 @@ Window::Window(NativeWindowHandle native_handle) : UniqueResource<NativeWindowHa
 
 void Window::activate() const { glfwMakeContextCurrent(reinterpret_cast<GLFWwindow*>(value())); }
 
+bool Window::backend_initialized() { return glfw_is_initialized.load(); }
+
+bool Window::try_backend_initialization() { return gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); }
+
 expected<Window, WindowError> Window::create(const WindowOptions& options)
 {
   const bool glfw_initialized_on_this_call = glfwTryFirstInit();
@@ -97,7 +101,7 @@ expected<Window, WindowError> Window::create(const WindowOptions& options)
 
   if (glfw_initialized_on_this_call)
   {
-    SDE_ASSERT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to load OpenGL (via glad)");
+    SDE_ASSERT(Window::try_backend_initialization(), "Failed to load OpenGL (via glad)");
     SDE_LOG_INFO("Loaded OpenGL (via glad)");
   }
   else

@@ -15,6 +15,8 @@ Assets::Assets() :
     registry{}, components{libraries}, entities{registry, components}, scripts{libraries}, scenes{scripts}
 {}
 
+Assets::~Assets() = default;
+
 expected<void, AssetError> Assets::refresh()
 {
   if (auto ok_or_error = components.refresh(); !ok_or_error.has_value())

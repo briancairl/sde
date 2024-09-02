@@ -14,6 +14,7 @@
 #include "sde/crtp.hpp"
 #include "sde/expected.hpp"
 #include "sde/hash.hpp"
+#include "sde/memory.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_handle.hpp"
 
@@ -73,7 +74,15 @@ public:
     std::size_t operator()(const handle_type& h) const { return std::hash<typename handle_type::id_type>{}(h.id()); }
   };
 
-  using CacheMap = std::unordered_map<handle_type, element_storage, handle_type_hash>;
+  // clang-format off
+  using CacheMap = std::unordered_map<
+    handle_type,
+    element_storage,
+    handle_type_hash,
+    std::equal_to<handle_type>,
+    common_allocator<std::pair<const handle_type, element_storage>>
+  >;
+  // clang-format on
 
   template <typename... CreateArgTs> [[nodiscard]] expected<element_ref, error_type> create(CreateArgTs&&... args)
   {

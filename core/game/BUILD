@@ -20,6 +20,7 @@ cc_library(
     "include/sde/game/native_script_handle.hpp",
     "include/sde/game/native_script_runtime.hpp",
     "include/sde/game/native_script_runtime_fwd.hpp",
+    "include/sde/game/registry.hpp",
     "include/sde/game/scene_fwd.hpp",
     "include/sde/game/scene.hpp",
     "include/sde/game/scene_graph.hpp",
