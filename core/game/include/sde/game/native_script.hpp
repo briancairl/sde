@@ -19,11 +19,10 @@
 namespace sde::game
 {
 
-enum class NativeScriptError
+enum class NativeScriptCallError
 {
-  kInvalidHandle,
-  kScriptLibraryInvalid,
-  kScriptLibraryMissingFunction,
+  kNotInitialized,
+  kNotUpdated
 };
 
 class NativeScript : public Resource<NativeScript>
@@ -46,17 +45,22 @@ public:
 
   bool load(IArchive& ar) const;
   bool save(OArchive& ar) const;
-  bool call(NativeScriptCache& scripts, Assets& assets, const AppProperties& app_properties);
+  expected<void, NativeScriptCallError> call(Assets& assets, const AppProperties& app_properties) const;
+
+  expected<void, NativeScriptCallError> operator()(Assets& assets, const AppProperties& app_properties) const
+  {
+    return this->call(assets, app_properties);
+  }
 
 private:
   NativeScript(const NativeScript&) = delete;
   NativeScript& operator=(const NativeScript&) = delete;
 
-  bool initialized_ = false;
+  mutable bool initialized_ = false;
   void* instance_ = nullptr;
 
-  dl::Function<void*(void)> on_create_;
-  dl::Function<void(void*)> on_destroy_;
+  dl::Function<void*(ScriptInstanceAllocator)> on_create_;
+  dl::Function<void(ScriptInstanceDeallocator, void*)> on_destroy_;
   dl::Function<bool(void*)> on_load_;
   dl::Function<bool(void*)> on_save_;
   dl::Function<bool(void*, void*, const void*)> on_initialize_;
@@ -76,12 +80,19 @@ private:
   }
 };
 
+enum class NativeScriptError
+{
+  kInvalidHandle,
+  kScriptLibraryInvalid,
+  kScriptLibraryMissingFunction,
+};
+
 struct NativeScriptData : Resource<NativeScriptData>
 {
   LibraryHandle library;
-  NativeScript instance;
+  NativeScript script;
 
-  auto field_list() { return FieldList(Field{"library", library}, _Stub{"instance", instance}); }
+  auto field_list() { return FieldList(Field{"library", library}, _Stub{"script", script}); }
 };
 
 }  // namespace sde::game

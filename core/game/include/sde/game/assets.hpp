@@ -14,6 +14,8 @@
 #include "sde/game/component.hpp"
 #include "sde/game/entity.hpp"
 #include "sde/game/library.hpp"
+#include "sde/game/native_script.hpp"
+#include "sde/game/scene.hpp"
 #include "sde/graphics/assets.hpp"
 #include "sde/resource.hpp"
 
@@ -22,9 +24,13 @@ namespace sde::game
 
 enum class AssetError
 {
-  kFailedGraphicsLoading,
-  kFailedAudioLoading,
+  kFailedComponentsLoading,
   kFailedEntitiesLoading,
+  kFailedLibraryLoading,
+  kFailedAudioLoading,
+  kFailedGraphicsLoading,
+  kFailedScriptsLoading,
+  kFailedSceneLoading,
 };
 
 /**
@@ -38,20 +44,26 @@ public:
   /// Holds active game system/script data (passed between scripts)
   entt::registry registry;
 
-  /// Holds runtime loaded libraries
-  LibraryCache libraries;
-
   /// Holds information about components assigned to entities
   ComponentCache components;
 
   /// Holds absolute references to entities
   EntityCache entities;
 
+  /// Holds runtime loaded libraries
+  LibraryCache libraries;
+
   /// Collection of active audio assets
   audio::Assets audio;
 
   /// Collection of graphics audio assets
   graphics::Assets graphics;
+
+  /// Holds scipt data
+  NativeScriptCache scripts;
+
+  /// Holds scene data
+  SceneCache scenes;
 
   auto* operator->() { return std::addressof(registry.ctx()); }
   const auto* operator->() const { return std::addressof(registry.ctx()); }
@@ -111,7 +123,14 @@ public:
 private:
   auto field_list()
   {
-    return FieldList(Field{"entities", entities}, Field{"audio", audio}, Field{"graphics", graphics});
+    return FieldList(
+      Field{"components", components},
+      Field{"entities", entities},
+      Field{"libraries", libraries},
+      Field{"audio", audio},
+      Field{"graphics", graphics},
+      Field{"scripts", scripts},
+      Field{"scenes", scenes});
   }
 
   template <typename CacheT, typename... CreateArgTs>

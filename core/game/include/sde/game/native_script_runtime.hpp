@@ -13,7 +13,9 @@
 #include "sde/game/assets.hpp"
 #include "sde/game/entity.hpp"
 #include "sde/game/native_script_fwd.hpp"
+#include "sde/game/native_script_runtime_fwd.hpp"
 #include "sde/geometry_io.hpp"
+#include "sde/logging.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_io.hpp"
@@ -27,10 +29,19 @@
 
 
 #define SDE_NATIVE_SCRIPT__REGISTER_CREATE(InstanceDataT)                                                              \
-  SDE_EXPORT void* on_create() { return reinterpret_cast<void*>(new InstanceDataT{}); }
+  SDE_EXPORT void* on_create(ScriptInstanceAllocator allocator)                                                        \
+  {                                                                                                                    \
+    void* instance = allocator(sizeof(InstanceDataT));                                                                 \
+    new (instance) InstanceDataT{};                                                                                    \
+    return instance;                                                                                                   \
+  }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_DESTROY(InstanceDataT)                                                             \
-  SDE_EXPORT void on_destroy(void* self) { delete reinterpret_cast<InstanceDataT*>(self); }
+  SDE_EXPORT void on_destroy(ScriptInstanceDeallocator deallocator, void* self)                                        \
+  {                                                                                                                    \
+    reinterpret_cast<InstanceDataT*>(self)->~InstanceDataT();                                                          \
+    deallocator(self);                                                                                                 \
+  }
 
 
 #define SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, f)                                                             \
@@ -46,21 +57,19 @@
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(InstanceDataT, f)                                                       \
-  SDE_EXPORT bool on_initialize(void* self, void* cache, void* assets, const void* app_properties)                     \
+  SDE_EXPORT bool on_initialize(void* self, void* assets, const void* app_properties)                                  \
   {                                                                                                                    \
     return f(                                                                                                          \
       reinterpret_cast<InstanceDataT*>(self),                                                                          \
-      *reinterpret_cast<::sde::game::NativeScriptCache*>(cache),                                                       \
       *reinterpret_cast<::sde::game::Assets*>(assets),                                                                 \
       *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                                                 \
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_UPDATE(InstanceDataT, f)                                                           \
-  SDE_EXPORT bool on_update(void* self, void* cache, void* assets, const void* app_properties)                         \
+  SDE_EXPORT bool on_update(void* self, void* assets, const void* app_properties)                                      \
   {                                                                                                                    \
     return f(                                                                                                          \
       reinterpret_cast<InstanceDataT*>(self),                                                                          \
-      *reinterpret_cast<::sde::game::NativeScriptCache*>(cache),                                                       \
       *reinterpret_cast<::sde::game::Assets*>(assets),                                                                 \
       *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                                                 \
   }

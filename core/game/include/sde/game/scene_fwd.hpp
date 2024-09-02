@@ -9,6 +9,6 @@ namespace sde::game
 {
 struct SceneData;
 class Scene;
-class SceneHandle;
+struct SceneHandle;
 class SceneCache;
 }  // namespace sde::game

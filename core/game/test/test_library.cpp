@@ -22,6 +22,6 @@ TEST(LibraryCache, ValidLibrary)
     cache.create(sde::asset::path{"_solib_k8/libcore_Sgame_Stest_Slibscript_Ulibrary_Utest.so"});
   ASSERT_TRUE(lib_or_error.has_value());
 
-  const auto symbol_or_error = lib_or_error->value->lib.get("create");
+  const auto symbol_or_error = lib_or_error->value->lib.get("on_create");
   ASSERT_TRUE(symbol_or_error.has_value()) << symbol_or_error.error().details;
 }
