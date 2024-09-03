@@ -5,9 +5,6 @@
  */
 #pragma once
 
-// C++ Standard Library
-#include <vector>
-
 // SDE
 #include "sde/app_fwd.hpp"
 #include "sde/expected.hpp"
@@ -21,6 +18,7 @@
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/type_name.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::game
 {
@@ -40,11 +38,11 @@ enum class SceneError
 struct SceneData : Resource<SceneData>
 {
   /// Child scenes
-  std::vector<SceneHandle> children;
+  sde::vector<SceneHandle> children;
   /// Scripts to run before children
-  std::vector<NativeScriptHandle> pre_scripts;
+  sde::vector<NativeScriptHandle> pre_scripts;
   /// Scripts to run after children
-  std::vector<NativeScriptHandle> post_scripts;
+  sde::vector<NativeScriptHandle> post_scripts;
 
   auto field_list()
   {
@@ -85,11 +83,11 @@ private:
   expected<void, SceneError> reload(SceneData& library);
   expected<void, SceneError> unload(SceneData& library);
   expected<SceneData, SceneError>
-  generate(NativeScriptHandle pre, NativeScriptHandle post, std::vector<SceneHandle> children = {});
+  generate(NativeScriptHandle pre, NativeScriptHandle post, sde::vector<SceneHandle> children = {});
   expected<SceneData, SceneError> generate(
-    std::vector<NativeScriptHandle> pre,
-    std::vector<NativeScriptHandle> post,
-    std::vector<SceneHandle> children = {});
+    sde::vector<NativeScriptHandle> pre,
+    sde::vector<NativeScriptHandle> post,
+    sde::vector<SceneHandle> children = {});
 };
 
 }  // namespace sde::game

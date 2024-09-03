@@ -201,7 +201,7 @@ namespace sde::game
 //   return true;
 // }
 
-// bool saveWithManifest(nlohmann::json& manifest, const asset::path& parent_path, const std::vector<ScriptData>&
+// bool saveWithManifest(nlohmann::json& manifest, const asset::path& parent_path, const sde::vector<ScriptData>&
 // scripts)
 // {
 //   using namespace sde::serial;
@@ -234,7 +234,7 @@ namespace sde::game
 //   return true;
 // }
 
-// bool loadWithManifest(const nlohmann::json& manifest, const asset::path& parent_path, std::vector<ScriptData>&
+// bool loadWithManifest(const nlohmann::json& manifest, const asset::path& parent_path, sde::vector<ScriptData>&
 // scripts)
 // {
 //   using namespace sde::serial;
@@ -471,9 +471,9 @@ namespace sde::game
 SceneCache::SceneCache(NativeScriptCache& scripts) : scripts_{std::addressof(scripts)} {}
 
 expected<SceneData, SceneError> SceneCache::generate(
-  std::vector<NativeScriptHandle> pre,
-  std::vector<NativeScriptHandle> post,
-  std::vector<SceneHandle> children)
+  sde::vector<NativeScriptHandle> pre,
+  sde::vector<NativeScriptHandle> post,
+  sde::vector<SceneHandle> children)
 {
   SceneData data;
   data.children = std::move(children);
@@ -487,9 +487,10 @@ expected<SceneData, SceneError> SceneCache::generate(
 }
 
 expected<SceneData, SceneError>
-SceneCache::generate(NativeScriptHandle pre, NativeScriptHandle post, std::vector<SceneHandle> children)
+SceneCache::generate(NativeScriptHandle pre, NativeScriptHandle post, sde::vector<SceneHandle> children)
 {
-  return this->generate(std::vector{pre}, std::vector{post}, std::move(children));
+  return this->generate(
+    sde::vector<NativeScriptHandle>{pre}, sde::vector<NativeScriptHandle>{post}, std::move(children));
 }
 
 expected<void, SceneError> SceneCache::reload(SceneData& library) { return {}; }

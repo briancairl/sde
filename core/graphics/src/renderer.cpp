@@ -6,7 +6,6 @@
 #include <optional>
 #include <ostream>
 #include <type_traits>
-#include <vector>
 
 // Backend
 #include "opengl.inl"
@@ -28,6 +27,7 @@
 #include "sde/graphics/typedef.hpp"
 #include "sde/logging.hpp"
 #include "sde/time_ostream.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::graphics
 {
@@ -533,7 +533,7 @@ private:
 
   GLuint ebo_ = 0;
   std::size_t element_count_ = 0;
-  std::vector<ElementLayoutBuffer> element_layout_buffer_ = {};
+  sde::vector<ElementLayoutBuffer> element_layout_buffer_ = {};
 };
 
 using BatchVertexArray = ElementVertexArray<
@@ -660,7 +660,7 @@ public:
 
 private:
   BatchVertexArray* va_active_ = nullptr;
-  std::vector<BatchVertexArray> va_;
+  sde::vector<BatchVertexArray> va_;
 };
 
 std::optional<OpenGLBackend> backend__opengl;

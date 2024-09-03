@@ -100,6 +100,7 @@ cc_library(
     "//core/common:geometry",
     "//core/common:logging",
     "//core/common:resource",
+    "//core/common:stl",
     ":graphics_impl__common",
     ":graphics_impl__image__stb"
   ],

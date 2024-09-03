@@ -93,7 +93,7 @@ TrackPlayback Track::set(const Sound& sound, const TrackOptions& track_options)
   return TrackPlayback{instance_counter_, *this};
 }
 
-void Track::pop(std::vector<source_handle_t>& target)
+void Track::pop(sde::vector<source_handle_t>& target)
 {
   if (playback_queued_)
   {
@@ -199,7 +199,7 @@ expected<Listener, ListenerError> Listener::create(NativeSoundDeviceHandle devic
   alDistanceModel(AL_LINEAR_DISTANCE_CLAMPED);
 
   // Create create sources attached to this context
-  std::vector<Track> tracks;
+  sde::vector<Track> tracks;
   tracks.reserve(options.track_count);
   for (std::size_t t = 0; t < options.track_count; ++t)
   {
@@ -219,7 +219,7 @@ expected<Listener, ListenerError> Listener::create(NativeSoundDeviceHandle devic
   return Listener{std::move(context), std::move(tracks)};
 }
 
-Listener::Listener(NativeContext&& context, std::vector<Track>&& tracks) :
+Listener::Listener(NativeContext&& context, sde::vector<Track>&& tracks) :
     context_{std::move(context)}, tracks_{std::move(tracks)}
 {
   source_buffer_.reserve(tracks_.size());
@@ -354,7 +354,7 @@ expected<Mixer, MixerError> Mixer::create(NativeSoundDeviceHandle sound_device, 
   }
 
   // Create mixer listener
-  std::vector<Listener> listeners;
+  sde::vector<Listener> listeners;
   listeners.reserve(options.listener_options.size());
   for (const auto& options : options.listener_options)
   {
@@ -374,7 +374,7 @@ expected<Mixer, MixerError> Mixer::create(NativeSoundDeviceHandle sound_device, 
   return Mixer{std::move(listeners)};
 }
 
-Mixer::Mixer(std::vector<Listener>&& listeners) : listeners_{std::move(listeners)} {}
+Mixer::Mixer(sde::vector<Listener>&& listeners) : listeners_{std::move(listeners)} {}
 
 
 }  // namespace sde::audio

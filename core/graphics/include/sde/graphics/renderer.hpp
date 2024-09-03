@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <iosfwd>
 #include <string_view>
-#include <vector>
 
 // SDE
 #include "sde/expected.hpp"
@@ -23,6 +22,7 @@
 #include "sde/graphics/typedef.hpp"
 #include "sde/resource.hpp"
 #include "sde/time.hpp"
+#include "sde/vector.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
@@ -112,7 +112,7 @@ struct VertexBufferOptions : Resource<VertexBufferOptions>
 struct Renderer2DOptions : Resource<Renderer2DOptions>
 {
   // clang-format off
-  std::vector<VertexBufferOptions> buffers = {
+  sde::vector<VertexBufferOptions> buffers = {
     VertexBufferOptions{.draw_mode=VertexDrawMode::kFilled},
     VertexBufferOptions{.draw_mode=VertexDrawMode::kWireFrame}
   };

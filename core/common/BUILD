@@ -72,10 +72,22 @@ cc_library(
   strip_include_prefix="include",
   deps=[
     "//core/serialization",
+    ":asset",
     ":core",
     ":memory",
-    ":asset",
+    ":stl"
   ],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
+  name="stl",
+  hdrs=[
+    "include/sde/vector.hpp",
+    "include/sde/unordered_map.hpp",
+  ],
+  strip_include_prefix="include",
+  deps=[":memory"],
   visibility=["//visibility:public"]
 )
 

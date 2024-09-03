@@ -7,7 +7,6 @@
 
 // C++ Standard Library
 #include <iosfwd>
-#include <vector>
 
 // SDE
 #include "sde/geometry.hpp"
@@ -16,6 +15,7 @@
 #include "sde/graphics/tile_map_fwd.hpp"
 #include "sde/graphics/tile_set_handle.hpp"
 #include "sde/resource.hpp"
+#include "sde/vector.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
@@ -94,7 +94,7 @@ private:
   void release();
 
   TileMapOptions options_;
-  std::vector<TileIndex> tile_indices_;
+  sde::vector<TileIndex> tile_indices_;
 };
 
 }  // namespace sde::graphics

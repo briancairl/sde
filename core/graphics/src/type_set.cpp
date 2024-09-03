@@ -4,7 +4,6 @@
 #include <numeric>
 #include <ostream>
 #include <type_traits>
-#include <vector>
 
 // FreeType
 #include <ft2build.h>
@@ -44,7 +43,7 @@ const auto kDefaultGlyphs{[] {
   return glyphs;
 }()};
 
-expected<void, TypeSetError> loadGlyphsFromFont(std::vector<Glyph>& glyph_lut, const Font& font, int glyph_height)
+expected<void, TypeSetError> loadGlyphsFromFont(sde::vector<Glyph>& glyph_lut, const Font& font, int glyph_height)
 {
   if (glyph_height == 0)
   {
@@ -86,7 +85,7 @@ expected<void, TypeSetError> loadGlyphsFromFont(std::vector<Glyph>& glyph_lut, c
 expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
   TextureCache& texture_cache,
   TextureHandle glyph_atlas,
-  std::vector<Glyph>& glyph_lut,
+  sde::vector<Glyph>& glyph_lut,
   const Font& font,
   const TypeSetOptions& options)
 {

@@ -15,6 +15,6 @@ namespace sde::game
 {
 
 using EntityID = entt::entity;
-using Registry = entt::basic_registry<EntityID, common_allocator<EntityID>>;
+using Registry = entt::basic_registry<EntityID, allocator<EntityID>>;
 
 }  // namespace sde::game

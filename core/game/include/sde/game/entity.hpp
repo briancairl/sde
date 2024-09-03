@@ -7,7 +7,6 @@
 
 // C++ Standard Library
 #include <string>
-#include <vector>
 
 // EnTT
 #include <entt/fwd.hpp>
@@ -21,6 +20,7 @@
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/type_name.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::game
 {
@@ -37,7 +37,7 @@ enum class EntityError
 struct EntityData : Resource<EntityData>
 {
   EntityID id;
-  std::vector<ComponentHandle> components;
+  sde::vector<ComponentHandle> components;
   auto field_list() { return FieldList(_Stub{"id", id}, Field{"components", components}); }
 };
 
