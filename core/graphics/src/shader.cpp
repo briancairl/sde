@@ -148,7 +148,7 @@ ShaderVariableType toShaderVariableType(std::string_view type_str)
 }
 
 std::size_t
-parseLayoutVariables(std::vector<ShaderVariable>& variables, std::string_view source, std::size_t next_start_pos = 0)
+parseLayoutVariables(sde::vector<ShaderVariable>& variables, std::string_view source, std::size_t next_start_pos = 0)
 {
   static constexpr std::string_view kLayoutToken = "layout ";
   static constexpr std::string_view kInputToken = "in ";
@@ -203,7 +203,7 @@ parseLayoutVariables(std::vector<ShaderVariable>& variables, std::string_view so
 }
 
 std::size_t
-parseUniformVariables(std::vector<ShaderVariable>& variables, std::string_view source, std::size_t next_start_pos = 0)
+parseUniformVariables(sde::vector<ShaderVariable>& variables, std::string_view source, std::size_t next_start_pos = 0)
 {
   static constexpr std::string_view kUniformToken = "uniform ";
   static constexpr std::string_view kVarNameBegToken = " ";
@@ -408,7 +408,7 @@ expected<void, ShaderError> compile(Shader& shader, std::string_view source)
 
 }  // namespace
 
-template <typename T> std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
+template <typename T> std::ostream& operator<<(std::ostream& os, const sde::vector<T>& vec)
 {
   os << '[';
   for (const auto& el : vec)

@@ -5,20 +5,18 @@
  */
 #pragma once
 
-// C++ Standard Library
-#include <vector>
-
 // SDE
 #include "sde/graphics/shapes.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::graphics
 {
 
 struct RenderBuffer
 {
-  std::vector<Circle> circles;
-  std::vector<Quad> quads;
-  std::vector<TexturedQuad> textured_quads;
+  sde::vector<Circle> circles;
+  sde::vector<Quad> quads;
+  sde::vector<TexturedQuad> textured_quads;
 
   void reset()
   {

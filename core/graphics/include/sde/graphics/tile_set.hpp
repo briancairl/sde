@@ -7,7 +7,6 @@
 
 // C++ Standard Library
 #include <iosfwd>
-#include <vector>
 
 // SDE
 #include "sde/expected.hpp"
@@ -20,6 +19,7 @@
 #include "sde/graphics/tile_set_handle.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
+#include "sde/vector.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
@@ -40,7 +40,7 @@ std::ostream& operator<<(std::ostream& os, TileSetError tile_set_error);
 struct TileSet : Resource<TileSet>
 {
   TextureHandle tile_atlas;
-  std::vector<Rect2f> tile_bounds;
+  sde::vector<Rect2f> tile_bounds;
 
   auto field_list() { return FieldList((Field{"tile_atlas", tile_atlas}), (Field{"tile_bounds", tile_bounds})); }
 
@@ -121,7 +121,7 @@ private:
 
   expected<TileSet, TileSetError> generate(const TextureHandle& texture, const TileSetSliceUniform& slice);
 
-  expected<TileSet, TileSetError> generate(const TextureHandle& texture, std::vector<Rect2f>&& tile_bounds);
+  expected<TileSet, TileSetError> generate(const TextureHandle& texture, sde::vector<Rect2f>&& tile_bounds);
 };
 
 }  // namespace sde::graphics

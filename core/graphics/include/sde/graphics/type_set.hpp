@@ -1,12 +1,9 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file glyph_set.hpp
+ * @file type_set.hpp
  */
 #pragma once
-
-// C++ Standard Library
-#include <vector>
 
 // SDE
 #include "sde/asset.hpp"
@@ -20,6 +17,7 @@
 #include "sde/graphics/type_set_handle.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::graphics
 {
@@ -45,7 +43,7 @@ struct TypeSet : Resource<TypeSet>
   TypeSetOptions options;
   FontHandle font;
   TextureHandle glyph_atlas;
-  std::vector<Glyph> glyphs;
+  sde::vector<Glyph> glyphs;
 
   auto field_list()
   {

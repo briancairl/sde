@@ -41,6 +41,7 @@ cc_library(
     "//core/audio",
     "//core/graphics",
     "//core/common:resource",
+    "//core/common:stl",
     "//core/dl:export",
     "//core/dl:library",
     "//core/serialization",

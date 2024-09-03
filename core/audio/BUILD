@@ -37,6 +37,7 @@ cc_library(
   deps=[
     "//core/common:core",
     "//core/common:expected",
+    "//core/common:stl",
     ":audio_impl__openal_user_types",
   ],
   visibility=["//visibility:private"]

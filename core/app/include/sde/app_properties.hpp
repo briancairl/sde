@@ -5,9 +5,6 @@
  */
 #pragma once
 
-// C++ Standard Library
-#include <vector>
-
 // SDE
 #include "sde/asset.hpp"
 #include "sde/audio/sound_device_fwd.hpp"
@@ -15,6 +12,7 @@
 #include "sde/graphics/window_fwd.hpp"
 #include "sde/keyboard.hpp"
 #include "sde/time.hpp"
+#include "sde/vector.hpp"
 
 namespace sde
 {
@@ -39,7 +37,7 @@ struct AppProperties
 
   KeyStates keys;
 
-  std::vector<AppDragAndDropPayload> drag_and_drop_payloads;
+  sde::vector<AppDragAndDropPayload> drag_and_drop_payloads;
 
   Vec2f getMousePositionViewport() const
   {

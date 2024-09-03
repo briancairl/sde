@@ -8,7 +8,6 @@
 // C++ Standard Library
 #include <cstdint>
 #include <type_traits>
-#include <unordered_map>
 
 // SDE
 #include "sde/crtp.hpp"
@@ -17,6 +16,7 @@
 #include "sde/memory.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_handle.hpp"
+#include "sde/unordered_map.hpp"
 
 namespace sde
 {
@@ -75,12 +75,11 @@ public:
   };
 
   // clang-format off
-  using CacheMap = std::unordered_map<
+  using CacheMap = sde::unordered_map<
     handle_type,
     element_storage,
     handle_type_hash,
-    std::equal_to<handle_type>,
-    common_allocator<std::pair<const handle_type, element_storage>>
+    std::equal_to<handle_type>
   >;
   // clang-format on
 

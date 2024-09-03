@@ -1,7 +1,6 @@
 // C++ Standard Library
 #include <filesystem>
 #include <string>
-#include <vector>
 
 // GTest
 #include <gtest/gtest.h>
@@ -13,13 +12,14 @@
 #include "sde/serial/std/string.hpp"
 #include "sde/serial/std/vector.hpp"
 #include "sde/serialization_binary_file.hpp"
+#include "sde/vector.hpp"
 
 using namespace sde;
 using namespace sde::serial;
 
 namespace std
 {
-template <typename T> std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec)
+template <typename T> std::ostream& operator<<(std::ostream& os, const sde::vector<T>& vec)
 {
   os << '[';
   for (const auto& e : vec)
@@ -32,7 +32,7 @@ template <typename T> std::ostream& operator<<(std::ostream& os, const std::vect
 
 struct SimpleResource : Resource<SimpleResource>
 {
-  std::vector<float> a;
+  sde::vector<float> a;
   std::string b;
 
   auto field_list() { return FieldList(Field{"a", a}, Field{"b", b}); }

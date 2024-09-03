@@ -7,6 +7,7 @@
 #include "sde/game/assets.hpp"
 #include "sde/game/scene_graph.hpp"
 #include "sde/logging.hpp"
+#include "sde/vector.hpp"
 // #include "sde/view.hpp"
 
 // JSON
@@ -105,11 +106,17 @@ int main(int argc, char** argv)
   }
 
   const auto root_scene_or_error = assets.scenes.create(
-    std::vector{renderer_or_error->handle, imgui_start_or_error->handle}, std::vector{imgui_end_or_error->handle});
+    sde::make_vector(renderer_or_error->handle, imgui_start_or_error->handle),
+    sde::make_vector(imgui_end_or_error->handle));
   if (!root_scene_or_error.has_value())
   {
     SDE_LOG_INFO("failed to create root scene");
     return 1;
+  }
+
+  for (const auto& de : std::filesystem::recursive_directory_iterator{"engine"})
+  {
+    SDE_LOG_INFO((std::filesystem::current_path() / de.path()).string().c_str());
   }
 
   scene_graph.setRoot(root_scene_or_error->handle);

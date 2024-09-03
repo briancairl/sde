@@ -5,9 +5,6 @@
  */
 #pragma once
 
-// C++ Standard Library
-#include <vector>
-
 // SDE
 #include "sde/audio/sound_device.hpp"
 #include "sde/audio/sound_fwd.hpp"
@@ -16,6 +13,7 @@
 #include "sde/geometry.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_wrapper.hpp"
+#include "sde/vector.hpp"
 #include "sde/view.hpp"
 
 namespace sde::audio
@@ -71,7 +69,7 @@ public:
   void jump(float p) const;
 
   TrackPlayback set(const Sound& sound, const TrackOptions& track_options);
-  void pop(std::vector<source_handle_t>& target);
+  void pop(sde::vector<source_handle_t>& target);
 
   const NativeSource& source() const { return source_; }
   const std::size_t instance() const { return instance_counter_; }
@@ -158,11 +156,11 @@ public:
   void stop();
 
 private:
-  Listener(NativeContext&& context, std::vector<Track>&& tracks);
+  Listener(NativeContext&& context, sde::vector<Track>&& tracks);
 
   NativeContext context_;
-  std::vector<Track> tracks_;
-  std::vector<source_handle_t> source_buffer_;
+  sde::vector<Track> tracks_;
+  sde::vector<source_handle_t> source_buffer_;
 };
 
 class Mixer;
@@ -204,7 +202,7 @@ private:
 
 struct MixerOptions : Resource<MixerOptions>
 {
-  std::vector<ListenerOptions> listener_options = {
+  sde::vector<ListenerOptions> listener_options = {
     ListenerOptions{.track_count = 2},
     ListenerOptions{.track_count = 16}};
 
@@ -237,11 +235,11 @@ public:
   std::size_t size() const { return listeners_.size(); }
 
 private:
-  explicit Mixer(std::vector<Listener>&& listener);
+  explicit Mixer(sde::vector<Listener>&& listener);
   Mixer() = delete;
   Mixer(const Mixer&) = delete;
 
-  std::vector<Listener> listeners_;
+  sde::vector<Listener> listeners_;
   Listener* listener_active_ = nullptr;
 };
 

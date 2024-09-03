@@ -19,6 +19,7 @@
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/type_name.hpp"
+#include "sde/unordered_map.hpp"
 
 namespace sde::game
 {
@@ -110,8 +111,8 @@ public:
 
 private:
   LibraryCache* libraries_;
-  std::unordered_map<std::string, ComponentHandle> type_name_to_component_handle_lookup_;
-  std::unordered_map<std::string, const ComponentData*> type_name_to_component_data_lookup_;
+  sde::unordered_map<std::string, ComponentHandle> type_name_to_component_handle_lookup_;
+  sde::unordered_map<std::string, const ComponentData*> type_name_to_component_data_lookup_;
   expected<void, ComponentError> reload(ComponentData& library);
   expected<void, ComponentError> unload(ComponentData& library);
   expected<ComponentData, ComponentError> generate(const asset::path& path);

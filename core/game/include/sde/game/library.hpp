@@ -5,9 +5,6 @@
  */
 #pragma once
 
-// C++ Standard Library
-#include <unordered_map>
-
 // SDE
 #include "sde/asset.hpp"
 #include "sde/dl/library.hpp"
@@ -15,6 +12,7 @@
 #include "sde/game/library_handle.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
+#include "sde/unordered_map.hpp"
 
 namespace sde::game
 {
@@ -61,7 +59,7 @@ public:
   const LibraryData* get_if(const asset::path& path) const;
 
 private:
-  std::unordered_map<asset::path, const LibraryData*> asset_path_lookup_;
+  sde::unordered_map<asset::path, const LibraryData*> asset_path_lookup_;
 
   expected<void, LibraryError> reload(LibraryData& library);
   expected<void, LibraryError> unload(LibraryData& library);

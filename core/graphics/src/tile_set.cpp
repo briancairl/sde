@@ -35,7 +35,7 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 
 TileSetCache::TileSetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
 
-expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& texture, std::vector<Rect2f>&& tile_bounds)
+expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& texture, sde::vector<Rect2f>&& tile_bounds)
 {
   if (!textures_->exists(texture))
   {
@@ -107,7 +107,7 @@ expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& text
 
   std::size_t skip_countdown = slice.start_offset;
 
-  std::vector<Rect2f> tile_bounds;
+  sde::vector<Rect2f> tile_bounds;
   tile_bounds.reserve(tile_count_max);
   if (slice.direction == TileSliceDirection::kColWise)
   {

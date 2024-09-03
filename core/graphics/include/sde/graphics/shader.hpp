@@ -11,7 +11,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
 
 // SDE
 #include "sde/asset.hpp"
@@ -22,6 +21,7 @@
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/resource_wrapper.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::graphics
 {
@@ -90,8 +90,8 @@ std::ostream& operator<<(std::ostream& os, ShaderComponents components);
 
 struct ShaderVariables
 {
-  std::vector<ShaderVariable> layout;
-  std::vector<ShaderVariable> uniforms;
+  sde::vector<ShaderVariable> layout;
+  sde::vector<ShaderVariable> uniforms;
 };
 
 std::ostream& operator<<(std::ostream& os, const ShaderVariables& variables);
