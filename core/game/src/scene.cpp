@@ -471,11 +471,15 @@ namespace sde::game
 SceneCache::SceneCache(NativeScriptCache& scripts) : scripts_{std::addressof(scripts)} {}
 
 expected<SceneData, SceneError> SceneCache::generate(
+  SceneType type,
+  sde::string name,
   sde::vector<NativeScriptHandle> pre,
   sde::vector<NativeScriptHandle> post,
   sde::vector<SceneHandle> children)
 {
   SceneData data;
+  data.type = type;
+  data.name = std::move(name);
   data.children = std::move(children);
   data.pre_scripts = std::move(pre);
   data.post_scripts = std::move(post);
@@ -486,11 +490,19 @@ expected<SceneData, SceneError> SceneCache::generate(
   return data;
 }
 
-expected<SceneData, SceneError>
-SceneCache::generate(NativeScriptHandle pre, NativeScriptHandle post, sde::vector<SceneHandle> children)
+expected<SceneData, SceneError> SceneCache::generate(
+  SceneType type,
+  sde::string name,
+  NativeScriptHandle pre,
+  NativeScriptHandle post,
+  sde::vector<SceneHandle> children)
 {
   return this->generate(
-    sde::vector<NativeScriptHandle>{pre}, sde::vector<NativeScriptHandle>{post}, std::move(children));
+    type,
+    std::move(name),
+    sde::vector<NativeScriptHandle>{pre},
+    sde::vector<NativeScriptHandle>{post},
+    std::move(children));
 }
 
 expected<void, SceneError> SceneCache::reload(SceneData& library) { return {}; }

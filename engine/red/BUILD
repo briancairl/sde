@@ -13,6 +13,14 @@ cc_library(
 )
 
 cc_binary(
+  name="drag_and_drop_loader",
+  srcs=["src/drag_and_drop_loader.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
   name="renderer",
   srcs=["src/renderer.cpp"],
   linkshared=True,
@@ -33,5 +41,34 @@ cc_binary(
   srcs=["src/imgui_end.cpp"],
   linkshared=True,
   deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="library_browser",
+  srcs=["src/library_browser.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="scene_tree",
+  srcs=["src/scene_tree.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
+  name="builtin_native_scripts",
+  deps=[
+    ":drag_and_drop_loader",
+    ":renderer",
+    ":imgui_start",
+    ":imgui_end",
+    ":library_browser",
+    ":scene_tree",
+  ],
   visibility=["//visibility:public"]
 )

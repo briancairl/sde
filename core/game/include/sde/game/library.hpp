@@ -24,18 +24,29 @@ enum class LibraryError
   kLibraryAlreadyLoaded,
 };
 
+struct LibraryFlags : Resource<LibraryFlags>
+{
+  bool required = false;
+
+  auto field_list() { return FieldList(Field{"required", required}); }
+};
+
 struct LibraryData : Resource<LibraryData>
 {
+  LibraryFlags flags;
   asset::path path;
   dl::Library lib;
 
-  auto field_list() { return FieldList(Field{"path", path}, _Stub{"lib", lib}); }
+  auto field_list() { return FieldList(Field{"flags", flags}, Field{"path", path}, _Stub{"lib", lib}); }
 };
 
 }  // namespace sde::game
 
 namespace sde
 {
+
+template <> struct Hasher<game::LibraryFlags> : ResourceHasher
+{};
 
 template <> struct ResourceCacheTypes<game::LibraryCache>
 {
@@ -56,14 +67,14 @@ class LibraryCache : public ResourceCache<LibraryCache>
 public:
   using fundemental_type::get_if;
 
-  const LibraryData* get_if(const asset::path& path) const;
+  std::pair<LibraryHandle, const LibraryData*> get_if(const asset::path& path) const;
 
 private:
-  sde::unordered_map<asset::path, const LibraryData*> asset_path_lookup_;
+  sde::unordered_map<asset::path, std::pair<LibraryHandle, const LibraryData*>> asset_path_lookup_;
 
   expected<void, LibraryError> reload(LibraryData& library);
   expected<void, LibraryError> unload(LibraryData& library);
-  expected<LibraryData, LibraryError> generate(const asset::path& path);
+  expected<LibraryData, LibraryError> generate(const asset::path& path, const LibraryFlags& flags = {});
   void when_created(LibraryHandle handle, const LibraryData* data);
   void when_removed(LibraryHandle handle, const LibraryData* data);
 };

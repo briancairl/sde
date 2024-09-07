@@ -234,6 +234,15 @@ public:
     return this->derived().unload(handle_to_value_itr->second.value);
   }
 
+  template <typename UpdateFn> void update_if_exists(handle_type handle, UpdateFn update)
+  {
+    const auto handle_to_value_itr = handle_to_value_cache_.find(handle);
+    if (handle_to_value_itr != handle_to_value_cache_.end())
+    {
+      update(handle_to_value_itr->second.value);
+    }
+  }
+
   ResourceCache() = default;
   ResourceCache(ResourceCache&&) = default;
   ResourceCache& operator=(ResourceCache&&) = default;

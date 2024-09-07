@@ -1,0 +1,120 @@
+// C++ Standard Library
+#include <ostream>
+
+// ImGui
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include <imgui.h>
+
+// SDE
+#include "sde/game/native_script_runtime.hpp"
+#include "sde/unordered_map.hpp"
+#include "sde/vector.hpp"
+
+using namespace sde;
+using namespace sde::game;
+
+
+struct library_browser
+{
+  sde::unordered_map<asset::path, sde::vector<asset::path>> search_paths = {};
+};
+
+
+void refresh(library_browser* self)
+{
+  for (auto& [search_path, library_paths] : self->search_paths)
+  {
+    library_paths.clear();
+    for (const auto& de : asset::recursive_directory_iterator{search_path})
+    {
+      if (de.path().extension() == ".so")
+      {
+        library_paths.push_back(de.path());
+      }
+    }
+  }
+}
+
+bool load(library_browser* self, sde::game::IArchive& ar)
+{
+  using namespace sde::serial;
+  ar >> named{"search_paths", self->search_paths};
+  return true;
+}
+
+
+bool save(library_browser* self, sde::game::OArchive& ar)
+{
+  using namespace sde::serial;
+  ar << named{"search_paths", self->search_paths};
+  return true;
+}
+
+
+bool initialize(library_browser* self, sde::game::Assets& assets, const sde::AppProperties& app)
+{
+  self->search_paths.try_emplace("engine");
+  refresh(self);
+  return true;
+}
+
+
+bool update(library_browser* self, sde::game::Assets& assets, const sde::AppProperties& app)
+{
+  if (ImGui::GetCurrentContext() == nullptr)
+  {
+    return false;
+  }
+
+  ImGui::Begin("libraries");
+  if (ImGui::SmallButton("refresh"))
+  {
+    refresh(self);
+  }
+  for (const auto& [search_path, library_paths] : self->search_paths)
+  {
+    ImGui::Text("%s", search_path.string().c_str());
+    static constexpr auto kTableCols = 2;
+    static constexpr auto kTableFlags =
+      ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders;
+    if (ImGui::BeginTable(search_path.string().c_str(), kTableCols, kTableFlags))
+    {
+      for (const auto& path : library_paths)
+      {
+        ImGui::PushID(path.string().c_str());
+        if (const auto [handle, lib] = assets.libraries.get_if(path); handle.isNull())
+        {
+          ImGui::TableNextColumn();
+          ImGui::Text("%s", path.string().c_str());
+          ImGui::TableNextColumn();
+          if (ImGui::SmallButton("load"))
+          {
+            [[maybe_unused]] const auto _ = assets.libraries.create(path);
+          }
+        }
+        else
+        {
+          ImGui::TableNextColumn();
+          ImGui::TextColored(ImVec4{0.0F, 0.8F, 0.0F, 1.0F}, "%s", path.string().c_str());
+          ImGui::TableNextColumn();
+          if (lib->flags.required)
+          {
+            ImGui::TextColored(ImVec4{0.5F, 0.5F, 0.0F, 1.0F}, "%s", "required");
+          }
+          else if (ImGui::SmallButton("unload"))
+          {
+            assets.libraries.remove(handle);
+          }
+        }
+        ImGui::PopID();
+      }
+      ImGui::EndTable();
+    }
+  }
+  ImGui::End();
+
+  return true;
+}
+
+
+SDE_NATIVE_SCRIPT__REGISTER_AUTO(library_browser);

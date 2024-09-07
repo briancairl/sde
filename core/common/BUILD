@@ -83,6 +83,7 @@ cc_library(
 cc_library(
   name="stl",
   hdrs=[
+    "include/sde/string.hpp",
     "include/sde/vector.hpp",
     "include/sde/unordered_map.hpp",
   ],

@@ -82,44 +82,51 @@ int main(int argc, char** argv)
   // }
 
   game::Assets assets = {};
-  game::SceneGraph scene_graph = {};
+  // game::SceneGraph scene_graph = {};
 
-  const auto renderer_or_error = assets.scripts.create(asset::path{"engine/red/librenderer.so"});
-  if (!renderer_or_error.has_value())
+  // const auto renderer_or_error = assets.scripts.create(asset::path{"engine/red/librenderer.so"});
+  // if (!renderer_or_error.has_value())
+  // {
+  //   SDE_LOG_INFO("failed to load library: renderer");
+  //   return 1;
+  // }
+
+  // const auto imgui_start_or_error = assets.scripts.create(asset::path{"engine/red/libimgui_start.so"});
+  // if (!imgui_start_or_error.has_value())
+  // {
+  //   SDE_LOG_INFO("failed to load library: imgui_start");
+  //   return 1;
+  // }
+
+  // const auto imgui_end_or_error = assets.scripts.create(asset::path{"engine/red/libimgui_end.so"});
+  // if (!imgui_end_or_error.has_value())
+  // {
+  //   SDE_LOG_INFO("failed to load library: imgui_end");
+  //   return 1;
+  // }
+
+  // const auto root_scene_or_error = assets.scenes.create(
+  //   sde::make_vector(renderer_or_error->handle, imgui_start_or_error->handle),
+  //   sde::make_vector(imgui_end_or_error->handle));
+  // if (!root_scene_or_error.has_value())
+  // {
+  //   SDE_LOG_INFO("failed to create root scene");
+  //   return 1;
+  // }
+
+  // for (const auto& de : std::filesystem::recursive_directory_iterator{"engine"})
+  // {
+  //   SDE_LOG_INFO((std::filesystem::current_path() / de.path()).string().c_str());
+  // }
+
+  // scene_graph.setRoot(root_scene_or_error->handle);
+
+  auto scene_graph_or_error = sde::game::SceneGraph::load(assets, argv[1]);
+  if (!scene_graph_or_error.has_value())
   {
-    SDE_LOG_INFO("failed to load library: renderer");
+    SDE_LOG_ERROR_FMT("Failed to load scene graph: %s", argv[1]);
     return 1;
   }
-
-  const auto imgui_start_or_error = assets.scripts.create(asset::path{"engine/red/libimgui_start.so"});
-  if (!imgui_start_or_error.has_value())
-  {
-    SDE_LOG_INFO("failed to load library: imgui_start");
-    return 1;
-  }
-
-  const auto imgui_end_or_error = assets.scripts.create(asset::path{"engine/red/libimgui_end.so"});
-  if (!imgui_end_or_error.has_value())
-  {
-    SDE_LOG_INFO("failed to load library: imgui_end");
-    return 1;
-  }
-
-  const auto root_scene_or_error = assets.scenes.create(
-    sde::make_vector(renderer_or_error->handle, imgui_start_or_error->handle),
-    sde::make_vector(imgui_end_or_error->handle));
-  if (!root_scene_or_error.has_value())
-  {
-    SDE_LOG_INFO("failed to create root scene");
-    return 1;
-  }
-
-  for (const auto& de : std::filesystem::recursive_directory_iterator{"engine"})
-  {
-    SDE_LOG_INFO((std::filesystem::current_path() / de.path()).string().c_str());
-  }
-
-  scene_graph.setRoot(root_scene_or_error->handle);
 
   app_or_error->spin([&](const auto& app_properties) {
     // assets.registry.view<Position, Dynamics>().each(
@@ -127,7 +134,7 @@ int main(int argc, char** argv)
     //     pos.center += state.velocity * dt;
     //   });
 
-    if (const auto ok_or_error = scene_graph.tick(assets, app_properties); ok_or_error)
+    if (const auto ok_or_error = scene_graph_or_error->tick(assets, app_properties); ok_or_error)
     {
       return AppDirective::kContinue;
     }

@@ -136,6 +136,8 @@ expected<void, NativeScriptError> NativeScriptCache::reload(NativeScriptData& sc
     return make_unexpected(NativeScriptError::kScriptLibraryMissingFunction);
   }
 
+  script.name = script.script.name();
+
   return {};
 }
 
@@ -157,9 +159,10 @@ expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(Librar
   return data;
 }
 
-expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(const asset::path& path)
+expected<NativeScriptData, NativeScriptError>
+NativeScriptCache::generate(const asset::path& path, const LibraryFlags& flags)
 {
-  auto library_or_error = libraries_->create(path);
+  auto library_or_error = libraries_->create(path, flags);
   if (!library_or_error.has_value())
   {
     SDE_LOG_ERROR("NativeScriptError::kScriptLibraryInvalid");
