@@ -77,8 +77,7 @@ bool update(imgui_start* self, sde::game::Assets& assets, const sde::AppProperti
   ImGui::NewFrame();
   ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-  ImGui::ShowMetricsWindow();
-
+  // ImGui::ShowMetricsWindow();
   // app_state.enabled = !ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
   return true;
 }

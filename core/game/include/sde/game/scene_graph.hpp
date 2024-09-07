@@ -31,6 +31,14 @@ struct SceneGraphError
   SceneHandle handle = SceneHandle::null();
 };
 
+enum class SceneGraphLoadError
+{
+  kInvalidJSONPath,
+  kInvalidJSONLayout,
+  kInvalidScript,
+  kInvalidScene,
+  kInvalidRoot
+};
 
 class SceneGraph : public Resource<SceneGraph>
 {
@@ -40,6 +48,8 @@ public:
   expected<void, SceneGraphError> tick(Assets& assets, const AppProperties& properties) const;
 
   void setRoot(SceneHandle root) { root_ = root; }
+
+  static expected<SceneGraph, SceneGraphLoadError> load(Assets& assets, const asset::path& path);
 
 private:
   static expected<void, SceneGraphError>

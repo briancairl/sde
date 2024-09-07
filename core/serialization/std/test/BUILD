@@ -83,3 +83,15 @@ gtest(
   ],
   visibility=["//visibility:public"],
 )
+
+gtest(
+  name="unordered_map",
+  timeout = "short",
+  srcs=["unordered_map.cpp"],
+  deps=[
+    "//core/serialization/archive:binary_archive",
+    "//core/serialization/stream:mem_stream", 
+    "//core/serialization/std",
+  ],
+  visibility=["//visibility:public"],
+)

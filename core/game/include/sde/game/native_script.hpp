@@ -123,7 +123,7 @@ private:
   LibraryCache* libraries_;
   expected<void, NativeScriptError> reload(NativeScriptData& library);
   expected<void, NativeScriptError> unload(NativeScriptData& library);
-  expected<NativeScriptData, NativeScriptError> generate(const asset::path& path);
+  expected<NativeScriptData, NativeScriptError> generate(const asset::path& path, const LibraryFlags& flags = {});
   expected<NativeScriptData, NativeScriptError> generate(LibraryHandle library);
 };
 

@@ -22,6 +22,7 @@
 #include "sde/serial/std/filesystem.hpp"
 #include "sde/serial/std/optional.hpp"
 #include "sde/serial/std/string.hpp"
+#include "sde/serial/std/unordered_map.hpp"
 #include "sde/serial/std/vector.hpp"
 #include "sde/serialization.hpp"
 #include "sde/serialization_binary_file.hpp"

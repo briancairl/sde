@@ -26,14 +26,16 @@ expected<void, LibraryError> LibraryCache::unload(LibraryData& library)
   return {};
 }
 
-expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& path)
+expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& path, const LibraryFlags& flags)
 {
-  if (asset_path_lookup_.count(path) > 0)
+  const auto absolute_path = asset::absolute(path);
+  if (asset_path_lookup_.count(absolute_path) > 0)
   {
+    SDE_LOG_ERROR("LibraryError::kLibraryAlreadyLoaded");
     return make_unexpected(LibraryError::kLibraryAlreadyLoaded);
   }
 
-  LibraryData data{.path = path, .lib = {}};
+  LibraryData data{.flags = flags, .path = absolute_path, .lib = {}};
 
   auto ok_or_error = reload(data);
   if (!ok_or_error.has_value())
@@ -44,9 +46,11 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
   return data;
 }
 
-void LibraryCache::when_created([[maybe_unused]] LibraryHandle handle, const LibraryData* data)
+void LibraryCache::when_created(LibraryHandle handle, const LibraryData* data)
 {
-  asset_path_lookup_.emplace(data->path, data);
+  SDE_LOG_INFO_FMT("new library added: %s", data->path.string().c_str());
+  asset_path_lookup_.emplace(
+    std::piecewise_construct, std::forward_as_tuple(data->path), std::forward_as_tuple(handle, data));
 }
 
 void LibraryCache::when_removed([[maybe_unused]] LibraryHandle handle, const LibraryData* data)
@@ -54,12 +58,12 @@ void LibraryCache::when_removed([[maybe_unused]] LibraryHandle handle, const Lib
   asset_path_lookup_.erase(data->path);
 }
 
-const LibraryData* LibraryCache::get_if(const asset::path& path) const
+std::pair<LibraryHandle, const LibraryData*> LibraryCache::get_if(const asset::path& path) const
 {
-  const auto itr = asset_path_lookup_.find(path);
+  const auto itr = asset_path_lookup_.find(asset::absolute(path));
   if (itr == std::end(asset_path_lookup_))
   {
-    return nullptr;
+    return {LibraryHandle::null(), nullptr};
   }
   return itr->second;
 }
