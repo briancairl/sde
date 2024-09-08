@@ -53,6 +53,14 @@ cc_binary(
 )
 
 cc_binary(
+  name="script_browser",
+  srcs=["src/script_browser.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
   name="scene_tree",
   srcs=["src/scene_tree.cpp"],
   linkshared=True,
@@ -68,6 +76,7 @@ cc_library(
     ":imgui_start",
     ":imgui_end",
     ":library_browser",
+    ":script_browser",
     ":scene_tree",
   ],
   visibility=["//visibility:public"]

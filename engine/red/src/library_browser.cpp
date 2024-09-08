@@ -82,6 +82,7 @@ bool update(library_browser* self, sde::game::Assets& assets, const sde::AppProp
       for (const auto& path : library_paths)
       {
         ImGui::PushID(path.string().c_str());
+
         if (const auto [handle, lib] = assets.libraries.get_if(path); handle.isNull())
         {
           ImGui::TableNextColumn();
@@ -96,14 +97,21 @@ bool update(library_browser* self, sde::game::Assets& assets, const sde::AppProp
         {
           ImGui::TableNextColumn();
           ImGui::TextColored(ImVec4{0.0F, 0.8F, 0.0F, 1.0F}, "%s", path.string().c_str());
+
+          if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+          {
+            const ImVec4 tint =
+              ImGui::SetDragDropPayload("SDE_LIBRARY_PAYLOAD", std::addressof(handle), sizeof(handle), /*cond = */ 0)
+              ? ImVec4{0, 1, 0, 1}
+              : ImVec4{1, 1, 1, 1};
+            ImGui::TextColored(tint, "library[%s]", path.string().c_str());
+            ImGui::EndDragDropSource();
+          }
+
           ImGui::TableNextColumn();
           if (lib->flags.required)
           {
             ImGui::TextColored(ImVec4{0.5F, 0.5F, 0.0F, 1.0F}, "%s", "required");
-          }
-          else if (ImGui::SmallButton("unload"))
-          {
-            assets.libraries.remove(handle);
           }
         }
         ImGui::PopID();
