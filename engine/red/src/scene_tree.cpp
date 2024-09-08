@@ -1,3 +1,5 @@
+#define SDE_SCRIPT_NAME "scene_tree"
+
 // C++ Standard Library
 #include <ostream>
 
@@ -31,21 +33,88 @@ bool save(scene_viewer* self, sde::game::OArchive& ar)
 
 bool initialize(scene_viewer* self, sde::game::Assets& assets, const sde::AppProperties& app) { return true; }
 
-void scene_hierarchy(SceneHandle root, const sde::game::Assets& assets)
+void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
 {
-  const auto scene_ref = assets.scenes.get_if(root);
+  const auto scene_ref = assets.scenes.get_if(handle);
   if (!scene_ref)
   {
     return;
   }
-  if (ImGui::TreeNode(scene_ref->name.c_str()))
+
+  const bool node_open = ImGui::TreeNode(scene_ref->name.c_str());
+
+  ImGui::PushID(scene_ref->name.c_str());
+  if (ImGui::BeginDragDropTarget())
   {
-    for (const auto& script_handle : scene_ref->children)
+    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SDE_SCENE_TREE_MOVE"))
     {
-      scene_hierarchy(script_handle, assets);
+      SDE_ASSERT_EQ(payload->DataSize, sizeof(SceneHandle));
+      if (const SceneHandle child_handle{*reinterpret_cast<const SceneHandle*>(payload->Data)}; child_handle != handle)
+      {
+        assets.scenes.update_if_exists(handle, [child_handle](auto& v) { v.children.push_back(child_handle); });
+      }
     }
+    ImGui::EndDragDropTarget();
+  }
+
+  if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+  {
+    const ImVec4 tint =
+      ImGui::SetDragDropPayload("SDE_SCENE_TREE_MOVE", std::addressof(handle), sizeof(handle), /*cond = */ 0)
+      ? ImVec4{0, 1, 0, 1}
+      : ImVec4{1, 1, 1, 1};
+    ImGui::TextColored(tint, "scene[%s]", scene_ref->name.c_str());
+    ImGui::EndDragDropSource();
+  }
+
+  if (node_open)
+  {
+    {
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.8F, 0.8F, 0.8F, 1.0F});
+      const bool open = ImGui::TreeNode("pre");
+      ImGui::PopStyleColor();
+      if (open)
+      {
+        for (const auto& script_handle : scene_ref->pre_scripts)
+        {
+          const auto script = assets.scripts.get_if(script_handle);
+          ImGui::Text("%s", script->name.c_str());
+        }
+        ImGui::TreePop();
+      };
+    }
+
+    {
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.8F, 0.8F, 0.8F, 1.0F});
+      const bool open = ImGui::TreeNode("children");
+      ImGui::PopStyleColor();
+      if (open)
+      {
+        for (const auto& scene_handle : scene_ref->children)
+        {
+          scene_hierarchy(scene_handle, assets);
+        }
+        ImGui::TreePop();
+      };
+    }
+
+    {
+      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.8F, 0.8F, 0.8F, 1.0F});
+      const bool open = ImGui::TreeNode("post");
+      ImGui::PopStyleColor();
+      if (open)
+      {
+        for (const auto& script_handle : scene_ref->post_scripts)
+        {
+          ImGui::Text("%d", static_cast<int>(script_handle.id()));
+        }
+        ImGui::TreePop();
+      };
+    }
+
     ImGui::TreePop();
   }
+  ImGui::PopID();
 }
 
 bool update(scene_viewer* self, sde::game::Assets& assets, const sde::AppProperties& app)
@@ -56,6 +125,14 @@ bool update(scene_viewer* self, sde::game::Assets& assets, const sde::AppPropert
   }
 
   ImGui::Begin("scenes");
+  if (ImGui::SmallButton("new scene"))
+  {
+    if (const auto ok_or_error = assets.scenes.create(SceneType::kChild, sde::string{"unamed"});
+        !ok_or_error.has_value())
+    {
+      SDE_LOG_ERROR("failed to create new scene");
+    }
+  }
   for (const auto& [handle, scene] : assets.scenes)
   {
     scene_hierarchy(handle, assets);

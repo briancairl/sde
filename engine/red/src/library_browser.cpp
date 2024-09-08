@@ -24,6 +24,7 @@ void refresh(library_browser* self)
 {
   for (auto& [search_path, library_paths] : self->search_paths)
   {
+    library_paths.clear();
     for (const auto& de : asset::recursive_directory_iterator{search_path})
     {
       if (de.path().extension() == ".so")
@@ -66,6 +67,10 @@ bool update(library_browser* self, sde::game::Assets& assets, const sde::AppProp
   }
 
   ImGui::Begin("libraries");
+  if (ImGui::SmallButton("refresh"))
+  {
+    refresh(self);
+  }
   for (const auto& [search_path, library_paths] : self->search_paths)
   {
     ImGui::Text("%s", search_path.string().c_str());

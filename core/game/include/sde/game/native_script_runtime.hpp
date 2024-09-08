@@ -44,6 +44,13 @@
     deallocator(self);                                                                                                 \
   }
 
+#ifndef SDE_SCRIPT_NAME
+#define SDE_NATIVE_SCRIPT__REGISTER_NAME(InstanceDataT)                                                                \
+  SDE_EXPORT const char* on_get_name() { return __FILE__; }
+#else
+#define SDE_NATIVE_SCRIPT__REGISTER_NAME(InstanceDataT)                                                                \
+  SDE_EXPORT const char* on_get_name() { return SDE_SCRIPT_NAME; }
+#endif  // SDE_SCRIPT_NAME
 
 #define SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, f)                                                             \
   SDE_EXPORT bool on_load(void* self, void* iarchive)                                                                  \
@@ -78,6 +85,7 @@
 #define SDE_NATIVE_SCRIPT__REGISTER(InstanceDataT, load, save, initialize, update)                                     \
   SDE_NATIVE_SCRIPT__REGISTER_CREATE(InstanceDataT);                                                                   \
   SDE_NATIVE_SCRIPT__REGISTER_DESTROY(InstanceDataT);                                                                  \
+  SDE_NATIVE_SCRIPT__REGISTER_NAME(InstanceDataT);                                                                     \
   SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, load);                                                               \
   SDE_NATIVE_SCRIPT__REGISTER_SAVE(InstanceDataT, save);                                                               \
   SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(InstanceDataT, initialize);                                                   \

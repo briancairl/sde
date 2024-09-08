@@ -136,6 +136,8 @@ expected<void, NativeScriptError> NativeScriptCache::reload(NativeScriptData& sc
     return make_unexpected(NativeScriptError::kScriptLibraryMissingFunction);
   }
 
+  script.name = script.script.name();
+
   return {};
 }
 

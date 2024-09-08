@@ -106,8 +106,8 @@ private:
   expected<SceneData, SceneError> generate(
     SceneType type,
     sde::string name,
-    sde::vector<NativeScriptHandle> pre,
-    sde::vector<NativeScriptHandle> post,
+    sde::vector<NativeScriptHandle> pre = {},
+    sde::vector<NativeScriptHandle> post = {},
     sde::vector<SceneHandle> children = {});
 };
 
