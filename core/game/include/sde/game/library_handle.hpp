@@ -16,3 +16,9 @@ struct LibraryHandle : ResourceHandle<LibraryHandle>
   explicit LibraryHandle(id_type id) : ResourceHandle<LibraryHandle>{id} {}
 };
 }  // namespace sde::game
+
+namespace sde
+{
+template <> struct Hasher<game::LibraryHandle> : ResourceHandleHash
+{};
+}  // namespace sde

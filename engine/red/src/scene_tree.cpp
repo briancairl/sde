@@ -106,7 +106,8 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       {
         for (const auto& script_handle : scene_ref->post_scripts)
         {
-          ImGui::Text("%d", static_cast<int>(script_handle.id()));
+          const auto script = assets.scripts.get_if(script_handle);
+          ImGui::Text("%s", script->name.c_str());
         }
         ImGui::TreePop();
       };
