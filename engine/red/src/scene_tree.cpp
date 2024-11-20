@@ -69,6 +69,7 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
 
   if (node_open)
   {
+    if (!scene_ref->pre_scripts.empty())
     {
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.8F, 0.8F, 0.8F, 1.0F});
       const bool open = ImGui::TreeNode("pre");
@@ -84,6 +85,7 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       };
     }
 
+    if (!scene_ref->children.empty())
     {
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.8F, 0.8F, 0.8F, 1.0F});
       const bool open = ImGui::TreeNode("children");
@@ -98,6 +100,7 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       };
     }
 
+    if (!scene_ref->post_scripts.empty())
     {
       ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.8F, 0.8F, 0.8F, 1.0F});
       const bool open = ImGui::TreeNode("post");

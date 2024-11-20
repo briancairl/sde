@@ -1,6 +1,6 @@
 // C++ Standard Library
 #include <cmath>
-#include <ostream>
+#include <iostream>
 
 // SDE
 #include "sde/app.hpp"
@@ -125,6 +125,7 @@ int main(int argc, char** argv)
   if (!scene_graph_or_error.has_value())
   {
     SDE_LOG_ERROR_FMT("Failed to load scene graph: %s", argv[1]);
+    std::cerr << scene_graph_or_error.error() << std::endl;
     return 1;
   }
 

@@ -1,0 +1,27 @@
+{
+  "root": {
+    "pre_scripts" : [
+      "engine/red/librenderer.so",
+      "engine/red/libimgui_start.so",
+      "engine/red/liblibrary_browser.so"
+    ],
+    "post_scripts" : [
+      "engine/red/libscript_browser.so",
+      "engine/red/libimgui_end.so"
+    ],
+    "children" : [
+      "scenes"
+    ]
+  },
+  "scenes": {
+    "pre_scripts" : [
+      "engine/red/libscene_tree.so"
+    ],
+    "post_scripts" : [
+      
+    ],
+    "children" : [
+
+    ]
+  }
+}

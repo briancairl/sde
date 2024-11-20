@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // SDE
 #include "sde/app_fwd.hpp"
 #include "sde/game/assets_fwd.hpp"
@@ -25,11 +28,15 @@ enum class SceneGraphErrorType
   kPostScriptFailure,
 };
 
+std::ostream& operator<<(std::ostream& os, SceneGraphErrorType error);
+
 struct SceneGraphError
 {
   SceneGraphErrorType error_type;
   SceneHandle handle = SceneHandle::null();
 };
+
+std::ostream& operator<<(std::ostream& os, SceneGraphError error);
 
 enum class SceneGraphLoadError
 {
@@ -39,6 +46,8 @@ enum class SceneGraphLoadError
   kInvalidScene,
   kInvalidRoot
 };
+
+std::ostream& operator<<(std::ostream& os, SceneGraphLoadError error);
 
 class SceneGraph : public Resource<SceneGraph>
 {

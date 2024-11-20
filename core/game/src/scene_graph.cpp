@@ -19,6 +19,45 @@
 namespace sde::game
 {
 
+std::ostream& operator<<(std::ostream& os, SceneGraphErrorType error)
+{
+  switch (error)
+  {
+  case SceneGraphErrorType::kInvalidRoot:
+    return os << "InvalidRoot";
+  case SceneGraphErrorType::kPreScriptFailure:
+    return os << "PreScriptFailure";
+  case SceneGraphErrorType::kPostScriptFailure:
+    return os << "PostScriptFailure";
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, SceneGraphError error)
+{
+  return os << "{ error_type: " << error.error_type << ", handle: " << error.handle << " }";
+}
+
+std::ostream& operator<<(std::ostream& os, SceneGraphLoadError error)
+{
+  switch (error)
+  {
+  case SceneGraphLoadError::kInvalidJSONPath:
+    return os << "InvalidJSONPath";
+  case SceneGraphLoadError::kInvalidJSONLayout:
+    return os << "InvalidJSONLayout";
+  case SceneGraphLoadError::kInvalidScript:
+    return os << "InvalidScript";
+  case SceneGraphLoadError::kInvalidScene:
+    return os << "InvalidScene";
+  case SceneGraphLoadError::kInvalidRoot:
+    return os << "InvalidRoot";
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, SceneGraphLoadError error);
+
 expected<void, SceneGraphError>
 SceneGraph::tick(const SceneHandle scene_handle, Assets& assets, const AppProperties& properties)
 {
