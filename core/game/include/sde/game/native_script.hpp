@@ -7,7 +7,7 @@
 
 // SDE
 #include "sde/asset.hpp"
-#include "sde/dl/library.hpp"
+#include "sde/game/library.hpp"
 #include "sde/game/library_fwd.hpp"
 #include "sde/game/library_handle.hpp"
 #include "sde/game/native_script_fwd.hpp"
@@ -26,63 +26,119 @@ enum class NativeScriptCallError
   kNotUpdated
 };
 
-class NativeScript : public Resource<NativeScript>
+struct NativeScriptFn : public Resource<NativeScriptFn>
 {
-  friend fundemental_type;
+  dl::Function<void*(ScriptInstanceAllocator)> on_create;
+  dl::Function<void(ScriptInstanceDeallocator, void*)> on_destroy;
+  dl::Function<const char*()> on_get_name;
+  dl::Function<bool(void*, void*)> on_load;
+  dl::Function<bool(void*, void*)> on_save;
+  dl::Function<bool(void*, void*, const void*)> on_initialize;
+  dl::Function<bool(void*, void*, const void*)> on_update;
 
-public:
-  NativeScript() = default;
-  ~NativeScript();
-
-  NativeScript(NativeScript&& other);
-  NativeScript& operator=(NativeScript&& other);
-
-  void swap(NativeScript& other);
+  bool isValid() const;
 
   void reset();
-  bool reset(const dl::Library& library);
-
-  constexpr operator bool() const { return instance_ != nullptr; }
-
-  constexpr const char* name() const { return (on_get_name_) ? on_get_name_() : nullptr; }
-
-  bool load(IArchive& ar) const;
-  bool save(OArchive& ar) const;
-  expected<void, NativeScriptCallError> call(Assets& assets, const AppProperties& app_properties) const;
-
-  expected<void, NativeScriptCallError> operator()(Assets& assets, const AppProperties& app_properties) const
-  {
-    return this->call(assets, app_properties);
-  }
-
-private:
-  NativeScript(const NativeScript&) = delete;
-  NativeScript& operator=(const NativeScript&) = delete;
-
-  mutable bool initialized_ = false;
-  void* instance_ = nullptr;
-
-  dl::Function<void*(ScriptInstanceAllocator)> on_create_;
-  dl::Function<void(ScriptInstanceDeallocator, void*)> on_destroy_;
-  dl::Function<const char*()> on_get_name_;
-  dl::Function<bool(void*)> on_load_;
-  dl::Function<bool(void*)> on_save_;
-  dl::Function<bool(void*, void*, const void*)> on_initialize_;
-  dl::Function<bool(void*, void*, const void*)> on_update_;
 
   auto field_list()
   {
     // clang-format off
     return FieldList(
-      _Stub{"on_create", on_create_},
-      _Stub{"on_destroy", on_destroy_},
-      _Stub{"on_get_name", on_get_name_},
-      _Stub{"on_load", on_load_},
-      _Stub{"on_save", on_save_},
-      _Stub{"on_initialize", on_initialize_},
-      _Stub{"on_update", on_update_});
+      _Stub{"on_create", on_create},
+      _Stub{"on_destroy", on_destroy},
+      _Stub{"on_get_name", on_get_name},
+      _Stub{"on_load", on_load},
+      _Stub{"on_save", on_save},
+      _Stub{"on_initialize", on_initialize},
+      _Stub{"on_update", on_update});
     // clang-format on
   }
+};
+
+
+template <typename ScriptT> class NativeScriptBase : public Resource<NativeScriptBase<ScriptT>>
+{
+  friend typename Resource<NativeScriptBase<ScriptT>>::fundemental_type;
+
+public:
+  NativeScriptBase() = default;
+
+  void swap(NativeScriptBase<ScriptT>& other);
+
+  bool reset(const dl::Library& library);
+
+  constexpr bool isValid() const { return fn_.isValid(); }
+
+  constexpr operator bool() const { return this->isValid(); }
+
+  constexpr const char* name() const { return isValid() ? fn_.on_get_name() : "<INVALID>"; }
+
+protected:
+  explicit NativeScriptBase(NativeScriptFn fn);
+  ~NativeScriptBase() = default;
+  NativeScriptBase(const NativeScriptBase<ScriptT>&) = delete;
+  NativeScriptBase& operator=(const NativeScriptBase<ScriptT>&) = delete;
+
+  NativeScriptFn fn_;
+
+  auto field_list() { return FieldList(_Stub{"fn", fn_}); }
+};
+
+class NativeScriptInstance : public NativeScriptBase<NativeScriptInstance>
+{
+  using Base = NativeScriptBase<NativeScriptInstance>;
+
+public:
+  NativeScriptInstance(NativeScriptFn fn);
+  ~NativeScriptInstance();
+  NativeScriptInstance(NativeScriptInstance&& other);
+  NativeScriptInstance& operator=(NativeScriptInstance&& other);
+
+  void swap(NativeScriptInstance& other);
+
+  void reset();
+
+  constexpr bool isValid() const { return Base::isValid() and (instance_ != nullptr); }
+
+  constexpr operator bool() const { return this->isValid(); }
+
+  bool load(IArchive& ar) const;
+
+  bool save(OArchive& ar) const;
+
+  expected<void, NativeScriptCallError> initialize(Assets& assets, const AppProperties& app_properties) const;
+
+  expected<void, NativeScriptCallError> call(Assets& assets, const AppProperties& app_properties) const;
+
+private:
+  friend NativeScript;
+  using Base::isValid;
+  using Base::reset;
+  using Base::operator bool;
+
+  NativeScriptInstance(const NativeScriptInstance&) = delete;
+  NativeScriptInstance& operator=(const NativeScriptInstance&) = delete;
+
+  mutable bool initialized_ = false;
+  mutable void* instance_ = nullptr;
+};
+
+class NativeScript : public NativeScriptBase<NativeScript>
+{
+public:
+  ~NativeScript() = default;
+  NativeScript() = default;
+
+  NativeScript(NativeScript&& other);
+  NativeScript& operator=(NativeScript&& other);
+
+  constexpr operator bool() const { return this->isValid(); }
+
+  NativeScriptInstance instance() const;
+
+private:
+  NativeScript(const NativeScript&) = delete;
+  NativeScript& operator=(const NativeScript&) = delete;
 };
 
 enum class NativeScriptError
@@ -115,6 +171,12 @@ template <> struct ResourceCacheTypes<game::NativeScriptCache>
   using handle_type = game::NativeScriptHandle;
   using value_type = game::NativeScriptData;
 };
+
+template <> struct Hasher<game::NativeScript> : ResourceHasher
+{};
+
+template <> struct Hasher<game::NativeScriptInstance> : ResourceHasher
+{};
 
 }  // namespace sde
 

@@ -9,105 +9,107 @@
 namespace sde::game
 {
 
-NativeScript::~NativeScript() { this->reset(); }
-
-NativeScript::NativeScript(NativeScript&& other) { this->swap(other); }
-
-NativeScript& NativeScript::operator=(NativeScript&& other)
+bool NativeScriptFn::isValid() const
 {
-  this->swap(other);
-  return *this;
+  return IterateUntil(*this, [](const auto& fn) { return fn->isValid(); });
 }
 
-void NativeScript::swap(NativeScript& other)
+void NativeScriptFn::reset()
 {
-  std::swap(this->initialized_, other.initialized_);
-  std::swap(this->instance_, other.instance_);
-  std::swap(this->on_create_, other.on_create_);
-  std::swap(this->on_destroy_, other.on_destroy_);
-  std::swap(this->on_load_, other.on_load_);
-  std::swap(this->on_save_, other.on_save_);
-  std::swap(this->on_initialize_, other.on_initialize_);
-  std::swap(this->on_update_, other.on_update_);
+  IterateUntil(*this, [](auto& fn) {
+    fn->reset();
+    return true;
+  });
 }
 
-void NativeScript::reset()
+template <typename ScriptT> NativeScriptBase<ScriptT>::NativeScriptBase(NativeScriptFn fn) : fn_{std::move(fn)} {}
+
+template <typename ScriptT> void NativeScriptBase<ScriptT>::swap(NativeScriptBase<ScriptT>& other)
 {
-  if (instance_ == nullptr)
+  std::swap(this->fn_, other.fn_);
+}
+
+template <typename ScriptT> bool NativeScriptBase<ScriptT>::reset(const dl::Library& library)
+{
+  return IterateUntil(this->fn_, [&library](auto& field) {
+    auto symbol_or_error = library.get(field.name);
+    if (!symbol_or_error.has_value())
+    {
+      SDE_LOG_ERROR_FMT("NativeScriptInstance.%s : %s", field.name, symbol_or_error.error().details);
+      return false;
+    }
+    else
+    {
+      (*field) = std::move(symbol_or_error).value();
+    }
+    return true;
+  });
+}
+
+NativeScriptInstance::NativeScriptInstance(NativeScriptFn fn) :
+    NativeScriptBase{std::move(fn)}, initialized_{false}, instance_{nullptr}
+{
+  instance_ = fn_.on_create(std::malloc);
+}
+
+NativeScriptInstance::NativeScriptInstance(NativeScriptInstance&& other) { NativeScriptInstance::swap(other); }
+
+NativeScriptInstance::~NativeScriptInstance() { NativeScriptInstance::reset(); }
+
+void NativeScriptInstance::swap(NativeScriptInstance& other)
+{
+  Base::swap(static_cast<Base&>(other));
+  std::swap(other.instance_, this->instance_);
+  std::swap(other.initialized_, this->initialized_);
+}
+
+void NativeScriptInstance::reset()
+{
+  if (instance_ != nullptr)
   {
-    return;
-  }
-  else
-  {
-    on_destroy_(std::free, instance_);
-    SDE_LOG_ERROR_FMT("NativeScript[%p] destroyed", instance_);
-    instance_ = nullptr;
-    initialized_ = false;
-    on_create_.reset();
-    on_destroy_.reset();
-    on_load_.reset();
-    on_save_.reset();
-    on_initialize_.reset();
-    on_update_.reset();
+    fn_.on_destroy(std::free, instance_);
   }
 }
 
-bool NativeScript::reset(const dl::Library& library)
+bool NativeScriptInstance::load(IArchive& ar) const
 {
-  if (!IterateUntil(*this, [&library](auto& field) {
-        auto symbol_or_error = library.get(field.name);
-        if (!symbol_or_error.has_value())
-        {
-          SDE_LOG_ERROR_FMT("NativeScript.%s : %s", field.name, symbol_or_error.error().details);
-          return false;
-        }
-        else
-        {
-          (*field) = std::move(symbol_or_error).value();
-        }
-        return true;
-      }))
-  {
-    return false;
-  }
-  else if (instance_ = on_create_(std::malloc); instance_ == nullptr)
-  {
-    return false;
-  }
-  return true;
+  SDE_ASSERT_TRUE(fn_.on_load);
+  return fn_.on_load(reinterpret_cast<void*>(&ar), instance_);
 }
 
-bool NativeScript::load(IArchive& ar) const
+bool NativeScriptInstance::save(OArchive& ar) const
 {
-  SDE_ASSERT_TRUE(on_load_);
-  return on_load_(reinterpret_cast<void*>(&ar));
+  SDE_ASSERT_TRUE(fn_.on_save);
+  return fn_.on_save(reinterpret_cast<void*>(&ar), instance_);
 }
 
-bool NativeScript::save(OArchive& ar) const
+expected<void, NativeScriptCallError>
+NativeScriptInstance::initialize(Assets& assets, const AppProperties& app_properties) const
 {
-  SDE_ASSERT_TRUE(on_save_);
-  return on_save_(reinterpret_cast<void*>(&ar));
-}
-
-expected<void, NativeScriptCallError> NativeScript::call(Assets& assets, const AppProperties& app_properties) const
-{
-  SDE_ASSERT_TRUE(on_initialize_);
-  SDE_ASSERT_TRUE(on_update_);
-
   // run initialization routine, if not already run successfully
-  initialized_ = initialized_ or
-    on_initialize_(reinterpret_cast<void*>(instance_),
+  // clang-format off
+  initialized_ =
+    initialized_
+    or
+    fn_.on_initialize(reinterpret_cast<void*>(instance_),
                    reinterpret_cast<void*>(&assets),
                    reinterpret_cast<const void*>(&app_properties));
 
-  // abort if initialization failed
-  if (!initialized_)
+  // clang-format on
+  if (initialized_)
   {
-    return make_unexpected(NativeScriptCallError::kNotInitialized);
+    return {};
   }
+  return make_unexpected(NativeScriptCallError::kNotInitialized);
+}
+
+expected<void, NativeScriptCallError>
+NativeScriptInstance::call(Assets& assets, const AppProperties& app_properties) const
+{
+  SDE_ASSERT_TRUE(initialized_);
 
   // run update behavior
-  if (on_update_(
+  if (fn_.on_update(
         reinterpret_cast<void*>(instance_),
         reinterpret_cast<void*>(&assets),
         reinterpret_cast<const void*>(&app_properties)))
@@ -117,6 +119,15 @@ expected<void, NativeScriptCallError> NativeScript::call(Assets& assets, const A
   return make_unexpected(NativeScriptCallError::kNotUpdated);
 }
 
+NativeScript::NativeScript(NativeScript&& other) { NativeScript::swap(other); }
+
+NativeScript& NativeScript::operator=(NativeScript&& other)
+{
+  this->swap(other);
+  return *this;
+}
+
+NativeScriptInstance NativeScript::instance() const { return NativeScriptInstance{this->fn_}; }
 
 NativeScriptCache::NativeScriptCache(LibraryCache& libraries) : libraries_{std::addressof(libraries)} {}
 
@@ -141,11 +152,7 @@ expected<void, NativeScriptError> NativeScriptCache::reload(NativeScriptData& sc
   return {};
 }
 
-expected<void, NativeScriptError> NativeScriptCache::unload(NativeScriptData& script)
-{
-  script.script.reset();
-  return {};
-}
+expected<void, NativeScriptError> NativeScriptCache::unload(NativeScriptData& script) { return {}; }
 
 expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(LibraryHandle library)
 {

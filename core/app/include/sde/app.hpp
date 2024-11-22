@@ -43,11 +43,12 @@ public:
   using SoundDevice = audio::SoundDevice;
   using Window = graphics::Window;
   using WindowOptions = graphics::WindowOptions;
+  using OnStart = std::function<AppDirective(const AppProperties&)>;
   using OnUpdate = std::function<AppDirective(const AppProperties&)>;
 
   App(App&&) = default;
 
-  void spin(OnUpdate on_update, const Rate spin_rate = Hertz(60.0F));
+  void spin(OnStart on_start, OnUpdate on_update, const Rate spin_rate = Hertz(60.0F));
 
   const Window& window() const { return window_; }
 

@@ -64,6 +64,16 @@ template <typename T> struct Hasher
   }
 };
 
+template <typename F, typename S> struct Hasher<std::pair<F, S>>
+{
+  constexpr Hash operator()(const std::pair<F, S>& v) const
+  {
+    Hash h;
+    h += Hasher<F>{}(std::get<0>(v));
+    h += Hasher<S>{}(std::get<1>(v));
+    return h;
+  }
+};
 
 template <typename T> using hashable_t = std::remove_const_t<std::remove_reference_t<T>>;
 

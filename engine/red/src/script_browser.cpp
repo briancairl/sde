@@ -61,7 +61,8 @@ bool update(script_browser* self, sde::game::Assets& assets, const sde::AppPrope
       {
         SDE_ASSERT_EQ(payload->DataSize, sizeof(LibraryHandle));
         const LibraryHandle library_handle{*reinterpret_cast<const LibraryHandle*>(payload->Data)};
-        assets.scripts.create(library_handle);
+        const auto script_or_error = assets.scripts.create(library_handle);
+        (void)script_or_error;
       }
       ImGui::EndDragDropTarget();
     }

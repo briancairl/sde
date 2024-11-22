@@ -76,10 +76,9 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       ImGui::PopStyleColor();
       if (open)
       {
-        for (const auto& script_handle : scene_ref->pre_scripts)
+        for (const auto& [scene_handle, script_instance] : scene_ref->pre_scripts)
         {
-          const auto script = assets.scripts.get_if(script_handle);
-          ImGui::Text("%s", script->name.c_str());
+          ImGui::Text("%s (id=%lu)", script_instance.name(), static_cast<std::size_t>(scene_handle.id()));
         }
         ImGui::TreePop();
       };
@@ -107,10 +106,9 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       ImGui::PopStyleColor();
       if (open)
       {
-        for (const auto& script_handle : scene_ref->post_scripts)
+        for (const auto& [scene_handle, script_instance] : scene_ref->post_scripts)
         {
-          const auto script = assets.scripts.get_if(script_handle);
-          ImGui::Text("%s", script->name.c_str());
+          ImGui::Text("%s (id=%lu)", script_instance.name(), static_cast<std::size_t>(scene_handle.id()));
         }
         ImGui::TreePop();
       };

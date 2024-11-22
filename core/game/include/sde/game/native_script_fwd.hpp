@@ -7,6 +7,9 @@
 
 namespace sde::game
 {
+struct NativeScriptFn;
 struct NativeScriptHandle;
+class NativeScriptInstance;
+class NativeScript;
 class NativeScriptCache;
 }  // namespace sde::game

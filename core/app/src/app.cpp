@@ -129,7 +129,7 @@ App::App(Window&& window, SoundDevice&& sound_device) :
     window_{std::move(window)}, sound_device_{std::move(sound_device)}
 {}
 
-void App::spin(OnUpdate on_update, const Rate spin_rate)
+void App::spin(OnStart on_start, OnUpdate on_update, const Rate spin_rate)
 {
   AppProperties app_properties;
   app_properties.window = window_.value();
@@ -144,6 +144,16 @@ void App::spin(OnUpdate on_update, const Rate spin_rate)
   glfwSetWindowUserPointer(glfw_window, reinterpret_cast<void*>(&app_properties));
   auto previous_scroll_callback = glfwSetScrollCallback(glfw_window, glfwImplScrollEventHandler);
   auto previous_drop_callback = glfwSetDropCallback(glfw_window, glfwImplDropCallback);
+
+  switch (on_start(app_properties))
+  {
+  case AppDirective::kContinue:
+    break;
+  case AppDirective::kReset:
+    return;
+  case AppDirective::kClose:
+    return;
+  }
 
   while (!glfwWindowShouldClose(glfw_window))
   {

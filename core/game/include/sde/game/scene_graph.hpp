@@ -43,8 +43,16 @@ enum class SceneGraphLoadError
   kInvalidJSONPath,
   kInvalidJSONLayout,
   kInvalidScript,
+  kInvalidScriptData,
   kInvalidScene,
   kInvalidRoot
+};
+
+std::ostream& operator<<(std::ostream& os, SceneGraphLoadError error);
+
+enum class SceneGraphSaveError
+{
+
 };
 
 std::ostream& operator<<(std::ostream& os, SceneGraphLoadError error);
@@ -54,13 +62,19 @@ class SceneGraph : public Resource<SceneGraph>
   friend fundemental_type;
 
 public:
+  expected<void, SceneGraphError> initialize(Assets& assets, const AppProperties& properties) const;
   expected<void, SceneGraphError> tick(Assets& assets, const AppProperties& properties) const;
 
   void setRoot(SceneHandle root) { root_ = root; }
 
   static expected<SceneGraph, SceneGraphLoadError> load(Assets& assets, const asset::path& path);
 
+  static expected<void, SceneGraphSaveError> save(Assets& assets, const asset::path& path);
+
 private:
+  static expected<void, SceneGraphError>
+  initialize(const SceneHandle handle, Assets& assets, const AppProperties& properties);
+
   static expected<void, SceneGraphError>
   tick(const SceneHandle handle, Assets& assets, const AppProperties& properties);
 

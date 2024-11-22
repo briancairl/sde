@@ -129,22 +129,35 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  app_or_error->spin([&](const auto& app_properties) {
-    // assets.registry.view<Position, Dynamics>().each(
-    //   [dt = toSeconds(app_properties.time_delta)](Position& pos, const Dynamics& state) {
-    //     pos.center += state.velocity * dt;
-    //   });
 
-    if (const auto ok_or_error = scene_graph_or_error->tick(assets, app_properties); ok_or_error)
-    {
-      return AppDirective::kContinue;
-    }
-    else
-    {
-      SDE_LOG_INFO_FMT("%d", static_cast<int>(ok_or_error.error().error_type));
-    }
-    return AppDirective::kClose;
-  });
+  app_or_error->spin(
+    [&](const auto& app_properties) {
+      if (const auto ok_or_error = scene_graph_or_error->initialize(assets, app_properties); ok_or_error)
+      {
+        return AppDirective::kContinue;
+      }
+      else
+      {
+        SDE_LOG_INFO_FMT("%d", static_cast<int>(ok_or_error.error().error_type));
+      }
+      return AppDirective::kClose;
+    },
+    [&](const auto& app_properties) {
+      // assets.registry.view<Position, Dynamics>().each(
+      //   [dt = toSeconds(app_properties.time_delta)](Position& pos, const Dynamics& state) {
+      //     pos.center += state.velocity * dt;
+      //   });
+
+      if (const auto ok_or_error = scene_graph_or_error->tick(assets, app_properties); ok_or_error)
+      {
+        return AppDirective::kContinue;
+      }
+      else
+      {
+        SDE_LOG_INFO_FMT("%d", static_cast<int>(ok_or_error.error().error_type));
+      }
+      return AppDirective::kClose;
+    });
 
   SDE_LOG_INFO("done.");
 

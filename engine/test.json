@@ -1,21 +1,39 @@
 {
   "root": {
     "pre_scripts" : [
-      "engine/red/librenderer.so",
-      "engine/red/libimgui_start.so",
-      "engine/red/liblibrary_browser.so"
+      {
+        "path": "engine/red/librenderer.so",
+        "data": null
+      },
+      {
+        "path": "engine/red/libimgui_start.so",
+        "data": null
+      },
+      {
+        "path": "engine/red/liblibrary_browser.so",
+        "data": null
+      }
     ],
     "post_scripts" : [
-      "engine/red/libscript_browser.so",
-      "engine/red/libimgui_end.so"
+      {
+        "path": "engine/red/libscript_browser.so",
+        "data": null
+      },
+      {
+        "path": "engine/red/libimgui_end.so",
+        "data": null
+      }
     ],
     "children" : [
-      "scenes"
+      "inner_scene"
     ]
   },
-  "scenes": {
+  "inner_scene": {
     "pre_scripts" : [
-      "engine/red/libscene_tree.so"
+      {
+        "path": "engine/red/libscene_tree.so",
+        "data": null
+      }
     ],
     "post_scripts" : [
       
