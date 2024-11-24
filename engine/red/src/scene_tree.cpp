@@ -76,9 +76,9 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       ImGui::PopStyleColor();
       if (open)
       {
-        for (const auto& [scene_handle, script_instance] : scene_ref->pre_scripts)
+        for (const auto& script : scene_ref->pre_scripts)
         {
-          ImGui::Text("%s (id=%lu)", script_instance.name(), static_cast<std::size_t>(scene_handle.id()));
+          ImGui::Text("%s (id=%lu)", script.instance.name(), static_cast<std::size_t>(script.handle.id()));
         }
         ImGui::TreePop();
       };
@@ -106,9 +106,9 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       ImGui::PopStyleColor();
       if (open)
       {
-        for (const auto& [scene_handle, script_instance] : scene_ref->post_scripts)
+        for (const auto& script : scene_ref->post_scripts)
         {
-          ImGui::Text("%s (id=%lu)", script_instance.name(), static_cast<std::size_t>(scene_handle.id()));
+          ImGui::Text("%s (id=%lu)", script.instance.name(), static_cast<std::size_t>(script.handle.id()));
         }
         ImGui::TreePop();
       };
@@ -129,8 +129,7 @@ bool update(scene_viewer* self, sde::game::Assets& assets, const sde::AppPropert
   ImGui::Begin("scenes");
   if (ImGui::SmallButton("new scene"))
   {
-    if (const auto ok_or_error = assets.scenes.create(SceneType::kChild, sde::string{"unamed"});
-        !ok_or_error.has_value())
+    if (const auto ok_or_error = assets.scenes.create(sde::string{"unamed"}); !ok_or_error.has_value())
     {
       SDE_LOG_ERROR("failed to create new scene");
     }

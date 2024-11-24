@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <optional>
+
 // SDE
 #include "sde/app_fwd.hpp"
 #include "sde/expected.hpp"
@@ -36,33 +39,37 @@ enum class SceneError
   kComponentAlreadyAdded,
 };
 
-enum class SceneType
+struct SceneScriptInstance : Resource<SceneScriptInstance>
 {
-  kRoot,
-  kChild
-};
-
-struct SceneData : Resource<SceneData>
-{
-  /// Type of scene
-  SceneType type;
-  /// Name of scene
-  sde::string name;
-  /// Child scenes
-  sde::vector<SceneHandle> children;
-  /// Scripts to run before children
-  sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>> pre_scripts;
-  /// Scripts to run after children
-  sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>> post_scripts;
+  /// Handle to original script
+  NativeScriptHandle handle;
+  /// Current instance of the script
+  NativeScriptInstance instance;
+  /// Path to scripts load/save data
+  std::optional<asset::path> instance_data_path;
 
   auto field_list()
   {
     return FieldList(
-      Field{"type", type},
-      Field{"name", name},
-      Field{"children", children},
-      Field{"pre_scripts", pre_scripts},
-      Field{"post_scripts", post_scripts});
+      Field{"handle", handle}, _Stub{"instance", instance}, Field{"instance_data_path", instance_data_path});
+  }
+};
+
+struct SceneData : Resource<SceneData>
+{
+  /// Name associated with this scene
+  sde::string name;
+  /// Child scenes
+  sde::vector<SceneHandle> children;
+  /// Scripts to run before children
+  sde::vector<SceneScriptInstance> pre_scripts;
+  /// Scripts to run after children
+  sde::vector<SceneScriptInstance> post_scripts;
+
+  auto field_list()
+  {
+    return FieldList(
+      Field{"children", children}, Field{"pre_scripts", pre_scripts}, Field{"post_scripts", post_scripts});
   }
 };
 
@@ -70,6 +77,9 @@ struct SceneData : Resource<SceneData>
 
 namespace sde
 {
+
+template <> struct Hasher<game::SceneScriptInstance> : ResourceHasher
+{};
 
 template <> struct ResourceCacheTypes<game::SceneCache>
 {
@@ -100,19 +110,15 @@ private:
   expected<void, SceneError> unload(SceneData& library);
 
   expected<SceneData, SceneError> generate(
-    SceneType type,
     sde::string name,
-    sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>>&& pre,
-    sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>>&& post,
+    sde::vector<SceneScriptInstance>&& pre,
+    sde::vector<SceneScriptInstance>&& post,
     sde::vector<SceneHandle>&& children);
 
-  expected<SceneData, SceneError> generate(
-    SceneType type,
-    sde::string name,
-    sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>> pre,
-    sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>> post);
+  expected<SceneData, SceneError>
+  generate(sde::string name, sde::vector<SceneScriptInstance> pre, sde::vector<SceneScriptInstance> post);
 
-  expected<SceneData, SceneError> generate(SceneType type, sde::string name);
+  expected<SceneData, SceneError> generate(sde::string name);
 };
 
 }  // namespace sde::game

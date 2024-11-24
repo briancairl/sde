@@ -29,14 +29,12 @@ namespace sde::game
 SceneCache::SceneCache(NativeScriptCache& scripts) : scripts_{std::addressof(scripts)} {}
 
 expected<SceneData, SceneError> SceneCache::generate(
-  SceneType type,
   sde::string name,
-  sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>>&& pre,
-  sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>>&& post,
+  sde::vector<SceneScriptInstance>&& pre,
+  sde::vector<SceneScriptInstance>&& post,
   sde::vector<SceneHandle>&& children)
 {
   SceneData data;
-  data.type = type;
   data.name = std::move(name);
   data.children = std::move(children);
   data.pre_scripts = std::move(pre);
@@ -48,22 +46,18 @@ expected<SceneData, SceneError> SceneCache::generate(
   return data;
 }
 
-expected<SceneData, SceneError> SceneCache::generate(
-  SceneType type,
-  sde::string name,
-  sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>> pre,
-  sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>> post)
+expected<SceneData, SceneError>
+SceneCache::generate(sde::string name, sde::vector<SceneScriptInstance> pre, sde::vector<SceneScriptInstance> post)
 {
-  return this->generate(type, std::move(name), std::move(pre), std::move(post), sde::vector<SceneHandle>{});
+  return this->generate(std::move(name), std::move(pre), std::move(post), sde::vector<SceneHandle>{});
 }
 
-expected<SceneData, SceneError> SceneCache::generate(SceneType type, sde::string name)
+expected<SceneData, SceneError> SceneCache::generate(sde::string name)
 {
   return this->generate(
-    type,
     std::move(name),
-    sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>>{},
-    sde::vector<std::pair<NativeScriptHandle, NativeScriptInstance>>{},
+    sde::vector<SceneScriptInstance>{},
+    sde::vector<SceneScriptInstance>{},
     sde::vector<SceneHandle>{});
 }
 

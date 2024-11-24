@@ -15,69 +15,55 @@
 #include "sde/game/native_script_handle.hpp"
 #include "sde/game/scene_fwd.hpp"
 #include "sde/game/scene_handle.hpp"
+#include "sde/game/scene_manifest_fwd.hpp"
 #include "sde/resource.hpp"
-#include "sde/type_name.hpp"
 
 namespace sde::game
 {
 
-enum class SceneGraphErrorType
+enum class SceneGraphErrorCode
 {
-  kInvalidRoot,
+  kInvalidSceneCreation,
+  kInvalidSceneRoot,
+  kInvalidScript,
+  kInvalidScriptData,
   kPreScriptFailure,
   kPostScriptFailure,
 };
 
-std::ostream& operator<<(std::ostream& os, SceneGraphErrorType error);
+std::ostream& operator<<(std::ostream& os, SceneGraphErrorCode error);
 
 struct SceneGraphError
 {
-  SceneGraphErrorType error_type;
-  SceneHandle handle = SceneHandle::null();
+  SceneGraphErrorCode code;
+  SceneHandle scene;
+  const char* script_name;
 };
 
-std::ostream& operator<<(std::ostream& os, SceneGraphError error);
-
-enum class SceneGraphLoadError
-{
-  kInvalidJSONPath,
-  kInvalidJSONLayout,
-  kInvalidScript,
-  kInvalidScriptData,
-  kInvalidScene,
-  kInvalidRoot
-};
-
-std::ostream& operator<<(std::ostream& os, SceneGraphLoadError error);
-
-enum class SceneGraphSaveError
-{
-
-};
-
-std::ostream& operator<<(std::ostream& os, SceneGraphLoadError error);
+std::ostream& operator<<(std::ostream& os, const SceneGraphError& error);
 
 class SceneGraph : public Resource<SceneGraph>
 {
   friend fundemental_type;
 
 public:
-  expected<void, SceneGraphError> initialize(Assets& assets, const AppProperties& properties) const;
-  expected<void, SceneGraphError> tick(Assets& assets, const AppProperties& properties) const;
+  [[nodiscard]] expected<void, SceneGraphError> initialize(const AppProperties& properties) const;
 
-  void setRoot(SceneHandle root) { root_ = root; }
+  [[nodiscard]] expected<void, SceneGraphError> tick(const AppProperties& properties) const;
 
-  static expected<SceneGraph, SceneGraphLoadError> load(Assets& assets, const asset::path& path);
+  [[nodiscard]] expected<void, SceneGraphError> load(const asset::path& directory);
 
-  static expected<void, SceneGraphSaveError> save(Assets& assets, const asset::path& path);
+  [[nodiscard]] expected<void, SceneGraphError> save(const asset::path& directory) const;
+
+  [[nodiscard]] static expected<SceneGraph, SceneGraphErrorCode> create(Assets& assets, const SceneManifest& manifest);
 
 private:
-  static expected<void, SceneGraphError>
-  initialize(const SceneHandle handle, Assets& assets, const AppProperties& properties);
+  explicit SceneGraph(Assets& assets);
 
-  static expected<void, SceneGraphError>
-  tick(const SceneHandle handle, Assets& assets, const AppProperties& properties);
+  template <typename OnVisitT>
+  [[nodiscard]] expected<void, SceneGraphError> visit(SceneHandle scene_handle, OnVisitT on_visit) const;
 
+  Assets* assets_;
   SceneHandle root_;
 
   auto field_list() { return FieldList(Field{"root", root_}); }

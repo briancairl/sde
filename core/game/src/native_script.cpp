@@ -74,13 +74,13 @@ void NativeScriptInstance::reset()
 bool NativeScriptInstance::load(IArchive& ar) const
 {
   SDE_ASSERT_TRUE(fn_.on_load);
-  return fn_.on_load(reinterpret_cast<void*>(&ar), instance_);
+  return fn_.on_load(instance_, reinterpret_cast<void*>(&ar));
 }
 
 bool NativeScriptInstance::save(OArchive& ar) const
 {
   SDE_ASSERT_TRUE(fn_.on_save);
-  return fn_.on_save(reinterpret_cast<void*>(&ar), instance_);
+  return fn_.on_save(instance_, reinterpret_cast<void*>(&ar));
 }
 
 expected<void, NativeScriptCallError>

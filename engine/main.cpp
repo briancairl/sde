@@ -6,6 +6,7 @@
 #include "sde/app.hpp"
 #include "sde/game/assets.hpp"
 #include "sde/game/scene_graph.hpp"
+#include "sde/game/scene_manifest.hpp"
 #include "sde/logging.hpp"
 #include "sde/vector.hpp"
 // #include "sde/view.hpp"
@@ -121,7 +122,15 @@ int main(int argc, char** argv)
 
   // scene_graph.setRoot(root_scene_or_error->handle);
 
-  auto scene_graph_or_error = sde::game::SceneGraph::load(assets, argv[1]);
+  auto scene_manifest_or_error = sde::game::SceneManifest::create(argv[1]);
+  if (!scene_manifest_or_error.has_value())
+  {
+    SDE_LOG_ERROR_FMT("Failed to load scene manifest: %s", argv[1]);
+    std::cerr << scene_manifest_or_error.error() << std::endl;
+    return 1;
+  }
+
+  auto scene_graph_or_error = sde::game::SceneGraph::create(assets, *scene_manifest_or_error);
   if (!scene_graph_or_error.has_value())
   {
     SDE_LOG_ERROR_FMT("Failed to load scene graph: %s", argv[1]);
@@ -129,16 +138,22 @@ int main(int argc, char** argv)
     return 1;
   }
 
+  if (auto ok_or_error = scene_graph_or_error->load("/tmp"); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR("Script loading failed");
+    std::cerr << ok_or_error.error() << std::endl;
+    return 1;
+  }
 
   app_or_error->spin(
     [&](const auto& app_properties) {
-      if (const auto ok_or_error = scene_graph_or_error->initialize(assets, app_properties); ok_or_error)
+      if (const auto ok_or_error = scene_graph_or_error->initialize(app_properties); ok_or_error)
       {
         return AppDirective::kContinue;
       }
       else
       {
-        SDE_LOG_INFO_FMT("%d", static_cast<int>(ok_or_error.error().error_type));
+        std::cerr << ok_or_error.error() << std::endl;
       }
       return AppDirective::kClose;
     },
@@ -148,18 +163,32 @@ int main(int argc, char** argv)
       //     pos.center += state.velocity * dt;
       //   });
 
-      if (const auto ok_or_error = scene_graph_or_error->tick(assets, app_properties); ok_or_error)
+      if (const auto ok_or_error = scene_graph_or_error->tick(app_properties); ok_or_error)
       {
         return AppDirective::kContinue;
       }
       else
       {
-        SDE_LOG_INFO_FMT("%d", static_cast<int>(ok_or_error.error().error_type));
+        std::cerr << ok_or_error.error() << std::endl;
       }
       return AppDirective::kClose;
     });
 
-  SDE_LOG_INFO("done.");
+  if (auto ok_or_error = scene_graph_or_error->save("/tmp"); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR("Script saving failed");
+    std::cerr << ok_or_error.error() << std::endl;
+    return 1;
+  }
+
+  if (auto ok_or_error = scene_manifest_or_error->save(sde::asset::path{argv[1]}); ok_or_error.has_value())
+  {
+    SDE_LOG_INFO_FMT("Saved to: %s", argv[1]);
+  }
+  else
+  {
+    SDE_LOG_ERROR_FMT("Failed to save: %s", argv[1]);
+  }
 
 
   // SDE_ASSERT_OK(scene_graph.save(argv[1]));

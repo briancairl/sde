@@ -1,14 +1,13 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file scene_fwd.hpp
+ * @file scene_manifest_fwd.hpp
  */
 #pragma once
 
 namespace sde::game
 {
-struct SceneData;
-class Scene;
-struct SceneHandle;
-class SceneCache;
+class SceneManifest;
+struct SceneManifestEntry;
+struct SceneScriptData;
 }  // namespace sde::game
