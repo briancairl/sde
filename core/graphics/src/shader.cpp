@@ -357,8 +357,8 @@ expected<void, ShaderError> compile(Shader& shader, std::string_view source)
     .has_geom = !source_parts.geom.empty(),
   };
 
-  SDE_ASSERT(components.has_vert, "shader source missing vertex part");
-  SDE_ASSERT(components.has_frag, "shader source missing fragment part");
+  SDE_ASSERT(components.has_vert) << "shader source missing vertex part";
+  SDE_ASSERT(components.has_frag) << "shader source missing fragment part";
 
   ShaderVariables variables;
 

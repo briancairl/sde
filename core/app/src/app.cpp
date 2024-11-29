@@ -96,6 +96,36 @@ void glfwImplDropCallback(GLFWwindow* glfw_window, int path_count, const char* p
 
 }  // namespace
 
+std::ostream& operator<<(std::ostream& os, AppDirective directive)
+{
+  switch (directive)
+  {
+  case AppDirective::kContinue:
+    return os << "Continue";
+  case AppDirective::kReset:
+    return os << "Reset";
+  case AppDirective::kClose:
+    return os << "Close";
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, AppError error)
+{
+  switch (error)
+  {
+  case AppError::kWindowInvalid:
+    return os << "WindowInvalid";
+  case AppError::kWindowCreationFailure:
+    return os << "WindowCreationFailure";
+  case AppError::kSoundDeviceInvalid:
+    return os << "SoundDeviceInvalid";
+  case AppError::kSoundDeviceCreationFailure:
+    return os << "SoundDeviceCreationFailure";
+  }
+  return os;
+}
+
 expected<App, AppError> App::create(Window&& window, SoundDevice&& sound_device)
 {
   if (window.isNull())

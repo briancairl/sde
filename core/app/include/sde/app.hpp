@@ -8,6 +8,7 @@
 // C++ Standard Library
 #include <chrono>
 #include <functional>
+#include <iosfwd>
 
 // SDE
 #include "sde/app_fwd.hpp"
@@ -29,6 +30,8 @@ enum class AppDirective
   kClose
 };
 
+std::ostream& operator<<(std::ostream& os, AppDirective directive);
+
 enum class AppError
 {
   kWindowInvalid,
@@ -36,6 +39,8 @@ enum class AppError
   kSoundDeviceInvalid,
   kSoundDeviceCreationFailure,
 };
+
+std::ostream& operator<<(std::ostream& os, AppError error);
 
 class App
 {

@@ -43,7 +43,7 @@ bool glfwTryFirstInit()
 #endif  // SDE_GLFW_DEBUG
 
   SDE_LOG_INFO("Initializing GLFW...");
-  SDE_ASSERT(glfwInit(), "Failed to initialize GLFW ");
+  SDE_ASSERT(glfwInit()) << "Failed to initialize GLFW";
   SDE_LOG_INFO("Initialized GLFW");
 
   // Decide GL+GLSL versions
@@ -101,7 +101,7 @@ expected<Window, WindowError> Window::create(const WindowOptions& options)
 
   if (glfw_initialized_on_this_call)
   {
-    SDE_ASSERT(Window::try_backend_initialization(), "Failed to load OpenGL (via glad)");
+    SDE_ASSERT(Window::try_backend_initialization()) << "Failed to load OpenGL (via glad)";
     SDE_LOG_INFO("Loaded OpenGL (via glad)");
   }
   else

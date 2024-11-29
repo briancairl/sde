@@ -4,10 +4,14 @@
  * @file logging.hpp
  */
 #ifdef SDE_COMMON_LOG
-#error("Detected double include of assert.hpp")
+#error("Detected double include of logging.hpp")
 #else
 #define SDE_COMMON_LOG
 
+// C++ Standard Library
+#include <iosfwd>
+
+// SDE
 #include "sde/format.hpp"
 
 namespace sde
@@ -18,7 +22,48 @@ enum class LogSeverity
   kDebug,
   kInfo,
   kWarn,
-  kError
+  kError,
+  kFatal
+};
+
+std::ostream& operator<<(std::ostream& os, LogSeverity severity);
+
+struct LogFileInfo
+{
+  LogSeverity severity;
+  const char* file;
+  int line;
+};
+
+std::ostream& operator<<(std::ostream& os, const LogFileInfo& info);
+
+class Abort
+{
+public:
+  ~Abort();
+
+  Abort();
+  explicit Abort(std::ostream* target);
+
+  Abort(Abort&& other);
+  Abort& operator=(Abort&& other);
+
+  void swap(Abort& other);
+
+  template <typename T> Abort& operator<<(T&& obj)
+  {
+    if (os_ != nullptr)
+    {
+      (*os_) << std::forward<T>(obj);
+    }
+    return *this;
+  }
+
+private:
+  Abort(const Abort& other) = delete;
+  Abort& operator=(const Abort& other) = delete;
+
+  std::ostream* os_;
 };
 
 }  // namespace sde
@@ -26,9 +71,12 @@ enum class LogSeverity
 #ifdef SDE_LOGGING_DISABLED
 
 #define SDE_LOG_FMT(severity, fmt, ...) (void)0
-#define SDE_LOG(severity, text) (void)0
+#define SDE_LOG(severity, msg) (void)0
 
 #else
+
+#define SDE_LOG_GENERATE_FILE_INFO(severity)                                                                           \
+  ::sde::LogFileInfo { severity, __FILE__, __LINE__ }
 
 // C++ Standard Library
 #include <cstdio>
@@ -38,7 +86,7 @@ enum class LogSeverity
 #define SDE_LOG_FMT(severity, fmt, ...)                                                                                \
   std::fprintf(stderr, sde::format("[SDE LOG] (%%s:%%d) %s\n", fmt), __FILE__, __LINE__, __VA_ARGS__)
 
-#define SDE_LOG(severity, text) SDE_LOG_FMT(severity, "%s", text)
+#define SDE_LOG(severity, msg) SDE_LOG_FMT(severity, "%s", msg)
 
 #endif  // SDE_LOGGING_DISABLED
 
@@ -58,72 +106,40 @@ enum class LogSeverity
   }
 
 #if defined(NDEBUG) || defined(_NDEBUG)
-#define SDE_LOG_DEBUG(text) (void)0
+#define SDE_LOG_DEBUG(msg) (void)0
 #else
-#define SDE_LOG_DEBUG(text) SDE_LOG(::sde::LogSeverity::kDebug, text)
+#define SDE_LOG_DEBUG(msg) SDE_LOG(::sde::LogSeverity::kDebug, msg)
 #endif
 
-#define SDE_LOG_INFO(text) SDE_LOG(::sde::LogSeverity::kInfo, text)
-#define SDE_LOG_WARN(text) SDE_LOG(::sde::LogSeverity::kWarn, text)
-#define SDE_LOG_ERROR(text) SDE_LOG(::sde::LogSeverity::kError, text)
-#define SDE_LOG_FATAL(text) SDE_LOG(::sde::LogSeverity::kError, text);
+#define SDE_STR_EXPR(x) #x
+
+#define SDE_LOG_INFO(msg) SDE_LOG(::sde::LogSeverity::kInfo, msg)
+#define SDE_LOG_WARN(msg) SDE_LOG(::sde::LogSeverity::kWarn, msg)
+#define SDE_LOG_ERROR(msg) SDE_LOG(::sde::LogSeverity::kError, msg)
+#define SDE_LOG_FATAL(msg) SDE_LOG(::sde::LogSeverity::kError, msg);
+
+#define SDE_FAIL() sde::Abort{} << SDE_LOG_GENERATE_FILE_INFO(::sde::LogSeverity::kFatal) << "\n\n"
+#define SDE_ASSERT(condition)                                                                                          \
+  if (!condition)                                                                                                      \
+  SDE_FAIL() << "cond: " << SDE_STR_EXPR(condition) << "\nexpl: "
 
 
-#define SDE_ASSERT_MSG(fmt, ...) std::fprintf(stderr, fmt, __VA_ARGS__)
-#define SDE_ASSERT_MSG_COND(cond, fmt, ...)                                                                            \
-  if (!(cond))                                                                                                         \
-  {                                                                                                                    \
-    SDE_ASSERT_MSG(fmt, __VA_ARGS__);                                                                                  \
-    std::abort();                                                                                                      \
-  }
-#define SDE_ASSERT(cond, message)                                                                                      \
-  if (!(cond))                                                                                                         \
-  {                                                                                                                    \
-    SDE_ASSERT_MSG(                                                                                                    \
-      "\n***RUNTIME ASSERTION FAILED***\n\ncondition : %s\nmessage   : %s\nfile      : %s:%d\n",                       \
-      #cond,                                                                                                           \
-      message,                                                                                                         \
-      __FILE__,                                                                                                        \
-      __LINE__);                                                                                                       \
-    std::abort();                                                                                                      \
-  }
+#define SDE_ASSERT_OK(expected) SDE_ASSERT(expected.has_value()) << expected.error() << "\n\n      "
+#define SDE_ASSERT_NULL(val_ptr) SDE_ASSERT(val_ptr == nullptr)
+#define SDE_ASSERT_NON_NULL(val_ptr) SDE_ASSERT(val_ptr != nullptr)
+#define SDE_ASSERT_TRUE(val_bool) SDE_ASSERT(static_cast<bool>(val_bool))
+#define SDE_ASSERT_FALSE(val_bool) SDE_ASSERT(!static_cast<bool>(val_bool))
+#define SDE_ASSERT_EQ(val_lhs, val_rhs) SDE_ASSERT((val_lhs == val_rhs))
+#define SDE_ASSERT_NE(val_lhs, val_rhs) SDE_ASSERT((val_lhs != val_rhs))
+#define SDE_ASSERT_LT(val_lhs, val_rhs) SDE_ASSERT((val_lhs < val_rhs))
+#define SDE_ASSERT_LE(val_lhs, val_rhs) SDE_ASSERT((val_lhs <= val_rhs))
+#define SDE_ASSERT_GT(val_lhs, val_rhs) SDE_ASSERT((val_lhs > val_rhs))
+#define SDE_ASSERT_GE(val_lhs, val_rhs) SDE_ASSERT((val_lhs >= val_rhs))
 
-#define SDE_ASSERT_NULL_MSG(val_ptr, msg) SDE_ASSERT(val_ptr == nullptr, msg)
-#define SDE_ASSERT_NON_NULL_MSG(val_ptr, msg) SDE_ASSERT(val_ptr != nullptr, msg)
-#define SDE_ASSERT_TRUE_MSG(val_bool, msg) SDE_ASSERT(static_cast<bool>(val_bool), msg)
-#define SDE_ASSERT_FALSE_MSG(val_bool, msg) SDE_ASSERT(!static_cast<bool>(val_bool), msg)
-#define SDE_ASSERT_EQ_MSG(val_lhs, val_rhs, msg) SDE_ASSERT((val_lhs == val_rhs), msg)
-#define SDE_ASSERT_NE_MSG(val_lhs, val_rhs, msg) SDE_ASSERT((val_lhs != val_rhs), msg)
-#define SDE_ASSERT_LT_MSG(val_lhs, val_rhs, msg) SDE_ASSERT((val_lhs < val_rhs), msg)
-#define SDE_ASSERT_LE_MSG(val_lhs, val_rhs, msg) SDE_ASSERT((val_lhs <= val_rhs), msg)
-#define SDE_ASSERT_GT_MSG(val_lhs, val_rhs, msg) SDE_ASSERT((val_lhs > val_rhs), msg)
-#define SDE_ASSERT_GE_MSG(val_lhs, val_rhs, msg) SDE_ASSERT((val_lhs >= val_rhs), msg)
-
-#define SDE_STR(x) #x
-#define SDE_ASSERT_OK(expected)                                                                                        \
-  SDE_ASSERT_MSG_COND(expected.has_value(), "[SDE] %s:%d : (%s) failed\n", __FILE__, __LINE__, SDE_STR(expected))
-
-#define SDE_ASSERT_NULL(val_ptr) SDE_ASSERT_NULL_MSG(val_ptr, "expected pointer to have NULL value")
-#define SDE_ASSERT_NON_NULL(val_ptr) SDE_ASSERT_NON_NULL_MSG(val_ptr, "expected pointer to have non-NULL value")
-#define SDE_ASSERT_TRUE(val_bool) SDE_ASSERT_TRUE_MSG(val_bool, "expected expression to evaluate to TRUE")
-#define SDE_ASSERT_FALSE(val_bool) SDE_ASSERT_FALSE_MSG(val_bool, "expected expression to evaluate to FALSE")
-#define SDE_ASSERT_EQ(val_lhs, val_rhs) SDE_ASSERT_EQ_MSG(val_lhs, val_rhs, "expected values to be equal")
-#define SDE_ASSERT_NE(val_lhs, val_rhs) SDE_ASSERT_NE_MSG(val_lhs, val_rhs, "expected values to be unequal")
-#define SDE_ASSERT_LT(val_lhs, val_rhs)                                                                                \
-  SDE_ASSERT_LT_MSG(val_lhs, val_rhs, "expected left value to be less than right value")
-#define SDE_ASSERT_LE(val_lhs, val_rhs)                                                                                \
-  SDE_ASSERT_LE_MSG(val_lhs, val_rhs, "expected left value to be less or equal to than right value")
-#define SDE_ASSERT_GT(val_lhs, val_rhs)                                                                                \
-  SDE_ASSERT_GT_MSG(val_lhs, val_rhs, "expected left value to be greater than right value")
-#define SDE_ASSERT_GE(val_lhs, val_rhs)                                                                                \
-  SDE_ASSERT_GE_MSG(val_lhs, val_rhs, "expected left value to be greater than or equal to right value")
-
-#define SDE_FAIL(text)                                                                                                 \
-  SDE_LOG_FATAL(text);                                                                                                 \
-  std::abort();
 #define SDE_UNREACHABLE() __builtin_unreachable()
-#define SDE_SHOULD_NEVER_HAPPEN(text)                                                                                  \
-  SDE_FAIL(text);                                                                                                      \
+#define SDE_SHOULD_NEVER_HAPPEN(reason)                                                                                \
+  SDE_FAIL() << reason;                                                                                                \
   SDE_UNREACHABLE();
+
 
 #endif  // SDE_COMMON_LOG

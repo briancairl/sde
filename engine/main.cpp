@@ -58,7 +58,7 @@ int main(int argc, char** argv)
   SDE_LOG_INFO("starting...");
 
   auto app_or_error = App::create({.initial_size = {1000, 500}});
-  SDE_ASSERT_TRUE(app_or_error.has_value());
+  SDE_ASSERT_OK(app_or_error);
 
   // game::Scene scene;
 
@@ -123,27 +123,12 @@ int main(int argc, char** argv)
   // scene_graph.setRoot(root_scene_or_error->handle);
 
   auto scene_manifest_or_error = sde::game::SceneManifest::create(argv[1]);
-  if (!scene_manifest_or_error.has_value())
-  {
-    SDE_LOG_ERROR_FMT("Failed to load scene manifest: %s", argv[1]);
-    std::cerr << scene_manifest_or_error.error() << std::endl;
-    return 1;
-  }
+  SDE_ASSERT_OK(scene_manifest_or_error);
 
   auto scene_graph_or_error = sde::game::SceneGraph::create(assets, *scene_manifest_or_error);
-  if (!scene_graph_or_error.has_value())
-  {
-    SDE_LOG_ERROR_FMT("Failed to load scene graph: %s", argv[1]);
-    std::cerr << scene_graph_or_error.error() << std::endl;
-    return 1;
-  }
+  SDE_ASSERT_OK(scene_manifest_or_error);
 
-  if (auto ok_or_error = scene_graph_or_error->load("/tmp"); !ok_or_error.has_value())
-  {
-    SDE_LOG_ERROR("Script loading failed");
-    std::cerr << ok_or_error.error() << std::endl;
-    return 1;
-  }
+  SDE_ASSERT_OK(scene_graph_or_error->load("/tmp")) << "failed to load script";
 
   app_or_error->spin(
     [&](const auto& app_properties) {
@@ -174,24 +159,8 @@ int main(int argc, char** argv)
       return AppDirective::kClose;
     });
 
-  if (auto ok_or_error = scene_graph_or_error->save("/tmp"); !ok_or_error.has_value())
-  {
-    SDE_LOG_ERROR("Script saving failed");
-    std::cerr << ok_or_error.error() << std::endl;
-    return 1;
-  }
-
-  if (auto ok_or_error = scene_manifest_or_error->save(sde::asset::path{argv[1]}); ok_or_error.has_value())
-  {
-    SDE_LOG_INFO_FMT("Saved to: %s", argv[1]);
-  }
-  else
-  {
-    SDE_LOG_ERROR_FMT("Failed to save: %s", argv[1]);
-  }
-
-
-  // SDE_ASSERT_OK(scene_graph.save(argv[1]));
+  SDE_ASSERT_OK(scene_graph_or_error->save("/tmp"));
+  SDE_ASSERT_OK(scene_manifest_or_error->save(sde::asset::path{argv[1]}));
 
   return 0;
 }

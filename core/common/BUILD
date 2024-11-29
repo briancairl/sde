@@ -36,7 +36,13 @@ cc_library(
 
 cc_library(
   name="logging",
-  hdrs=["include/sde/logging.hpp"],
+  hdrs=[
+    "include/sde/format.hpp",
+    "include/sde/logging.hpp"
+  ],
+  srcs=[
+    "src/logging.cpp",
+  ],
   strip_include_prefix="include",
   deps=[":build"],
   visibility=["//visibility:public"]
@@ -96,7 +102,6 @@ cc_library(
   name="core",
   hdrs=[
     "include/sde/crtp.hpp",
-    "include/sde/format.hpp",
     "include/sde/overloaded.hpp",
     "include/sde/hash.hpp",
     "include/sde/hash_io.hpp",
