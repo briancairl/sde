@@ -1,119 +1,87 @@
-// C++ Standard Library
-#include <optional>
-#include <ostream>
+#define SDE_SCRIPT_NAME "audio_manager"
 
 // ImGui
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
-#include <imgui_internal.h>
 
 // SDE
 #include "sde/audio/mixer.hpp"
-#include "sde/game/script_impl.hpp"
-#include "sde/logging.hpp"
-
-// RED
-#include "red/audio_manager.hpp"
-#include "red/imgui_common.hpp"
+#include "sde/game/native_script_runtime.hpp"
 
 using namespace sde;
 using namespace sde::game;
 using namespace sde::audio;
 
-
-class AudioManager final : public ScriptRuntime
+struct SoundHandleHash
 {
-public:
-  AudioManager() :
-      ScriptRuntime{"AudioManager"},
-      mixer_{
-
-      }
-  {}
-
-private:
-  std::optional<Mixer> mixer_;
-
-  struct SoundHandleHash
-  {
-    std::size_t operator()(const SoundHandle& handle) const { return handle.id(); }
-  };
-
-  std::unordered_map<SoundHandle, TrackPlayback, SoundHandleHash> playing_;
-
-  bool onLoad(IArchive& ar) override
-  {
-    using namespace sde::serial;
-    return true;
-  }
-
-  bool onSave(OArchive& ar) const override
-  {
-    using namespace sde::serial;
-    return true;
-  }
-
-  bool onInitialize(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
-  {
-    auto mixer_or_error = Mixer::create(app.sound_device);
-    if (!mixer_or_error.has_value())
-    {
-      SDE_LOG_ERROR("Failed to create mixer");
-      return false;
-    }
-    mixer_.emplace(std::move(mixer_or_error).value());
-    SDE_LOG_DEBUG("Created mixer");
-    return true;
-  }
-
-  void onEdit(SharedAssets& assets, AppState& app_state, const AppProperties& app)
-  {
-    if (!assets->contains<ImGuiContext*>())
-    {
-      return;
-    }
-
-    ImGui::Begin("sounds");
-    for (const auto& [handle, sound] : assets.audio.sounds)
-    {
-      ImGui::PushID(handle.id());
-      ImGui::Text("sound[%lu]", handle.id());
-      if (auto itr = playing_.find(handle); itr != std::end(playing_))
-      {
-        if (ImGui::Button("stop") or !itr->second.isValid())
-        {
-          itr->second.stop();
-          playing_.erase(itr);
-        }
-        else if (auto track = itr->second.track(); track->stopped())
-        {
-          playing_.erase(itr);
-        }
-        else if (float p = track->progress(); ImGui::SameLine(), ImGui::SliderFloat("##progress", &p, 0, 1))
-        {
-          track->jump(p);
-        }
-      }
-      else if (ImGui::ArrowButton("play", ImGuiDir_Right))
-      {
-        if (auto target_or_error = ListenerTarget::create(*mixer_, 0))
-        {
-          if (auto playback_or_error = target_or_error->set(sound.value))
-          {
-            playing_.emplace(handle, std::move(playback_or_error).value());
-          }
-        }
-      }
-      ImGui::PopID();
-    }
-    ImGui::End();
-  }
-
-  expected<void, ScriptError> onUpdate(SharedAssets& assets, AppState& app_state, const AppProperties& app) override
-  {
-    onEdit(assets, app_state, app);
-    return {};
-  }
+  std::size_t operator()(const SoundHandle& handle) const { return handle.id(); }
 };
 
-std::unique_ptr<ScriptRuntime> _AudioManager() { return std::make_unique<AudioManager>(); }
+struct audio_manager
+{
+  std::optional<Mixer> mixer;
+  std::unordered_map<SoundHandle, TrackPlayback, SoundHandleHash> sound_playing;
+};
+
+bool load(audio_manager* self, sde::game::IArchive& ar) { return true; }
+
+bool save(audio_manager* self, sde::game::OArchive& ar) { return true; }
+
+bool initialize(audio_manager* self, sde::game::Assets& assets, const sde::AppProperties& app)
+{
+  auto mixer_or_error = Mixer::create(app.sound_device);
+
+  if (!mixer_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << mixer_or_error.error();
+    return false;
+  }
+
+  {
+    SDE_LOG_DEBUG() << "Created mixer";
+    self->mixer.emplace(std::move(mixer_or_error).value());
+    return true;
+  }
+}
+
+bool update(audio_manager* self, sde::game::Assets& assets, const sde::AppProperties& app)
+{
+  ImGui::Begin("sounds");
+  for (const auto& [handle, sound] : assets.audio.sounds)
+  {
+    ImGui::PushID(handle.id());
+    ImGui::Text("sound[%lu]", handle.id());
+    if (auto itr = self->sound_playing.find(handle); itr != std::end(self->sound_playing))
+    {
+      if (ImGui::Button("stop") or !itr->second.isValid())
+      {
+        itr->second.stop();
+        self->sound_playing.erase(itr);
+      }
+      else if (auto track = itr->second.track(); track->stopped())
+      {
+        self->sound_playing.erase(itr);
+      }
+      else if (float p = track->progress(); ImGui::SameLine(), ImGui::SliderFloat("##progress", &p, 0, 1))
+      {
+        track->jump(p);
+      }
+    }
+    else if (ImGui::ArrowButton("play", ImGuiDir_Right))
+    {
+      if (auto target_or_error = ListenerTarget::create(*self->mixer, 0))
+      {
+        if (auto playback_or_error = target_or_error->set(sound.value))
+        {
+          self->sound_playing.emplace(handle, std::move(playback_or_error).value());
+        }
+      }
+    }
+    ImGui::PopID();
+  }
+  ImGui::End();
+  return true;
+}
+
+
+SDE_NATIVE_SCRIPT__REGISTER_AUTO(audio_manager);

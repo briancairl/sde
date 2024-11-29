@@ -159,7 +159,10 @@ int main(int argc, char** argv)
     });
 
   SDE_ASSERT_OK(scene_graph_or_error->save("/tmp"));
-  SDE_ASSERT_OK(scene_graph_or_error->manifest()->save(sde::asset::path{argv[1]}));
+
+  auto updated_manifest_or_error = scene_graph_or_error->manifest();
+  SDE_ASSERT_OK(updated_manifest_or_error);
+  SDE_ASSERT_OK(updated_manifest_or_error->save(sde::asset::path{argv[1]}));
 
   return 0;
 }

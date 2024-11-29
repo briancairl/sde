@@ -4,7 +4,16 @@
         "inner_scene": {
             "children": [],
             "post_scripts": [],
-            "pre_scripts": []
+            "pre_scripts": [
+                {
+                    "data": "engine_red_src_drag_and_drop_loader_cpp.bin",
+                    "path": "/home/brian/.cache/bazel/_bazel_brian/c4bb606086701df10ecedeedab7c5e0e/execroot/_main/bazel-out/k8-opt/bin/engine/engine.runfiles/_main/engine/red/libdrag_and_drop_loader.so"
+                },
+                {
+                    "data": "audio_manager.bin",
+                    "path": "/home/brian/.cache/bazel/_bazel_brian/c4bb606086701df10ecedeedab7c5e0e/execroot/_main/bazel-out/k8-opt/bin/engine/engine.runfiles/_main/engine/red/libaudio_manager.so"
+                }
+            ]
         },
         "root": {
             "children": [

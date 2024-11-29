@@ -1,3 +1,5 @@
+#define SDE_SCRIPT_NAME "renderer"
+
 // C++ Standard Library
 #include <optional>
 #include <ostream>

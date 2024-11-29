@@ -1,3 +1,5 @@
+#define SDE_SCRIPT_NAME "drag_and_drop_loader"
+
 // C++ Standard Library
 #include <ostream>
 

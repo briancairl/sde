@@ -68,9 +68,19 @@ cc_binary(
   visibility=["//visibility:public"]
 )
 
+cc_binary(
+  name="audio_manager",
+  srcs=["src/audio_manager.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+
 cc_library(
   name="builtin_native_scripts",
   deps=[
+    ":audio_manager",
     ":drag_and_drop_loader",
     ":renderer",
     ":imgui_start",

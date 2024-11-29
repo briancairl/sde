@@ -1,3 +1,5 @@
+#define SDE_SCRIPT_NAME "imgui_end"
+
 // C++ Standard Library
 #include <ostream>
 
