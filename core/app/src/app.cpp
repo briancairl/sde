@@ -100,12 +100,9 @@ std::ostream& operator<<(std::ostream& os, AppDirective directive)
 {
   switch (directive)
   {
-  case AppDirective::kContinue:
-    return os << "Continue";
-  case AppDirective::kReset:
-    return os << "Reset";
-  case AppDirective::kClose:
-    return os << "Close";
+    SDE_OSTREAM_ENUM_CASE(AppDirective::kContinue)
+    SDE_OSTREAM_ENUM_CASE(AppDirective::kReset)
+    SDE_OSTREAM_ENUM_CASE(AppDirective::kClose)
   }
   return os;
 }
@@ -114,14 +111,10 @@ std::ostream& operator<<(std::ostream& os, AppError error)
 {
   switch (error)
   {
-  case AppError::kWindowInvalid:
-    return os << "WindowInvalid";
-  case AppError::kWindowCreationFailure:
-    return os << "WindowCreationFailure";
-  case AppError::kSoundDeviceInvalid:
-    return os << "SoundDeviceInvalid";
-  case AppError::kSoundDeviceCreationFailure:
-    return os << "SoundDeviceCreationFailure";
+    SDE_OSTREAM_ENUM_CASE(AppError::kWindowInvalid)
+    SDE_OSTREAM_ENUM_CASE(AppError::kWindowCreationFailure)
+    SDE_OSTREAM_ENUM_CASE(AppError::kSoundDeviceInvalid)
+    SDE_OSTREAM_ENUM_CASE(AppError::kSoundDeviceCreationFailure)
   }
   return os;
 }
@@ -130,7 +123,7 @@ expected<App, AppError> App::create(Window&& window, SoundDevice&& sound_device)
 {
   if (window.isNull())
   {
-    SDE_LOG_DEBUG("WindowInvalid");
+    SDE_LOG_DEBUG() << "WindowInvalid: " << window;
     return make_unexpected(AppError::kWindowInvalid);
   }
   return App{std::move(window), std::move(sound_device)};
@@ -141,14 +134,14 @@ expected<App, AppError> App::create(const WindowOptions& options)
   auto window_or_error = graphics::Window::create(options);
   if (!window_or_error.has_value())
   {
-    SDE_LOG_DEBUG("WindowCreationFailure");
+    SDE_LOG_DEBUG() << "WindowCreationFailure: " << window_or_error.error();
     return make_unexpected(AppError::kWindowCreationFailure);
   }
 
   auto audio_or_error = audio::SoundDevice::create();
   if (!audio_or_error.has_value())
   {
-    SDE_LOG_DEBUG("SoundDeviceCreationFailure");
+    SDE_LOG_DEBUG() << "SoundDeviceCreationFailure: " << audio_or_error.error();
     return make_unexpected(AppError::kSoundDeviceCreationFailure);
   }
 
@@ -217,7 +210,8 @@ void App::spin(OnStart on_start, OnUpdate on_update, const Rate spin_rate)
     const auto t_now = Clock::now();
     if (t_now > t_next)
     {
-      SDE_LOG_WARN_FMT("loop rate %e Hz not met (behind by %e s)", toHertz(spin_rate), toSeconds(t_now - t_next));
+      SDE_LOG_WARN() << "loop rate " << toHertz(spin_rate) << " Hz not met (behind by " << toSeconds(t_now - t_next)
+                     << " s)";
       t_next = t_now + spin_rate.period();
     }
     else

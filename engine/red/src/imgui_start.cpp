@@ -60,7 +60,7 @@ bool initialize(imgui_start* self, sde::game::Assets& assets, const sde::AppProp
   ImGui_ImplGlfw_InitForOpenGL(static_cast<GLFWwindow*>(app.window), true);
   ImGui_ImplOpenGL3_Init(kGLSLVersion);
 
-  SDE_LOG_INFO("ImGui initialized");
+  SDE_LOG_INFO() << "ImGui initialized";
   return true;
 }
 

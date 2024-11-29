@@ -8,12 +8,23 @@
 namespace sde::game
 {
 
+std::ostream& operator<<(std::ostream& os, LibraryError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(LibraryError::kInvalidHandle)
+    SDE_OSTREAM_ENUM_CASE(LibraryError::kLibraryMissing)
+    SDE_OSTREAM_ENUM_CASE(LibraryError::kLibraryAlreadyLoaded)
+  }
+  return os;
+}
+
 expected<void, LibraryError> LibraryCache::reload(LibraryData& library)
 {
   auto lib_or_error = dl::Library::load(library.path.string().c_str());
   if (!lib_or_error.has_value())
   {
-    SDE_LOG_ERROR_FMT("failed to open library: %s", lib_or_error.error().details);
+    SDE_LOG_ERROR() << "Failed to open library: " << lib_or_error.error();
     return make_unexpected(LibraryError::kLibraryMissing);
   }
   library.lib = std::move(lib_or_error).value();
@@ -31,7 +42,7 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
   const auto absolute_path = asset::absolute(path);
   if (asset_path_lookup_.count(absolute_path) > 0)
   {
-    SDE_LOG_ERROR("LibraryError::kLibraryAlreadyLoaded");
+    SDE_LOG_ERROR() << "LibraryAlreadyLoaded: " << SDE_NAMED(absolute_path);
     return make_unexpected(LibraryError::kLibraryAlreadyLoaded);
   }
 
@@ -48,7 +59,7 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
 
 void LibraryCache::when_created(LibraryHandle handle, const LibraryData* data)
 {
-  SDE_LOG_INFO_FMT("new library added: %s", data->path.string().c_str());
+  SDE_LOG_INFO() << "New library added: " << SDE_NAMED(data->path);
   asset_path_lookup_.emplace(
     std::piecewise_construct, std::forward_as_tuple(data->path), std::forward_as_tuple(handle, data));
 }

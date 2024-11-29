@@ -11,6 +11,8 @@
 namespace sde::dl
 {
 
+std::ostream& operator<<(std::ostream& os, const Error& error) { return os << error.details; }
+
 Library::~Library() { this->reset(); }
 
 void Library::reset()

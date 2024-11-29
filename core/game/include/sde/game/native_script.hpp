@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // SDE
 #include "sde/asset.hpp"
 #include "sde/game/library.hpp"
@@ -25,6 +28,8 @@ enum class NativeScriptCallError
   kNotInitialized,
   kNotUpdated
 };
+
+std::ostream& operator<<(std::ostream& os, NativeScriptCallError error);
 
 struct NativeScriptFn : public Resource<NativeScriptFn>
 {
@@ -147,6 +152,8 @@ enum class NativeScriptError
   kScriptLibraryInvalid,
   kScriptLibraryMissingFunction,
 };
+
+std::ostream& operator<<(std::ostream& os, NativeScriptError error);
 
 struct NativeScriptData : Resource<NativeScriptData>
 {

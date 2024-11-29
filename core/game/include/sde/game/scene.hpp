@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <iosfwd>
 #include <optional>
 
 // SDE
@@ -30,14 +31,9 @@ namespace sde::game
 enum class SceneError
 {
   kInvalidHandle,
-  kPathInvalid,
-  kPathMissingFiles,
-  kPathFailedToCreate,
-  kFailedToSave,
-  kFailedToLoad,
-  kScriptAlreadyAdded,
-  kComponentAlreadyAdded,
 };
+
+std::ostream& operator<<(std::ostream& os, SceneError error);
 
 struct SceneScriptInstance : Resource<SceneScriptInstance>
 {

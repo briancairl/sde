@@ -1,31 +1,23 @@
 // C++ Standard Library
-#include <algorithm>
-#include <fstream>
-
-/// EnTT
-#include <entt/entt.hpp>
-
-// JSON
-#include <nlohmann/json.hpp>
+#include <ostream>
 
 // SDE
 #include "sde/game/scene.hpp"
 #include "sde/logging.hpp"
 
-#include "sde/audio/assets.hpp"
-#include "sde/audio/mixer.hpp"
-#include "sde/game/assets.hpp"
-#include "sde/game/native_script.hpp"
-#include "sde/game/scene.hpp"
-#include "sde/geometry_io.hpp"
-#include "sde/resource_cache_io.hpp"
-#include "sde/resource_io.hpp"
-#include "sde/serial/std/filesystem.hpp"
-#include "sde/serial/std/vector.hpp"
-#include "sde/serialization_binary_file.hpp"
 
 namespace sde::game
 {
+
+std::ostream& operator<<(std::ostream& os, SceneError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(SceneError::kInvalidHandle)
+  }
+  return os;
+}
+
 SceneCache::SceneCache(NativeScriptCache& scripts) : scripts_{std::addressof(scripts)} {}
 
 expected<SceneData, SceneError> SceneCache::generate(
@@ -41,6 +33,7 @@ expected<SceneData, SceneError> SceneCache::generate(
   data.post_scripts = std::move(post);
   if (const auto ok_or_error = reload(data); !ok_or_error.has_value())
   {
+    SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(ok_or_error.error());
   }
   return data;

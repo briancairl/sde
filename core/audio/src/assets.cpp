@@ -9,18 +9,28 @@
 namespace sde::audio
 {
 
+std::ostream& operator<<(std::ostream& os, AssetError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedSoundDataLoading)
+    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedSoundLoading)
+  }
+  return os;
+}
+
 Assets::Assets() : sound_data{}, sounds{sound_data} {}
 
 expected<void, AssetError> Assets::refresh()
 {
   if (auto ok_or_error = sound_data.refresh(); !ok_or_error.has_value())
   {
-    SDE_LOG_DEBUG("FailedSoundDataLoading");
+    SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(AssetError::kFailedSoundDataLoading);
   }
   if (auto ok_or_error = sounds.refresh(); !ok_or_error.has_value())
   {
-    SDE_LOG_DEBUG("FailedSoundLoading");
+    SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(AssetError::kFailedSoundLoading);
   }
   return {};

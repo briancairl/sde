@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // SDE
 #include "sde/audio/sound.hpp"
 #include "sde/audio/sound_data.hpp"
@@ -18,6 +21,8 @@ enum class AssetError
   kFailedSoundDataLoading,
   kFailedSoundLoading,
 };
+
+std::ostream& operator<<(std::ostream& os, AssetError error);
 
 struct Assets : Resource<Assets>
 {

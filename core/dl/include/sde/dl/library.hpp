@@ -1,5 +1,8 @@
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // SDE
 #include "sde/expected.hpp"
 
@@ -11,6 +14,7 @@ struct Error
   const char* details;
 };
 
+std::ostream& operator<<(std::ostream& os, const Error& error);
 
 class Symbol
 {

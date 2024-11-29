@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // SDE
 #include "sde/asset.hpp"
 #include "sde/expected.hpp"
@@ -25,6 +28,8 @@ enum class FontError
   kAssetInvalid,
   kFontNotFound,
 };
+
+std::ostream& operator<<(std::ostream& os, FontError error);
 
 struct FontNativeDeleter
 {

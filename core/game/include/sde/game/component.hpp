@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // EnTT
 #include <entt/fwd.hpp>
 
@@ -31,6 +34,8 @@ enum class ComponentError
   kComponentLibraryMissingFunction,
   kComponentAlreadyLoaded
 };
+
+std::ostream& operator<<(std::ostream& os, ComponentError error);
 
 class ComponentIO : public Resource<ComponentIO>
 {

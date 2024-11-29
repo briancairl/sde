@@ -78,16 +78,11 @@ std::ostream& operator<<(std::ostream& os, SceneManifestError error)
 {
   switch (error)
   {
-  case SceneManifestError::kInvalidLoadJSONPath:
-    return os << "InvalidLoadJSONPath";
-  case SceneManifestError::kInvalidLoadJSONLayout:
-    return os << "InvalidLoadJSONLayout";
-  case SceneManifestError::kInvalidSaveJSONPath:
-    return os << "InvalidSaveJSONPath";
-  case SceneManifestError::kFailedSaveJSON:
-    return os << "kFailedSaveJSON";
-  case SceneManifestError::kRootNotInSceneGraph:
-    return os << "RootNotInSceneGraph";
+    SDE_OSTREAM_ENUM_CASE(SceneManifestError::kInvalidLoadJSONPath)
+    SDE_OSTREAM_ENUM_CASE(SceneManifestError::kInvalidLoadJSONLayout)
+    SDE_OSTREAM_ENUM_CASE(SceneManifestError::kInvalidSaveJSONPath)
+    SDE_OSTREAM_ENUM_CASE(SceneManifestError::kFailedSaveJSON)
+    SDE_OSTREAM_ENUM_CASE(SceneManifestError::kRootNotInSceneGraph)
   }
   return os;
 }

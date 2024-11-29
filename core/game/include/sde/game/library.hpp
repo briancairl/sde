@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // SDE
 #include "sde/asset.hpp"
 #include "sde/dl/library.hpp"
@@ -23,6 +26,8 @@ enum class LibraryError
   kLibraryMissing,
   kLibraryAlreadyLoaded,
 };
+
+std::ostream& operator<<(std::ostream& os, LibraryError error);
 
 struct LibraryFlags : Resource<LibraryFlags>
 {

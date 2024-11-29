@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <iosfwd>
 #include <tuple>
 
 // SDE
@@ -34,6 +35,8 @@ enum struct SoundError
   kBackendBufferCreationFailure,
   kBackendBufferTransferFailure,
 };
+
+std::ostream& operator<<(std::ostream& os, SoundError error);
 
 struct NativeSoundBufferDeleter
 {

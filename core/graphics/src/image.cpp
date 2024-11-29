@@ -45,16 +45,11 @@ std::ostream& operator<<(std::ostream& os, ImageChannels channels)
 {
   switch (channels)
   {
-  case ImageChannels::kDefault:
-    return os << "Default";
-  case ImageChannels::kGrey:
-    return os << "Grey";
-  case ImageChannels::kGreyA:
-    return os << "GreyA";
-  case ImageChannels::kRGB:
-    return os << "RGB";
-  case ImageChannels::kRGBA:
-    return os << "RGBA";
+    SDE_OSTREAM_ENUM_CASE(ImageChannels::kDefault)
+    SDE_OSTREAM_ENUM_CASE(ImageChannels::kGrey)
+    SDE_OSTREAM_ENUM_CASE(ImageChannels::kGreyA)
+    SDE_OSTREAM_ENUM_CASE(ImageChannels::kRGB)
+    SDE_OSTREAM_ENUM_CASE(ImageChannels::kRGBA)
   }
   return os;
 }
@@ -68,18 +63,12 @@ std::ostream& operator<<(std::ostream& os, ImageError error)
 {
   switch (error)
   {
-  case ImageError::kElementAlreadyExists:
-    return os << "ElementAlreadyExists";
-  case ImageError::kInvalidHandle:
-    return os << "InvalidHandle";
-  case ImageError::kAssetNotFound:
-    return os << "AssetNotFound";
-  case ImageError::kAssetInvalid:
-    return os << "AssetInvalid";
-  case ImageError::kImageNotFound:
-    return os << "ImageNotFound";
-  case ImageError::kUnsupportedBitDepth:
-    return os << "UnsupportedBitDepth";
+    SDE_OSTREAM_ENUM_CASE(ImageError::kElementAlreadyExists)
+    SDE_OSTREAM_ENUM_CASE(ImageError::kInvalidHandle)
+    SDE_OSTREAM_ENUM_CASE(ImageError::kAssetNotFound)
+    SDE_OSTREAM_ENUM_CASE(ImageError::kAssetInvalid)
+    SDE_OSTREAM_ENUM_CASE(ImageError::kImageNotFound)
+    SDE_OSTREAM_ENUM_CASE(ImageError::kUnsupportedBitDepth)
   }
   return os;
 }
@@ -97,7 +86,7 @@ expected<void, ImageError> ImageCache::reload(Image& image)
   // Check if image point is valid
   if (!asset::exists(image.path))
   {
-    SDE_LOG_DEBUG("AssetNotFound");
+    SDE_LOG_ERROR() << "AssetNotFound: " << SDE_NAMED(image.path);
     return make_unexpected(ImageError::kAssetNotFound);
   }
 
@@ -125,7 +114,7 @@ expected<void, ImageError> ImageCache::reload(Image& image)
     break;
   }
   default: {
-    SDE_LOG_DEBUG("UnsupportedBitDepth");
+    SDE_LOG_ERROR() << "UnsupportedBitDepth: " << SDE_NAMED(image.options.element_type);
     return make_unexpected(ImageError::kUnsupportedBitDepth);
   }
   }
@@ -133,11 +122,12 @@ expected<void, ImageError> ImageCache::reload(Image& image)
   // Check if image point is valid
   if (image_data_ptr == nullptr)
   {
-    SDE_LOG_DEBUG("AssetInvalid");
+    SDE_LOG_ERROR() << "AssetInvalid: " << SDE_NAMED(image.path);
     return make_unexpected(ImageError::kAssetInvalid);
   }
 
-  SDE_LOG_DEBUG_FMT("Loaded image: %s (%d x %d)", image.path.string().c_str(), height_on_load, width_on_load);
+  SDE_LOG_DEBUG() << "Loaded image: " << SDE_NAMED(image.path) << ", " << SDE_NAMED(height_on_load) << ", "
+                  << SDE_NAMED(width_on_load);
 
   // Set loaded image image
   image.options.channels = from_channel_count(channel_count_on_load);

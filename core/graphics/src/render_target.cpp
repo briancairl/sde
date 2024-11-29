@@ -16,12 +16,9 @@ std::ostream& operator<<(std::ostream& os, RenderTargetError error)
 {
   switch (error)
   {
-  case RenderTargetError::kInvalidHandle:
-    return os << "InvalidHandle";
-  case RenderTargetError::kInvalidColorAttachment:
-    return os << "InvalidColorAttachment";
-  case RenderTargetError::kElementAlreadyExists:
-    return os << "ElementAlreadyExists";
+    SDE_OSTREAM_ENUM_CASE(RenderTargetError::kInvalidHandle)
+    SDE_OSTREAM_ENUM_CASE(RenderTargetError::kInvalidColorAttachment)
+    SDE_OSTREAM_ENUM_CASE(RenderTargetError::kElementAlreadyExists)
   }
   return os;
 }
@@ -34,14 +31,14 @@ expected<void, RenderTargetError> RenderTargetCache::reload(RenderTarget& render
 {
   if (render_target.color_attachment.isNull())
   {
-    SDE_LOG_DEBUG("Default Frame Buffer");
+    SDE_LOG_DEBUG() << "Default Frame Buffer";
     render_target.native_id = NativeFrameBufferID{0};
     return {};
   }
   const auto* color_attachment = textures_->get_if(render_target.color_attachment);
   if (color_attachment == nullptr)
   {
-    SDE_LOG_DEBUG("InvalidColorAttachment");
+    SDE_LOG_ERROR() << "InvalidColorAttachment: " << SDE_NAMED(render_target.color_attachment);
     return make_unexpected(RenderTargetError::kInvalidColorAttachment);
   }
   else

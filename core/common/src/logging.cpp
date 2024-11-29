@@ -28,48 +28,51 @@ std::ostream& operator<<(std::ostream& os, LogSeverity severity)
 
 std::ostream& operator<<(std::ostream& os, const LogFileInfo& info)
 {
-  // clang-format off
-  return os << "type: " << info.severity << '\n'
-            << "file: " << info.file << ':'
-                        << info.line << '\n';
-  // clang-format on
+  return os << info.severity << ":" << info.file << ':' << info.line;
 }
+
+Log::~Log()
+{
+  if (this->isValid())
+  {
+    (*os_) << std::endl;
+  }
+}
+
+Log::Log(std::ostream* target) : os_{target} {}
+
+Log::Log() : Log{std::addressof(std::cout)} {}
+
+Log::Log(Log&& other) { this->swap(other); }
+
+Log& Log::operator=(Log&& other)
+{
+  this->swap(other);
+  return *this;
+}
+
+void Log::swap(Log& other) { std::swap(this->os_, other.os_); }
+
 
 Abort::~Abort()
 {
-  if (os_ == nullptr)
+  if (this->isValid())
   {
-    return;
-  }
-
-  {
-    (*os_) << "\n\n********** RUNTIME ASSERTION FAILED **********\n";
+    (*this) << "\n\n********** RUNTIME ASSERTION FAILED **********\n";
     std::abort();
   }
 }
 
-Abort::Abort(std::ostream* target) : os_{target}
+Abort::Abort(std::ostream* target) : Log{target}
 {
-  if (os_ == nullptr)
+  if (this->isValid())
   {
-    return;
-  }
-
-  {
-    (*os_) << "********** RUNTIME ASSERTION FAILED **********\n\n";
+    (*this) << "********** RUNTIME ASSERTION FAILED **********\n\n";
   }
 }
 
 Abort::Abort() : Abort{std::addressof(std::cerr)} {}
 
 Abort::Abort(Abort&& other) { this->swap(other); }
-
-Abort& Abort::operator=(Abort&& other)
-{
-  this->swap(other);
-  return *this;
-}
-
-void Abort::swap(Abort& other) { std::swap(this->os_, other.os_); }
 
 }  // namespace sde

@@ -371,7 +371,7 @@ expected<void, ShaderError> compile(Shader& shader, std::string_view source)
     vert_shader_id = createShaderFromSource<GL_VERTEX_SHADER>(source_parts.vert);
     if (vert_shader_id == 0)
     {
-      SDE_LOG_DEBUG("VertShaderCompilationFailure");
+      SDE_LOG_ERROR() << "VertShaderCompilationFailure: \n" << SDE_NAMED(source_parts.vert);
       return make_unexpected(ShaderError::kVertShaderCompilationFailure);
     }
   }
@@ -383,7 +383,7 @@ expected<void, ShaderError> compile(Shader& shader, std::string_view source)
     frag_shader_id = createShaderFromSource<GL_FRAGMENT_SHADER>(source_parts.frag);
     if (frag_shader_id == 0)
     {
-      SDE_LOG_DEBUG("FragShaderCompilationFailure");
+      SDE_LOG_ERROR() << "FragShaderCompilationFailure: \n" << SDE_NAMED(source_parts.frag);
       return make_unexpected(ShaderError::kFragShaderCompilationFailure);
     }
   }
@@ -395,7 +395,7 @@ expected<void, ShaderError> compile(Shader& shader, std::string_view source)
     geom_shader_id = createShaderFromSource<GL_GEOMETRY_SHADER>(source_parts.geom);
     if (geom_shader_id == 0)
     {
-      SDE_LOG_DEBUG("GeomShaderCompilationFailure");
+      SDE_LOG_ERROR() << "GeomShaderCompilationFailure: \n" << SDE_NAMED(source_parts.geom);
       return make_unexpected(ShaderError::kGeomShaderCompilationFailure);
     }
   }
@@ -423,26 +423,16 @@ std::ostream& operator<<(std::ostream& os, ShaderVariableType value_type)
 {
   switch (value_type)
   {
-  case ShaderVariableType::kInt:
-    return os << "Int";
-  case ShaderVariableType::kFloat:
-    return os << "Float";
-  case ShaderVariableType::kVec2:
-    return os << "Vec2";
-  case ShaderVariableType::kVec3:
-    return os << "Vec3";
-  case ShaderVariableType::kVec4:
-    return os << "Vec4";
-  case ShaderVariableType::kMat2:
-    return os << "Mat2";
-  case ShaderVariableType::kMat3:
-    return os << "Mat3";
-  case ShaderVariableType::kMat4:
-    return os << "Mat4";
-  case ShaderVariableType::kSampler2:
-    return os << "Sampler2";
-  case ShaderVariableType::kSampler3:
-    return os << "Sampler3";
+    SDE_OSTREAM_ENUM_CASE(ShaderVariableType::kInt)
+    SDE_OSTREAM_ENUM_CASE(ShaderVariableType::kFloat)
+    SDE_OSTREAM_ENUM_CASE(ShaderVariableType::kVec2)
+    SDE_OSTREAM_ENUM_CASE(ShaderVariableType::kVec3)
+    SDE_OSTREAM_ENUM_CASE(ShaderVariableType::kVec4)
+    SDE_OSTREAM_ENUM_CASE(ShaderVariableType::kMat2)
+    SDE_OSTREAM_ENUM_CASE(ShaderVariableType::kMat3)
+    SDE_OSTREAM_ENUM_CASE(ShaderVariableType::kMat4)
+    SDE_OSTREAM_ENUM_CASE(ShaderVariableType::kSampler2)
+    SDE_OSTREAM_ENUM_CASE(ShaderVariableType::kSampler3)
   }
   return os;
 }
@@ -466,20 +456,13 @@ std::ostream& operator<<(std::ostream& os, ShaderError error)
 {
   switch (error)
   {
-  case ShaderError::kElementAlreadyExists:
-    return os << "ElementAlreadyExists";
-  case ShaderError::kInvalidHandle:
-    return os << "InvalidHandle";
-  case ShaderError::kAssetNotFound:
-    return os << "AssetNotFound";
-  case ShaderError::kLinkageFailure:
-    return os << "LinkageFailure";
-  case ShaderError::kVertShaderCompilationFailure:
-    return os << "VertShaderCompilationFailure";
-  case ShaderError::kFragShaderCompilationFailure:
-    return os << "FragShaderCompilationFailure";
-  case ShaderError::kGeomShaderCompilationFailure:
-    return os << "GeomShaderCompilationFailure";
+    SDE_OSTREAM_ENUM_CASE(ShaderError::kElementAlreadyExists)
+    SDE_OSTREAM_ENUM_CASE(ShaderError::kInvalidHandle)
+    SDE_OSTREAM_ENUM_CASE(ShaderError::kAssetNotFound)
+    SDE_OSTREAM_ENUM_CASE(ShaderError::kLinkageFailure)
+    SDE_OSTREAM_ENUM_CASE(ShaderError::kVertShaderCompilationFailure)
+    SDE_OSTREAM_ENUM_CASE(ShaderError::kFragShaderCompilationFailure)
+    SDE_OSTREAM_ENUM_CASE(ShaderError::kGeomShaderCompilationFailure)
   }
   return os;
 }
@@ -530,7 +513,7 @@ bool hasUniform(const Shader& info, std::string_view key, ShaderVariableType typ
 
 void NativeShaderDeleter::operator()(native_shader_id_t id) const
 {
-  SDE_LOG_DEBUG_FMT("glDeleteTextures(1, &%u)", id);
+  SDE_LOG_DEBUG() << "glDeleteTextures(1, &" << id << ')';
   glDeleteTextures(1, &id);
 }
 
@@ -539,12 +522,12 @@ expected<void, ShaderError> ShaderCache::reload(Shader& shader)
   // Check if image point is valid
   if (!asset::exists(shader.path))
   {
-    SDE_LOG_DEBUG("AssetNotFound");
+    SDE_LOG_ERROR() << "AssetNotFound: " << SDE_NAMED(shader.path);
     return make_unexpected(ShaderError::kAssetNotFound);
   }
 
   std::ifstream ifs{shader.path};
-  SDE_LOG_INFO_FMT("shader loaded from disk: %s", shader.path.string().c_str());
+  SDE_LOG_INFO() << "Shader loaded from disk: " << SDE_NAMED(shader.path);
   std::stringstream shader_source_code;
   shader_source_code << ifs.rdbuf();
   return compile(shader, shader_source_code.str());
@@ -558,7 +541,7 @@ expected<void, ShaderError> ShaderCache::unload(Shader& shader)
 
 expected<Shader, ShaderError> ShaderCache::generate(const asset::path& path)
 {
-  SDE_LOG_INFO_FMT("loading: %s", path.string().c_str());
+  SDE_LOG_INFO() << "Loading: " << SDE_NAMED(path);
   Shader shader{.path = path, .components = {}, .variables = {}, .native_id = NativeShaderID{0}};
   if (auto ok_or_error = reload(shader); !ok_or_error.has_value())
   {

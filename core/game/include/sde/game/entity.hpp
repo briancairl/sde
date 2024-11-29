@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <iosfwd>
 #include <string>
 
 // EnTT
@@ -33,6 +34,8 @@ enum class EntityError
   kInvalidHandle,
   kCreationFailure,
 };
+
+std::ostream& operator<<(std::ostream& os, EntityError error);
 
 struct EntityData : Resource<EntityData>
 {

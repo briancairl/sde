@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // SDE
 #include "sde/asset.hpp"
 #include "sde/expected.hpp"
@@ -70,6 +73,8 @@ enum class TypeSetError
   kGlyphRenderingFailure,
   kGlyphAtlasTextureCreationFailed,
 };
+
+std::ostream& operator<<(std::ostream& os, TypeSetError error);
 
 }  // namespace sde::graphics
 

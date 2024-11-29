@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <iosfwd>
 #include <optional>
 
 // SDE
@@ -33,6 +34,8 @@ enum class AssetError
   kFailedTypeSetLoading,
   kFailedRenderTargetLoading,
 };
+
+std::ostream& operator<<(std::ostream& os, AssetError error);
 
 struct Assets : Resource<Assets>
 {

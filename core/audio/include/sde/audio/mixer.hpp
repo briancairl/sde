@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // SDE
 #include "sde/audio/sound_device.hpp"
 #include "sde/audio/sound_fwd.hpp"
@@ -109,6 +112,8 @@ enum class ListenerError
   kBackendTrackCreationFailure,
 };
 
+std::ostream& operator<<(std::ostream& os, ListenerError error);
+
 struct ListenerState : Resource<ListenerState>
 {
   float gain = 0.5F;
@@ -172,6 +177,7 @@ enum class ListenerTargetError
   kBackendListenerContextSwitch,
 };
 
+std::ostream& operator<<(std::ostream& os, ListenerTargetError error);
 
 class ListenerTarget
 {
@@ -215,6 +221,8 @@ enum class MixerError
   kListenerConfigInvalid,
   kListenerCreationFailure,
 };
+
+std::ostream& operator<<(std::ostream& os, MixerError error);
 
 /**
  * @brief High-level interface for sound playback

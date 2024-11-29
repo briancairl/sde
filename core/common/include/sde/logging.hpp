@@ -30,14 +30,46 @@ std::ostream& operator<<(std::ostream& os, LogSeverity severity);
 
 struct LogFileInfo
 {
+  /// Log severity
   LogSeverity severity;
+  /// File where log originate
   const char* file;
+  /// File line where log originate
   int line;
 };
 
 std::ostream& operator<<(std::ostream& os, const LogFileInfo& info);
 
-class Abort
+class Log
+{
+public:
+  ~Log();
+
+  Log();
+  explicit Log(std::ostream* target);
+
+  Log(Log&& other);
+  Log& operator=(Log&& other);
+
+  void swap(Log& other);
+
+  constexpr bool isValid() const { return os_ != nullptr; }
+  constexpr operator bool() const { return isValid(); }
+
+  template <typename T> Log& operator<<(T&& obj)
+  {
+    (*os_) << std::forward<T>(obj);
+    return *this;
+  }
+
+private:
+  Log(const Log& other) = delete;
+  Log& operator=(const Log& other) = delete;
+
+  std::ostream* os_;
+};
+
+class Abort : public Log
 {
 public:
   ~Abort();
@@ -48,25 +80,15 @@ public:
   Abort(Abort&& other);
   Abort& operator=(Abort&& other);
 
-  void swap(Abort& other);
-
-  template <typename T> Abort& operator<<(T&& obj)
-  {
-    if (os_ != nullptr)
-    {
-      (*os_) << std::forward<T>(obj);
-    }
-    return *this;
-  }
-
 private:
   Abort(const Abort& other) = delete;
   Abort& operator=(const Abort& other) = delete;
-
-  std::ostream* os_;
 };
 
+
 }  // namespace sde
+
+#define __SDE_STR_EXPR(x) #x
 
 #ifdef SDE_LOGGING_DISABLED
 
@@ -79,49 +101,37 @@ private:
   ::sde::LogFileInfo { severity, __FILE__, __LINE__ }
 
 // C++ Standard Library
-#include <cstdio>
 #include <cstdlib>
 #include <iosfwd>
 
-#define SDE_LOG_FMT(severity, fmt, ...)                                                                                \
-  std::fprintf(stderr, sde::format("[SDE LOG] (%%s:%%d) %s\n", fmt), __FILE__, __LINE__, __VA_ARGS__)
-
-#define SDE_LOG(severity, msg) SDE_LOG_FMT(severity, "%s", msg)
+#define SDE_LOG(severity) sde::Log{} << "[SDE LOG] (" << SDE_LOG_GENERATE_FILE_INFO(severity) << ") "
+#define SDE_LOG_FMT(severity, fmt, ...) SDE_LOG(severity) << sde::format<1024UL>(fmt, __VA_ARGS__)
 
 #endif  // SDE_LOGGING_DISABLED
 
-#if defined(NDEBUG) || defined(_NDEBUG)
-#define SDE_LOG_DEBUG_FMT(fmt, ...) (void)0
-#else
 #define SDE_LOG_DEBUG_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kDebug, fmt, __VA_ARGS__)
-#endif
-
 #define SDE_LOG_INFO_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kInfo, fmt, __VA_ARGS__)
 #define SDE_LOG_WARN_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kWarn, fmt, __VA_ARGS__)
 #define SDE_LOG_ERROR_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kError, fmt, __VA_ARGS__)
-#define SDE_LOG_FATAL_FMT(fmt, ...)                                                                                    \
-  SDE_LOG_FMT(::sde::LogSeverity::kError, fmt, __VA_ARGS__);                                                           \
-  {                                                                                                                    \
-    std::abort();                                                                                                      \
-  }
+#define SDE_LOG_FATAL_FMT(fmt, ...) SDE_LOG_FMT(::sde::LogSeverity::kFatal, fmt, __VA_ARGS__)
 
 #if defined(NDEBUG) || defined(_NDEBUG)
-#define SDE_LOG_DEBUG(msg) (void)0
+#define SDE_LOG_DEBUG()                                                                                                \
+  if constexpr (false)                                                                                                 \
+    sde::Log {}
 #else
-#define SDE_LOG_DEBUG(msg) SDE_LOG(::sde::LogSeverity::kDebug, msg)
+#define SDE_LOG_DEBUG() sde::Log{} << SDE_LOG_GENERATE_FILE_INFO(::sde::LogSeverity::kDebug) << ' '
 #endif
 
-#define SDE_STR_EXPR(x) #x
-
-#define SDE_LOG_INFO(msg) SDE_LOG(::sde::LogSeverity::kInfo, msg)
-#define SDE_LOG_WARN(msg) SDE_LOG(::sde::LogSeverity::kWarn, msg)
-#define SDE_LOG_ERROR(msg) SDE_LOG(::sde::LogSeverity::kError, msg)
-#define SDE_LOG_FATAL(msg) SDE_LOG(::sde::LogSeverity::kError, msg);
+#define SDE_LOG_INFO() SDE_LOG(::sde::LogSeverity::kInfo)
+#define SDE_LOG_WARN() SDE_LOG(::sde::LogSeverity::kWarn)
+#define SDE_LOG_ERROR() SDE_LOG(::sde::LogSeverity::kError)
+#define SDE_LOG_FATAL() SDE_LOG(::sde::LogSeverity::kError)
 
 #define SDE_FAIL() sde::Abort{} << SDE_LOG_GENERATE_FILE_INFO(::sde::LogSeverity::kFatal) << "\n\n"
 #define SDE_ASSERT(condition)                                                                                          \
   if (!condition)                                                                                                      \
-  SDE_FAIL() << "cond: " << SDE_STR_EXPR(condition) << "\nexpl: "
+  SDE_FAIL() << "cond: " << __SDE_STR_EXPR(condition) << "\nexpl: "
 
 
 #define SDE_ASSERT_OK(expected) SDE_ASSERT(expected.has_value()) << expected.error() << "\n\n      "
@@ -141,5 +151,10 @@ private:
   SDE_FAIL() << reason;                                                                                                \
   SDE_UNREACHABLE();
 
+#define SDE_NAMED(x) __SDE_STR_EXPR(x) << '=' << x
+#define SDE_OSTREAM_ENUM_CASE(e)                                                                                       \
+  case e: {                                                                                                            \
+    return os << __SDE_STR_EXPR(e);                                                                                    \
+  }
 
 #endif  // SDE_COMMON_LOG

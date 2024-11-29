@@ -60,18 +60,12 @@ std::ostream& operator<<(std::ostream& os, SceneGraphErrorCode error)
 {
   switch (error)
   {
-  case SceneGraphErrorCode::kInvalidSceneCreation:
-    return os << "InvalidSceneCreation";
-  case SceneGraphErrorCode::kInvalidSceneRoot:
-    return os << "InvalidSceneRoot";
-  case SceneGraphErrorCode::kInvalidScript:
-    return os << "InvalidScript";
-  case SceneGraphErrorCode::kInvalidScriptData:
-    return os << "InvalidScriptData";
-  case SceneGraphErrorCode::kPreScriptFailure:
-    return os << "PreScriptFailure";
-  case SceneGraphErrorCode::kPostScriptFailure:
-    return os << "PostScriptFailure";
+    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kInvalidSceneCreation)
+    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kInvalidSceneRoot)
+    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kInvalidScript)
+    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kInvalidScriptData)
+    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kPreScriptFailure)
+    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kPostScriptFailure)
   }
   return os;
 }

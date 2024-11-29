@@ -47,7 +47,7 @@ expected<void, TypeSetError> loadGlyphsFromFont(sde::vector<Glyph>& glyph_lut, c
 {
   if (glyph_height == 0)
   {
-    SDE_LOG_DEBUG("GlyphSizeInvalid");
+    SDE_LOG_ERROR() << "GlyphSizeInvalid: " << SDE_NAMED(glyph_height);
     return make_unexpected(TypeSetError::kGlyphSizeInvalid);
   }
 
@@ -65,7 +65,7 @@ expected<void, TypeSetError> loadGlyphsFromFont(sde::vector<Glyph>& glyph_lut, c
   {
     if (FT_Load_Char(face, kDefaultGlyphs[char_index], FT_LOAD_RENDER) != kFreeTypeSuccess)
     {
-      SDE_LOG_DEBUG("GlyphMissing");
+      SDE_LOG_DEBUG() << "GlyphMissing: " << SDE_NAMED(char_index);
       return make_unexpected(TypeSetError::kGlyphDataMissing);
     }
     else
@@ -99,7 +99,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
 
   if (texture_dimensions.prod() == 0)
   {
-    SDE_LOG_DEBUG("GlyphAtlasTextureCreationFailed");
+    SDE_LOG_ERROR() << "GlyphAtlasTextureCreationFailed : " << SDE_NAMED(texture_dimensions);
     return make_unexpected(TypeSetError::kGlyphAtlasTextureCreationFailed);
   }
 
@@ -138,7 +138,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
     // TODO(bcairl) is there anyway to prevent rendering twice?
     if (FT_Load_Char(face, g.character, FT_LOAD_RENDER) != kFreeTypeSuccess)
     {
-      SDE_LOG_DEBUG("GlyphMissing");
+      SDE_LOG_ERROR() << "GlyphMissing: " << SDE_NAMED(g.character);
       return make_unexpected(TypeSetError::kGlyphDataMissing);
     }
 
@@ -155,7 +155,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
           Bounds2i{tex_coord_min_px, tex_coord_max_px});
         !ok_or_error.has_value())
     {
-      SDE_LOG_DEBUG("GlyphRenderingFailure");
+      SDE_LOG_ERROR() << "GlyphRenderingFailure: " << ok_or_error.error();
       return make_unexpected(TypeSetError::kGlyphRenderingFailure);
     }
 
@@ -171,6 +171,22 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
 }
 
 }  // namespace
+
+
+std::ostream& operator<<(std::ostream& os, TypeSetError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(TypeSetError::kElementAlreadyExists)
+    SDE_OSTREAM_ENUM_CASE(TypeSetError::kInvalidHandle)
+    SDE_OSTREAM_ENUM_CASE(TypeSetError::kInvalidFont)
+    SDE_OSTREAM_ENUM_CASE(TypeSetError::kGlyphSizeInvalid)
+    SDE_OSTREAM_ENUM_CASE(TypeSetError::kGlyphDataMissing)
+    SDE_OSTREAM_ENUM_CASE(TypeSetError::kGlyphRenderingFailure)
+    SDE_OSTREAM_ENUM_CASE(TypeSetError::kGlyphAtlasTextureCreationFailed)
+  }
+  return os;
+}
 
 TypeSetCache::TypeSetCache(TextureCache& textures, FontCache& fonts) :
     textures_{std::addressof(textures)}, fonts_{std::addressof(fonts)}
@@ -221,7 +237,7 @@ expected<void, TypeSetError> TypeSetCache::reload(TypeSet& type_set)
     sendGlyphsToTexture(*textures_, type_set.glyph_atlas, type_set.glyphs, *font, type_set.options);
   if (!glyph_atlas_or_error.has_value())
   {
-    SDE_LOG_DEBUG("GlyphTextureInvalid");
+    SDE_LOG_ERROR() << glyph_atlas_or_error.error();
     return make_unexpected(glyph_atlas_or_error.error());
   }
   type_set.glyph_atlas = (*glyph_atlas_or_error);
@@ -241,6 +257,7 @@ expected<TypeSet, TypeSetError> TypeSetCache::generate(FontHandle font, const Ty
   TypeSet type_set{.options = options, .font = font, .glyph_atlas = TextureHandle::null(), .glyphs = {}};
   if (auto ok_or_error = reload(type_set); !ok_or_error.has_value())
   {
+    SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(ok_or_error.error());
   }
   return type_set;

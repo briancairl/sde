@@ -55,7 +55,7 @@ int main(int argc, char** argv)
   // game::ScriptRuntimeLoader::add("texture_viewer", [](const auto& manifest) { return _TextureViewer(); });
   // game::ScriptRuntimeLoader::add("drag_and_drop", [](const auto& manifest) { return _DragAndDropAssetLoader(); });
 
-  SDE_LOG_INFO("starting...");
+  SDE_LOG_INFO() << "Starting...";
 
   auto app_or_error = App::create({.initial_size = {1000, 500}});
   SDE_ASSERT_OK(app_or_error);

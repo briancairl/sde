@@ -34,9 +34,22 @@ UniqueResource<FT_Library, FreeTypeRelease> FreeType{[] {
 
 }  // namespace
 
+std::ostream& operator<<(std::ostream& os, FontError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(FontError::kElementAlreadyExists)
+    SDE_OSTREAM_ENUM_CASE(FontError::kInvalidHandle)
+    SDE_OSTREAM_ENUM_CASE(FontError::kAssetNotFound)
+    SDE_OSTREAM_ENUM_CASE(FontError::kAssetInvalid)
+    SDE_OSTREAM_ENUM_CASE(FontError::kFontNotFound)
+  }
+  return os;
+}
+
 void FontNativeDeleter::operator()(void* font) const
 {
-  SDE_LOG_DEBUG_FMT("FontNativeDeleter(%p)", font);
+  SDE_LOG_DEBUG() << "FontNativeDeleter(" << font << ')';
   FT_Done_Face(reinterpret_cast<FT_Face>(font));
 }
 
@@ -44,7 +57,7 @@ expected<void, FontError> FontCache::reload(Font& font)
 {
   if (!asset::exists(font.path))
   {
-    SDE_LOG_DEBUG("AssetNotFound");
+    SDE_LOG_DEBUG() << "AssetNotFound";
     return make_unexpected(FontError::kAssetNotFound);
   }
 
@@ -55,12 +68,12 @@ expected<void, FontError> FontCache::reload(Font& font)
   static constexpr FT_Long kFontIndex = 0;
   if (FT_New_Face(FreeType, font.path.string().c_str(), kFontIndex, &face) != kFreeTypeSuccess)
   {
-    SDE_LOG_DEBUG("AssetInvalid");
+    SDE_LOG_DEBUG() << "AssetInvalid";
     return make_unexpected(FontError::kAssetInvalid);
   }
 
   font.native_id = FontNativeID{reinterpret_cast<void*>(face)};
-  SDE_LOG_DEBUG_FMT("Font(%p) %s", font.native_id.value(), font.path.string().c_str());
+  SDE_LOG_DEBUG() << "Font(" << font.native_id << ") " << font.path;
   return {};
 }
 

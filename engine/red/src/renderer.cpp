@@ -85,7 +85,7 @@ bool initialize(renderer_state* self, sde::game::Assets& assets, const sde::AppP
 {
   if (!graphics::Window::try_backend_initialization())
   {
-    SDE_LOG_ERROR("Backend not initialized");
+    SDE_LOG_ERROR() << "Backend not initialized";
     return false;
   }
 
@@ -95,37 +95,37 @@ bool initialize(renderer_state* self, sde::game::Assets& assets, const sde::AppP
   }
   else
   {
-    SDE_LOG_ERROR("Failed to create renderer");
+    SDE_LOG_ERROR() << "Failed to create renderer";
     return false;
   }
 
   if (!assets.assign(self->render_target))
   {
-    SDE_LOG_ERROR("Missing sprite shader");
+    SDE_LOG_ERROR() << "Missing sprite shader";
     return false;
   }
 
   if (!assets.assign(self->sprite_shader, "/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl"_path))
   {
-    SDE_LOG_ERROR("Missing sprite shader");
+    SDE_LOG_ERROR() << "Missing sprite shader";
     return false;
   }
 
   if (!assets.assign(self->player_text_shader, "/home/brian/dev/assets/shaders/glsl/simple_text.glsl"_path))
   {
-    SDE_LOG_ERROR("Missing text shader");
+    SDE_LOG_ERROR() << "Missing text shader";
     return false;
   }
 
   if (!assets.assign(self->player_text_font, "/home/brian/dev/assets/fonts/white_rabbit.ttf"_path))
   {
-    SDE_LOG_ERROR("Missing font");
+    SDE_LOG_ERROR() << "Missing font";
     return false;
   }
 
   if (!assets.assign(self->player_text_type_set, self->player_text_font, TypeSetOptions{.height_px = 100}))
   {
-    SDE_LOG_ERROR("Failed to create player typeset");
+    SDE_LOG_ERROR() << "Failed to create player typeset";
     return false;
   }
 

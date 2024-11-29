@@ -15,6 +15,38 @@
 namespace sde::audio
 {
 
+std::ostream& operator<<(std::ostream& os, ListenerError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(ListenerError::kBackendContextCreationFailure)
+    SDE_OSTREAM_ENUM_CASE(ListenerError::kBackendTrackCreationFailure)
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, ListenerTargetError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(ListenerTargetError::kListenerAlreadyActive)
+    SDE_OSTREAM_ENUM_CASE(ListenerTargetError::kListenerIDInvalid)
+    SDE_OSTREAM_ENUM_CASE(ListenerTargetError::kBackendListenerContextSwitch)
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, MixerError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(MixerError::kBackendCannotOpenDevice)
+    SDE_OSTREAM_ENUM_CASE(MixerError::kListenerConfigInvalid)
+    SDE_OSTREAM_ENUM_CASE(MixerError::kListenerCreationFailure)
+  }
+  return os;
+}
+
 void NativeSourceDeleter::operator()(source_handle_t id) const { alDeleteSources(1, &id); }
 
 Track::Track(NativeSource&& source) : source_{std::move(source)}, playback_queued_{false}, playback_buffer_length_{0} {}
@@ -266,7 +298,7 @@ void Listener::play()
   }
   alSourcePlayv(source_buffer_.size(), source_buffer_.data());
   SDE_ASSERT_EQ(alGetError(), AL_NO_ERROR);
-  SDE_LOG_DEBUG_FMT("alSourcePlayv(%lu, %p)", source_buffer_.size(), source_buffer_.data());
+  SDE_LOG_DEBUG() << "alSourcePlayv(" << source_buffer_.size() << ", " << source_buffer_.data() << ')';
   source_buffer_.clear();
 }
 
@@ -286,7 +318,7 @@ void Listener::stop()
   }
   alSourceStopv(source_buffer_.size(), source_buffer_.data());
   SDE_ASSERT_EQ(alGetError(), AL_NO_ERROR);
-  SDE_LOG_DEBUG_FMT("alSourceStopv(%lu, %p)", source_buffer_.size(), source_buffer_.data());
+  SDE_LOG_DEBUG() << "alSourceStopv(" << source_buffer_.size() << ", " << source_buffer_.data() << ')';
   source_buffer_.clear();
 }
 
@@ -294,20 +326,21 @@ expected<ListenerTarget, ListenerTargetError> ListenerTarget::create(Mixer& mixe
 {
   if (mixer.listener_active_ != nullptr)
   {
-    SDE_LOG_DEBUG_FMT("ListenerAlreadyActive : %p", mixer.listener_active_);
+    SDE_LOG_ERROR() << "ListenerAlreadyActive: " << SDE_NAMED(mixer.listener_active_);
     return make_unexpected(ListenerTargetError::kListenerAlreadyActive);
   }
 
   if (listener_id >= mixer.listeners_.size())
   {
-    SDE_LOG_DEBUG_FMT("ListenerIDInvalid : %lu (of %lu)", listener_id, mixer.listeners_.size());
+    SDE_LOG_ERROR() << "ListenerIDInvalid : " << SDE_NAMED(listener_id) << "(of " << SDE_NAMED(mixer.listeners_.size())
+                    << ')';
     return make_unexpected(ListenerTargetError::kListenerIDInvalid);
   }
 
   auto* listener_p = mixer.listeners_.data() + listener_id;
   if (alcMakeContextCurrent(reinterpret_cast<ALCcontext*>(listener_p->context_.value())) != ALC_TRUE)
   {
-    SDE_LOG_DEBUG_FMT("alcMakeContextCurrent(%p)", listener_p->context_.value());
+    SDE_LOG_ERROR() << "alcMakeContextCurrent(" << listener_p->context_.value() << ')';
     return make_unexpected(ListenerTargetError::kBackendListenerContextSwitch);
   }
   return ListenerTarget{&mixer, listener_p};
@@ -349,7 +382,7 @@ expected<Mixer, MixerError> Mixer::create(NativeSoundDeviceHandle sound_device, 
 {
   if (options.listener_options.empty())
   {
-    SDE_LOG_DEBUG("ListenerConfigInvalid");
+    SDE_LOG_ERROR() << "ListenerConfigInvalid";
     return make_unexpected(MixerError::kListenerConfigInvalid);
   }
 
@@ -358,14 +391,14 @@ expected<Mixer, MixerError> Mixer::create(NativeSoundDeviceHandle sound_device, 
   listeners.reserve(options.listener_options.size());
   for (const auto& options : options.listener_options)
   {
-    SDE_LOG_DEBUG_FMT("Listener::create(%lu)", listeners.size());
+    SDE_LOG_DEBUG() << "Listener::create(", listeners.size() << ')';
     if (auto listener_or_error = Listener::create(sound_device, options); listener_or_error.has_value())
     {
       listeners.push_back(std::move(listener_or_error).value());
     }
     else
     {
-      SDE_LOG_DEBUG("ListenerCreationFailure");
+      SDE_LOG_ERROR() << "ListenerCreationFailure: " << listener_or_error.error();
       return make_unexpected(MixerError::kListenerCreationFailure);
     }
   }

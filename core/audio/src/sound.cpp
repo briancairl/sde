@@ -41,6 +41,21 @@ inline ALenum toALChannelFormat(const SoundChannelFormat& format)
 
 }  // namespace anonymous
 
+std::ostream& operator<<(std::ostream& os, SoundError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(SoundError::kAssetNotFound)
+    SDE_OSTREAM_ENUM_CASE(SoundError::kAssetLoadingFailed)
+    SDE_OSTREAM_ENUM_CASE(SoundError::kInvalidHandle)
+    SDE_OSTREAM_ENUM_CASE(SoundError::kInvalidSoundData)
+    SDE_OSTREAM_ENUM_CASE(SoundError::kElementAlreadyExists)
+    SDE_OSTREAM_ENUM_CASE(SoundError::kBackendBufferCreationFailure)
+    SDE_OSTREAM_ENUM_CASE(SoundError::kBackendBufferTransferFailure)
+  }
+  return os;
+}
+
 void NativeSoundBufferDeleter::operator()(buffer_handle_t id) const { alDeleteBuffers(1, &id); }
 
 SoundCache::SoundCache(SoundDataCache& sound_data) : sound_data_{std::addressof(sound_data)} {}
@@ -50,7 +65,7 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
   const auto* sound_data = sound_data_->get_if(sound.sound_data);
   if (sound_data == nullptr)
   {
-    SDE_LOG_DEBUG("InvalidSoundData");
+    SDE_LOG_ERROR() << "InvalidSoundData: " << SDE_NAMED(sound.sound_data);
     return make_unexpected(SoundError::kInvalidSoundData);
   }
 
@@ -59,7 +74,7 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
-    SDE_LOG_DEBUG_FMT("BackendBufferCreationFailure: %s", al_error_to_str(error));
+    SDE_LOG_ERROR() << "BackendBufferCreationFailure: " << SDE_NAMED(al_error_to_str(error));
     return make_unexpected(SoundError::kBackendBufferCreationFailure);
   }
 
@@ -73,7 +88,7 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
-    SDE_LOG_DEBUG_FMT("BackendBufferTransferFailure: %s", al_error_to_str(error));
+    SDE_LOG_ERROR() << "BackendBufferTransferFailure: " << SDE_NAMED(al_error_to_str(error));
     return make_unexpected(SoundError::kBackendBufferTransferFailure);
   }
 
@@ -94,7 +109,7 @@ expected<Sound, SoundError> SoundCache::generate(const asset::path& sound_data_p
   auto sound_data_or_error = sound_data_->create(sound_data_path);
   if (!sound_data_or_error.has_value())
   {
-    SDE_LOG_DEBUG("InvalidSoundData");
+    SDE_LOG_ERROR() << "InvalidSoundData: " << sound_data_or_error.error();
     return make_unexpected(SoundError::kInvalidSoundData);
   }
   return generate(sound_data_or_error->handle);

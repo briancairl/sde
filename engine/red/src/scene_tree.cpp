@@ -131,7 +131,7 @@ bool update(scene_viewer* self, sde::game::Assets& assets, const sde::AppPropert
   {
     if (const auto ok_or_error = assets.scenes.create(sde::string{"unamed"}); !ok_or_error.has_value())
     {
-      SDE_LOG_ERROR("failed to create new scene");
+      SDE_LOG_ERROR() << "Failed to create new scene: " << ok_or_error.error();
     }
   }
   for (const auto& [handle, scene] : assets.scenes)

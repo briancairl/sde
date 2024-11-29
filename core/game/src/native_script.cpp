@@ -9,6 +9,27 @@
 namespace sde::game
 {
 
+std::ostream& operator<<(std::ostream& os, NativeScriptCallError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(NativeScriptCallError::kNotInitialized)
+    SDE_OSTREAM_ENUM_CASE(NativeScriptCallError::kNotUpdated)
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, NativeScriptError error)
+{
+  switch (error)
+  {
+    SDE_OSTREAM_ENUM_CASE(NativeScriptError::kInvalidHandle)
+    SDE_OSTREAM_ENUM_CASE(NativeScriptError::kScriptLibraryInvalid)
+    SDE_OSTREAM_ENUM_CASE(NativeScriptError::kScriptLibraryMissingFunction)
+  }
+  return os;
+}
+
 bool NativeScriptFn::isValid() const
 {
   return IterateUntil(*this, [](const auto& fn) { return fn->isValid(); });
@@ -137,13 +158,13 @@ expected<void, NativeScriptError> NativeScriptCache::reload(NativeScriptData& sc
 
   if (library_ptr == nullptr)
   {
-    SDE_LOG_ERROR("NativeScriptError::kScriptLibraryInvalid");
+    SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << SDE_NAMED(script.library);
     return make_unexpected(NativeScriptError::kScriptLibraryInvalid);
   }
 
   if (!script.script.reset(library_ptr->lib))
   {
-    SDE_LOG_ERROR("NativeScriptError::kScriptLibraryMissingFunction");
+    SDE_LOG_ERROR() << "ScriptLibraryMissingFunction: " << SDE_NAMED(library_ptr->lib);
     return make_unexpected(NativeScriptError::kScriptLibraryMissingFunction);
   }
 
@@ -172,7 +193,7 @@ NativeScriptCache::generate(const asset::path& path, const LibraryFlags& flags)
   auto library_or_error = libraries_->create(path, flags);
   if (!library_or_error.has_value())
   {
-    SDE_LOG_ERROR("NativeScriptError::kScriptLibraryInvalid");
+    SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << library_or_error.error();
     return make_unexpected(NativeScriptError::kScriptLibraryInvalid);
   }
   return this->generate(library_or_error->handle);
