@@ -17,12 +17,12 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(TileSetError::kElementAlreadyExists)
-    SDE_OSTREAM_ENUM_CASE(TileSetError::kInvalidHandle)
-    SDE_OSTREAM_ENUM_CASE(TileSetError::kAssetNotFound)
-    SDE_OSTREAM_ENUM_CASE(TileSetError::kInvalidAtlasTexture)
-    SDE_OSTREAM_ENUM_CASE(TileSetError::kInvalidTileSize)
-    SDE_OSTREAM_ENUM_CASE(TileSetError::kInvalidSlicingBounds)
+    SDE_OS_ENUM_CASE(TileSetError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASE(TileSetError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(TileSetError::kAssetNotFound)
+    SDE_OS_ENUM_CASE(TileSetError::kInvalidAtlasTexture)
+    SDE_OS_ENUM_CASE(TileSetError::kInvalidTileSize)
+    SDE_OS_ENUM_CASE(TileSetError::kInvalidSlicingBounds)
   }
   return os;
 }
@@ -43,7 +43,7 @@ expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& text
   const auto* texture_info = textures_->get_if(texture);
   if (texture_info == nullptr)
   {
-    SDE_LOG_ERROR() << "InvalidAtlasTexture: " << SDE_NAMED(texture);
+    SDE_LOG_ERROR() << "InvalidAtlasTexture: " << SDE_OS_NAMED(texture);
     return make_unexpected(TileSetError::kInvalidAtlasTexture);
   }
 

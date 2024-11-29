@@ -13,7 +13,7 @@ std::ostream& operator<<(std::ostream& os, SceneError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(SceneError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(SceneError::kInvalidHandle)
   }
   return os;
 }

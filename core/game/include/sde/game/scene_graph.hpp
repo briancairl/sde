@@ -7,6 +7,7 @@
 
 // C++ Standard Library
 #include <iosfwd>
+#include <string_view>
 
 // SDE
 #include "sde/app_fwd.hpp"
@@ -33,14 +34,21 @@ enum class SceneGraphErrorCode
 
 std::ostream& operator<<(std::ostream& os, SceneGraphErrorCode error);
 
-struct SceneGraphError
+struct SceneGraphError : Resource<SceneGraphError>
 {
+  /// Error type
   SceneGraphErrorCode code;
+  /// Associated scene
   SceneHandle scene;
-  const char* script_name;
-};
+  /// Associated script
+  std::string_view script_name;
 
-std::ostream& operator<<(std::ostream& os, const SceneGraphError& error);
+  SceneGraphError(SceneGraphErrorCode _code, SceneHandle _scene, const char* _script_name) :
+      code{_code}, scene{_scene}, script_name{_script_name}
+  {}
+
+  auto field_list() { return FieldList(Field{"code", code}, Field{"scene", scene}, Field{"script_name", script_name}); }
+};
 
 class SceneGraph : public Resource<SceneGraph>
 {
@@ -55,13 +63,19 @@ public:
 
   [[nodiscard]] expected<void, SceneGraphError> save(const asset::path& directory) const;
 
+  [[nodiscard]] expected<SceneManifest, SceneGraphError> manifest() const;
+
   [[nodiscard]] static expected<SceneGraph, SceneGraphErrorCode> create(Assets& assets, const SceneManifest& manifest);
 
 private:
   explicit SceneGraph(Assets& assets);
 
-  template <typename OnVisitT>
-  [[nodiscard]] expected<void, SceneGraphError> visit(SceneHandle scene_handle, OnVisitT on_visit) const;
+  template <typename OnVisitScriptT>
+  [[nodiscard]] expected<void, SceneGraphError> visit(SceneHandle scene_handle, OnVisitScriptT on_visit_script) const;
+
+  template <typename OnVisitSceneT>
+  [[nodiscard]] expected<void, SceneGraphError>
+  visit_scene(SceneHandle scene_handle, OnVisitSceneT on_visit_scene) const;
 
   Assets* assets_;
   SceneHandle root_;

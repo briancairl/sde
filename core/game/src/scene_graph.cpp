@@ -54,18 +54,27 @@ template <typename StringT> StringT toDataFilePath(StringT path)
   return path;
 }
 
+asset::path getDataFilePath(const SceneScriptInstance& script)
+{
+  if (script.instance_data_path.has_value())
+  {
+    return *script.instance_data_path;
+  }
+  return asset::path{toDataFilePath(sde::string{script.instance.name()})};
+}
+
 }  // namespace
 
 std::ostream& operator<<(std::ostream& os, SceneGraphErrorCode error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kInvalidSceneCreation)
-    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kInvalidSceneRoot)
-    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kInvalidScript)
-    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kInvalidScriptData)
-    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kPreScriptFailure)
-    SDE_OSTREAM_ENUM_CASE(SceneGraphErrorCode::kPostScriptFailure)
+    SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidSceneCreation)
+    SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidSceneRoot)
+    SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidScript)
+    SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidScriptData)
+    SDE_OS_ENUM_CASE(SceneGraphErrorCode::kPreScriptFailure)
+    SDE_OS_ENUM_CASE(SceneGraphErrorCode::kPostScriptFailure)
   }
   return os;
 }
@@ -77,16 +86,17 @@ std::ostream& operator<<(std::ostream& os, const SceneGraphError& error)
 
 SceneGraph::SceneGraph(Assets& assets) : assets_{std::addressof(assets)}, root_{SceneHandle::null()} {}
 
-template <typename OnVisitT>
-expected<void, SceneGraphError> SceneGraph::visit(const SceneHandle scene_handle, OnVisitT on_visit) const
+template <typename OnVisitScriptT>
+expected<void, SceneGraphError> SceneGraph::visit(const SceneHandle scene_handle, OnVisitScriptT on_visit_script) const
 {
   auto this_scene = assets_->scenes(scene_handle);
-  SDE_ASSERT_TRUE(this_scene);
+
+  SDE_ASSERT_TRUE(this_scene) << scene_handle << " is not a valid scene handle";
 
   // Call scripts which run before children
   for (const auto& script : this_scene->pre_scripts)
   {
-    if (on_visit(script))
+    if (!on_visit_script(script))
     {
       return make_unexpected(
         SceneGraphError{SceneGraphErrorCode::kPreScriptFailure, scene_handle, script.instance.name()});
@@ -96,8 +106,9 @@ expected<void, SceneGraphError> SceneGraph::visit(const SceneHandle scene_handle
   // Run child scenes
   for (const auto& child_handle : this_scene->children)
   {
-    if (const auto ok_or_error = visit(child_handle, on_visit); !ok_or_error.has_value())
+    if (const auto ok_or_error = visit(child_handle, on_visit_script); !ok_or_error.has_value())
     {
+      SDE_LOG_ERROR() << ok_or_error.error();
       return make_unexpected(ok_or_error.error());
     }
   }
@@ -105,10 +116,31 @@ expected<void, SceneGraphError> SceneGraph::visit(const SceneHandle scene_handle
   // Call scripts which run after children
   for (const auto& script : this_scene->post_scripts)
   {
-    if (on_visit(script))
+    if (!on_visit_script(script))
     {
       return make_unexpected(
         SceneGraphError{SceneGraphErrorCode::kPostScriptFailure, scene_handle, script.instance.name()});
+    }
+  }
+  return {};
+}
+
+template <typename OnVisitSceneT>
+expected<void, SceneGraphError>
+SceneGraph::visit_scene(const SceneHandle scene_handle, OnVisitSceneT on_visit_scene) const
+{
+  auto this_scene = assets_->scenes(scene_handle);
+
+  SDE_ASSERT_TRUE(this_scene) << scene_handle << " is not a valid scene handle";
+
+  on_visit_scene(scene_handle, *this_scene);
+
+  for (const auto& child_handle : this_scene->children)
+  {
+    if (const auto ok_or_error = visit_scene(child_handle, on_visit_scene); !ok_or_error.has_value())
+    {
+      SDE_LOG_ERROR() << ok_or_error.error();
+      return make_unexpected(ok_or_error.error());
     }
   }
   return {};
@@ -126,39 +158,88 @@ expected<void, SceneGraphError> SceneGraph::load(const asset::path& directory)
     // Load script data for this instance
     if (auto ifs_or_error = serial::file_istream::create(data_file_path); ifs_or_error.has_value())
     {
+      SDE_LOG_INFO() << "Loading data from: " << data_file_path;
       IArchive iar{*ifs_or_error};
       return script.instance.load(iar);
     }
-    SDE_LOG_ERROR_FMT("Failed to open data file: %s", data_file_path.c_str());
+    else
+    {
+      SDE_LOG_ERROR() << "Failed to open data file: " << SDE_OS_NAMED(data_file_path) << " (" << ifs_or_error.error()
+                      << ')';
+    }
     return false;
   });
 }
 
 expected<void, SceneGraphError> SceneGraph::save(const asset::path& directory) const
 {
-  return SceneGraph::visit(root_, [&](const SceneScriptInstance& script) -> bool {
-    const auto data_file_path = directory / [&script]() -> asset::path {
-      if (script.instance_data_path.has_value())
-      {
-        return *script.instance_data_path;
-      }
-      else
-      {
-        return asset::path{toDataFilePath(sde::string{script.instance.name()})};
-      }
-    }();
-
+  return SceneGraph::visit(root_, [&directory](const SceneScriptInstance& script) -> bool {
+    const auto data_file_path = directory / getDataFilePath(script);
 
     // Load script data for this instance
     if (auto ofs_or_error = serial::file_ostream::create(data_file_path); ofs_or_error.has_value())
     {
-      SDE_LOG_INFO_FMT("Saving to open data file: %s", data_file_path.c_str());
+      SDE_LOG_INFO() << "Saving to open data file: " << SDE_OS_NAMED(data_file_path);
       OArchive oar{*ofs_or_error};
       return script.instance.save(oar);
     }
-    SDE_LOG_ERROR_FMT("Failed to open data file: %s", data_file_path.c_str());
+    else
+    {
+      SDE_LOG_ERROR() << "Failed to open data file: " << SDE_OS_NAMED(data_file_path) << " (" << ofs_or_error.error()
+                      << ')';
+    }
     return false;
   });
+}
+
+expected<SceneManifest, SceneGraphError> SceneGraph::manifest() const
+{
+  const auto to_scene_name = [this](const SceneHandle& scene_handle) {
+    const auto scene = assets_->scenes(scene_handle);
+    SDE_ASSERT_TRUE(scene);
+    return static_cast<const sde::string&>(scene->name);
+  };
+
+  const auto to_scene_script_data = [this](const SceneScriptInstance& instance) -> SceneScriptData {
+    const auto script = assets_->scripts(instance.handle);
+    SDE_ASSERT_TRUE(script);
+    const auto library = assets_->libraries(script->library);
+    SDE_ASSERT_TRUE(library);
+    return {.path = library->path, .data = getDataFilePath(instance)};
+  };
+
+  // Creata a scene
+  SceneManifest manifest;
+  manifest.setRoot(to_scene_name(root_));
+  auto ok_or_error =
+    SceneGraph::visit_scene(root_, [&]([[maybe_unused]] const SceneHandle handle, const SceneData& scene) {
+      SceneManifestEntry manifest_entry;
+      manifest_entry.pre_scripts.reserve(scene.pre_scripts.size());
+      std::transform(
+        std::begin(scene.pre_scripts),
+        std::end(scene.pre_scripts),
+        std::back_inserter(manifest_entry.pre_scripts),
+        to_scene_script_data);
+      manifest_entry.post_scripts.reserve(scene.post_scripts.size());
+      std::transform(
+        std::begin(scene.post_scripts),
+        std::end(scene.post_scripts),
+        std::back_inserter(manifest_entry.post_scripts),
+        to_scene_script_data);
+      manifest_entry.children.reserve(scene.children.size());
+      std::transform(
+        std::begin(scene.children),
+        std::end(scene.children),
+        std::back_inserter(manifest_entry.children),
+        to_scene_name);
+      manifest.setScene(scene.name, std::move(manifest_entry));
+    });
+
+  if (ok_or_error.has_value())
+  {
+    return {std::move(manifest)};
+  }
+  return make_unexpected(ok_or_error.error());
 }
 
 expected<void, SceneGraphError> SceneGraph::initialize(const AppProperties& properties) const

@@ -12,8 +12,8 @@ std::ostream& operator<<(std::ostream& os, FileStreamError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(FileStreamError::kFileDoesNotExist)
-    SDE_OSTREAM_ENUM_CASE(FileStreamError::kFileOpenFailed)
+    SDE_OS_ENUM_CASE(FileStreamError::kFileDoesNotExist)
+    SDE_OS_ENUM_CASE(FileStreamError::kFileOpenFailed)
   }
   return os;
 }

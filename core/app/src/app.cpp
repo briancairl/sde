@@ -100,9 +100,9 @@ std::ostream& operator<<(std::ostream& os, AppDirective directive)
 {
   switch (directive)
   {
-    SDE_OSTREAM_ENUM_CASE(AppDirective::kContinue)
-    SDE_OSTREAM_ENUM_CASE(AppDirective::kReset)
-    SDE_OSTREAM_ENUM_CASE(AppDirective::kClose)
+    SDE_OS_ENUM_CASE(AppDirective::kContinue)
+    SDE_OS_ENUM_CASE(AppDirective::kReset)
+    SDE_OS_ENUM_CASE(AppDirective::kClose)
   }
   return os;
 }
@@ -111,10 +111,10 @@ std::ostream& operator<<(std::ostream& os, AppError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(AppError::kWindowInvalid)
-    SDE_OSTREAM_ENUM_CASE(AppError::kWindowCreationFailure)
-    SDE_OSTREAM_ENUM_CASE(AppError::kSoundDeviceInvalid)
-    SDE_OSTREAM_ENUM_CASE(AppError::kSoundDeviceCreationFailure)
+    SDE_OS_ENUM_CASE(AppError::kWindowInvalid)
+    SDE_OS_ENUM_CASE(AppError::kWindowCreationFailure)
+    SDE_OS_ENUM_CASE(AppError::kSoundDeviceInvalid)
+    SDE_OS_ENUM_CASE(AppError::kSoundDeviceCreationFailure)
   }
   return os;
 }

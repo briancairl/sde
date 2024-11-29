@@ -13,8 +13,8 @@ std::ostream& operator<<(std::ostream& os, NativeScriptCallError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(NativeScriptCallError::kNotInitialized)
-    SDE_OSTREAM_ENUM_CASE(NativeScriptCallError::kNotUpdated)
+    SDE_OS_ENUM_CASE(NativeScriptCallError::kNotInitialized)
+    SDE_OS_ENUM_CASE(NativeScriptCallError::kNotUpdated)
   }
   return os;
 }
@@ -23,9 +23,9 @@ std::ostream& operator<<(std::ostream& os, NativeScriptError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(NativeScriptError::kInvalidHandle)
-    SDE_OSTREAM_ENUM_CASE(NativeScriptError::kScriptLibraryInvalid)
-    SDE_OSTREAM_ENUM_CASE(NativeScriptError::kScriptLibraryMissingFunction)
+    SDE_OS_ENUM_CASE(NativeScriptError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(NativeScriptError::kScriptLibraryInvalid)
+    SDE_OS_ENUM_CASE(NativeScriptError::kScriptLibraryMissingFunction)
   }
   return os;
 }
@@ -158,13 +158,13 @@ expected<void, NativeScriptError> NativeScriptCache::reload(NativeScriptData& sc
 
   if (library_ptr == nullptr)
   {
-    SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << SDE_NAMED(script.library);
+    SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << SDE_OS_NAMED(script.library);
     return make_unexpected(NativeScriptError::kScriptLibraryInvalid);
   }
 
   if (!script.script.reset(library_ptr->lib))
   {
-    SDE_LOG_ERROR() << "ScriptLibraryMissingFunction: " << SDE_NAMED(library_ptr->lib);
+    SDE_LOG_ERROR() << "ScriptLibraryMissingFunction: " << SDE_OS_NAMED(library_ptr->lib);
     return make_unexpected(NativeScriptError::kScriptLibraryMissingFunction);
   }
 

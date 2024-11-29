@@ -19,8 +19,8 @@ std::ostream& operator<<(std::ostream& os, ListenerError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(ListenerError::kBackendContextCreationFailure)
-    SDE_OSTREAM_ENUM_CASE(ListenerError::kBackendTrackCreationFailure)
+    SDE_OS_ENUM_CASE(ListenerError::kBackendContextCreationFailure)
+    SDE_OS_ENUM_CASE(ListenerError::kBackendTrackCreationFailure)
   }
   return os;
 }
@@ -29,9 +29,9 @@ std::ostream& operator<<(std::ostream& os, ListenerTargetError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(ListenerTargetError::kListenerAlreadyActive)
-    SDE_OSTREAM_ENUM_CASE(ListenerTargetError::kListenerIDInvalid)
-    SDE_OSTREAM_ENUM_CASE(ListenerTargetError::kBackendListenerContextSwitch)
+    SDE_OS_ENUM_CASE(ListenerTargetError::kListenerAlreadyActive)
+    SDE_OS_ENUM_CASE(ListenerTargetError::kListenerIDInvalid)
+    SDE_OS_ENUM_CASE(ListenerTargetError::kBackendListenerContextSwitch)
   }
   return os;
 }
@@ -40,9 +40,9 @@ std::ostream& operator<<(std::ostream& os, MixerError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(MixerError::kBackendCannotOpenDevice)
-    SDE_OSTREAM_ENUM_CASE(MixerError::kListenerConfigInvalid)
-    SDE_OSTREAM_ENUM_CASE(MixerError::kListenerCreationFailure)
+    SDE_OS_ENUM_CASE(MixerError::kBackendCannotOpenDevice)
+    SDE_OS_ENUM_CASE(MixerError::kListenerConfigInvalid)
+    SDE_OS_ENUM_CASE(MixerError::kListenerCreationFailure)
   }
   return os;
 }
@@ -326,14 +326,14 @@ expected<ListenerTarget, ListenerTargetError> ListenerTarget::create(Mixer& mixe
 {
   if (mixer.listener_active_ != nullptr)
   {
-    SDE_LOG_ERROR() << "ListenerAlreadyActive: " << SDE_NAMED(mixer.listener_active_);
+    SDE_LOG_ERROR() << "ListenerAlreadyActive: " << SDE_OS_NAMED(mixer.listener_active_);
     return make_unexpected(ListenerTargetError::kListenerAlreadyActive);
   }
 
   if (listener_id >= mixer.listeners_.size())
   {
-    SDE_LOG_ERROR() << "ListenerIDInvalid : " << SDE_NAMED(listener_id) << "(of " << SDE_NAMED(mixer.listeners_.size())
-                    << ')';
+    SDE_LOG_ERROR() << "ListenerIDInvalid : " << SDE_OS_NAMED(listener_id) << "(of "
+                    << SDE_OS_NAMED(mixer.listeners_.size()) << ')';
     return make_unexpected(ListenerTargetError::kListenerIDInvalid);
   }
 

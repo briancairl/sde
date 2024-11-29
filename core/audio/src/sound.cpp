@@ -45,13 +45,13 @@ std::ostream& operator<<(std::ostream& os, SoundError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(SoundError::kAssetNotFound)
-    SDE_OSTREAM_ENUM_CASE(SoundError::kAssetLoadingFailed)
-    SDE_OSTREAM_ENUM_CASE(SoundError::kInvalidHandle)
-    SDE_OSTREAM_ENUM_CASE(SoundError::kInvalidSoundData)
-    SDE_OSTREAM_ENUM_CASE(SoundError::kElementAlreadyExists)
-    SDE_OSTREAM_ENUM_CASE(SoundError::kBackendBufferCreationFailure)
-    SDE_OSTREAM_ENUM_CASE(SoundError::kBackendBufferTransferFailure)
+    SDE_OS_ENUM_CASE(SoundError::kAssetNotFound)
+    SDE_OS_ENUM_CASE(SoundError::kAssetLoadingFailed)
+    SDE_OS_ENUM_CASE(SoundError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(SoundError::kInvalidSoundData)
+    SDE_OS_ENUM_CASE(SoundError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASE(SoundError::kBackendBufferCreationFailure)
+    SDE_OS_ENUM_CASE(SoundError::kBackendBufferTransferFailure)
   }
   return os;
 }
@@ -65,7 +65,7 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
   const auto* sound_data = sound_data_->get_if(sound.sound_data);
   if (sound_data == nullptr)
   {
-    SDE_LOG_ERROR() << "InvalidSoundData: " << SDE_NAMED(sound.sound_data);
+    SDE_LOG_ERROR() << "InvalidSoundData: " << SDE_OS_NAMED(sound.sound_data);
     return make_unexpected(SoundError::kInvalidSoundData);
   }
 
@@ -74,7 +74,7 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
-    SDE_LOG_ERROR() << "BackendBufferCreationFailure: " << SDE_NAMED(al_error_to_str(error));
+    SDE_LOG_ERROR() << "BackendBufferCreationFailure: " << SDE_OS_NAMED(al_error_to_str(error));
     return make_unexpected(SoundError::kBackendBufferCreationFailure);
   }
 
@@ -88,7 +88,7 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
-    SDE_LOG_ERROR() << "BackendBufferTransferFailure: " << SDE_NAMED(al_error_to_str(error));
+    SDE_LOG_ERROR() << "BackendBufferTransferFailure: " << SDE_OS_NAMED(al_error_to_str(error));
     return make_unexpected(SoundError::kBackendBufferTransferFailure);
   }
 

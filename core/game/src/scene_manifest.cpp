@@ -78,11 +78,12 @@ std::ostream& operator<<(std::ostream& os, SceneManifestError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(SceneManifestError::kInvalidLoadJSONPath)
-    SDE_OSTREAM_ENUM_CASE(SceneManifestError::kInvalidLoadJSONLayout)
-    SDE_OSTREAM_ENUM_CASE(SceneManifestError::kInvalidSaveJSONPath)
-    SDE_OSTREAM_ENUM_CASE(SceneManifestError::kFailedSaveJSON)
-    SDE_OSTREAM_ENUM_CASE(SceneManifestError::kRootNotInSceneGraph)
+    SDE_OS_ENUM_CASE(SceneManifestError::kInvalidLoadJSONPath)
+    SDE_OS_ENUM_CASE(SceneManifestError::kInvalidLoadJSONLayout)
+    SDE_OS_ENUM_CASE(SceneManifestError::kInvalidSaveJSONPath)
+    SDE_OS_ENUM_CASE(SceneManifestError::kFailedSaveJSON)
+    SDE_OS_ENUM_CASE(SceneManifestError::kRootNotInSceneGraph)
+    SDE_OS_ENUM_CASE(SceneManifestError::kSceneAlreadyInGraph)
   }
   return os;
 }
@@ -277,6 +278,19 @@ expected<SceneManifest, SceneManifestError> SceneManifest::create(const asset::p
     return make_unexpected(ok_or_error.error());
   }
   return manifest;
+}
+
+void SceneManifest::setRoot(const sde::string& scene_name) { root_ = scene_name; }
+
+expected<void, SceneManifestError> SceneManifest::setScene(const sde::string& scene_name, SceneManifestEntry&& entry)
+{
+  if (auto [itr, added] = scenes_.try_emplace(scene_name); added)
+  {
+    itr->second = std::move(entry);
+    return {};
+  }
+  SDE_LOG_ERROR() << scene_name << " previously added";
+  return make_unexpected(SceneManifestError::kSceneAlreadyInGraph);
 }
 
 }  // namespace sde::game

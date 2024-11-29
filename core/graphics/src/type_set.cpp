@@ -47,7 +47,7 @@ expected<void, TypeSetError> loadGlyphsFromFont(sde::vector<Glyph>& glyph_lut, c
 {
   if (glyph_height == 0)
   {
-    SDE_LOG_ERROR() << "GlyphSizeInvalid: " << SDE_NAMED(glyph_height);
+    SDE_LOG_ERROR() << "GlyphSizeInvalid: " << SDE_OS_NAMED(glyph_height);
     return make_unexpected(TypeSetError::kGlyphSizeInvalid);
   }
 
@@ -65,7 +65,7 @@ expected<void, TypeSetError> loadGlyphsFromFont(sde::vector<Glyph>& glyph_lut, c
   {
     if (FT_Load_Char(face, kDefaultGlyphs[char_index], FT_LOAD_RENDER) != kFreeTypeSuccess)
     {
-      SDE_LOG_DEBUG() << "GlyphMissing: " << SDE_NAMED(char_index);
+      SDE_LOG_DEBUG() << "GlyphMissing: " << SDE_OS_NAMED(char_index);
       return make_unexpected(TypeSetError::kGlyphDataMissing);
     }
     else
@@ -99,7 +99,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
 
   if (texture_dimensions.prod() == 0)
   {
-    SDE_LOG_ERROR() << "GlyphAtlasTextureCreationFailed : " << SDE_NAMED(texture_dimensions);
+    SDE_LOG_ERROR() << "GlyphAtlasTextureCreationFailed : " << SDE_OS_NAMED(texture_dimensions);
     return make_unexpected(TypeSetError::kGlyphAtlasTextureCreationFailed);
   }
 
@@ -138,7 +138,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
     // TODO(bcairl) is there anyway to prevent rendering twice?
     if (FT_Load_Char(face, g.character, FT_LOAD_RENDER) != kFreeTypeSuccess)
     {
-      SDE_LOG_ERROR() << "GlyphMissing: " << SDE_NAMED(g.character);
+      SDE_LOG_ERROR() << "GlyphMissing: " << SDE_OS_NAMED(g.character);
       return make_unexpected(TypeSetError::kGlyphDataMissing);
     }
 
@@ -177,13 +177,13 @@ std::ostream& operator<<(std::ostream& os, TypeSetError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(TypeSetError::kElementAlreadyExists)
-    SDE_OSTREAM_ENUM_CASE(TypeSetError::kInvalidHandle)
-    SDE_OSTREAM_ENUM_CASE(TypeSetError::kInvalidFont)
-    SDE_OSTREAM_ENUM_CASE(TypeSetError::kGlyphSizeInvalid)
-    SDE_OSTREAM_ENUM_CASE(TypeSetError::kGlyphDataMissing)
-    SDE_OSTREAM_ENUM_CASE(TypeSetError::kGlyphRenderingFailure)
-    SDE_OSTREAM_ENUM_CASE(TypeSetError::kGlyphAtlasTextureCreationFailed)
+    SDE_OS_ENUM_CASE(TypeSetError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASE(TypeSetError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(TypeSetError::kInvalidFont)
+    SDE_OS_ENUM_CASE(TypeSetError::kGlyphSizeInvalid)
+    SDE_OS_ENUM_CASE(TypeSetError::kGlyphDataMissing)
+    SDE_OS_ENUM_CASE(TypeSetError::kGlyphRenderingFailure)
+    SDE_OS_ENUM_CASE(TypeSetError::kGlyphAtlasTextureCreationFailed)
   }
   return os;
 }

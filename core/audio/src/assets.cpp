@@ -13,8 +13,8 @@ std::ostream& operator<<(std::ostream& os, AssetError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedSoundDataLoading)
-    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedSoundLoading)
+    SDE_OS_ENUM_CASE(AssetError::kFailedSoundDataLoading)
+    SDE_OS_ENUM_CASE(AssetError::kFailedSoundLoading)
   }
   return os;
 }

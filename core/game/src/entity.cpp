@@ -13,11 +13,11 @@ std::ostream& operator<<(std::ostream& os, EntityError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(EntityError::kElementAlreadyExists)
-    SDE_OSTREAM_ENUM_CASE(EntityError::kComponentAlreadyAttached)
-    SDE_OSTREAM_ENUM_CASE(EntityError::kComponentNotRegistered)
-    SDE_OSTREAM_ENUM_CASE(EntityError::kInvalidHandle)
-    SDE_OSTREAM_ENUM_CASE(EntityError::kCreationFailure)
+    SDE_OS_ENUM_CASE(EntityError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASE(EntityError::kComponentAlreadyAttached)
+    SDE_OS_ENUM_CASE(EntityError::kComponentNotRegistered)
+    SDE_OS_ENUM_CASE(EntityError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(EntityError::kCreationFailure)
   }
   return os;
 }

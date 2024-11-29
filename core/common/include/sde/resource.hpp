@@ -12,6 +12,7 @@
 #include "sde/crtp.hpp"
 #include "sde/hash.hpp"
 #include "sde/traits.hpp"
+#include "sde/type_name.hpp"
 
 namespace sde
 {
@@ -240,28 +241,27 @@ template <typename T> std::ostream& operator<<(std::ostream& os, const _Stub<T>&
 
 template <typename ResourceT> std::ostream& operator<<(std::ostream& os, const Resource<ResourceT>& resource)
 {
+  os << '[' << type_name<ResourceT>() << "] : { ";
   Visit(resource, [&os](std::size_t depth, const auto& field) -> bool {
-    for (std::size_t c = 0; c < depth; ++c)
-    {
-      os << ' ';
-      os << ' ';
-    }
+    os << '{';
     using FieldType = std::remove_reference_t<decltype(field)>;
     using ValueType = std::remove_const_t<typename FieldType::value_type>;
     if constexpr (is_resource_v<ValueType>)
     {
-      os << field.name << ": {...}\n";
+      os << field.name << ": {...}";
     }
     else if constexpr (has_std_ostream_overload<ValueType>())
     {
-      os << field.name << ": " << field.get() << '\n';
+      os << field.name << ": " << field.get();
     }
     else if constexpr (has_std_ostream_overload<ValueType>())
     {
-      os << field.name << ": ? \n";
+      os << field.name << ": ?";
     }
+    os << "} ";
     return true;
   });
+  os << '}';
   return os;
 }
 

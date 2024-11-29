@@ -236,7 +236,7 @@ create_texture_impl(View<DataT> data, const TextureShape& shape, TextureLayout l
   }
   else if (shape.height() == 0 or shape.width() == 0)
   {
-    SDE_LOG_ERROR() << "InvalidDimensions: " << SDE_NAMED(shape.height()) << ", " << SDE_NAMED(shape.width());
+    SDE_LOG_ERROR() << "InvalidDimensions: " << SDE_OS_NAMED(shape.height()) << ", " << SDE_OS_NAMED(shape.width());
     return make_unexpected(TextureError::kInvalidDimensions);
   }
 
@@ -270,9 +270,9 @@ std::ostream& operator<<(std::ostream& os, TextureWrapping wrapping)
 {
   switch (wrapping)
   {
-    SDE_OSTREAM_ENUM_CASE(TextureWrapping::kClampToBorder)
-    SDE_OSTREAM_ENUM_CASE(TextureWrapping::kClampToEdge)
-    SDE_OSTREAM_ENUM_CASE(TextureWrapping::kRepeat)
+    SDE_OS_ENUM_CASE(TextureWrapping::kClampToBorder)
+    SDE_OS_ENUM_CASE(TextureWrapping::kClampToEdge)
+    SDE_OS_ENUM_CASE(TextureWrapping::kRepeat)
   }
   return os;
 }
@@ -281,8 +281,8 @@ std::ostream& operator<<(std::ostream& os, TextureSampling sampling)
 {
   switch (sampling)
   {
-    SDE_OSTREAM_ENUM_CASE(TextureSampling::kLinear)
-    SDE_OSTREAM_ENUM_CASE(TextureSampling::kNearest)
+    SDE_OS_ENUM_CASE(TextureSampling::kLinear)
+    SDE_OS_ENUM_CASE(TextureSampling::kNearest)
   }
   return os;
 }
@@ -291,10 +291,10 @@ std::ostream& operator<<(std::ostream& os, TextureLayout layout)
 {
   switch (layout)
   {
-    SDE_OSTREAM_ENUM_CASE(TextureLayout::kR)
-    SDE_OSTREAM_ENUM_CASE(TextureLayout::kRG)
-    SDE_OSTREAM_ENUM_CASE(TextureLayout::kRGB)
-    SDE_OSTREAM_ENUM_CASE(TextureLayout::kRGBA)
+    SDE_OS_ENUM_CASE(TextureLayout::kR)
+    SDE_OS_ENUM_CASE(TextureLayout::kRG)
+    SDE_OS_ENUM_CASE(TextureLayout::kRGB)
+    SDE_OS_ENUM_CASE(TextureLayout::kRGBA)
   }
   return os;
 }
@@ -303,18 +303,18 @@ std::ostream& operator<<(std::ostream& os, TextureError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(TextureError::kTextureNotFound)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kElementAlreadyExists)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kInvalidHandle)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kInvalidSourceImage)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kInvalidDimensions)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kInvalidDataValue)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kInvalidDataLength)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kBackendCreationFailure)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kBackendTransferFailure)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kBackendMipMapGenerationFailure)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kReplaceAreaEmpty)
-    SDE_OSTREAM_ENUM_CASE(TextureError::kReplaceAreaOutOfBounds)
+    SDE_OS_ENUM_CASE(TextureError::kTextureNotFound)
+    SDE_OS_ENUM_CASE(TextureError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASE(TextureError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(TextureError::kInvalidSourceImage)
+    SDE_OS_ENUM_CASE(TextureError::kInvalidDimensions)
+    SDE_OS_ENUM_CASE(TextureError::kInvalidDataValue)
+    SDE_OS_ENUM_CASE(TextureError::kInvalidDataLength)
+    SDE_OS_ENUM_CASE(TextureError::kBackendCreationFailure)
+    SDE_OS_ENUM_CASE(TextureError::kBackendTransferFailure)
+    SDE_OS_ENUM_CASE(TextureError::kBackendMipMapGenerationFailure)
+    SDE_OS_ENUM_CASE(TextureError::kReplaceAreaEmpty)
+    SDE_OS_ENUM_CASE(TextureError::kReplaceAreaOutOfBounds)
   }
 }
 
@@ -323,7 +323,7 @@ expected<void, TextureError> replace(const Texture& texture, View<const DataT> d
 {
   if (area.isEmpty())
   {
-    SDE_LOG_ERROR() << "ReplaceAreaEmpty: " << SDE_NAMED(area);
+    SDE_LOG_ERROR() << "ReplaceAreaEmpty: " << SDE_OS_NAMED(area);
     return make_unexpected(TextureError::kReplaceAreaEmpty);
   }
 
@@ -331,7 +331,7 @@ expected<void, TextureError> replace(const Texture& texture, View<const DataT> d
   const std::size_t actual_size = sizeof(DataT) * data.size();
   if (actual_size != required_size)
   {
-    SDE_LOG_ERROR() << "InvalidDataLength: " << SDE_NAMED(actual_size) << ", " << SDE_NAMED(required_size);
+    SDE_LOG_ERROR() << "InvalidDataLength: " << SDE_OS_NAMED(actual_size) << ", " << SDE_OS_NAMED(required_size);
     return make_unexpected(TextureError::kInvalidDataLength);
   }
 

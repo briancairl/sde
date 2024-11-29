@@ -13,13 +13,13 @@ std::ostream& operator<<(std::ostream& os, AssetError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedImageLoading)
-    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedFontLoading)
-    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedShaderLoading)
-    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedTextureLoading)
-    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedTileSetLoading)
-    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedTypeSetLoading)
-    SDE_OSTREAM_ENUM_CASE(AssetError::kFailedRenderTargetLoading)
+    SDE_OS_ENUM_CASE(AssetError::kFailedImageLoading)
+    SDE_OS_ENUM_CASE(AssetError::kFailedFontLoading)
+    SDE_OS_ENUM_CASE(AssetError::kFailedShaderLoading)
+    SDE_OS_ENUM_CASE(AssetError::kFailedTextureLoading)
+    SDE_OS_ENUM_CASE(AssetError::kFailedTileSetLoading)
+    SDE_OS_ENUM_CASE(AssetError::kFailedTypeSetLoading)
+    SDE_OS_ENUM_CASE(AssetError::kFailedRenderTargetLoading)
   }
   return os;
 }

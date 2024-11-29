@@ -25,7 +25,8 @@ enum class SceneManifestError
   kInvalidLoadJSONLayout,
   kInvalidSaveJSONPath,
   kFailedSaveJSON,
-  kRootNotInSceneGraph
+  kRootNotInSceneGraph,
+  kSceneAlreadyInGraph,
 };
 
 std::ostream& operator<<(std::ostream& os, SceneManifestError error);
@@ -88,6 +89,10 @@ public:
   [[nodiscard]] const auto* operator->() const { return std::addressof(scenes_); }
 
   [[nodiscard]] static expected<SceneManifest, SceneManifestError> create(const asset::path& path);
+
+  void setRoot(const sde::string& scene_name);
+
+  expected<void, SceneManifestError> setScene(const sde::string& scene_name, SceneManifestEntry&& entry);
 
 private:
   sde::string root_;

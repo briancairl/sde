@@ -38,11 +38,11 @@ std::ostream& operator<<(std::ostream& os, FontError error)
 {
   switch (error)
   {
-    SDE_OSTREAM_ENUM_CASE(FontError::kElementAlreadyExists)
-    SDE_OSTREAM_ENUM_CASE(FontError::kInvalidHandle)
-    SDE_OSTREAM_ENUM_CASE(FontError::kAssetNotFound)
-    SDE_OSTREAM_ENUM_CASE(FontError::kAssetInvalid)
-    SDE_OSTREAM_ENUM_CASE(FontError::kFontNotFound)
+    SDE_OS_ENUM_CASE(FontError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASE(FontError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(FontError::kAssetNotFound)
+    SDE_OS_ENUM_CASE(FontError::kAssetInvalid)
+    SDE_OS_ENUM_CASE(FontError::kFontNotFound)
   }
   return os;
 }

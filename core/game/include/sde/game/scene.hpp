@@ -65,7 +65,10 @@ struct SceneData : Resource<SceneData>
   auto field_list()
   {
     return FieldList(
-      Field{"children", children}, Field{"pre_scripts", pre_scripts}, Field{"post_scripts", post_scripts});
+      Field{"name", name},
+      Field{"children", children},
+      Field{"pre_scripts", pre_scripts},
+      Field{"post_scripts", post_scripts});
   }
 };
 

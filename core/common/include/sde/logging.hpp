@@ -151,8 +151,8 @@ private:
   SDE_FAIL() << reason;                                                                                                \
   SDE_UNREACHABLE();
 
-#define SDE_NAMED(x) __SDE_STR_EXPR(x) << '=' << x
-#define SDE_OSTREAM_ENUM_CASE(e)                                                                                       \
+#define SDE_OS_NAMED(x) '[' << __SDE_STR_EXPR(x) << "=" << x << ']'
+#define SDE_OS_ENUM_CASE(e)                                                                                            \
   case e: {                                                                                                            \
     return os << __SDE_STR_EXPR(e);                                                                                    \
   }
