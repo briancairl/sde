@@ -8,6 +8,6 @@
 namespace sde::game
 {
 class SceneManifest;
-struct SceneManifestEntry;
-struct SceneScriptData;
+class SceneManifestEntry;
+class SceneScriptData;
 }  // namespace sde::game

@@ -1,5 +1,8 @@
 #define SDE_SCRIPT_NAME "audio_manager"
 
+// C++ Standard Library
+#include <ostream>
+
 // ImGui
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>

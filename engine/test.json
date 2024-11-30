@@ -1,4 +1,5 @@
 {
+    "path": "/tmp/test",
     "root": "root",
     "scenes": {
         "inner_scene": {
@@ -6,11 +7,11 @@
             "post_scripts": [],
             "pre_scripts": [
                 {
-                    "data": "engine_red_src_drag_and_drop_loader_cpp.bin",
+                    "data": null,
                     "path": "/home/brian/.cache/bazel/_bazel_brian/c4bb606086701df10ecedeedab7c5e0e/execroot/_main/bazel-out/k8-opt/bin/engine/engine.runfiles/_main/engine/red/libdrag_and_drop_loader.so"
                 },
                 {
-                    "data": "audio_manager.bin",
+                    "data": null,
                     "path": "/home/brian/.cache/bazel/_bazel_brian/c4bb606086701df10ecedeedab7c5e0e/execroot/_main/bazel-out/k8-opt/bin/engine/engine.runfiles/_main/engine/red/libaudio_manager.so"
                 }
             ]
@@ -21,25 +22,25 @@
             ],
             "post_scripts": [
                 {
-                    "data": "script_browser.bin",
+                    "data": null,
                     "path": "/home/brian/.cache/bazel/_bazel_brian/c4bb606086701df10ecedeedab7c5e0e/execroot/_main/bazel-out/k8-opt/bin/engine/engine.runfiles/_main/engine/red/libscript_browser.so"
                 },
                 {
-                    "data": "engine_red_src_imgui_end_cpp.bin",
+                    "data": null,
                     "path": "/home/brian/.cache/bazel/_bazel_brian/c4bb606086701df10ecedeedab7c5e0e/execroot/_main/bazel-out/k8-opt/bin/engine/engine.runfiles/_main/engine/red/libimgui_end.so"
                 }
             ],
             "pre_scripts": [
                 {
-                    "data": "engine_red_src_renderer_cpp.bin",
+                    "data": null,
                     "path": "/home/brian/.cache/bazel/_bazel_brian/c4bb606086701df10ecedeedab7c5e0e/execroot/_main/bazel-out/k8-opt/bin/engine/engine.runfiles/_main/engine/red/librenderer.so"
                 },
                 {
-                    "data": "engine_red_src_imgui_start_cpp.bin",
+                    "data": null,
                     "path": "/home/brian/.cache/bazel/_bazel_brian/c4bb606086701df10ecedeedab7c5e0e/execroot/_main/bazel-out/k8-opt/bin/engine/engine.runfiles/_main/engine/red/libimgui_start.so"
                 },
                 {
-                    "data": "engine_red_src_library_browser_cpp.bin",
+                    "data": null,
                     "path": "/home/brian/.cache/bazel/_bazel_brian/c4bb606086701df10ecedeedab7c5e0e/execroot/_main/bazel-out/k8-opt/bin/engine/engine.runfiles/_main/engine/red/liblibrary_browser.so"
                 }
             ]

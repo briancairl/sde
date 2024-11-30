@@ -35,6 +35,9 @@ enum class AssetError
   kFailedSceneLoading,
 };
 
+
+std::ostream& operator<<(std::ostream& os, AssetError error);
+
 /**
  * @brief Collection of active game assets
  */

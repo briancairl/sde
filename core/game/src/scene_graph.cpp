@@ -69,25 +69,23 @@ std::ostream& operator<<(std::ostream& os, SceneGraphErrorCode error)
 {
   switch (error)
   {
+    SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidSceneManifest)
     SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidSceneCreation)
     SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidSceneRoot)
     SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidScript)
     SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidScriptData)
+    SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidScriptDataPath)
+    SDE_OS_ENUM_CASE(SceneGraphErrorCode::kInvalidScriptAssets)
     SDE_OS_ENUM_CASE(SceneGraphErrorCode::kPreScriptFailure)
     SDE_OS_ENUM_CASE(SceneGraphErrorCode::kPostScriptFailure)
   }
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const SceneGraphError& error)
-{
-  return os << "{code: " << error.code << ", scene: " << error.scene << ", script_name: " << error.script_name << '}';
-}
-
-SceneGraph::SceneGraph(Assets& assets) : assets_{std::addressof(assets)}, root_{SceneHandle::null()} {}
+SceneGraph::SceneGraph(sde::unique_ptr<Assets>&& assets) : assets_{std::move(assets)} {}
 
 template <typename OnVisitScriptT>
-expected<void, SceneGraphError> SceneGraph::visit(const SceneHandle scene_handle, OnVisitScriptT on_visit_script) const
+expected<void, SceneGraphError> SceneGraph::visit(const SceneHandle scene_handle, OnVisitScriptT on_visit_script)
 {
   auto this_scene = assets_->scenes(scene_handle);
 
@@ -171,7 +169,7 @@ expected<void, SceneGraphError> SceneGraph::load(const asset::path& directory)
   });
 }
 
-expected<void, SceneGraphError> SceneGraph::save(const asset::path& directory) const
+expected<void, SceneGraphError> SceneGraph::save(const asset::path& directory)
 {
   return SceneGraph::visit(root_, [&directory](const SceneScriptInstance& script) -> bool {
     const auto data_file_path = directory / getDataFilePath(script);
@@ -210,6 +208,7 @@ expected<SceneManifest, SceneGraphError> SceneGraph::manifest() const
 
   // Creata a scene
   SceneManifest manifest;
+  manifest.setPath(this->path());
   manifest.setRoot(to_scene_name(root_));
   auto ok_or_error =
     SceneGraph::visit_scene(root_, [&]([[maybe_unused]] const SceneHandle handle, const SceneData& scene) {
@@ -242,7 +241,7 @@ expected<SceneManifest, SceneGraphError> SceneGraph::manifest() const
   return make_unexpected(ok_or_error.error());
 }
 
-expected<void, SceneGraphError> SceneGraph::initialize(const AppProperties& properties) const
+expected<void, SceneGraphError> SceneGraph::initialize(const AppProperties& properties)
 {
   return SceneGraph::visit(root_, [&](const SceneScriptInstance& script) -> bool {
     if (const auto ok_or_error = script.instance.initialize(*assets_, properties); ok_or_error.has_value())
@@ -257,7 +256,7 @@ expected<void, SceneGraphError> SceneGraph::initialize(const AppProperties& prop
   });
 }
 
-expected<void, SceneGraphError> SceneGraph::tick(const AppProperties& properties) const
+expected<void, SceneGraphError> SceneGraph::tick(const AppProperties& properties)
 {
   return SceneGraph::visit(root_, [&](const SceneScriptInstance& script) -> bool {
     if (const auto ok_or_error = script.instance.call(*assets_, properties); ok_or_error.has_value())
@@ -272,15 +271,18 @@ expected<void, SceneGraphError> SceneGraph::tick(const AppProperties& properties
   });
 }
 
-expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(Assets& assets, const SceneManifest& manifest)
+expected<SceneGraph, SceneGraphErrorCode>
+SceneGraph::create(const SceneManifest& manifest, sde::unique_ptr<Assets>&& assets)
 {
+  SceneGraph graph{std::move(assets)};
+
   sde::unordered_map<sde::string, SceneHandle> name_to_handle;
   for (const auto& [scene_name, scene_data] : manifest.scenes())
   {
     sde::vector<SceneScriptInstance> pre_scripts;
     for (const auto& script_data : scene_data.pre_scripts)
     {
-      if (auto script_instance_or_error = instance(assets, script_data); script_instance_or_error.has_value())
+      if (auto script_instance_or_error = instance(*graph.assets_, script_data); script_instance_or_error.has_value())
       {
         pre_scripts.push_back(std::move(script_instance_or_error).value());
       }
@@ -293,7 +295,7 @@ expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(Assets& assets, con
     sde::vector<SceneScriptInstance> post_scripts;
     for (const auto& script_data : scene_data.post_scripts)
     {
-      if (auto script_instance_or_error = instance(assets, script_data); script_instance_or_error.has_value())
+      if (auto script_instance_or_error = instance(*graph.assets_, script_data); script_instance_or_error.has_value())
       {
         post_scripts.push_back(std::move(script_instance_or_error).value());
       }
@@ -303,7 +305,7 @@ expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(Assets& assets, con
       }
     }
 
-    auto scene_or_error = assets.scenes.create(scene_name, std::move(pre_scripts), std::move(post_scripts));
+    auto scene_or_error = graph.assets_->scenes.create(scene_name, std::move(pre_scripts), std::move(post_scripts));
     if (!scene_or_error.has_value())
     {
       SDE_LOG_ERROR_FMT("SceneGraphErrorCode::kInvalidSceneCreation (failed to create scene: %s)", scene_name.c_str());
@@ -318,17 +320,19 @@ expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(Assets& assets, con
   {
     const auto scene_itr = name_to_handle.find(scene_name);
     SDE_ASSERT_NE(scene_itr, std::end(name_to_handle));
-    assets.scenes.update_if_exists(scene_itr->second, [&name_to_handle, &children = scene_data.children](auto& scene) {
-      for (const auto& child_name : children)
-      {
-        const auto child_script_itr = name_to_handle.find(child_name);
-        SDE_ASSERT_NE(child_script_itr, std::end(name_to_handle));
-        scene.children.push_back(child_script_itr->second);
-      }
-    });
+    graph.assets_->scenes.update_if_exists(
+      scene_itr->second, [&name_to_handle, &children = scene_data.children](auto& scene) {
+        for (const auto& child_name : children)
+        {
+          const auto child_script_itr = name_to_handle.find(child_name);
+          SDE_ASSERT_NE(child_script_itr, std::end(name_to_handle));
+          scene.children.push_back(child_script_itr->second);
+        }
+      });
   }
 
-  SceneGraph graph{assets};
+  graph.path_ = manifest.path();
+
   {
     const auto scene_itr = name_to_handle.find(manifest.root());
     SDE_ASSERT_NE(scene_itr, std::end(name_to_handle));
@@ -339,7 +343,100 @@ expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(Assets& assets, con
   {
     return make_unexpected(SceneGraphErrorCode::kInvalidSceneRoot);
   }
-  return graph;
+  return {std::move(graph)};
+}
+
+expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(const SceneManifest& manifest)
+{
+  return SceneGraph::create(manifest, sde::make_unique<Assets>());
+}
+
+expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(const asset::path& manifest_path)
+{
+  auto scene_manifest_or_error = SceneManifest::create(manifest_path);
+  if (!scene_manifest_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << scene_manifest_or_error.error();
+    return make_unexpected(SceneGraphErrorCode::kInvalidSceneManifest);
+  }
+
+  auto scene_graph_or_error = SceneGraph::create(*scene_manifest_or_error);
+  if (!scene_graph_or_error.has_value())
+  {
+    return make_unexpected(scene_graph_or_error.error());
+  }
+
+  const auto assets_path = scene_graph_or_error->path() / "assets.bin";
+  if (auto ifs_or_error = serial::file_istream::create(assets_path); ifs_or_error.has_value())
+  {
+    IArchive iar{*ifs_or_error};
+    iar >> *scene_graph_or_error->assets_;
+  }
+  else if (ifs_or_error.error() == serial::FileStreamError::kFileDoesNotExist)
+  {
+    SDE_LOG_WARN() << SDE_OS_NAMED(assets_path);
+  }
+  else
+  {
+    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OS_NAMED(assets_path);
+    return make_unexpected(SceneGraphErrorCode::kInvalidScriptAssets);
+  }
+
+  if (!asset::exists(scene_manifest_or_error->path()) and !asset::create_directories(scene_manifest_or_error->path()))
+  {
+    SDE_LOG_ERROR() << "Invalid script data directory: " << scene_manifest_or_error->path();
+    return make_unexpected(SceneGraphErrorCode::kInvalidScriptDataPath);
+  }
+
+  if (auto ok_or_error = scene_graph_or_error->load(scene_manifest_or_error->path()); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << ok_or_error.error();
+    return make_unexpected(ok_or_error.error().code);
+  }
+
+  return {std::move(scene_graph_or_error).value()};
+}
+
+expected<void, SceneGraphErrorCode> SceneGraph::dump(SceneGraph& graph, const asset::path& manifest_path)
+{
+  if (!asset::exists(graph.path()))
+  {
+    SDE_LOG_ERROR() << "Invalid script data directory: " << graph.path();
+    return make_unexpected(SceneGraphErrorCode::kInvalidScriptDataPath);
+  }
+
+  const auto assets_path = graph.path() / "assets.bin";
+  if (auto ofs_or_error = serial::file_ostream::create(assets_path); ofs_or_error.has_value())
+  {
+    OArchive oar{*ofs_or_error};
+    oar << *graph.assets_;
+  }
+  else
+  {
+    SDE_LOG_ERROR() << ofs_or_error.error() << " " << SDE_OS_NAMED(assets_path);
+    return make_unexpected(SceneGraphErrorCode::kInvalidScriptAssets);
+  }
+
+  if (auto ok_or_error = graph.save(graph.path()); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << ok_or_error.error();
+    return make_unexpected(ok_or_error.error().code);
+  }
+
+  auto updated_manifest_or_error = graph.manifest();
+  if (!updated_manifest_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << updated_manifest_or_error.error();
+    return make_unexpected(updated_manifest_or_error.error().code);
+  }
+
+  if (auto ok_or_error = updated_manifest_or_error->save(manifest_path); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << ok_or_error.error();
+    return make_unexpected(SceneGraphErrorCode::kInvalidSceneManifest);
+  }
+
+  return {};
 }
 
 }  // namespace sde::game

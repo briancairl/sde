@@ -11,7 +11,7 @@
 
 // SDE
 #include "sde/app_fwd.hpp"
-#include "sde/game/assets_fwd.hpp"
+#include "sde/game/assets.hpp"
 #include "sde/game/native_script_fwd.hpp"
 #include "sde/game/native_script_handle.hpp"
 #include "sde/game/scene_fwd.hpp"
@@ -24,10 +24,13 @@ namespace sde::game
 
 enum class SceneGraphErrorCode
 {
+  kInvalidSceneManifest,
   kInvalidSceneCreation,
   kInvalidSceneRoot,
   kInvalidScript,
   kInvalidScriptData,
+  kInvalidScriptDataPath,
+  kInvalidScriptAssets,
   kPreScriptFailure,
   kPostScriptFailure,
 };
@@ -55,30 +58,40 @@ class SceneGraph : public Resource<SceneGraph>
   friend fundemental_type;
 
 public:
-  [[nodiscard]] expected<void, SceneGraphError> initialize(const AppProperties& properties) const;
+  [[nodiscard]] expected<void, SceneGraphError> initialize(const AppProperties& properties);
 
-  [[nodiscard]] expected<void, SceneGraphError> tick(const AppProperties& properties) const;
+  [[nodiscard]] expected<void, SceneGraphError> tick(const AppProperties& properties);
 
   [[nodiscard]] expected<void, SceneGraphError> load(const asset::path& directory);
 
-  [[nodiscard]] expected<void, SceneGraphError> save(const asset::path& directory) const;
+  [[nodiscard]] expected<void, SceneGraphError> save(const asset::path& directory);
 
   [[nodiscard]] expected<SceneManifest, SceneGraphError> manifest() const;
 
-  [[nodiscard]] static expected<SceneGraph, SceneGraphErrorCode> create(Assets& assets, const SceneManifest& manifest);
+  [[nodiscard]] static expected<SceneGraph, SceneGraphErrorCode>
+  create(const SceneManifest& manifest, sde::unique_ptr<Assets>&& assets);
+
+  [[nodiscard]] static expected<SceneGraph, SceneGraphErrorCode> create(const SceneManifest& manifest);
+
+  [[nodiscard]] static expected<SceneGraph, SceneGraphErrorCode> create(const asset::path& manifest_path);
+
+  [[nodiscard]] static expected<void, SceneGraphErrorCode> dump(SceneGraph& graph, const asset::path& manifest_path);
+
+  [[nodiscard]] const auto& path() const { return path_; }
 
 private:
-  explicit SceneGraph(Assets& assets);
+  explicit SceneGraph(sde::unique_ptr<Assets>&& assets);
 
   template <typename OnVisitScriptT>
-  [[nodiscard]] expected<void, SceneGraphError> visit(SceneHandle scene_handle, OnVisitScriptT on_visit_script) const;
+  [[nodiscard]] expected<void, SceneGraphError> visit(SceneHandle scene_handle, OnVisitScriptT on_visit_script);
 
   template <typename OnVisitSceneT>
   [[nodiscard]] expected<void, SceneGraphError>
   visit_scene(SceneHandle scene_handle, OnVisitSceneT on_visit_scene) const;
 
-  Assets* assets_;
+  sde::unique_ptr<Assets> assets_;
   SceneHandle root_;
+  asset::path path_;
 
   auto field_list() { return FieldList(Field{"root", root_}); }
 };

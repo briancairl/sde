@@ -31,12 +31,18 @@ enum class SceneManifestError
 
 std::ostream& operator<<(std::ostream& os, SceneManifestError error);
 
-struct SceneScriptData : public Resource<SceneScriptData>
+class SceneScriptData : public Resource<SceneScriptData>
 {
+  friend fundemental_type;
+  friend class SceneManifest;
+  friend class SceneManifestEntry;
+
+public:
   asset::path path;
 
   std::optional<asset::path> data;
 
+private:
   template <typename KeyValueArchiveT>
   [[nodiscard]] expected<void, SceneManifestError> load(const KeyValueArchiveT& kv_store);
 
@@ -46,14 +52,19 @@ struct SceneScriptData : public Resource<SceneScriptData>
   auto field_list() { return FieldList(Field{"path", path}, Field{"data", data}); }
 };
 
-struct SceneManifestEntry : public Resource<SceneManifestEntry>
+class SceneManifestEntry : public Resource<SceneManifestEntry>
 {
+  friend fundemental_type;
+  friend class SceneManifest;
+
+public:
   sde::vector<sde::string> children;
 
   sde::vector<SceneScriptData> pre_scripts;
 
   sde::vector<SceneScriptData> post_scripts;
 
+private:
   template <typename KeyValueArchiveT>
   [[nodiscard]] expected<void, SceneManifestError> load(const KeyValueArchiveT& kv_store);
 
@@ -72,13 +83,7 @@ class SceneManifest : public Resource<SceneManifest>
   friend fundemental_type;
 
 public:
-  template <typename KeyValueArchiveT>
-  [[nodiscard]] expected<void, SceneManifestError> load(const KeyValueArchiveT& kv_store);
-
   [[nodiscard]] expected<void, SceneManifestError> load(const asset::path& path);
-
-  template <typename KeyValueArchiveT>
-  [[nodiscard]] expected<void, SceneManifestError> save(KeyValueArchiveT& kv_store) const;
 
   [[nodiscard]] expected<void, SceneManifestError> save(const asset::path& path) const;
 
@@ -90,15 +95,26 @@ public:
 
   [[nodiscard]] static expected<SceneManifest, SceneManifestError> create(const asset::path& path);
 
+  [[nodiscard]] const auto& path() const { return path_; }
+
+  void setPath(const asset::path& path);
+
   void setRoot(const sde::string& scene_name);
 
   expected<void, SceneManifestError> setScene(const sde::string& scene_name, SceneManifestEntry&& entry);
 
 private:
+  template <typename KeyValueArchiveT>
+  [[nodiscard]] expected<void, SceneManifestError> save(KeyValueArchiveT& kv_store) const;
+
+  template <typename KeyValueArchiveT>
+  [[nodiscard]] expected<void, SceneManifestError> load(const KeyValueArchiveT& kv_store);
+
+  asset::path path_;
   sde::string root_;
   sde::unordered_map<sde::string, SceneManifestEntry> scenes_;
 
-  auto field_list() { return FieldList(Field{"root", root_}, Field{"scenes", scenes_}); }
+  auto field_list() { return FieldList(Field{"path", path_}, Field{"root", root_}, Field{"scenes", scenes_}); }
 };
 
 }  // namespace sde::game

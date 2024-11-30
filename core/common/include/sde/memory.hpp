@@ -8,6 +8,7 @@
 // C++ Standard Library
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 #include <type_traits>
 
 namespace sde
@@ -56,6 +57,72 @@ template <typename T1, typename T2> bool operator==(const allocator<T1>& lhs, co
 template <typename T1, typename T2> bool operator!=(const allocator<T1>& lhs, const allocator<T2>& rhs)
 {
   return (lhs.malloc_impl() != rhs.malloc_impl()) || (lhs.free_impl() != rhs.free_impl());
+}
+
+template <typename T, typename Alloc = allocator<T>> struct unique_ptr
+{
+  struct deleter
+  {
+    void operator()(T* p) { allocator.deallocate(p, sizeof(T)); }
+
+    Alloc allocator;
+
+    explicit deleter(Alloc&& a) : allocator{std::move(a)} {}
+  };
+
+  unique_ptr() = default;
+
+  unique_ptr(std::nullptr_t) : p{nullptr} {};
+
+  unique_ptr(std::unique_ptr<T, deleter>&& _p) : p{std::move(_p)} {};
+
+  std::unique_ptr<T, deleter> p;
+
+  operator bool() const { return static_cast<bool>(p); }
+
+  T& operator*() { return *p; }
+  const T& operator*() const { return *p; }
+
+  T* operator->() { return p.get(); }
+  const T* operator->() const { return p.get(); }
+};
+
+template <typename T, typename Alloc, typename OtherT> bool operator!=(const unique_ptr<T, Alloc>& lhs, OtherT&& other)
+{
+  return lhs.p != std::forward<OtherT>(other);
+}
+
+template <typename T, typename Alloc, typename OtherT> bool operator!=(OtherT&& other, const unique_ptr<T, Alloc>& rhs)
+{
+  return std::forward<OtherT>(other) != rhs.p;
+}
+
+template <typename T, typename Alloc, typename OtherT> bool operator==(const unique_ptr<T, Alloc>& lhs, OtherT&& other)
+{
+  return lhs.p == std::forward<OtherT>(other);
+}
+
+template <typename T, typename Alloc, typename OtherT> bool operator==(OtherT&& other, const unique_ptr<T, Alloc>& rhs)
+{
+  return std::forward<OtherT>(other) == rhs.p;
+}
+
+
+template <typename T, typename Alloc = allocator<T>, typename... Args>
+unique_ptr<T, Alloc> allocate_unique(Alloc a, Args&&... args)
+{
+  using uptr = unique_ptr<T, Alloc>;
+  using deleter = typename uptr::deleter;
+
+  Alloc allocator;
+  T* p_raw = allocator.allocate(sizeof(T));
+  new (p_raw) T(std::forward<Args>()...);
+  return uptr{std::unique_ptr<T, deleter>{p_raw, deleter{std::move(allocator)}}};
+}
+
+template <typename T, typename Alloc = allocator<T>, typename... Args> unique_ptr<T, Alloc> make_unique(Args&&... args)
+{
+  return allocate_unique<T, Alloc, Args...>(Alloc{}, std::forward<Args>(args)...);
 }
 
 }  // namespace sde
