@@ -78,7 +78,7 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       {
         for (const auto& script : scene_ref->pre_scripts)
         {
-          ImGui::Text("%s (id=%lu)", script.instance.name(), static_cast<std::size_t>(script.handle.id()));
+          ImGui::Text("%s (id=%lu)", script.instance.name().data(), static_cast<std::size_t>(script.handle.id()));
         }
         ImGui::TreePop();
       };
@@ -108,7 +108,7 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       {
         for (const auto& script : scene_ref->post_scripts)
         {
-          ImGui::Text("%s (id=%lu)", script.instance.name(), static_cast<std::size_t>(script.handle.id()));
+          ImGui::Text("%s (id=%lu)", script.instance.name().data(), static_cast<std::size_t>(script.handle.id()));
         }
         ImGui::TreePop();
       };

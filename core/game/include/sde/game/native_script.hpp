@@ -7,6 +7,7 @@
 
 // C++ Standard Library
 #include <iosfwd>
+#include <string_view>
 
 // SDE
 #include "sde/asset.hpp"
@@ -36,6 +37,7 @@ struct NativeScriptFn : public Resource<NativeScriptFn>
   dl::Function<void*(ScriptInstanceAllocator)> on_create;
   dl::Function<void(ScriptInstanceDeallocator, void*)> on_destroy;
   dl::Function<const char*()> on_get_name;
+  dl::Function<script_version_t()> on_get_version;
   dl::Function<bool(void*, void*)> on_load;
   dl::Function<bool(void*, void*)> on_save;
   dl::Function<bool(void*, void*, const void*)> on_initialize;
@@ -52,6 +54,7 @@ struct NativeScriptFn : public Resource<NativeScriptFn>
       _Stub{"on_create", on_create},
       _Stub{"on_destroy", on_destroy},
       _Stub{"on_get_name", on_get_name},
+      _Stub{"on_get_version", on_get_version},
       _Stub{"on_load", on_load},
       _Stub{"on_save", on_save},
       _Stub{"on_initialize", on_initialize},
@@ -76,7 +79,9 @@ public:
 
   constexpr operator bool() const { return this->isValid(); }
 
-  constexpr const char* name() const { return isValid() ? fn_.on_get_name() : "<INVALID>"; }
+  constexpr std::string_view name() const { return isValid() ? fn_.on_get_name() : "<INVALID>"; }
+
+  constexpr script_version_t version() const { return isValid() ? fn_.on_get_version() : 0UL; }
 
 protected:
   explicit NativeScriptBase(NativeScriptFn fn);
@@ -89,10 +94,7 @@ protected:
   auto field_list() { return FieldList(_Stub{"fn", fn_}); }
 };
 
-template <typename ScriptT> std::ostream& operator<<(std::ostream& os, const NativeScriptBase<ScriptT>& script)
-{
-  return os << "NativeScript[" << script.name() << ']';
-}
+template <typename ScriptT> std::ostream& operator<<(std::ostream& os, const NativeScriptBase<ScriptT>& script);
 
 class NativeScriptInstance : public NativeScriptBase<NativeScriptInstance>
 {

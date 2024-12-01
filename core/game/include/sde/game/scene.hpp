@@ -44,11 +44,16 @@ struct SceneScriptInstance : Resource<SceneScriptInstance>
   NativeScriptInstance instance;
   /// Path to scripts load/save data
   std::optional<asset::path> instance_data_path;
+  /// Instanced script on load
+  std::optional<script_version_t> instance_version_target;
 
   auto field_list()
   {
     return FieldList(
-      Field{"handle", handle}, _Stub{"instance", instance}, Field{"instance_data_path", instance_data_path});
+      Field{"handle", handle},
+      _Stub{"instance", instance},
+      Field{"instance_version_target", instance_version_target},
+      Field{"instance_data_path", instance_data_path});
   }
 };
 

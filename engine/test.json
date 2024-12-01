@@ -8,11 +8,13 @@
             "pre_scripts": [
                 {
                     "data": "drag_and_drop_loader.bin",
-                    "path": "engine/red/libdrag_and_drop_loader.so"
+                    "path": "engine/red/libdrag_and_drop_loader.so",
+                    "version": 56
                 },
                 {
                     "data": "audio_manager.bin",
-                    "path": "engine/red/libaudio_manager.so"
+                    "path": "engine/red/libaudio_manager.so",
+                    "version": 90
                 }
             ]
         },
@@ -23,25 +25,30 @@
             "post_scripts": [
                 {
                     "data": "script_browser.bin",
-                    "path": "engine/red/libscript_browser.so"
+                    "path": "engine/red/libscript_browser.so",
+                    "version": 77
                 },
                 {
                     "data": "imgui_end.bin",
-                    "path": "engine/red/libimgui_end.so"
+                    "path": "engine/red/libimgui_end.so",
+                    "version": 45
                 }
             ],
             "pre_scripts": [
                 {
                     "data": "imgui_start.bin",
-                    "path": "engine/red/libimgui_start.so"
+                    "path": "engine/red/libimgui_start.so",
+                    "version": 88
                 },
                 {
                     "data": "renderer.bin",
-                    "path": "engine/red/librenderer.so"
+                    "path": "engine/red/librenderer.so",
+                    "version": 265
                 },
                 {
                     "data": "engine_red_src_library_browser_cpp.bin",
-                    "path": "engine/red/liblibrary_browser.so"
+                    "path": "engine/red/liblibrary_browser.so",
+                    "version": 128
                 }
             ]
         }

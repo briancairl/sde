@@ -44,6 +44,9 @@ public:
   /// Path to script data (or null if no previous save)
   std::optional<asset::path> data;
 
+  /// Path to script data (or null if no previous save)
+  std::optional<std::size_t> version;
+
 private:
   template <typename KeyValueArchiveT>
   [[nodiscard]] expected<void, SceneManifestError> load(const KeyValueArchiveT& kv_store);
@@ -51,7 +54,7 @@ private:
   template <typename KeyValueArchiveT>
   [[nodiscard]] expected<void, SceneManifestError> save(KeyValueArchiveT& kv_store) const;
 
-  auto field_list() { return FieldList(Field{"path", path}, Field{"data", data}); }
+  auto field_list() { return FieldList(Field{"path", path}, Field{"data", data}, Field{"version", version}); }
 };
 
 class SceneManifestEntry : public Resource<SceneManifestEntry>

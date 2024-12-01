@@ -10,5 +10,6 @@
 #include "sde/game/archive_fwd.hpp"
 #include "sde/game/assets_fwd.hpp"
 
+using script_version_t = std::size_t;
 using ScriptInstanceAllocator = void*(std::size_t);
 using ScriptInstanceDeallocator = void(void*);

@@ -46,7 +46,7 @@ struct SceneGraphError : Resource<SceneGraphError>
   /// Associated script
   std::string_view script_name;
 
-  SceneGraphError(SceneGraphErrorCode _code, SceneHandle _scene, const char* _script_name) :
+  SceneGraphError(SceneGraphErrorCode _code, SceneHandle _scene, std::string_view _script_name) :
       code{_code}, scene{_scene}, script_name{_script_name}
   {}
 

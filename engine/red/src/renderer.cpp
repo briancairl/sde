@@ -46,6 +46,7 @@ struct renderer_state
   Renderer2DOptions renderer_options;
 
   float scaling = 1.0F;
+
   RenderBuffer render_buffer;
   ShaderHandle sprite_shader;
   FontHandle player_text_font;

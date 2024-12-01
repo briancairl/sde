@@ -52,6 +52,16 @@
   SDE_EXPORT const char* on_get_name() { return SDE_SCRIPT_NAME; }
 #endif  // SDE_SCRIPT_NAME
 
+
+#ifndef SDE_SCRIPT_VERSION
+#define SDE_NATIVE_SCRIPT__REGISTER_VERSION(InstanceDataT)                                                             \
+  SDE_EXPORT script_version_t on_get_version() { return __LINE__; }
+#else
+#define SDE_NATIVE_SCRIPT__REGISTER_VERSION(InstanceDataT)                                                             \
+  SDE_EXPORT script_version_t on_get_version() { return SDE_SCRIPT_VERSION; }
+#endif  // SDE_SCRIPT_VERSION
+
+
 #define SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, f)                                                             \
   SDE_EXPORT bool on_load(void* self, void* iarchive)                                                                  \
   {                                                                                                                    \
@@ -86,6 +96,7 @@
   SDE_NATIVE_SCRIPT__REGISTER_CREATE(InstanceDataT);                                                                   \
   SDE_NATIVE_SCRIPT__REGISTER_DESTROY(InstanceDataT);                                                                  \
   SDE_NATIVE_SCRIPT__REGISTER_NAME(InstanceDataT);                                                                     \
+  SDE_NATIVE_SCRIPT__REGISTER_VERSION(InstanceDataT);                                                                  \
   SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, load);                                                               \
   SDE_NATIVE_SCRIPT__REGISTER_SAVE(InstanceDataT, save);                                                               \
   SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(InstanceDataT, initialize);                                                   \

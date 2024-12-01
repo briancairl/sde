@@ -27,7 +27,7 @@ bool ensure(const nlohmann::json& object, const char* name, const Resource<Resou
     }
 
     {
-      SDE_LOG_ERROR_FMT("SceneManifestError::kInvalidLoadJSONLayout (missing %s::%s)", name, field.name);
+      SDE_LOG_ERROR() << "SceneManifestError::kInvalidLoadJSONLayout (missing " << name << "::" << field.name << ')';
       return false;
     }
   });
@@ -109,6 +109,16 @@ template <> expected<void, SceneManifestError> SceneScriptData::load(const nlohm
   else
   {
     SDE_ASSERT_TRUE(data_json.is_null());
+  }
+
+  // Script version path
+  if (const auto version_json = json["version"]; version_json.is_number())
+  {
+    this->version.emplace(static_cast<script_version_t>(version_json));
+  }
+  else
+  {
+    SDE_ASSERT_TRUE(version_json.is_null());
   }
 
   return {};
@@ -200,6 +210,7 @@ expected<void, SceneManifestError> SceneManifest::load(const asset::path& path)
 template <> expected<void, SceneManifestError> SceneScriptData::save(nlohmann::json& json) const
 {
   json["path"] = this->path.string();
+
   if (this->data.has_value())
   {
     json["data"] = this->data->string();
@@ -207,6 +218,15 @@ template <> expected<void, SceneManifestError> SceneScriptData::save(nlohmann::j
   else
   {
     json["data"] = nlohmann::json(nullptr);
+  }
+
+  if (this->version.has_value())
+  {
+    json["version"] = (*this->version);
+  }
+  else
+  {
+    json["version"] = nlohmann::json(nullptr);
   }
   return {};
 }

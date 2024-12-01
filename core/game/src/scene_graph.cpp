@@ -42,7 +42,8 @@ expected<SceneScriptInstance, SceneGraphErrorCode> instance(
   return SceneScriptInstance{
     .handle = std::move(script_or_error->handle),
     .instance = (*script_or_error)->script.instance(),
-    .instance_data_path = script_data.data};
+    .instance_data_path = script_data.data,
+    .instance_version_target = script_data.version};
 }
 
 template <typename StringT> StringT toDataFilePath(StringT path)
@@ -153,12 +154,22 @@ SceneGraph::visit_scene(const SceneHandle scene_handle, OnVisitSceneT on_visit_s
 expected<void, SceneGraphError> SceneGraph::load(const asset::path& directory)
 {
   return SceneGraph::visit(root_, [&](const SceneScriptInstance& script) -> bool {
+    // Skip loading if there is no data path
     if (!script.instance_data_path.has_value())
     {
+      SDE_LOG_WARN() << "Not previous data for: " << script.instance;
       return true;
     }
 
     const auto data_file_path = directory / (*script.instance_data_path);
+
+    // Check that previous script version matches current
+    if (script.instance_version_target.has_value() and (*script.instance_version_target) != script.instance.version())
+    {
+      SDE_LOG_WARN() << "Not loading data from: " << data_file_path << " for " << script.instance
+                     << " (expected version: " << *script.instance_version_target << ')';
+      return true;
+    }
 
     // Load script data for this instance
     if (auto ifs_or_error = serial::file_istream::create(data_file_path); ifs_or_error.has_value())
@@ -210,7 +221,7 @@ expected<SceneManifest, SceneGraphError> SceneGraph::manifest() const
     SDE_ASSERT_TRUE(script);
     const auto library = assets_->libraries(script->library);
     SDE_ASSERT_TRUE(library);
-    return {.path = library->path, .data = getDataFilePath(instance)};
+    return {.path = library->path, .data = getDataFilePath(instance), .version = instance.instance.version()};
   };
 
   // Creata a scene

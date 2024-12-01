@@ -31,6 +31,15 @@ std::ostream& operator<<(std::ostream& os, NativeScriptError error)
   return os;
 }
 
+template <typename ScriptT> std::ostream& operator<<(std::ostream& os, const NativeScriptBase<ScriptT>& script)
+{
+  return os << "NativeScript[" << script.name() << "] (ver:" << script.version() << ')';
+}
+
+template std::ostream& operator<< <NativeScript>(std::ostream&, const NativeScriptBase<NativeScript>& script);
+template std::ostream&
+operator<< <NativeScriptInstance>(std::ostream&, const NativeScriptBase<NativeScriptInstance>& script);
+
 bool NativeScriptFn::isValid() const
 {
   return IterateUntil(*this, [](const auto& fn) { return fn->isValid(); });
@@ -108,14 +117,15 @@ bool NativeScriptInstance::save(OArchive& ar) const
 expected<void, NativeScriptCallError>
 NativeScriptInstance::initialize(Assets& assets, const AppProperties& app_properties) const
 {
+  SDE_ASSERT_FALSE(initialized_) << "'NativeScriptInstance::initialize' called previously";
+
   // run initialization routine, if not already run successfully
   // clang-format off
   initialized_ =
-    initialized_
-    or
-    fn_.on_initialize(reinterpret_cast<void*>(instance_),
-                   reinterpret_cast<void*>(&assets),
-                   reinterpret_cast<const void*>(&app_properties));
+    fn_.on_initialize(
+      reinterpret_cast<void*>(instance_),
+      reinterpret_cast<void*>(&assets),
+      reinterpret_cast<const void*>(&app_properties));
 
   // clang-format on
   if (initialized_)
@@ -128,7 +138,7 @@ NativeScriptInstance::initialize(Assets& assets, const AppProperties& app_proper
 expected<void, NativeScriptCallError>
 NativeScriptInstance::call(Assets& assets, const AppProperties& app_properties) const
 {
-  SDE_ASSERT_TRUE(initialized_);
+  SDE_ASSERT_TRUE(initialized_) << "'NativeScriptInstance::initialize' not yet called";
 
   // run update behavior
   if (fn_.on_update(
