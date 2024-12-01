@@ -149,6 +149,10 @@ bool update(renderer_state* self, sde::game::Assets& assets, const sde::AppPrope
   uniforms.time = app.time;
   uniforms.time_delta = app.time_delta;
 
+  ImGui::Begin("renderer");
+  ImGui::SliderFloat("scaling", &self->scaling, 0.0F, 1e0F);
+  ImGui::End();
+
   // Handle screen zoom
   if (true)
   {

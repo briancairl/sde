@@ -38,8 +38,10 @@ class SceneScriptData : public Resource<SceneScriptData>
   friend class SceneManifestEntry;
 
 public:
+  /// Path to script
   asset::path path;
 
+  /// Path to script data (or null if no previous save)
   std::optional<asset::path> data;
 
 private:
@@ -58,10 +60,13 @@ class SceneManifestEntry : public Resource<SceneManifestEntry>
   friend class SceneManifest;
 
 public:
+  /// Names of scenes to call under this one
   sde::vector<sde::string> children;
 
+  /// Scripts to call before child scenes
   sde::vector<SceneScriptData> pre_scripts;
 
+  /// Scripts to call after child scenes
   sde::vector<SceneScriptData> post_scripts;
 
 private:

@@ -44,11 +44,6 @@ int main(int argc, char** argv)
       return AppDirective::kClose;
     },
     [&](const auto& app_properties) {
-      // assets.registry.view<Position, Dynamics>().each(
-      //   [dt = toSeconds(app_properties.time_delta)](Position& pos, const Dynamics& state) {
-      //     pos.center += state.velocity * dt;
-      //   });
-
       if (const auto ok_or_error = game_or_error->tick(app_properties); ok_or_error)
       {
         return AppDirective::kContinue;

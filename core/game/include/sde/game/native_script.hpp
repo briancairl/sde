@@ -89,6 +89,11 @@ protected:
   auto field_list() { return FieldList(_Stub{"fn", fn_}); }
 };
 
+template <typename ScriptT> std::ostream& operator<<(std::ostream& os, const NativeScriptBase<ScriptT>& script)
+{
+  return os << "NativeScript[" << script.name() << ']';
+}
+
 class NativeScriptInstance : public NativeScriptBase<NativeScriptInstance>
 {
   using Base = NativeScriptBase<NativeScriptInstance>;

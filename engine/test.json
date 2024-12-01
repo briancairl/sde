@@ -32,12 +32,12 @@
             ],
             "pre_scripts": [
                 {
-                    "data": "renderer.bin",
-                    "path": "engine/red/librenderer.so"
-                },
-                {
                     "data": "imgui_start.bin",
                     "path": "engine/red/libimgui_start.so"
+                },
+                {
+                    "data": "renderer.bin",
+                    "path": "engine/red/librenderer.so"
                 },
                 {
                     "data": "engine_red_src_library_browser_cpp.bin",

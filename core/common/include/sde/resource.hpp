@@ -238,7 +238,6 @@ template <typename T> std::ostream& operator<<(std::ostream& os, const _Stub<T>&
   }
 }
 
-
 template <typename ResourceT> std::ostream& operator<<(std::ostream& os, const Resource<ResourceT>& resource)
 {
   os << '[' << type_name<ResourceT>() << "] : { ";

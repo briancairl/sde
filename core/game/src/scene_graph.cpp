@@ -34,7 +34,7 @@ expected<SceneScriptInstance, SceneGraphErrorCode> instance(
   auto script_or_error = assets.scripts.create(script_data.path, script_library_flags);
   if (!script_or_error.has_value())
   {
-    SDE_LOG_ERROR_FMT("SceneGraphErrorCode::kInvalidScript (failed to load: %s)", script_data.path.c_str());
+    SDE_LOG_ERROR() << "SceneGraphErrorCode::kInvalidScript (failed to load: " << script_data.path << ')';
     return make_unexpected(SceneGraphErrorCode::kInvalidScript);
   }
 
@@ -257,7 +257,7 @@ expected<void, SceneGraphError> SceneGraph::initialize(const AppProperties& prop
     }
 
     {
-      SDE_LOG_ERROR_FMT("Failed to initialize: %s", script.instance.name());
+      SDE_LOG_ERROR() << "Failed to initialize: " << script.instance;
       return false;
     }
   });
@@ -272,7 +272,7 @@ expected<void, SceneGraphError> SceneGraph::tick(const AppProperties& properties
     }
 
     {
-      SDE_LOG_ERROR_FMT("Failed to initialize: %s", script.instance.name());
+      SDE_LOG_ERROR() << "Failed to initialize: " << script.instance;
       return false;
     }
   });

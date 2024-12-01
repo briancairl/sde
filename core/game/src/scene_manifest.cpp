@@ -166,7 +166,7 @@ template <> expected<void, SceneManifestError> SceneManifest::load(const nlohman
     auto [scene_data_itr, added] = this->scenes_.try_emplace(scene_key);
     if (!added)
     {
-      SDE_LOG_ERROR_FMT("SceneManifestError::kInvalidLoadJSONPath (duplicate key: %s)", scene_key.c_str());
+      SDE_LOG_ERROR() << "SceneManifestError::kInvalidLoadJSONPath (duplicate key: " << scene_key << ')';
       return make_unexpected(SceneManifestError::kInvalidLoadJSONPath);
     }
 
@@ -179,7 +179,7 @@ template <> expected<void, SceneManifestError> SceneManifest::load(const nlohman
 
   if (this->scenes_.count(this->root_) == 0)
   {
-    SDE_LOG_ERROR_FMT("SceneManifestError::kRootNotInSceneGraph (root: %s)", this->root_.c_str());
+    SDE_LOG_ERROR() << "SceneManifestError::kRootNotInSceneGraph (root: " << this->root_ << ')';
     return make_unexpected(SceneManifestError::kRootNotInSceneGraph);
   }
   return {};
@@ -193,7 +193,7 @@ expected<void, SceneManifestError> SceneManifest::load(const asset::path& path)
     ifs >> manifest_json;
     return this->load(manifest_json);
   }
-  SDE_LOG_ERROR_FMT("SceneManifestError::kInvalidLoadJSONPath (cannot find: %s)", path.c_str());
+  SDE_LOG_ERROR() << "SceneManifestError::kInvalidLoadJSONPath (cannot find: " << path << ')';
   return make_unexpected(SceneManifestError::kInvalidLoadJSONPath);
 }
 
@@ -267,7 +267,7 @@ expected<void, SceneManifestError> SceneManifest::save(const asset::path& path) 
     return {};
   }
 
-  SDE_LOG_ERROR_FMT("SceneManifestError::kInvalidSaveJSONPath (cannot find: %s)", path.c_str());
+  SDE_LOG_ERROR() << "SceneManifestError::kInvalidSaveJSONPath (cannot find: " << path << ')';
   return make_unexpected(SceneManifestError::kInvalidSaveJSONPath);
 }
 
