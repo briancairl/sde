@@ -4,7 +4,6 @@
 // SDE
 #include "sde/app.hpp"
 #include "sde/game/scene_graph.hpp"
-#include "sde/game/scene_manifest.hpp"
 #include "sde/logging.hpp"
 
 using namespace sde;

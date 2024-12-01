@@ -47,7 +47,7 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
     return make_unexpected(LibraryError::kLibraryAlreadyLoaded);
   }
 
-  LibraryData data{.flags = flags, .path = absolute_path, .lib = {}};
+  LibraryData data{.flags = flags, .path = path, .lib = {}};
 
   auto ok_or_error = reload(data);
   if (!ok_or_error.has_value())
