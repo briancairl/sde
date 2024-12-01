@@ -38,7 +38,7 @@ sudo apt install           \
 - [x] Static VAO? (selectable VAO)
 - [x] Rendering text
 - [ ] Debug render layer (wire-frame boxes; times)
-- [ ] Stream-style logging
+- [x] Stream-style logging
 - [ ] Add static text entity with pre-computed bounds
 - [ ] Camera zoom to focus
 - [ ] Cleanup graphics build targets

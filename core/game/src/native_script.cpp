@@ -53,11 +53,11 @@ template <typename ScriptT> void NativeScriptBase<ScriptT>::swap(NativeScriptBas
 
 template <typename ScriptT> bool NativeScriptBase<ScriptT>::reset(const dl::Library& library)
 {
-  return IterateUntil(this->fn_, [&library](auto& field) {
+  return IterateUntil(this->fn_, [this, &library](auto& field) {
     auto symbol_or_error = library.get(field.name);
     if (!symbol_or_error.has_value())
     {
-      SDE_LOG_ERROR_FMT("NativeScriptInstance.%s : %s", field.name, symbol_or_error.error().details);
+      SDE_LOG_ERROR() << *this << "::" << field.name << " : " << symbol_or_error.error();
       return false;
     }
     else
