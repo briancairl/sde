@@ -98,4 +98,8 @@ private:
   auto field_list() { return FieldList(Field{"root", root_}); }
 };
 
+inline auto create(const asset::path& manifest_path) { return SceneGraph::create(manifest_path); }
+
+inline auto dump(SceneGraph& graph, const asset::path& manifest_path) { return SceneGraph::dump(graph, manifest_path); }
+
 }  // namespace sde::game

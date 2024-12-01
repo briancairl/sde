@@ -27,13 +27,13 @@ int main(int argc, char** argv)
   SDE_ASSERT_OK(app_or_error);
 
   // Create scene graph from manifest
-  auto scene_graph_or_error = sde::game::SceneGraph::create(argv[1]);
-  SDE_ASSERT_OK(scene_graph_or_error);
+  auto game_or_error = sde::game::create(argv[1]);
+  SDE_ASSERT_OK(game_or_error);
 
   // Run game
   app_or_error->spin(
     [&](const auto& app_properties) {
-      if (const auto ok_or_error = scene_graph_or_error->initialize(app_properties); ok_or_error)
+      if (const auto ok_or_error = game_or_error->initialize(app_properties); ok_or_error)
       {
         return AppDirective::kContinue;
       }
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
       //     pos.center += state.velocity * dt;
       //   });
 
-      if (const auto ok_or_error = scene_graph_or_error->tick(app_properties); ok_or_error)
+      if (const auto ok_or_error = game_or_error->tick(app_properties); ok_or_error)
       {
         return AppDirective::kContinue;
       }
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
       return AppDirective::kClose;
     });
 
-  SDE_ASSERT_OK(sde::game::SceneGraph::dump(*scene_graph_or_error, argv[1]));
+  SDE_ASSERT_OK(sde::game::dump(*game_or_error, argv[1]));
 
   return 0;
 }
