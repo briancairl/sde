@@ -24,6 +24,7 @@ std::ostream& operator<<(std::ostream& os, NativeScriptError error)
   switch (error)
   {
     SDE_OS_ENUM_CASE(NativeScriptError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(NativeScriptError::kElementAlreadyExists)
     SDE_OS_ENUM_CASE(NativeScriptError::kScriptLibraryInvalid)
     SDE_OS_ENUM_CASE(NativeScriptError::kScriptLibraryMissingFunction)
   }
@@ -158,13 +159,13 @@ expected<void, NativeScriptError> NativeScriptCache::reload(NativeScriptData& sc
 
   if (library_ptr == nullptr)
   {
-    SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << SDE_OS_NAMED(script.library);
+    SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << SDE_OSNV(script.library);
     return make_unexpected(NativeScriptError::kScriptLibraryInvalid);
   }
 
   if (!script.script.reset(library_ptr->lib))
   {
-    SDE_LOG_ERROR() << "ScriptLibraryMissingFunction: " << SDE_OS_NAMED(library_ptr->lib);
+    SDE_LOG_ERROR() << "ScriptLibraryMissingFunction: " << SDE_OSNV(library_ptr->lib);
     return make_unexpected(NativeScriptError::kScriptLibraryMissingFunction);
   }
 

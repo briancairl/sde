@@ -94,6 +94,7 @@ class NativeScriptInstance : public NativeScriptBase<NativeScriptInstance>
   using Base = NativeScriptBase<NativeScriptInstance>;
 
 public:
+  NativeScriptInstance() = default;
   NativeScriptInstance(NativeScriptFn fn);
   ~NativeScriptInstance();
   NativeScriptInstance(NativeScriptInstance&& other);
@@ -149,6 +150,7 @@ private:
 enum class NativeScriptError
 {
   kInvalidHandle,
+  kElementAlreadyExists,
   kScriptLibraryInvalid,
   kScriptLibraryMissingFunction,
 };

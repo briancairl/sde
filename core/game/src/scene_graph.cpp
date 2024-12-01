@@ -8,7 +8,13 @@
 #include "sde/game/scene_graph.hpp"
 #include "sde/game/scene_handle.hpp"
 #include "sde/game/scene_manifest.hpp"
+#include "sde/geometry_io.hpp"
 #include "sde/logging.hpp"
+#include "sde/resource_handle_io.hpp"
+#include "sde/resource_io.hpp"
+#include "sde/serial/std/filesystem.hpp"
+#include "sde/serial/std/optional.hpp"
+#include "sde/serial/std/vector.hpp"
 #include "sde/serialization_binary_file.hpp"
 #include "sde/string.hpp"
 #include "sde/unordered_map.hpp"
@@ -151,6 +157,7 @@ expected<void, SceneGraphError> SceneGraph::load(const asset::path& directory)
     {
       return true;
     }
+
     const auto data_file_path = directory / (*script.instance_data_path);
 
     // Load script data for this instance
@@ -162,7 +169,7 @@ expected<void, SceneGraphError> SceneGraph::load(const asset::path& directory)
     }
     else
     {
-      SDE_LOG_ERROR() << "Failed to open data file: " << SDE_OS_NAMED(data_file_path) << " (" << ifs_or_error.error()
+      SDE_LOG_ERROR() << "Failed to open data file: " << SDE_OSNV(data_file_path) << " (" << ifs_or_error.error()
                       << ')';
     }
     return false;
@@ -177,13 +184,13 @@ expected<void, SceneGraphError> SceneGraph::save(const asset::path& directory)
     // Load script data for this instance
     if (auto ofs_or_error = serial::file_ostream::create(data_file_path); ofs_or_error.has_value())
     {
-      SDE_LOG_INFO() << "Saving to open data file: " << SDE_OS_NAMED(data_file_path);
+      SDE_LOG_INFO() << "Saving to open data file: " << SDE_OSNV(data_file_path);
       OArchive oar{*ofs_or_error};
       return script.instance.save(oar);
     }
     else
     {
-      SDE_LOG_ERROR() << "Failed to open data file: " << SDE_OS_NAMED(data_file_path) << " (" << ofs_or_error.error()
+      SDE_LOG_ERROR() << "Failed to open data file: " << SDE_OSNV(data_file_path) << " (" << ofs_or_error.error()
                       << ')';
     }
     return false;
@@ -308,7 +315,7 @@ SceneGraph::create(const SceneManifest& manifest, sde::unique_ptr<Assets>&& asse
     auto scene_or_error = graph.assets_->scenes.create(scene_name, std::move(pre_scripts), std::move(post_scripts));
     if (!scene_or_error.has_value())
     {
-      SDE_LOG_ERROR_FMT("SceneGraphErrorCode::kInvalidSceneCreation (failed to create scene: %s)", scene_name.c_str());
+      SDE_LOG_ERROR() << "SceneGraphErrorCode::kInvalidSceneCreation (failed to create scene: " << scene_name << ')';
       return make_unexpected(SceneGraphErrorCode::kInvalidSceneCreation);
     }
 
@@ -366,19 +373,24 @@ expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(const asset::path& 
     return make_unexpected(scene_graph_or_error.error());
   }
 
-  const auto assets_path = scene_graph_or_error->path() / "assets.bin";
+  const auto assets_path = scene_graph_or_error->assetPath();
   if (auto ifs_or_error = serial::file_istream::create(assets_path); ifs_or_error.has_value())
   {
     IArchive iar{*ifs_or_error};
-    iar >> *scene_graph_or_error->assets_;
+    iar >> Field{"assets", *scene_graph_or_error->assets_};
+    if (auto ok_or_error = scene_graph_or_error->assets_->refresh(); !ok_or_error.has_value())
+    {
+      SDE_LOG_ERROR() << ok_or_error.error() << " " << SDE_OSNV(assets_path);
+      return make_unexpected(SceneGraphErrorCode::kInvalidScriptAssets);
+    }
   }
   else if (ifs_or_error.error() == serial::FileStreamError::kFileDoesNotExist)
   {
-    SDE_LOG_WARN() << SDE_OS_NAMED(assets_path);
+    SDE_LOG_WARN() << SDE_OSNV(assets_path);
   }
   else
   {
-    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OS_NAMED(assets_path);
+    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(assets_path);
     return make_unexpected(SceneGraphErrorCode::kInvalidScriptAssets);
   }
 
@@ -405,15 +417,14 @@ expected<void, SceneGraphErrorCode> SceneGraph::dump(SceneGraph& graph, const as
     return make_unexpected(SceneGraphErrorCode::kInvalidScriptDataPath);
   }
 
-  const auto assets_path = graph.path() / "assets.bin";
+  const auto assets_path = graph.assetPath();
   if (auto ofs_or_error = serial::file_ostream::create(assets_path); ofs_or_error.has_value())
   {
     OArchive oar{*ofs_or_error};
-    oar << *graph.assets_;
+    oar << Field{"assets", *graph.assets_};
   }
   else
   {
-    SDE_LOG_ERROR() << ofs_or_error.error() << " " << SDE_OS_NAMED(assets_path);
     return make_unexpected(SceneGraphErrorCode::kInvalidScriptAssets);
   }
 

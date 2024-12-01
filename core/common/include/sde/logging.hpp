@@ -52,6 +52,7 @@ public:
   Log& operator=(Log&& other);
 
   void swap(Log& other);
+  void flush();
 
   constexpr bool isValid() const { return os_ != nullptr; }
   constexpr operator bool() const { return isValid(); }
@@ -151,7 +152,7 @@ private:
   SDE_FAIL() << reason;                                                                                                \
   SDE_UNREACHABLE();
 
-#define SDE_OS_NAMED(x) '[' << __SDE_STR_EXPR(x) << "=" << x << ']'
+#define SDE_OSNV(x) '[' << __SDE_STR_EXPR(x) << "=" << x << ']'
 #define SDE_OS_ENUM_CASE(e)                                                                                            \
   case e: {                                                                                                            \
     return os << __SDE_STR_EXPR(e);                                                                                    \

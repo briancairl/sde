@@ -86,7 +86,7 @@ expected<void, ImageError> ImageCache::reload(Image& image)
   // Check if image point is valid
   if (!asset::exists(image.path))
   {
-    SDE_LOG_ERROR() << "AssetNotFound: " << SDE_OS_NAMED(image.path);
+    SDE_LOG_ERROR() << "AssetNotFound: " << SDE_OSNV(image.path);
     return make_unexpected(ImageError::kAssetNotFound);
   }
 
@@ -114,7 +114,7 @@ expected<void, ImageError> ImageCache::reload(Image& image)
     break;
   }
   default: {
-    SDE_LOG_ERROR() << "UnsupportedBitDepth: " << SDE_OS_NAMED(image.options.element_type);
+    SDE_LOG_ERROR() << "UnsupportedBitDepth: " << SDE_OSNV(image.options.element_type);
     return make_unexpected(ImageError::kUnsupportedBitDepth);
   }
   }
@@ -122,12 +122,12 @@ expected<void, ImageError> ImageCache::reload(Image& image)
   // Check if image point is valid
   if (image_data_ptr == nullptr)
   {
-    SDE_LOG_ERROR() << "AssetInvalid: " << SDE_OS_NAMED(image.path);
+    SDE_LOG_ERROR() << "AssetInvalid: " << SDE_OSNV(image.path);
     return make_unexpected(ImageError::kAssetInvalid);
   }
 
-  SDE_LOG_DEBUG() << "Loaded image: " << SDE_OS_NAMED(image.path) << ", " << SDE_OS_NAMED(height_on_load) << ", "
-                  << SDE_OS_NAMED(width_on_load);
+  SDE_LOG_DEBUG() << "Loaded image: " << SDE_OSNV(image.path) << ", " << SDE_OSNV(height_on_load) << ", "
+                  << SDE_OSNV(width_on_load);
 
   // Set loaded image image
   image.options.channels = from_channel_count(channel_count_on_load);

@@ -51,6 +51,8 @@ Log& Log::operator=(Log&& other)
   return *this;
 }
 
+void Log::flush() { this->os_->flush(); }
+
 void Log::swap(Log& other) { std::swap(this->os_, other.os_); }
 
 
@@ -67,6 +69,7 @@ Abort::Abort(std::ostream* target) : Log{target}
 {
   if (this->isValid())
   {
+    this->flush();
     (*this) << "********** RUNTIME ASSERTION FAILED **********\n\n";
   }
 }

@@ -30,6 +30,7 @@ namespace sde::game
 enum class ComponentError
 {
   kInvalidHandle,
+  kElementAlreadyExists,
   kComponentLibraryInvalid,
   kComponentLibraryMissingFunction,
   kComponentAlreadyLoaded

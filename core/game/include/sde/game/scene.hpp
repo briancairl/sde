@@ -31,6 +31,7 @@ namespace sde::game
 enum class SceneError
 {
   kInvalidHandle,
+  kElementAlreadyExists,
 };
 
 std::ostream& operator<<(std::ostream& os, SceneError error);

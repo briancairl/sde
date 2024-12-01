@@ -236,7 +236,7 @@ create_texture_impl(View<DataT> data, const TextureShape& shape, TextureLayout l
   }
   else if (shape.height() == 0 or shape.width() == 0)
   {
-    SDE_LOG_ERROR() << "InvalidDimensions: " << SDE_OS_NAMED(shape.height()) << ", " << SDE_OS_NAMED(shape.width());
+    SDE_LOG_ERROR() << "InvalidDimensions: " << SDE_OSNV(shape.height()) << ", " << SDE_OSNV(shape.width());
     return make_unexpected(TextureError::kInvalidDimensions);
   }
 
@@ -323,7 +323,7 @@ expected<void, TextureError> replace(const Texture& texture, View<const DataT> d
 {
   if (area.isEmpty())
   {
-    SDE_LOG_ERROR() << "ReplaceAreaEmpty: " << SDE_OS_NAMED(area);
+    SDE_LOG_ERROR() << "ReplaceAreaEmpty: " << SDE_OSNV(area);
     return make_unexpected(TextureError::kReplaceAreaEmpty);
   }
 
@@ -331,7 +331,7 @@ expected<void, TextureError> replace(const Texture& texture, View<const DataT> d
   const std::size_t actual_size = sizeof(DataT) * data.size();
   if (actual_size != required_size)
   {
-    SDE_LOG_ERROR() << "InvalidDataLength: " << SDE_OS_NAMED(actual_size) << ", " << SDE_OS_NAMED(required_size);
+    SDE_LOG_ERROR() << "InvalidDataLength: " << SDE_OSNV(actual_size) << ", " << SDE_OSNV(required_size);
     return make_unexpected(TextureError::kInvalidDataLength);
   }
 

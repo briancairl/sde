@@ -43,7 +43,7 @@ expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& text
   const auto* texture_info = textures_->get_if(texture);
   if (texture_info == nullptr)
   {
-    SDE_LOG_ERROR() << "InvalidAtlasTexture: " << SDE_OS_NAMED(texture);
+    SDE_LOG_ERROR() << "InvalidAtlasTexture: " << SDE_OSNV(texture);
     return make_unexpected(TileSetError::kInvalidAtlasTexture);
   }
 

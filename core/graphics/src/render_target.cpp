@@ -38,7 +38,7 @@ expected<void, RenderTargetError> RenderTargetCache::reload(RenderTarget& render
   const auto* color_attachment = textures_->get_if(render_target.color_attachment);
   if (color_attachment == nullptr)
   {
-    SDE_LOG_ERROR() << "InvalidColorAttachment: " << SDE_OS_NAMED(render_target.color_attachment);
+    SDE_LOG_ERROR() << "InvalidColorAttachment: " << SDE_OSNV(render_target.color_attachment);
     return make_unexpected(RenderTargetError::kInvalidColorAttachment);
   }
   else

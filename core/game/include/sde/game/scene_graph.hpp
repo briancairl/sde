@@ -77,7 +77,9 @@ public:
 
   [[nodiscard]] static expected<void, SceneGraphErrorCode> dump(SceneGraph& graph, const asset::path& manifest_path);
 
-  [[nodiscard]] const auto& path() const { return path_; }
+  [[nodiscard]] const asset::path& path() const { return path_; }
+
+  [[nodiscard]] const asset::path assetPath() const { return path() / "assets.bin"; }
 
 private:
   explicit SceneGraph(sde::unique_ptr<Assets>&& assets);

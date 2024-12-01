@@ -326,14 +326,14 @@ expected<ListenerTarget, ListenerTargetError> ListenerTarget::create(Mixer& mixe
 {
   if (mixer.listener_active_ != nullptr)
   {
-    SDE_LOG_ERROR() << "ListenerAlreadyActive: " << SDE_OS_NAMED(mixer.listener_active_);
+    SDE_LOG_ERROR() << "ListenerAlreadyActive: " << SDE_OSNV(mixer.listener_active_);
     return make_unexpected(ListenerTargetError::kListenerAlreadyActive);
   }
 
   if (listener_id >= mixer.listeners_.size())
   {
-    SDE_LOG_ERROR() << "ListenerIDInvalid : " << SDE_OS_NAMED(listener_id) << "(of "
-                    << SDE_OS_NAMED(mixer.listeners_.size()) << ')';
+    SDE_LOG_ERROR() << "ListenerIDInvalid : " << SDE_OSNV(listener_id) << "(of " << SDE_OSNV(mixer.listeners_.size())
+                    << ')';
     return make_unexpected(ListenerTargetError::kListenerIDInvalid);
   }
 

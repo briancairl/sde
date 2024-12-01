@@ -23,6 +23,7 @@ namespace sde::game
 enum class LibraryError
 {
   kInvalidHandle,
+  kElementAlreadyExists,
   kLibraryMissing,
   kLibraryAlreadyLoaded,
 };

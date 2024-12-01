@@ -14,6 +14,7 @@ std::ostream& operator<<(std::ostream& os, SceneError error)
   switch (error)
   {
     SDE_OS_ENUM_CASE(SceneError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(SceneError::kElementAlreadyExists)
   }
   return os;
 }

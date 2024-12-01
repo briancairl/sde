@@ -68,7 +68,7 @@ expected<void, SoundDataError> SoundDataCache::reload(SoundData& sound)
   // Check that sound file exists
   if (!asset::exists(sound.path))
   {
-    SDE_LOG_ERROR() << "MissingSoundFile: " << SDE_OS_NAMED(sound.path);
+    SDE_LOG_ERROR() << "MissingSoundFile: " << SDE_OSNV(sound.path);
     return make_unexpected(SoundDataError::kMissingSoundFile);
   }
 
@@ -77,14 +77,14 @@ expected<void, SoundDataError> SoundDataCache::reload(SoundData& sound)
     UniqueResource{WaveOpenFileForReading(sound.path.c_str()), [](WaveInfo* wave_ptr) { WaveCloseFile(wave_ptr); }};
   if (wave == nullptr)
   {
-    SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OS_NAMED(sound.path);
+    SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OSNV(sound.path);
     return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   // Seek WAV to start
   if (const auto retcode = WaveSeekFile(0, wave); retcode != 0)
   {
-    SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OS_NAMED(sound.path);
+    SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OSNV(sound.path);
     return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
@@ -92,23 +92,22 @@ expected<void, SoundDataError> SoundDataCache::reload(SoundData& sound)
   auto* wave_data = reinterpret_cast<char*>(std::malloc(wave->dataSize));
   if (const auto read_size = WaveReadFile(wave_data, wave->dataSize, wave); read_size != wave->dataSize)
   {
-    SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OS_NAMED(sound.path) << " (" << SDE_OS_NAMED(read_size) << ", "
-                    << SDE_OS_NAMED(wave->dataSize) << ')';
+    SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OSNV(sound.path) << " (" << SDE_OSNV(read_size) << ", "
+                    << SDE_OSNV(wave->dataSize) << ')';
     return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   auto channel_count_opt = toSoundChannelCount(wave->channels);
   if (!channel_count_opt.has_value())
   {
-    SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OS_NAMED(sound.path) << " (" << SDE_OS_NAMED(wave->channels) << ')';
+    SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OSNV(sound.path) << " (" << SDE_OSNV(wave->channels) << ')';
     return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
   auto channel_element_type_opt = toSoundChannelBitDepth(wave->bitsPerSample);
   if (!channel_element_type_opt.has_value())
   {
-    SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OS_NAMED(sound.path) << " (" << SDE_OS_NAMED(wave->bitsPerSample)
-                    << ')';
+    SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OSNV(sound.path) << " (" << SDE_OSNV(wave->bitsPerSample) << ')';
     return make_unexpected(SoundDataError::kInvalidSoundFile);
   }
 
@@ -119,8 +118,7 @@ expected<void, SoundDataError> SoundDataCache::reload(SoundData& sound)
     .element_type = std::move(channel_element_type_opt).value(),
     .bits_per_second = static_cast<std::size_t>(wave->sampleRate)};
 
-  SDE_LOG_DEBUG() << "Loaded sound from file: " << SDE_OS_NAMED(sound.path) << ", "
-                  << SDE_OS_NAMED(sound.buffer_length);
+  SDE_LOG_DEBUG() << "Loaded sound from file: " << SDE_OSNV(sound.path) << ", " << SDE_OSNV(sound.buffer_length);
   return {};
 }
 

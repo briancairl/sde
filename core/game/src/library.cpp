@@ -13,6 +13,7 @@ std::ostream& operator<<(std::ostream& os, LibraryError error)
   switch (error)
   {
     SDE_OS_ENUM_CASE(LibraryError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(LibraryError::kElementAlreadyExists)
     SDE_OS_ENUM_CASE(LibraryError::kLibraryMissing)
     SDE_OS_ENUM_CASE(LibraryError::kLibraryAlreadyLoaded)
   }
@@ -42,7 +43,7 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
   const auto absolute_path = asset::absolute(path);
   if (asset_path_lookup_.count(absolute_path) > 0)
   {
-    SDE_LOG_ERROR() << "LibraryAlreadyLoaded: " << SDE_OS_NAMED(absolute_path);
+    SDE_LOG_ERROR() << "LibraryAlreadyLoaded: " << SDE_OSNV(absolute_path);
     return make_unexpected(LibraryError::kLibraryAlreadyLoaded);
   }
 
@@ -59,7 +60,7 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
 
 void LibraryCache::when_created(LibraryHandle handle, const LibraryData* data)
 {
-  SDE_LOG_INFO() << "New library added: " << SDE_OS_NAMED(data->path);
+  SDE_LOG_INFO() << "New library added: " << SDE_OSNV(data->path);
   asset_path_lookup_.emplace(
     std::piecewise_construct, std::forward_as_tuple(data->path), std::forward_as_tuple(handle, data));
 }
