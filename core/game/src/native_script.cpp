@@ -33,7 +33,7 @@ std::ostream& operator<<(std::ostream& os, NativeScriptError error)
 
 template <typename ScriptT> std::ostream& operator<<(std::ostream& os, const NativeScriptBase<ScriptT>& script)
 {
-  return os << "NativeScript[" << script.name() << "] (ver:" << script.version() << ')';
+  return os << script.name() << '.' << script.version();
 }
 
 template std::ostream& operator<< <NativeScript>(std::ostream&, const NativeScriptBase<NativeScript>& script);

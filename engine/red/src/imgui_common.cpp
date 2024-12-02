@@ -53,7 +53,7 @@ bool Preview(const sde::graphics::Texture& texture, const ImVec2& preview_size)
 
 
 void Preview(
-  const std::vector<sde::Rect2f>& texcoords,
+  const sde::vector<sde::Rect2f>& texcoords,
   const sde::graphics::Texture& texture,
   const ImVec2& preview_tile_size,
   const ImVec2& preview_tile_spacing,

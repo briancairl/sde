@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // SDE
 #include "sde/expected.hpp"
 #include "sde/geometry.hpp"
@@ -29,6 +32,8 @@ enum class WindowError
   kWindowCursorInvalidPixelFormat,
   kWindowCursorInvalidSize,
 };
+
+std::ostream& operator<<(std::ostream& os, WindowError error);
 
 struct WindowDeleter
 {

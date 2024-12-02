@@ -391,7 +391,7 @@ expected<Mixer, MixerError> Mixer::create(NativeSoundDeviceHandle sound_device, 
   listeners.reserve(options.listener_options.size());
   for (const auto& options : options.listener_options)
   {
-    SDE_LOG_DEBUG() << "Listener::create(", listeners.size() << ')';
+    SDE_LOG_DEBUG() << "Listener::create(" << listeners.size() << ')';
     if (auto listener_or_error = Listener::create(sound_device, options); listener_or_error.has_value())
     {
       listeners.push_back(std::move(listener_or_error).value());

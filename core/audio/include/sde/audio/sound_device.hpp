@@ -5,6 +5,9 @@
  */
 #pragma once
 
+// C++ Standard Library
+#include <iosfwd>
+
 // SDE
 #include "sde/audio/sound_device_fwd.hpp"
 #include "sde/expected.hpp"
@@ -32,6 +35,8 @@ enum class SoundDeviceError
   kFailedToCreateBackendDevice,
   kFailedToCreateBackendContext,
 };
+
+std::ostream& operator<<(std::ostream& os, SoundDeviceError error);
 
 struct SoundDevice
 {

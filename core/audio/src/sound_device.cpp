@@ -14,6 +14,15 @@ namespace sde::audio
 namespace
 {}  // namespace
 
+std::ostream& operator<<(std::ostream& os, SoundDeviceError error)
+{
+  switch (error)
+  {
+    SDE_OS_ENUM_CASE(SoundDeviceError::kFailedToCreateBackendDevice);
+    SDE_OS_ENUM_CASE(SoundDeviceError::kFailedToCreateBackendContext);
+  }
+  return os;
+}
 
 void NativeContextDeleter::operator()(context_handle_t id) const
 {

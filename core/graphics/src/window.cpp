@@ -66,6 +66,19 @@ bool glfwTryFirstInit()
 
 }  // namespace
 
+std::ostream& operator<<(std::ostream& os, WindowError error)
+{
+  switch (error)
+  {
+    SDE_OS_ENUM_CASE(WindowError::kWindowCreationFailed);
+    SDE_OS_ENUM_CASE(WindowError::kWindowIconInvalidPixelFormat);
+    SDE_OS_ENUM_CASE(WindowError::kWindowIconInvalidSize);
+    SDE_OS_ENUM_CASE(WindowError::kWindowCursorInvalidPixelFormat);
+    SDE_OS_ENUM_CASE(WindowError::kWindowCursorInvalidSize);
+  }
+  return os;
+}
+
 void WindowDeleter::operator()(NativeWindowHandle native_handle) const
 {
   SDE_LOG_DEBUG() << "glfwDestroyWindow";

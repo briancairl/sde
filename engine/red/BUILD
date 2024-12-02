@@ -4,6 +4,9 @@ cc_library(
     "include/red/components.hpp",
     "include/red/imgui_common.hpp",
   ],
+  srcs=[
+    "src/imgui_common.cpp",
+  ],
   strip_include_prefix="include",
   deps=[
     "//core/game",
@@ -69,6 +72,14 @@ cc_binary(
 )
 
 cc_binary(
+  name="texture_viewer",
+  srcs=["src/texture_viewer.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
   name="audio_manager",
   srcs=["src/audio_manager.cpp"],
   linkshared=True,
@@ -76,11 +87,19 @@ cc_binary(
   visibility=["//visibility:public"]
 )
 
+cc_binary(
+  name="player_character",
+  srcs=["src/player_character.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
 
 cc_library(
   name="builtin_native_scripts",
   deps=[
     ":audio_manager",
+    ":player_character",
     ":drag_and_drop_loader",
     ":renderer",
     ":imgui_start",
@@ -88,6 +107,7 @@ cc_library(
     ":library_browser",
     ":script_browser",
     ":scene_tree",
+    ":texture_viewer",
   ],
   visibility=["//visibility:public"]
 )

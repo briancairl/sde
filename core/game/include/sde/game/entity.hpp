@@ -82,7 +82,7 @@ public:
     if (value_or_error.has_value())
     {
       auto entity_itr = handle_to_value_cache_.find(value_or_error->handle);
-      attach_components(*this, entity_itr->second.value);
+      attach_components(*this, value_or_error->handle, entity_itr->second.value);
     }
     return value_or_error;
   }
@@ -98,7 +98,7 @@ public:
     {
       return make_unexpected(EntityError::kInvalidHandle);
     }
-    return attach(entity_itr->second, std::forward<CTorArgs>(args)...);
+    return this->template attach<ComponentT>(entity_itr->second.value, std::forward<CTorArgs>(args)...);
   }
 
   /**

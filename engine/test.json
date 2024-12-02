@@ -15,6 +15,16 @@
                     "data": "audio_manager.bin",
                     "path": "engine/red/libaudio_manager.so",
                     "version": 90
+                },
+                {
+                    "data": "texture_viewer.bin",
+                    "path": "engine/red/libtexture_viewer.so",
+                    "version": 106
+                },
+                {
+                    "data": null,
+                    "path": "engine/red/libplayer_character.so",
+                    "version": null
                 }
             ]
         },
@@ -26,7 +36,7 @@
                 {
                     "data": "script_browser.bin",
                     "path": "engine/red/libscript_browser.so",
-                    "version": 77
+                    "version": 72
                 },
                 {
                     "data": "imgui_end.bin",
