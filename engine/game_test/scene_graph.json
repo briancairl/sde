@@ -1,5 +1,4 @@
 {
-    "path": "/tmp/test",
     "root": "root",
     "scenes": {
         "inner_scene": {

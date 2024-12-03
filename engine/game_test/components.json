@@ -1,0 +1,54 @@
+{
+    "Info" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "Size" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "DebugWireFrame" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "Position" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "TransformQuery" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "Dynamics" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "Focused" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "Background" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "Midground" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "Foreground" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "TileMap" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "AnimatedSprite" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    },
+    "Sprite" : {
+        "path": "engine/red/libcomponents.so",
+        "version": null
+    }
+}

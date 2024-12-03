@@ -7,6 +7,7 @@
 
 // C++ Standard Library
 #include <iosfwd>
+#include <string_view>
 
 // EnTT
 #include <entt/fwd.hpp>
@@ -21,6 +22,7 @@
 #include "sde/game/library_handle.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
+#include "sde/string.hpp"
 #include "sde/type_name.hpp"
 #include "sde/unordered_map.hpp"
 
@@ -56,7 +58,7 @@ public:
 
   constexpr operator bool() const { return on_load_ and on_save_; }
 
-  const char* name() const { return name_(); }
+  std::string_view name() const { return name_(); }
   bool load(IArchive& ar, entt::entity id, entt::registry& registry) const;
   bool save(OArchive& ar, entt::entity id, const entt::registry& registry) const;
 
@@ -79,7 +81,7 @@ private:
 struct ComponentData : Resource<ComponentData>
 {
   LibraryHandle library;
-  std::string name;
+  sde::string name;
   ComponentIO io;
 
   auto field_list() { return FieldList(Field{"library", library}, Field{"name", name}, _Stub{"io", io}); }
@@ -111,14 +113,14 @@ public:
 
   using fundemental_type::get_if;
 
-  const ComponentHandle get_handle(const std::string& name) const;
+  const ComponentHandle get_handle(const sde::string& name) const;
 
-  const ComponentData* get_if(const std::string& name) const;
+  const ComponentData* get_if(const sde::string& name) const;
 
 private:
   LibraryCache* libraries_;
-  sde::unordered_map<std::string, ComponentHandle> type_name_to_component_handle_lookup_;
-  sde::unordered_map<std::string, const ComponentData*> type_name_to_component_data_lookup_;
+  sde::unordered_map<sde::string, ComponentHandle> type_name_to_component_handle_lookup_;
+  sde::unordered_map<sde::string, const ComponentData*> type_name_to_component_data_lookup_;
   expected<void, ComponentError> reload(ComponentData& library);
   expected<void, ComponentError> unload(ComponentData& library);
   expected<ComponentData, ComponentError> generate(const asset::path& path);

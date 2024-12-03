@@ -55,13 +55,12 @@ void component_save_impl(sde::game::OArchive& ar, entt::entity e, const entt::re
 
 }  // namespace sde::game
 
+#define SDE_COMPONENT__REGISTER_NAME(Name, ComponentT)                                                                 \
+  SDE_EXPORT const char* Name##_name() { return #Name; }
 
-#define SDE_COMPONENT__REGISTER_NAME(ComponentT)                                                                       \
-  SDE_EXPORT const char* name() { return ::sde::game::component_name_impl<ComponentT>(); }
 
-
-#define SDE_COMPONENT__REGISTER_LOAD(ComponentT)                                                                       \
-  SDE_EXPORT void on_load(void* iarchive, void* entity, void* registry)                                                \
+#define SDE_COMPONENT__REGISTER_LOAD(Name, ComponentT)                                                                 \
+  SDE_EXPORT void Name##_on_load(void* iarchive, void* entity, void* registry)                                         \
   {                                                                                                                    \
     ::sde::game::component_load_impl<ComponentT>(                                                                      \
       *reinterpret_cast<::sde::game::IArchive*>(iarchive),                                                             \
@@ -69,8 +68,8 @@ void component_save_impl(sde::game::OArchive& ar, entt::entity e, const entt::re
       *reinterpret_cast<entt::registry*>(registry));                                                                   \
   }
 
-#define SDE_COMPONENT__REGISTER_SAVE(ComponentT)                                                                       \
-  SDE_EXPORT void on_save(void* oarchive, void* entity, const void* registry)                                          \
+#define SDE_COMPONENT__REGISTER_SAVE(Name, ComponentT)                                                                 \
+  SDE_EXPORT void Name##_on_save(void* oarchive, void* entity, const void* registry)                                   \
   {                                                                                                                    \
     ::sde::game::component_save_impl<ComponentT>(                                                                      \
       *reinterpret_cast<::sde::game::OArchive*>(oarchive),                                                             \
@@ -79,7 +78,7 @@ void component_save_impl(sde::game::OArchive& ar, entt::entity e, const entt::re
   }
 
 
-#define SDE_COMPONENT__REGISTER(ComponentT)                                                                            \
-  SDE_COMPONENT__REGISTER_NAME(ComponentT)                                                                             \
-  SDE_COMPONENT__REGISTER_LOAD(ComponentT)                                                                             \
-  SDE_COMPONENT__REGISTER_SAVE(ComponentT)
+#define SDE_COMPONENT__REGISTER(Name, ComponentT)                                                                      \
+  SDE_COMPONENT__REGISTER_NAME(Name, ComponentT)                                                                       \
+  SDE_COMPONENT__REGISTER_LOAD(Name, ComponentT)                                                                       \
+  SDE_COMPONENT__REGISTER_SAVE(Name, ComponentT)

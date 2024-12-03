@@ -103,10 +103,6 @@ public:
 
   [[nodiscard]] static expected<SceneManifest, SceneManifestError> create(const asset::path& path);
 
-  [[nodiscard]] const auto& path() const { return path_; }
-
-  void setPath(const asset::path& path);
-
   void setRoot(const sde::string& scene_name);
 
   expected<void, SceneManifestError> setScene(const sde::string& scene_name, SceneManifestEntry&& entry);
@@ -118,11 +114,10 @@ private:
   template <typename KeyValueArchiveT>
   [[nodiscard]] expected<void, SceneManifestError> load(const KeyValueArchiveT& kv_store);
 
-  asset::path path_;
   sde::string root_;
   sde::unordered_map<sde::string, SceneManifestEntry> scenes_;
 
-  auto field_list() { return FieldList(Field{"path", path_}, Field{"root", root_}, Field{"scenes", scenes_}); }
+  auto field_list() { return FieldList(Field{"root", root_}, Field{"scenes", scenes_}); }
 };
 
 }  // namespace sde::game

@@ -33,6 +33,12 @@ struct Assets : Resource<Assets>
 
   Assets();
 
+  Assets(Assets&&) = default;
+  Assets& operator=(Assets&&) = default;
+
+  Assets(const Assets&) = delete;
+  Assets& operator=(const Assets&) = delete;
+
   [[nodiscard]] expected<void, AssetError> refresh();
 
   void strip();

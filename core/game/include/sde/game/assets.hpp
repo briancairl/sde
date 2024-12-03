@@ -72,6 +72,12 @@ public:
 
   ~Assets();
 
+  Assets(Assets&&) = default;
+  Assets& operator=(Assets&&) = default;
+
+  Assets(const Assets&) = delete;
+  Assets& operator=(const Assets&) = delete;
+
   auto* operator->() { return std::addressof(registry.ctx()); }
   const auto* operator->() const { return std::addressof(registry.ctx()); }
 

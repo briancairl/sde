@@ -120,42 +120,42 @@ void edit(player_character* self, sde::game::Assets& assets, const sde::AppPrope
     std::make_pair("run", self->run_frames),
   };
 
-  // for (auto& [frame_label, frames] : frames)
-  // {
-  //   if (ImGui::CollapsingHeader(frame_label))
-  //   {
-  //     auto direction_label_itr = std::begin(kDirectionLabels);
-  //     for (auto frames_itr = frames; frames_itr != (frames + 8UL); ++frames_itr, ++direction_label_itr)
-  //     {
-  //       ImGui::Dummy(ImVec2{10, 10});
-  //       if (*frames_itr == sprite.options().frames)
-  //       {
-  //         ImGui::TextColored(ImVec4{0, 1, 0, 1}, "%s: %lu", *direction_label_itr, frames_itr->id());
-  //       }
-  //       else if (frames_itr->isNull())
-  //       {
-  //         ImGui::TextColored(ImVec4{1, 0, 0, 1}, "%s: %lu", *direction_label_itr, frames_itr->id());
-  //       }
-  //       else
-  //       {
-  //         ImGui::TextColored(ImVec4{1, 1, 1, 1}, "%s: %lu", *direction_label_itr, frames_itr->id());
-  //       }
-  //       if (ImGui::BeginDragDropTarget())
-  //       {
-  //         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SDE_TILESET_ASSET"))
-  //         {
-  //           SDE_ASSERT_EQ(payload->DataSize, sizeof(TileSetHandle));
-  //           if (const auto h = *reinterpret_cast<const TileSetHandle*>(payload->Data);
-  //               assets.graphics.tile_sets.exists(h))
-  //           {
-  //             (*frames_itr) = h;
-  //           }
-  //         }
-  //         ImGui::EndDragDropTarget();
-  //       }
-  //     }
-  //   }
-  // }
+  for (auto& [frame_label, frames] : frames)
+  {
+    if (ImGui::CollapsingHeader(frame_label))
+    {
+      auto direction_label_itr = std::begin(kDirectionLabels);
+      for (auto frames_itr = frames; frames_itr != (frames + 8UL); ++frames_itr, ++direction_label_itr)
+      {
+        ImGui::Dummy(ImVec2{10, 10});
+        if (*frames_itr == sprite.options().frames)
+        {
+          ImGui::TextColored(ImVec4{0, 1, 0, 1}, "%s: %lu", *direction_label_itr, frames_itr->id());
+        }
+        else if (frames_itr->isNull())
+        {
+          ImGui::TextColored(ImVec4{1, 0, 0, 1}, "%s: %lu", *direction_label_itr, frames_itr->id());
+        }
+        else
+        {
+          ImGui::TextColored(ImVec4{1, 1, 1, 1}, "%s: %lu", *direction_label_itr, frames_itr->id());
+        }
+        if (ImGui::BeginDragDropTarget())
+        {
+          if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SDE_TILESET_ASSET"))
+          {
+            SDE_ASSERT_EQ(payload->DataSize, sizeof(TileSetHandle));
+            if (const auto h = *reinterpret_cast<const TileSetHandle*>(payload->Data);
+                assets.graphics.tile_sets.exists(h))
+            {
+              (*frames_itr) = h;
+            }
+          }
+          ImGui::EndDragDropTarget();
+        }
+      }
+    }
+  }
   ImGui::End();
 }
 

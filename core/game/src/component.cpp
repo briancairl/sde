@@ -54,7 +54,7 @@ bool ComponentIO::reset(const dl::Library& library)
     auto symbol_or_error = library.get(field.name);
     if (!symbol_or_error.has_value())
     {
-      SDE_LOG_ERROR_FMT("ComponentIO.%s : %s", field.name, symbol_or_error.error().details);
+      SDE_LOG_ERROR() << "ComponentIO : " << field.name << " : " << symbol_or_error.error();
       return false;
     }
     else
@@ -149,7 +149,7 @@ void ComponentCache::when_removed(ComponentHandle handle, const ComponentData* d
   type_name_to_component_handle_lookup_.erase(data->name);
 }
 
-const ComponentData* ComponentCache::get_if(const std::string& name) const
+const ComponentData* ComponentCache::get_if(const sde::string& name) const
 {
   const auto itr = type_name_to_component_data_lookup_.find(name);
   if (itr == std::end(type_name_to_component_data_lookup_))
@@ -159,7 +159,7 @@ const ComponentData* ComponentCache::get_if(const std::string& name) const
   return itr->second;
 }
 
-const ComponentHandle ComponentCache::get_handle(const std::string& name) const
+const ComponentHandle ComponentCache::get_handle(const sde::string& name) const
 {
   const auto itr = type_name_to_component_handle_lookup_.find(name);
   if (itr == std::end(type_name_to_component_handle_lookup_))

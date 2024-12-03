@@ -167,7 +167,6 @@ template <> expected<void, SceneManifestError> SceneManifest::load(const nlohman
     return make_unexpected(SceneManifestError::kInvalidLoadJSONLayout);
   }
 
-  this->path_ = static_cast<std::string>(json["path"]);
   this->root_ = static_cast<std::string>(json["root"]);
 
   for (const auto& [scene_key_, scene_json] : json["scenes"].items())
@@ -267,7 +266,6 @@ template <> expected<void, SceneManifestError> SceneManifest::save(nlohmann::jso
       return make_unexpected(ok_or_error.error());
     }
   }
-  json["path"] = this->path_.string();
   json["root"] = this->root_;
   json["scenes"] = std::move(scenes_json);
   return {};
@@ -301,8 +299,6 @@ expected<SceneManifest, SceneManifestError> SceneManifest::create(const asset::p
   }
   return manifest;
 }
-
-void SceneManifest::setPath(const asset::path& path) { path_ = path; }
 
 void SceneManifest::setRoot(const sde::string& scene_name) { root_ = scene_name; }
 

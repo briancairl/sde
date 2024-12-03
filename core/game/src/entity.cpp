@@ -28,7 +28,7 @@ EntityCache::EntityCache(Registry& registry, ComponentCache& components) :
 
 ComponentHandle EntityCache::locate_component_if_registered(std::string_view name) const
 {
-  return components_->get_handle(std::string{name});
+  return components_->get_handle(sde::string{name});
 }
 
 expected<void, EntityError> EntityCache::reload(EntityData& entity)
