@@ -26,10 +26,25 @@ public:
   constexpr void* handle() const { return handle_; }
 
   constexpr bool isNull() const { return handle_ == nullptr; }
+
   constexpr bool isValid() const { return !isNull(); }
+
   constexpr operator bool() const { return isValid(); }
 
   constexpr void reset() { handle_ = nullptr; }
+
+  void swap(Symbol& other) { std::swap(this->handle_, other.handle_); }
+
+  Symbol(Symbol&& other) { this->swap(other); }
+
+  Symbol& operator=(Symbol&& other)
+  {
+    this->swap(other);
+    return *this;
+  }
+
+  Symbol(const Symbol& other) = default;
+  Symbol& operator=(const Symbol& other) = default;
 
 private:
   void* handle_ = nullptr;
@@ -53,7 +68,9 @@ public:
   constexpr explicit Function(Symbol sym) : symbol_{sym} {}
 
   constexpr bool isNull() const { return symbol_.isNull(); }
+
   constexpr bool isValid() const { return symbol_.isValid(); }
+
   constexpr operator bool() const { return isValid(); }
 
   constexpr void reset() { symbol_.reset(); }
@@ -63,6 +80,12 @@ public:
     symbol_ = symbol;
     return *this;
   }
+
+  Function(Function&& other) = default;
+  Function& operator=(Function&& other) = default;
+
+  Function(const Function& other) = default;
+  Function& operator=(const Function& other) = default;
 
 private:
   Symbol symbol_;

@@ -52,8 +52,9 @@ public:
     const value_type* operator->() const { return value; }
   };
 
-  struct element_storage : Resource<element_storage>
+  class element_storage : public Resource<element_storage>
   {
+  public:
     version_type version;
     value_type value;
 
@@ -61,12 +62,19 @@ public:
     const value_type& operator*() const { return get(); }
     const value_type* operator->() const { return std::addressof(value); }
 
+    element_storage(element_storage&& other) = default;
+    element_storage& operator=(element_storage&& other) = default;
+
     template <typename... ValueArgTs>
     explicit element_storage(version_type _version, ValueArgTs&&... args) :
         version{_version}, value{std::forward<ValueArgTs>(args)...}
     {}
 
     auto field_list() { return FieldList(Field{"version", version}, Field{"value", value}); }
+
+  private:
+    element_storage(const element_storage& other) = delete;
+    element_storage& operator=(const element_storage& other) = delete;
   };
 
   struct handle_type_hash
@@ -243,9 +251,21 @@ public:
     }
   }
 
+  void swap(ResourceCache& other)
+  {
+    std::swap(this->handle_lower_bound_, other.handle_lower_bound_);
+    std::swap(this->handle_to_value_cache_, other.handle_to_value_cache_);
+  }
+
   ResourceCache() = default;
-  ResourceCache(ResourceCache&&) = default;
-  ResourceCache& operator=(ResourceCache&&) = default;
+
+  ResourceCache(ResourceCache&& other) { this->swap(other); }
+
+  ResourceCache& operator=(ResourceCache&& other)
+  {
+    this->swap(other);
+    return *this;
+  }
 
 private:
   template <typename... CreateArgTs>
@@ -306,10 +326,11 @@ private:
 
   ResourceCache(const ResourceCache&) = delete;
   ResourceCache& operator=(const ResourceCache&) = delete;
+
+protected:
   /// Last used resource handle
   handle_type handle_lower_bound_ = handle_type::null();
 
-protected:
   /// Map of {resource_handle, resource_value} objects
   CacheMap handle_to_value_cache_;
 

@@ -28,6 +28,7 @@ struct Assets : Resource<Assets>
 {
   /// Sound data cache
   SoundDataCache sound_data;
+
   /// Sound cache
   SoundCache sounds;
 

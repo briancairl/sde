@@ -76,8 +76,17 @@ template <typename... FieldTs> auto to_const(const std::tuple<FieldTs...>& field
   return std::apply([](auto&... field) { return std::make_tuple(to_const(field)...); }, fields);
 }
 
-template <typename ResourceT> struct Resource : crtp_base<Resource<ResourceT>>
+template <typename ResourceT> class Resource : public crtp_base<Resource<ResourceT>>
 {
+public:
+  Resource() = default;
+
+  Resource(Resource&& other) = default;
+  Resource& operator=(Resource&& other) = default;
+
+  Resource(const Resource& other) = default;
+  Resource& operator=(const Resource& other) = default;
+
   constexpr decltype(auto) fields() { return this->derived().field_list(); }
 
   constexpr decltype(auto) fields() const { return to_const(const_cast<Resource*>(this)->derived().field_list()); }

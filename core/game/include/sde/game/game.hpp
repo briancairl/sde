@@ -34,12 +34,18 @@ class Game
 public:
   void spin(App& app);
 
+  Game(Game&& other) = default;
+  Game& operator=(Game&& other) = default;
+
   Game(Assets&& assets, SceneGraph&& scene_graph);
 
   [[nodiscard]] static expected<Game, GameError> create(const asset::path& path);
   [[nodiscard]] static expected<void, GameError> dump(Game& game, const asset::path& path);
 
 private:
+  Game(const Game& other) = delete;
+  Game& operator=(const Game& other) = delete;
+
   Assets assets_;
   SceneGraph scene_graph_;
 };
