@@ -22,31 +22,27 @@ std::ostream& operator<<(std::ostream& os, EntityError error)
   return os;
 }
 
-EntityCache::EntityCache(Registry& registry, ComponentCache& components) :
-    registry_{std::addressof(registry)}, components_{std::addressof(components)}
-{}
-
-ComponentHandle EntityCache::locate_component_if_registered(std::string_view name) const
+ComponentHandle EntityCache::locate_component_if_registered(dependencies deps, std::string_view name) const
 {
-  return components_->get_handle(sde::string{name});
+  return deps.get<ComponentCache>().get_handle(sde::string{name});
 }
 
-expected<void, EntityError> EntityCache::reload(EntityData& entity)
+expected<void, EntityError> EntityCache::reload(dependencies deps, EntityData& entity)
 {
-  entity.id = registry_->create();
+  entity.id = deps.get<Registry>().create();
   return {};
 }
 
-expected<void, EntityError> EntityCache::unload(const EntityData& entity)
+expected<void, EntityError> EntityCache::unload(dependencies deps, const EntityData& entity)
 {
-  registry_->destroy(entity.id);
+  deps.get<Registry>().destroy(entity.id);
   return {};
 }
 
-expected<EntityData, EntityError> EntityCache::generate()
+expected<EntityData, EntityError> EntityCache::generate(dependencies deps)
 {
   EntityData entity;
-  if (auto ok_or_error = reload(entity))
+  if (auto ok_or_error = reload(deps, entity))
   {
     return entity;
   }

@@ -19,8 +19,6 @@ std::ostream& operator<<(std::ostream& os, AssetError error)
   return os;
 }
 
-Assets::Assets() : sound_data{}, sounds{sound_data} {}
-
 expected<void, AssetError> Assets::refresh()
 {
   if (auto ok_or_error = sound_data.refresh(); !ok_or_error.has_value())
@@ -28,7 +26,7 @@ expected<void, AssetError> Assets::refresh()
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(AssetError::kFailedSoundDataLoading);
   }
-  if (auto ok_or_error = sounds.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = sounds.refresh(ResourceDependencies{sound_data}); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(AssetError::kFailedSoundLoading);

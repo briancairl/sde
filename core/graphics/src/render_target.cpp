@@ -25,9 +25,7 @@ std::ostream& operator<<(std::ostream& os, RenderTargetError error)
 
 void NativeFrameBufferDeleter::operator()(native_frame_buffer_id_t id) const { glDeleteFramebuffers(1, &id); }
 
-RenderTargetCache::RenderTargetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
-
-expected<void, RenderTargetError> RenderTargetCache::reload(RenderTarget& render_target)
+expected<void, RenderTargetError> RenderTargetCache::reload(dependencies deps, RenderTarget& render_target)
 {
   if (render_target.color_attachment.isNull())
   {
@@ -35,7 +33,7 @@ expected<void, RenderTargetError> RenderTargetCache::reload(RenderTarget& render
     render_target.native_id = NativeFrameBufferID{0};
     return {};
   }
-  const auto* color_attachment = textures_->get_if(render_target.color_attachment);
+  const auto* color_attachment = deps.get<TextureCache>().get_if(render_target.color_attachment);
   if (color_attachment == nullptr)
   {
     SDE_LOG_ERROR() << "InvalidColorAttachment: " << SDE_OSNV(render_target.color_attachment);
@@ -53,16 +51,16 @@ expected<void, RenderTargetError> RenderTargetCache::reload(RenderTarget& render
   return {};
 }
 
-expected<void, RenderTargetError> RenderTargetCache::unload(RenderTarget& render_target)
+expected<void, RenderTargetError> RenderTargetCache::unload(dependencies deps, RenderTarget& render_target)
 {
   render_target.native_id = NativeFrameBufferID{0};
   return {};
 }
 
-expected<RenderTarget, RenderTargetError> RenderTargetCache::generate(TextureHandle color_attachment)
+expected<RenderTarget, RenderTargetError> RenderTargetCache::generate(dependencies deps, TextureHandle color_attachment)
 {
   RenderTarget render_target{.color_attachment = color_attachment, .native_id = NativeFrameBufferID{0}};
-  if (auto ok_or_error = reload(render_target); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, render_target); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }

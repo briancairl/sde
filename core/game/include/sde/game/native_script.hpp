@@ -176,42 +176,24 @@ struct NativeScriptData : Resource<NativeScriptData>
   auto field_list() { return FieldList(Field{"library", library}, Field{"name", name}, _Stub{"script", script}); }
 };
 
-}  // namespace sde::game
-
-namespace sde
-{
-
-template <> struct ResourceCacheTypes<game::NativeScriptCache>
-{
-  using error_type = game::NativeScriptError;
-  using handle_type = game::NativeScriptHandle;
-  using value_type = game::NativeScriptData;
-};
-
-template <> struct Hasher<game::NativeScript> : ResourceHasher
-{};
-
-template <> struct Hasher<game::NativeScriptInstance> : ResourceHasher
-{};
-
-}  // namespace sde
-
-namespace sde::game
-{
-
 class NativeScriptCache : public ResourceCache<NativeScriptCache>
 {
   friend fundemental_type;
 
-public:
-  explicit NativeScriptCache(LibraryCache& libraries);
-
 private:
-  LibraryCache* libraries_;
-  expected<void, NativeScriptError> reload(NativeScriptData& library);
-  expected<void, NativeScriptError> unload(NativeScriptData& library);
-  expected<NativeScriptData, NativeScriptError> generate(const asset::path& path, const LibraryFlags& flags = {});
-  expected<NativeScriptData, NativeScriptError> generate(LibraryHandle library);
+  expected<void, NativeScriptError> reload(dependencies deps, NativeScriptData& library);
+  expected<void, NativeScriptError> unload(dependencies deps, NativeScriptData& library);
+  expected<NativeScriptData, NativeScriptError>
+  generate(dependencies deps, const asset::path& path, const LibraryFlags& flags = {});
+  expected<NativeScriptData, NativeScriptError> generate(dependencies deps, LibraryHandle library);
 };
 
 }  // namespace sde::game
+
+namespace sde
+{
+template <> struct Hasher<game::NativeScript> : ResourceHasher
+{};
+template <> struct Hasher<game::NativeScriptInstance> : ResourceHasher
+{};
+}  // namespace sde

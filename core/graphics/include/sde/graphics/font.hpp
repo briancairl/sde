@@ -46,26 +46,6 @@ struct Font : Resource<Font>
   auto field_list() { return FieldList((Field{"path", path}), (_Stub{"native_id", native_id})); }
 };
 
-}  // namespace sde::graphics
-
-namespace sde
-{
-
-template <> struct Hasher<graphics::Font> : ResourceHasher
-{};
-
-template <> struct ResourceCacheTypes<graphics::FontCache>
-{
-  using error_type = graphics::FontError;
-  using handle_type = graphics::FontHandle;
-  using value_type = graphics::Font;
-};
-
-}  // namespace sde
-
-namespace sde::graphics
-{
-
 class FontCache : public ResourceCache<FontCache>
 {
   friend fundemental_type;
@@ -77,3 +57,9 @@ private:
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct Hasher<graphics::Font> : ResourceHasher
+{};
+}  // namespace sde

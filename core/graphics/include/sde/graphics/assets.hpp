@@ -60,7 +60,7 @@ struct Assets : Resource<Assets>
   /// Render target asset cache
   RenderTargetCache render_targets;
 
-  Assets();
+  Assets() = default;
 
   Assets(Assets&&) = default;
   Assets& operator=(Assets&&) = default;

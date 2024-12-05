@@ -103,6 +103,16 @@ new_git_repository(
   build_file="@//external:nlohmann.BUILD",
 )
 
+# DONT
+new_git_repository(
+  name="dont",
+  remote="git@github.com:briancairl/dont.git",
+  commit="fe2232753b6983e3eaa3dd3501c312b49e3d7c74",
+  shallow_since="1733841329 -0500",
+  build_file="@//external:dont.BUILD",
+)
+
+
 # GTest/GMock
 http_archive(
     name="googletest",

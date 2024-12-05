@@ -24,10 +24,9 @@ std::ostream& operator<<(std::ostream& os, AssetError error)
   return os;
 }
 
-Assets::Assets() : textures{images}, tile_sets{textures}, type_sets{textures, fonts}, render_targets{textures} {}
-
 expected<void, AssetError> Assets::refresh()
 {
+  ResourceDependencies depends{images, textures, fonts};
   if (auto ok_or_error = images.refresh(); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedImageLoading: " << ok_or_error.error();
@@ -43,22 +42,22 @@ expected<void, AssetError> Assets::refresh()
     SDE_LOG_ERROR() << "FailedShaderLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedShaderLoading);
   }
-  if (auto ok_or_error = textures.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = textures.refresh(depends); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedTextureLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedTextureLoading);
   }
-  if (auto ok_or_error = tile_sets.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = tile_sets.refresh(depends); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedTileSetLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedTileSetLoading);
   }
-  if (auto ok_or_error = type_sets.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = type_sets.refresh(depends); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedTypeSetLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedTypeSetLoading);
   }
-  if (auto ok_or_error = render_targets.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = render_targets.refresh(depends); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedRenderTargetLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedRenderTargetLoading);

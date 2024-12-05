@@ -9,20 +9,21 @@
 #include <cstdint>
 #include <type_traits>
 
+// Dont
+#include <dont/merge.hpp>
+
 // SDE
 #include "sde/crtp.hpp"
 #include "sde/expected.hpp"
 #include "sde/hash.hpp"
 #include "sde/memory.hpp"
 #include "sde/resource.hpp"
+#include "sde/resource_cache_traits.hpp"
 #include "sde/resource_handle.hpp"
 #include "sde/unordered_map.hpp"
 
 namespace sde
 {
-
-template <typename ResourceCacheT> struct ResourceCacheTypes;
-
 enum class ResourceStatus
 {
   kInvalid,
@@ -31,10 +32,32 @@ enum class ResourceStatus
   kExisted
 };
 
+template <typename ResourceDependenciesT> struct ExpandResourceDependencies;
+
+template <typename ResourceDependenciesT>
+using expand_resource_dependencies_t = typename ExpandResourceDependencies<ResourceDependenciesT>::type;
+
+template <> struct ExpandResourceDependencies<ResourceDependencies<>>
+{
+  using type = ResourceDependencies<>;
+};
+
+template <typename... ResourceCacheTs> struct ExpandResourceDependencies<ResourceDependencies<ResourceCacheTs...>>
+{
+  using type = dont::set_union_t<
+    // Primary dependencies
+    ResourceDependencies<ResourceCacheTs...>,
+    // Transitive dependencies
+    typename ResourceCacheTraits<ResourceCacheTs>::dependencies...,
+    // Recursive expansion
+    expand_resource_dependencies_t<typename ResourceCacheTraits<ResourceCacheTs>::dependencies>...>;
+};
+
 template <typename ResourceCacheT> class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>
 {
 public:
-  using type_info = ResourceCacheTypes<ResourceCacheT>;
+  using dependencies = expand_resource_dependencies_t<typename ResourceCacheTraits<ResourceCacheT>::dependencies>;
+  using type_info = ResourceCacheTraits<ResourceCacheT>;
   using error_type = typename type_info::error_type;
   using handle_type = typename type_info::handle_type;
   using value_type = typename type_info::value_type;
@@ -102,7 +125,6 @@ public:
     }
     return make_unexpected(element_or_error.error());
   }
-
 
   template <typename... CreateArgTs>
   [[nodiscard]] expected<element_ref, error_type> find_or_replace(handle_type handle, CreateArgTs&&... args)
@@ -198,7 +220,21 @@ public:
 
   [[nodiscard]] std::size_t size() const { return handle_to_value_cache_.size(); }
 
-  [[nodiscard]] expected<void, error_type> refresh()
+  template <bool U = (dependencies::size() > 0)>
+  [[nodiscard]] std::enable_if_t<U, expected<void, error_type>> refresh(dependencies deps)
+  {
+    for (auto& [handle, element] : handle_to_value_cache_)
+    {
+      if (auto ok_or_error = this->derived().reload(deps, element.value); !ok_or_error.has_value())
+      {
+        return ok_or_error;
+      }
+    }
+    return {};
+  }
+
+  template <bool U = (dependencies::size() > 0)>
+  [[nodiscard]] std::enable_if_t<!U, expected<void, error_type>> refresh()
   {
     for (auto& [handle, element] : handle_to_value_cache_)
     {
@@ -210,17 +246,21 @@ public:
     return {};
   }
 
-  [[nodiscard]] expected<void, error_type> refresh(handle_type handle)
+  template <bool U = (dependencies::size() > 0)>
+  [[nodiscard]] std::enable_if_t<U, expected<void, error_type>> relinquish(dependencies deps)
   {
-    const auto handle_to_value_itr = handle_to_value_cache_.find(handle);
-    if (handle_to_value_itr == handle_to_value_cache_.end())
+    for (auto& [handle, element] : handle_to_value_cache_)
     {
-      return make_unexpected(error_type::kInvalidHandle);
+      if (auto ok_or_error = this->derived().unload(deps, element.value); !ok_or_error.has_value())
+      {
+        return ok_or_error;
+      }
     }
-    return this->derived().reload(handle_to_value_itr->second.value);
+    return {};
   }
 
-  [[nodiscard]] expected<void, error_type> relinquish()
+  template <bool U = (dependencies::size() > 0)>
+  [[nodiscard]] std::enable_if_t<!U, expected<void, error_type>> relinquish()
   {
     for (auto& [handle, element] : handle_to_value_cache_)
     {
@@ -230,16 +270,6 @@ public:
       }
     }
     return {};
-  }
-
-  [[nodiscard]] expected<void, error_type> relinquish(handle_type handle)
-  {
-    const auto handle_to_value_itr = handle_to_value_cache_.find(handle);
-    if (handle_to_value_itr == handle_to_value_cache_.end())
-    {
-      return make_unexpected(error_type::kInvalidHandle);
-    }
-    return this->derived().unload(handle_to_value_itr->second.value);
   }
 
   template <typename UpdateFn> void update_if_exists(handle_type handle, UpdateFn update)
@@ -315,9 +345,16 @@ private:
     return element_ref{ResourceStatus::kReplaced, itr->first, std::addressof(itr->second.value)};
   }
 
+  template <typename... Ts> [[nodiscard]] static expected<void, error_type> reload([[maybe_unused]] Ts&&... _)
+  {
+    return {};
+  }
 
-  [[nodiscard]] static expected<void, error_type> reload([[maybe_unused]] value_type& _) { return {}; }
-  [[nodiscard]] static expected<void, error_type> unload([[maybe_unused]] value_type& _) { return {}; }
+  template <typename... Ts> [[nodiscard]] static expected<void, error_type> unload([[maybe_unused]] Ts&&... _)
+  {
+    return {};
+  }
+
   [[nodiscard]] static handle_type next_unique_id([[maybe_unused]] const CacheMap& map, handle_type lower_bound)
   {
     ++lower_bound;

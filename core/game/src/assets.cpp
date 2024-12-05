@@ -26,21 +26,17 @@ std::ostream& operator<<(std::ostream& os, AssetError error)
   return os;
 }
 
-Assets::Assets() :
-    registry{}, components{libraries}, entities{registry, components}, scripts{libraries}, scenes{scripts}
-{}
-
 Assets::~Assets() = default;
 
 expected<void, AssetError> Assets::refresh()
 {
-  if (auto ok_or_error = components.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = components.refresh(this->dependencies()); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedComponentsLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedComponentsLoading);
   }
 
-  if (auto ok_or_error = entities.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = entities.refresh(this->dependencies()); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedEntitiesLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedEntitiesLoading);
@@ -64,7 +60,7 @@ expected<void, AssetError> Assets::refresh()
     return make_unexpected(AssetError::kFailedGraphicsLoading);
   }
 
-  if (auto ok_or_error = scripts.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = scripts.refresh(this->dependencies()); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedScriptsLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedScriptsLoading);

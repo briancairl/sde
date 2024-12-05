@@ -178,29 +178,6 @@ struct Image : Resource<Image>
   }
 };
 
-}  // namespace sde::graphics
-
-namespace sde
-{
-
-template <> struct Hasher<graphics::ImageOptions> : ResourceHasher
-{};
-
-template <> struct Hasher<graphics::Image> : ResourceHasher
-{};
-
-template <> struct ResourceCacheTypes<graphics::ImageCache>
-{
-  using error_type = graphics::ImageError;
-  using handle_type = graphics::ImageHandle;
-  using value_type = graphics::Image;
-};
-
-}  // namespace sde
-
-namespace sde::graphics
-{
-
 class ImageCache : public ResourceCache<ImageCache>
 {
   friend fundemental_type;
@@ -212,3 +189,13 @@ private:
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+
+template <> struct Hasher<graphics::ImageOptions> : ResourceHasher
+{};
+
+template <> struct Hasher<graphics::Image> : ResourceHasher
+{};
+}  // namespace sde

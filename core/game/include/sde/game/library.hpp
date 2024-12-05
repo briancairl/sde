@@ -46,26 +46,6 @@ struct LibraryData : Resource<LibraryData>
   auto field_list() { return FieldList(Field{"flags", flags}, Field{"path", path}, _Stub{"lib", lib}); }
 };
 
-}  // namespace sde::game
-
-namespace sde
-{
-
-template <> struct Hasher<game::LibraryFlags> : ResourceHasher
-{};
-
-template <> struct ResourceCacheTypes<game::LibraryCache>
-{
-  using error_type = game::LibraryError;
-  using handle_type = game::LibraryHandle;
-  using value_type = game::LibraryData;
-};
-
-}  // namespace sde
-
-namespace sde::game
-{
-
 class LibraryCache : public ResourceCache<LibraryCache>
 {
   friend fundemental_type;
@@ -76,7 +56,7 @@ public:
   std::pair<LibraryHandle, const LibraryData*> get_if(const asset::path& path) const;
 
 private:
-  sde::unordered_map<asset::path, std::pair<LibraryHandle, const LibraryData*>> asset_path_lookup_;
+  sde::unordered_map<asset::path, LibraryHandle> asset_path_lookup_;
 
   expected<void, LibraryError> reload(LibraryData& library);
   expected<void, LibraryError> unload(LibraryData& library);
@@ -86,3 +66,9 @@ private:
 };
 
 }  // namespace sde::game
+
+namespace sde
+{
+template <> struct Hasher<game::LibraryFlags> : ResourceHasher
+{};
+}  // namespace sde

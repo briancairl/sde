@@ -161,11 +161,9 @@ NativeScript& NativeScript::operator=(NativeScript&& other)
 
 NativeScriptInstance NativeScript::instance() const { return NativeScriptInstance{this->fn_}; }
 
-NativeScriptCache::NativeScriptCache(LibraryCache& libraries) : libraries_{std::addressof(libraries)} {}
-
-expected<void, NativeScriptError> NativeScriptCache::reload(NativeScriptData& script)
+expected<void, NativeScriptError> NativeScriptCache::reload(dependencies deps, NativeScriptData& script)
 {
-  const auto* library_ptr = libraries_->get_if(script.library);
+  const auto* library_ptr = deps.get<LibraryCache>().get_if(script.library);
 
   if (library_ptr == nullptr)
   {
@@ -184,13 +182,13 @@ expected<void, NativeScriptError> NativeScriptCache::reload(NativeScriptData& sc
   return {};
 }
 
-expected<void, NativeScriptError> NativeScriptCache::unload(NativeScriptData& script) { return {}; }
+expected<void, NativeScriptError> NativeScriptCache::unload(dependencies deps, NativeScriptData& script) { return {}; }
 
-expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(LibraryHandle library)
+expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(dependencies deps, LibraryHandle library)
 {
   NativeScriptData data{.library = library};
 
-  if (const auto ok_or_error = reload(data); !ok_or_error.has_value())
+  if (const auto ok_or_error = reload(deps, data); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }
@@ -199,15 +197,15 @@ expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(Librar
 }
 
 expected<NativeScriptData, NativeScriptError>
-NativeScriptCache::generate(const asset::path& path, const LibraryFlags& flags)
+NativeScriptCache::generate(dependencies deps, const asset::path& path, const LibraryFlags& flags)
 {
-  auto library_or_error = libraries_->create(path, flags);
+  auto library_or_error = deps.get<LibraryCache>().create(path, flags);
   if (!library_or_error.has_value())
   {
     SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << library_or_error.error();
     return make_unexpected(NativeScriptError::kScriptLibraryInvalid);
   }
-  return this->generate(library_or_error->handle);
+  return this->generate(deps, library_or_error->handle);
 }
 
 }  // namespace sde::game

@@ -87,44 +87,21 @@ struct ComponentData : Resource<ComponentData>
   auto field_list() { return FieldList(Field{"library", library}, Field{"name", name}, _Stub{"io", io}); }
 };
 
-}  // namespace sde::game
-
-namespace sde
-{
-
-template <> struct ResourceCacheTypes<game::ComponentCache>
-{
-  using error_type = game::ComponentError;
-  using handle_type = game::ComponentHandle;
-  using value_type = game::ComponentData;
-};
-
-}  // namespace sde
-
-namespace sde::game
-{
-
 class ComponentCache : public ResourceCache<ComponentCache>
 {
   friend fundemental_type;
 
 public:
-  explicit ComponentCache(LibraryCache& libraries);
-
   using fundemental_type::get_if;
-
   const ComponentHandle get_handle(const sde::string& name) const;
-
   const ComponentData* get_if(const sde::string& name) const;
 
 private:
-  LibraryCache* libraries_;
   sde::unordered_map<sde::string, ComponentHandle> type_name_to_component_handle_lookup_;
-  sde::unordered_map<sde::string, const ComponentData*> type_name_to_component_data_lookup_;
-  expected<void, ComponentError> reload(ComponentData& library);
-  expected<void, ComponentError> unload(ComponentData& library);
-  expected<ComponentData, ComponentError> generate(const asset::path& path);
-  expected<ComponentData, ComponentError> generate(LibraryHandle library);
+  expected<void, ComponentError> reload(dependencies dep, ComponentData& library);
+  expected<void, ComponentError> unload(dependencies dep, ComponentData& library);
+  expected<ComponentData, ComponentError> generate(dependencies dep, const asset::path& path);
+  expected<ComponentData, ComponentError> generate(dependencies dep, LibraryHandle library);
   void when_created(ComponentHandle handle, const ComponentData* data);
   void when_removed(ComponentHandle handle, const ComponentData* data);
 };

@@ -21,7 +21,6 @@
 
 namespace sde::audio
 {
-
 /**
  * @brief Error codes pertaining to sound data creation and loading
  */
@@ -77,23 +76,6 @@ struct SoundData : Resource<SoundData>
     return View<const std::byte>{reinterpret_cast<const std::byte*>(buffered_samples.value()), buffer_length};
   }
 };
-
-}  // namespace sde::audio
-
-namespace sde
-{
-
-template <> struct ResourceCacheTypes<audio::SoundDataCache>
-{
-  using error_type = audio::SoundDataError;
-  using handle_type = audio::SoundDataHandle;
-  using value_type = audio::SoundData;
-};
-
-}  // namespace sde
-
-namespace sde::audio
-{
 
 class SoundDataCache : public ResourceCache<SoundDataCache>
 {

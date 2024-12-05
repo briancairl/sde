@@ -76,43 +76,23 @@ enum class TypeSetError
 
 std::ostream& operator<<(std::ostream& os, TypeSetError error);
 
+class TypeSetCache : public ResourceCache<TypeSetCache>
+{
+  friend fundemental_type;
+
+private:
+  expected<void, TypeSetError> reload(dependencies deps, TypeSet& type_set);
+  expected<void, TypeSetError> unload(dependencies deps, TypeSet& type_set);
+  expected<TypeSet, TypeSetError> generate(dependencies deps, FontHandle font, const TypeSetOptions& options = {});
+};
+
 }  // namespace sde::graphics
 
 namespace sde
 {
-
 template <> struct Hasher<graphics::TypeSetOptions> : ResourceHasher
 {};
 
 template <> struct Hasher<graphics::TypeSet> : ResourceHasher
 {};
-
-template <> struct ResourceCacheTypes<graphics::TypeSetCache>
-{
-  using error_type = graphics::TypeSetError;
-  using handle_type = graphics::TypeSetHandle;
-  using value_type = graphics::TypeSet;
-};
-
 }  // namespace sde
-
-namespace sde::graphics
-{
-
-class TypeSetCache : public ResourceCache<TypeSetCache>
-{
-  friend fundemental_type;
-
-public:
-  TypeSetCache(TextureCache& texture, FontCache& fonts);
-
-private:
-  TextureCache* textures_;
-  FontCache* fonts_;
-
-  expected<void, TypeSetError> reload(TypeSet& type_set);
-  expected<void, TypeSetError> unload(TypeSet& type_set);
-  expected<TypeSet, TypeSetError> generate(FontHandle font, const TypeSetOptions& options = {});
-};
-
-}  // namespace sde::graphics

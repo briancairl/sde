@@ -77,12 +77,9 @@ bool ComponentIO::save(OArchive& ar, entt::entity id, const entt::registry& regi
   return on_save_(reinterpret_cast<void*>(&ar), reinterpret_cast<void*>(&id), reinterpret_cast<const void*>(&registry));
 }
 
-
-ComponentCache::ComponentCache(LibraryCache& libraries) : libraries_{std::addressof(libraries)} {}
-
-expected<void, ComponentError> ComponentCache::reload(ComponentData& component)
+expected<void, ComponentError> ComponentCache::reload(dependencies dep, ComponentData& component)
 {
-  auto library_ptr = libraries_->get_if(component.library);
+  auto library_ptr = dep.get<LibraryCache>().get_if(component.library);
   if (library_ptr == nullptr)
   {
     SDE_LOG_ERROR() << "ComponentLibraryInvalid: " << SDE_OSNV(component.library);
@@ -100,20 +97,20 @@ expected<void, ComponentError> ComponentCache::reload(ComponentData& component)
   return {};
 }
 
-expected<void, ComponentError> ComponentCache::unload(ComponentData& component)
+expected<void, ComponentError> ComponentCache::unload(dependencies dep, ComponentData& component)
 {
   component.io.reset();
   return {};
 }
 
-expected<ComponentData, ComponentError> ComponentCache::generate(LibraryHandle library)
+expected<ComponentData, ComponentError> ComponentCache::generate(dependencies dep, LibraryHandle library)
 {
   ComponentData data{.library = library};
 
-  auto ok_or_error = reload(data);
+  auto ok_or_error = reload(dep, data);
 
-  if (const auto itr = type_name_to_component_data_lookup_.find(data.name);
-      itr != std::end(type_name_to_component_data_lookup_))
+  const auto itr = type_name_to_component_handle_lookup_.find(data.name);
+  if (itr != std::end(type_name_to_component_handle_lookup_))
   {
     return make_unexpected(ComponentError::kComponentAlreadyLoaded);
   }
@@ -126,37 +123,35 @@ expected<ComponentData, ComponentError> ComponentCache::generate(LibraryHandle l
   return data;
 }
 
-expected<ComponentData, ComponentError> ComponentCache::generate(const asset::path& path)
+expected<ComponentData, ComponentError> ComponentCache::generate(dependencies dep, const asset::path& path)
 {
-  auto library_or_error = libraries_->create(path);
+  auto library_or_error = dep.get<LibraryCache>().create(path);
   if (!library_or_error.has_value())
   {
     SDE_LOG_ERROR() << "ComponentLibraryInvalid: " << SDE_OSNV(path) << ", " << SDE_OSNV(library_or_error.error());
     return make_unexpected(ComponentError::kComponentLibraryInvalid);
   }
-  return this->generate(library_or_error->handle);
+  return this->generate(dep, library_or_error->handle);
 }
 
 void ComponentCache::when_created(ComponentHandle handle, const ComponentData* data)
 {
-  type_name_to_component_data_lookup_.emplace(data->name, data);
   type_name_to_component_handle_lookup_.emplace(data->name, handle);
 }
 
 void ComponentCache::when_removed(ComponentHandle handle, const ComponentData* data)
 {
-  type_name_to_component_data_lookup_.erase(data->name);
   type_name_to_component_handle_lookup_.erase(data->name);
 }
 
 const ComponentData* ComponentCache::get_if(const sde::string& name) const
 {
-  const auto itr = type_name_to_component_data_lookup_.find(name);
-  if (itr == std::end(type_name_to_component_data_lookup_))
+  const auto itr = type_name_to_component_handle_lookup_.find(name);
+  if (itr == std::end(type_name_to_component_handle_lookup_))
   {
     return nullptr;
   }
-  return itr->second;
+  return this->get_if(itr->second);
 }
 
 const ComponentHandle ComponentCache::get_handle(const sde::string& name) const

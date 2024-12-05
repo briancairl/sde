@@ -356,10 +356,9 @@ replace(const Texture& texture, View<const std::uint32_t> data, const Bounds2i& 
 
 template expected<void, TextureError> replace(const Texture& texture, View<const float> data, const Bounds2i& area);
 
-TextureCache::TextureCache(ImageCache& images) : images_{std::addressof(images)} {}
-
 template <typename DataT>
 expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
   View<const DataT> data,
   const TextureShape& shape,
   const TextureLayout layout,
@@ -380,46 +379,52 @@ expected<Texture, TextureError> TextureCache::generate(
 }
 
 template expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
   View<const std::uint8_t> data,
   const TextureShape& shape,
   const TextureLayout layout,
   const TextureOptions& options);
 
 template expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
   View<const std::uint16_t> data,
   const TextureShape& shape,
   const TextureLayout layout,
   const TextureOptions& options);
 
 template expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
   View<const std::uint32_t> data,
   const TextureShape& shape,
   const TextureLayout layout,
   const TextureOptions& options);
 
 template expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
   View<const float> data,
   const TextureShape& shape,
   const TextureLayout layout,
   const TextureOptions& options);
 
-expected<Texture, TextureError> TextureCache::generate(const asset::path& image_path, const TextureOptions& options)
+expected<Texture, TextureError>
+TextureCache::generate(dependencies deps, const asset::path& image_path, const TextureOptions& options)
 {
-  auto image_or_error = images_->create(image_path, ImageOptions{.flip_vertically = false});
+  auto image_or_error = deps.get<ImageCache>().create(image_path, ImageOptions{.flip_vertically = false});
   if (!image_or_error.has_value())
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
   }
-  return generate(image_or_error->handle, options);
+  return generate(deps, image_or_error->handle, options);
 }
 
-expected<Texture, TextureError> TextureCache::generate(const ImageHandle& image, const TextureOptions& options)
+expected<Texture, TextureError>
+TextureCache::generate(dependencies deps, const ImageHandle& image, const TextureOptions& options)
 {
   if (image.isNull())
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
   }
-  auto image_info = images_->get_if(image);
+  auto image_info = deps.get<ImageCache>().get_if(image);
   if (image_info == nullptr)
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
@@ -431,6 +436,7 @@ expected<Texture, TextureError> TextureCache::generate(const ImageHandle& image,
     image_info->shape.value.y(),
     image_info->getTotalSizeInBytes());
   auto texture_or_error = TextureCache::generate(
+    deps,
     image_info->data(),
     TextureShape{.value = image_info->shape.value},
     layout_from_channel_count(image_info->getChannelCount()),
@@ -442,8 +448,12 @@ expected<Texture, TextureError> TextureCache::generate(const ImageHandle& image,
   return texture_or_error;
 }
 
-expected<Texture, TextureError>
-TextureCache::generate(TypeCode type, const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
+expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
+  TypeCode type,
+  const TextureShape& shape,
+  TextureLayout layout,
+  const TextureOptions& options)
 {
   Texture texture{
     .source_image = ImageHandle::null(),
@@ -452,14 +462,14 @@ TextureCache::generate(TypeCode type, const TextureShape& shape, TextureLayout l
     .shape = shape,
     .options = options,
     .native_id = NativeTextureID{0}};
-  if (auto ok_or_error = reload(texture); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, texture); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }
   return texture;
 }
 
-expected<void, TextureError> TextureCache::reload(Texture& texture)
+expected<void, TextureError> TextureCache::reload(dependencies deps, Texture& texture)
 {
   auto native_texture_or_error =
     create_texture_impl(texture.element_type, texture.shape, texture.layout, texture.options);
@@ -475,7 +485,7 @@ expected<void, TextureError> TextureCache::reload(Texture& texture)
     return {};
   }
 
-  auto image = images_->get_if(texture.source_image);
+  auto image = deps.get<ImageCache>().get_if(texture.source_image);
   if (image == nullptr)
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
@@ -492,7 +502,7 @@ expected<void, TextureError> TextureCache::reload(Texture& texture)
 }
 
 
-expected<void, TextureError> TextureCache::unload(Texture& texture)
+expected<void, TextureError> TextureCache::unload(dependencies deps, Texture& texture)
 {
   texture.native_id = NativeTextureID{0};
   return {};

@@ -7,5 +7,6 @@
 
 namespace sde::graphics
 {
+enum class AssetError;
 struct Assets;
 }  // namespace sde::graphics

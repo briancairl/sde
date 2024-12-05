@@ -27,20 +27,20 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
   return os;
 }
 
-TileSetCache::TileSetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
-
-expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& texture, sde::vector<Rect2f>&& tile_bounds)
+expected<TileSet, TileSetError>
+TileSetCache::generate(dependencies deps, const TextureHandle& texture, sde::vector<Rect2f>&& tile_bounds)
 {
-  if (!textures_->exists(texture))
+  if (!deps.get<TextureCache>().exists(texture))
   {
     return make_unexpected(TileSetError::kInvalidAtlasTexture);
   }
   return TileSet{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
 }
 
-expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& texture, const TileSetSliceUniform& slice)
+expected<TileSet, TileSetError>
+TileSetCache::generate(dependencies deps, const TextureHandle& texture, const TileSetSliceUniform& slice)
 {
-  const auto* texture_info = textures_->get_if(texture);
+  const auto* texture_info = deps.get<TextureCache>().get_if(texture);
   if (texture_info == nullptr)
   {
     SDE_LOG_ERROR() << "InvalidAtlasTexture: " << SDE_OSNV(texture);

@@ -33,8 +33,8 @@ template <typename Archive, typename CacheT> struct load<Archive, ResourceCache<
   void operator()(Archive& ar, ResourceCache<CacheT>& cache) const
   {
     using version_type = typename ResourceCache<CacheT>::version_type;
-    using handle_type = typename ResourceCacheTypes<CacheT>::handle_type;
-    using value_type = typename ResourceCacheTypes<CacheT>::value_type;
+    using handle_type = typename ResourceCacheTraits<CacheT>::handle_type;
+    using value_type = typename ResourceCacheTraits<CacheT>::value_type;
 
     std::size_t element_count{0};
     ar >> named{"element_count", element_count};

@@ -62,36 +62,15 @@ struct Sound : Resource<Sound>
   }
 };
 
-}  // namespace sde::audio
-
-namespace sde
-{
-
-template <> struct ResourceCacheTypes<audio::SoundCache>
-{
-  using error_type = audio::SoundError;
-  using handle_type = audio::SoundHandle;
-  using value_type = audio::Sound;
-};
-
-}  // namespace sde
-
-namespace sde::audio
-{
-
 class SoundCache : public ResourceCache<SoundCache>
 {
   friend fundemental_type;
 
-public:
-  explicit SoundCache(SoundDataCache& sound_data);
-
 private:
-  SoundDataCache* sound_data_ = nullptr;
-  expected<void, SoundError> reload(Sound& sound);
-  expected<void, SoundError> unload(Sound& sound);
-  expected<Sound, SoundError> generate(const asset::path& sound_data_path);
-  expected<Sound, SoundError> generate(SoundDataHandle sound_data);
+  expected<void, SoundError> reload(dependencies deps, Sound& sound);
+  expected<void, SoundError> unload(dependencies deps, Sound& sound);
+  expected<Sound, SoundError> generate(dependencies deps, const asset::path& sound_data_path);
+  expected<Sound, SoundError> generate(dependencies deps, SoundDataHandle sound_data);
 };
 
 }  // namespace sde::audio

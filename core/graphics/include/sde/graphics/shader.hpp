@@ -130,23 +130,6 @@ struct Shader : Resource<Shader>
 
 [[nodiscard]] bool hasUniform(const Shader& info, std::string_view key, ShaderVariableType type);
 
-}  // namespace sde::graphics
-
-namespace sde
-{
-
-template <> struct ResourceCacheTypes<graphics::ShaderCache>
-{
-  using error_type = graphics::ShaderError;
-  using handle_type = graphics::ShaderHandle;
-  using value_type = graphics::Shader;
-};
-
-}  // namespace sde
-
-namespace sde::graphics
-{
-
 class ShaderCache : public ResourceCache<ShaderCache>
 {
   friend fundemental_type;

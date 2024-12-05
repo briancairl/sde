@@ -61,8 +61,7 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
 void LibraryCache::when_created(LibraryHandle handle, const LibraryData* data)
 {
   SDE_LOG_INFO() << "New library added: " << SDE_OSNV(data->path);
-  asset_path_lookup_.emplace(
-    std::piecewise_construct, std::forward_as_tuple(data->path), std::forward_as_tuple(handle, data));
+  asset_path_lookup_.emplace(data->path, handle);
 }
 
 void LibraryCache::when_removed([[maybe_unused]] LibraryHandle handle, const LibraryData* data)
@@ -77,7 +76,7 @@ std::pair<LibraryHandle, const LibraryData*> LibraryCache::get_if(const asset::p
   {
     return {LibraryHandle::null(), nullptr};
   }
-  return itr->second;
+  return {itr->second, this->get_if(itr->second)};
 }
 
 }  // namespace sde::game

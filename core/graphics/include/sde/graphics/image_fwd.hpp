@@ -5,11 +5,27 @@
  */
 #pragma once
 
+// SDE
+#include "sde/resource_cache_traits.hpp"
+
 namespace sde::graphics
 {
+enum class ImageError;
 struct ImageHandle;
 struct ImageOptions;
 struct ImageShape;
 struct ImageRef;
+struct Image;
 class ImageCache;
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct ResourceCacheTraits<graphics::ImageCache>
+{
+  using error_type = graphics::ImageError;
+  using handle_type = graphics::ImageHandle;
+  using value_type = graphics::Image;
+  using dependencies = no_dependencies;
+};
+}  // namespace sde

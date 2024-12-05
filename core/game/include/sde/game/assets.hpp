@@ -124,13 +124,19 @@ public:
 
   template <typename... CreateArgTs> [[nodiscard]] auto assign(graphics::TypeSetHandle& handle, CreateArgTs&&... args)
   {
-    return assignImpl(handle, graphics.type_sets, std::forward<CreateArgTs>(args)...);
+    return assignImpl(
+      handle, graphics.type_sets, graphics.textures, graphics.fonts, std::forward<CreateArgTs>(args)...);
   }
 
   template <typename... CreateArgTs>
   [[nodiscard]] auto assign(graphics::RenderTargetHandle& handle, CreateArgTs&&... args)
   {
     return assignImpl(handle, graphics.render_targets, std::forward<CreateArgTs>(args)...);
+  }
+
+  auto dependencies()
+  {
+    return ResourceDependencies{components, entities, libraries, registry, audio, graphics, scripts, scenes};
   }
 
 private:
@@ -140,20 +146,31 @@ private:
       Field{"components", components},
       Field{"entities", entities},
       Field{"libraries", libraries},
+      _Stub{"registry", registry},
       Field{"audio", audio},
       Field{"graphics", graphics},
       Field{"scripts", scripts},
       Field{"scenes", scenes});
   }
 
-  template <typename CacheT, typename... CreateArgTs>
-  [[nodiscard]] expected<ResourceStatus, typename CacheT::error_type> assignImpl(
-    typename CacheT::handle_type& handle,
-    ResourceCache<CacheT>& asset_cache,
+  template <typename ResourceCacheT, typename... CreateArgTs>
+  [[nodiscard]] expected<ResourceStatus, typename ResourceCacheT::error_type> assignImpl(
+    typename ResourceCacheT::handle_type& handle,
+    ResourceCache<ResourceCacheT>& asset_cache,
     CreateArgTs&&... asset_create_args)
   {
-    auto handle_and_value_or_error =
-      asset_cache.find_or_create(handle, std::forward<CreateArgTs>(asset_create_args)...);
+    auto handle_and_value_or_error = [&] {
+      using dependencies = typename ResourceCacheTraits<ResourceCacheT>::dependencies;
+      if constexpr (dependencies::size() > 0)
+      {
+        return asset_cache.find_or_create(
+          handle, this->dependencies(), std::forward<CreateArgTs>(asset_create_args)...);
+      }
+      else
+      {
+        return asset_cache.find_or_create(handle, std::forward<CreateArgTs>(asset_create_args)...);
+      }
+    }();
     if (handle_and_value_or_error.has_value())
     {
       handle = handle_and_value_or_error->handle;

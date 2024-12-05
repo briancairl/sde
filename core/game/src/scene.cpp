@@ -19,8 +19,6 @@ std::ostream& operator<<(std::ostream& os, SceneError error)
   return os;
 }
 
-SceneCache::SceneCache(NativeScriptCache& scripts) : scripts_{std::addressof(scripts)} {}
-
 expected<SceneData, SceneError> SceneCache::generate(
   sde::string name,
   sde::vector<SceneScriptInstance>&& pre,

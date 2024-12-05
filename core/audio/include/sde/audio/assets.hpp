@@ -32,7 +32,7 @@ struct Assets : Resource<Assets>
   /// Sound cache
   SoundCache sounds;
 
-  Assets();
+  Assets() = default;
 
   Assets(Assets&&) = default;
   Assets& operator=(Assets&&) = default;

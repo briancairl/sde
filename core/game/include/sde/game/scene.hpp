@@ -78,26 +78,6 @@ struct SceneData : Resource<SceneData>
   }
 };
 
-}  // namespace sde::game
-
-namespace sde
-{
-
-template <> struct Hasher<game::SceneScriptInstance> : ResourceHasher
-{};
-
-template <> struct ResourceCacheTypes<game::SceneCache>
-{
-  using error_type = game::SceneError;
-  using handle_type = game::SceneHandle;
-  using value_type = game::SceneData;
-};
-
-}  // namespace sde
-
-namespace sde::game
-{
-
 /**
  * @brief All active game data
  */
@@ -105,12 +85,7 @@ class SceneCache : public ResourceCache<SceneCache>
 {
   friend fundemental_type;
 
-public:
-  explicit SceneCache(NativeScriptCache& scripts);
-
 private:
-  NativeScriptCache* scripts_;
-
   expected<void, SceneError> reload(SceneData& library);
   expected<void, SceneError> unload(SceneData& library);
 
@@ -127,3 +102,9 @@ private:
 };
 
 }  // namespace sde::game
+
+namespace sde
+{
+template <> struct Hasher<game::SceneScriptInstance> : ResourceHasher
+{};
+}  // namespace sde

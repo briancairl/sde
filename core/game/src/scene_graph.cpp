@@ -25,7 +25,7 @@ expected<SceneScriptInstance, SceneGraphErrorCode> instance(
   const LibraryFlags& script_library_flags = {.required = true})
 {
   // Find/load script library
-  auto script_or_error = assets.scripts.create(script_data.path, script_library_flags);
+  auto script_or_error = assets.scripts.create(assets.dependencies(), script_data.path, script_library_flags);
   if (!script_or_error.has_value())
   {
     SDE_LOG_ERROR() << "SceneGraphErrorCode::kInvalidScript (failed to load: " << script_data.path << ')';
