@@ -25,8 +25,8 @@ enum class AssetError
 std::ostream& operator<<(std::ostream& os, AssetError error);
 
 struct Assets : ResourceCollection<
-                  ResourceCollectionEntry<decltype("sound_data"_label), SoundDataCache>,
-                  ResourceCollectionEntry<decltype("sounds"_label), SoundCache>>
+                  ResourceCollectionEntry<"sound_data"_label, SoundDataCache>,
+                  ResourceCollectionEntry<"sounds"_label, SoundCache>>
 {
   Assets() = default;
 

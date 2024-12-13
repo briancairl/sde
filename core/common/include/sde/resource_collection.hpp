@@ -20,35 +20,27 @@
 namespace sde
 {
 
-/**
- * @brief Holds characters in a variadic pack
- *
- * Acts as a string literal creator/wrapper with safeguards against invalid
- * c-string points
- *
- * @tparam Elements  characters of string
- */
-template <char... Elements> struct ResourceLabel
+template <std::size_t Len> struct resource_label_data
 {
-public:
-  /**
-   * @brief Returns C-string comprised of <code>{Elements...}</code>
-   */
-  static constexpr const char* name() { return str_storage; }
-
-private:
-  /// String literal constant, formed from Elements
-  static constexpr char str_storage[] = {Elements..., '\0'};
+  char data[Len];
+  constexpr std::size_t size() const { return Len - 1; }
+  constexpr resource_label_data(const char (&init)[Len]) { std::copy_n(init, Len, data); }
 };
 
-template <typename T, T... Elements> constexpr auto operator""_label() { return ResourceLabel<Elements...>{}; }
+template <auto str> struct resource_label
+{
+  using type_string_tag = void;
+  static constexpr const char* data() { return str.data; }
+  static constexpr size_t size() { return str.size(); }
+  static constexpr std::string_view view() { return std::string_view{data(), size()}; }
+};
 
-template <typename LabelT, typename ResourceCacheT> struct ResourceCollectionEntry;
+template <resource_label_data str> constexpr auto operator"" _label() { return resource_label<str>{}; }
 
-template <char... C, typename ResourceCacheT>
-struct ResourceCollectionEntry<ResourceLabel<C...>, ResourceCacheT> : ResourceLabel<C...>
+template <resource_label kName, typename ResourceCacheT> struct ResourceCollectionEntry
 {
   using type = ResourceCacheT;
+  static constexpr const char* name() { return kName.data(); }
 };
 
 template <typename... ResourceCollectionEntryTs>
