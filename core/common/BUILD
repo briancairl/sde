@@ -72,6 +72,7 @@ cc_library(
     "include/sde/resource_cache.hpp",
     "include/sde/resource_cache_io.hpp",
     "include/sde/resource_cache_traits.hpp",
+    "include/sde/resource_collection.hpp",
     "include/sde/resource_handle.hpp",
     "include/sde/resource_handle_io.hpp",
     "include/sde/resource_wrapper.hpp",

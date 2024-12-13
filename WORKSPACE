@@ -107,7 +107,7 @@ new_git_repository(
 new_git_repository(
   name="dont",
   remote="git@github.com:briancairl/dont.git",
-  commit="fe2232753b6983e3eaa3dd3501c312b49e3d7c74",
+  commit="69d4987e7652bf0222cdd4172d21b113779069a0",
   shallow_since="1733841329 -0500",
   build_file="@//external:dont.BUILD",
 )

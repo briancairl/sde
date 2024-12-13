@@ -11,7 +11,7 @@
 // SDE
 #include "sde/audio/sound.hpp"
 #include "sde/audio/sound_data.hpp"
-#include "sde/resource.hpp"
+#include "sde/resource_collection.hpp"
 
 namespace sde::audio
 {
@@ -24,27 +24,15 @@ enum class AssetError
 
 std::ostream& operator<<(std::ostream& os, AssetError error);
 
-struct Assets : Resource<Assets>
+struct Assets : ResourceCollection<
+                  ResourceCollectionEntry<decltype("sound_data"_label), SoundDataCache>,
+                  ResourceCollectionEntry<decltype("sounds"_label), SoundCache>>
 {
-  /// Sound data cache
-  SoundDataCache sound_data;
-
-  /// Sound cache
-  SoundCache sounds;
-
   Assets() = default;
-
-  Assets(Assets&&) = default;
-  Assets& operator=(Assets&&) = default;
-
-  Assets(const Assets&) = delete;
-  Assets& operator=(const Assets&) = delete;
 
   [[nodiscard]] expected<void, AssetError> refresh();
 
   void strip();
-
-  auto field_list() { return FieldList(Field{"sound_data", sound_data}, Field{"sounds", sounds}); }
 };
 
 }  // namespace sde::audio

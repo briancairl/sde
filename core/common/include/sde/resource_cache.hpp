@@ -53,6 +53,18 @@ template <typename... ResourceCacheTs> struct ExpandResourceDependencies<Resourc
     expand_resource_dependencies_t<typename ResourceCacheTraits<ResourceCacheTs>::dependencies>...>;
 };
 
+
+template <typename ResourceCacheT>
+class ResourceCacheHasDependencies
+    : std::integral_constant<
+        bool,
+        std::is_same_v<typename ResourceCacheTraits<ResourceCacheT>::dependencies, ResourceDependencies<>>>
+{};
+
+template <typename ResourceCacheT>
+static constexpr bool resource_cache_has_dependencies_v = ResourceCacheHasDependencies<ResourceCacheT>::value;
+
+
 template <typename ResourceCacheT> class ResourceCache : public crtp_base<ResourceCache<ResourceCacheT>>
 {
 public:

@@ -21,12 +21,12 @@ std::ostream& operator<<(std::ostream& os, AssetError error)
 
 expected<void, AssetError> Assets::refresh()
 {
-  if (auto ok_or_error = sound_data.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = get<SoundDataCache>().refresh(); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(AssetError::kFailedSoundDataLoading);
   }
-  if (auto ok_or_error = sounds.refresh(ResourceDependencies{sound_data}); !ok_or_error.has_value())
+  if (auto ok_or_error = get<SoundCache>().refresh(this->all()); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(AssetError::kFailedSoundLoading);
@@ -34,6 +34,6 @@ expected<void, AssetError> Assets::refresh()
   return {};
 }
 
-void Assets::strip() { SDE_ASSERT_OK(sound_data.relinquish()); }
+void Assets::strip() { SDE_ASSERT_OK(get<SoundDataCache>().relinquish()); }
 
 }  // namespace sde::audio
