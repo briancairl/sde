@@ -35,7 +35,7 @@ template <auto str> struct resource_label
   static constexpr std::string_view view() { return std::string_view{data(), size()}; }
 };
 
-template <resource_label_data str> constexpr auto operator"" _label() { return resource_label<str>{}; }
+template <resource_label_data str> constexpr auto operator"" _rl() { return resource_label<str>{}; }
 
 template <resource_label kName, typename ResourceCacheT> struct ResourceCollectionEntry
 {
@@ -68,7 +68,6 @@ public:
     return ResourceDependencies{std::get<typename ResourceCollectionEntryTs::type>(caches_)...};
   }
 
-
   template <typename CacheT, typename... CreateArgTs> [[nodiscard]] auto create(CreateArgTs&&... args)
   {
     if constexpr (resource_cache_has_dependencies_v<CacheT>)
@@ -82,9 +81,9 @@ public:
   }
 
   template <typename HandleT, typename... CreateArgTs>
-  [[nodiscard]] auto find_or_replace(HandleT handle, CreateArgTs&&... args)
+  [[nodiscard]] auto find_or_replace(HandleT&& handle, CreateArgTs&&... args)
   {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, HandleT>;
+    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     if constexpr (resource_cache_has_dependencies_v<CacheType>)
     {
       return this->template get<CacheType>().find_or_replace(
@@ -98,9 +97,9 @@ public:
   }
 
   template <typename HandleT, typename... CreateArgTs>
-  [[nodiscard]] auto find_or_create(HandleT handle, CreateArgTs&&... args)
+  [[nodiscard]] auto find_or_create(HandleT&& handle, CreateArgTs&&... args)
   {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, HandleT>;
+    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     if constexpr (resource_cache_has_dependencies_v<CacheType>)
     {
       return this->template get<CacheType>().find_or_create(
@@ -114,9 +113,9 @@ public:
   }
 
   template <typename HandleT, typename... CreateArgTs>
-  [[nodiscard]] auto emplace_with_hint(HandleT handle, CreateArgTs&&... args)
+  [[nodiscard]] auto emplace_with_hint(HandleT&& handle, CreateArgTs&&... args)
   {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, HandleT>;
+    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     if constexpr (resource_cache_has_dependencies_v<CacheType>)
     {
       return this->template get<CacheType>().emplace_with_hint(
@@ -129,39 +128,39 @@ public:
     }
   }
 
-  template <typename HandleT> [[nodiscard]] auto get_if(HandleT handle) const
+  template <typename HandleT> [[nodiscard]] auto get_if(HandleT&& handle) const
   {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, HandleT>;
+    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     return this->template get<CacheType>().get_if(std::forward<HandleT>(handle));
   }
 
-  template <typename HandleT> [[nodiscard]] auto operator()(HandleT handle) const
+  template <typename HandleT> [[nodiscard]] auto operator()(HandleT&& handle) const
   {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, HandleT>;
+    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     return this->template get<CacheType>().find(std::forward<HandleT>(handle));
   }
 
-  template <typename HandleT> [[nodiscard]] auto find(HandleT handle) const
+  template <typename HandleT> [[nodiscard]] auto find(HandleT&& handle) const
   {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, HandleT>;
+    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     return this->template get<CacheType>().find(std::forward<HandleT>(handle));
   }
 
-  template <typename HandleT> [[nodiscard]] const bool exists(HandleT handle) const
+  template <typename HandleT> [[nodiscard]] const bool exists(HandleT&& handle) const
   {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, HandleT>;
+    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     return this->template get<CacheType>().exists(std::forward<HandleT>(handle));
   }
 
-  template <typename HandleT> void remove(HandleT handle)
+  template <typename HandleT> void remove(HandleT&& handle)
   {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, HandleT>;
+    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     this->template get<CacheType>().remove(std::forward<HandleT>(handle));
   }
 
-  template <typename HandleT, typename UpdateFn> void update_if_exists(HandleT handle, UpdateFn update)
+  template <typename HandleT, typename UpdateFn> void update_if_exists(HandleT&& handle, UpdateFn update)
   {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, HandleT>;
+    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     this->template get<CacheType>().update_if_exists(std::forward<HandleT>(handle), std::forward<UpdateFn>(update));
   }
 

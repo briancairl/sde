@@ -26,38 +26,37 @@ std::ostream& operator<<(std::ostream& os, AssetError error)
 
 expected<void, AssetError> Assets::refresh()
 {
-  ResourceDependencies depends{images, textures, fonts};
-  if (auto ok_or_error = images.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = get<ImageCache>().refresh(); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedImageLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedImageLoading);
   }
-  if (auto ok_or_error = fonts.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = get<FontCache>().refresh(); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedFontLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedFontLoading);
   }
-  if (auto ok_or_error = shaders.refresh(); !ok_or_error.has_value())
+  if (auto ok_or_error = get<ShaderCache>().refresh(); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedShaderLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedShaderLoading);
   }
-  if (auto ok_or_error = textures.refresh(depends); !ok_or_error.has_value())
+  if (auto ok_or_error = get<TextureCache>().refresh(all()); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedTextureLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedTextureLoading);
   }
-  if (auto ok_or_error = tile_sets.refresh(depends); !ok_or_error.has_value())
+  if (auto ok_or_error = get<TileSetCache>().refresh(all()); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedTileSetLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedTileSetLoading);
   }
-  if (auto ok_or_error = type_sets.refresh(depends); !ok_or_error.has_value())
+  if (auto ok_or_error = get<TypeSetCache>().refresh(all()); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedTypeSetLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedTypeSetLoading);
   }
-  if (auto ok_or_error = render_targets.refresh(depends); !ok_or_error.has_value())
+  if (auto ok_or_error = get<RenderTargetCache>().refresh(all()); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << "FailedRenderTargetLoading: " << ok_or_error.error();
     return make_unexpected(AssetError::kFailedRenderTargetLoading);
@@ -65,7 +64,7 @@ expected<void, AssetError> Assets::refresh()
   return {};
 }
 
-void Assets::strip() { SDE_ASSERT_OK(images.relinquish()); }
+void Assets::strip() { SDE_ASSERT_OK(get<ImageCache>().relinquish()); }
 
 
 }  // namespace sde::graphics

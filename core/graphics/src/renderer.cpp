@@ -749,7 +749,7 @@ void Renderer2D::refresh(const RenderResources& resources)
 
 void Renderer2D::flush(const Assets& assets, const RenderUniforms& uniforms, const Mat3f& viewport_from_world)
 {
-  const auto shader = assets.shaders(next_active_resources_.shader);
+  const auto shader = assets(next_active_resources_.shader);
   SDE_ASSERT_TRUE(shader);
 
   // Set active shader
@@ -765,7 +765,7 @@ void Renderer2D::flush(const Assets& assets, const RenderUniforms& uniforms, con
   {
     if (next_active_textures_[u] and next_active_textures_[u] != last_active_textures_[u])
     {
-      const auto texture = assets.textures(next_active_textures_[u]);
+      const auto texture = assets(next_active_textures_[u]);
       SDE_ASSERT_TRUE(texture);
 
       glActiveTexture(GL_TEXTURE0 + u);
@@ -833,7 +833,7 @@ void RenderPass::clear(const Vec4f& color)
 bool RenderPass::retarget(Vec2i& viewport_size, RenderTargetHandle render_target, const Assets& assets)
 {
   // Pick render target
-  const auto* render_target_info = assets.render_targets.get_if(render_target);
+  const auto* render_target_info = assets.get_if(render_target);
   if (render_target_info == nullptr)
   {
     return false;
@@ -848,7 +848,7 @@ bool RenderPass::retarget(Vec2i& viewport_size, RenderTargetHandle render_target
   }
 
   // If render target is an off-screen target, update viewport size
-  const auto* color_attachment_texture = assets.textures.get_if(render_target_info->color_attachment);
+  const auto* color_attachment_texture = assets.get_if(render_target_info->color_attachment);
   if (color_attachment_texture == nullptr)
   {
     return false;

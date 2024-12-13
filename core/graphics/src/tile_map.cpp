@@ -46,7 +46,7 @@ void TileMap::draw(RenderPass& rp, const Vec2f& origin) const
     return;
   }
 
-  const auto tile_set = rp.assets().tile_sets(options_.tile_set);
+  const auto tile_set = rp.assets().get_if(options_.tile_set);
   if (!tile_set)
   {
     return;

@@ -20,6 +20,7 @@
 #include "sde/graphics/tile_set.hpp"
 #include "sde/graphics/type_set.hpp"
 #include "sde/resource.hpp"
+#include "sde/resource_collection.hpp"
 
 namespace sde::graphics
 {
@@ -37,52 +38,18 @@ enum class AssetError
 
 std::ostream& operator<<(std::ostream& os, AssetError error);
 
-struct Assets : Resource<Assets>
+struct Assets : ResourceCollection<
+                  ResourceCollectionEntry<"images"_rl, ImageCache>,
+                  ResourceCollectionEntry<"fonts"_rl, FontCache>,
+                  ResourceCollectionEntry<"shaders"_rl, ShaderCache>,
+                  ResourceCollectionEntry<"textures"_rl, TextureCache>,
+                  ResourceCollectionEntry<"tile_sets"_rl, TileSetCache>,
+                  ResourceCollectionEntry<"type_sets"_rl, TypeSetCache>,
+                  ResourceCollectionEntry<"render_targets"_rl, RenderTargetCache>>
 {
-  /// Image cache
-  ImageCache images;
-
-  /// Font cache
-  FontCache fonts;
-
-  /// Shader asset cache
-  ShaderCache shaders;
-
-  /// Texture asset cache
-  TextureCache textures;
-
-  /// Tile set asset cache
-  TileSetCache tile_sets;
-
-  /// Glyph-set cache
-  TypeSetCache type_sets;
-
-  /// Render target asset cache
-  RenderTargetCache render_targets;
-
-  Assets() = default;
-
-  Assets(Assets&&) = default;
-  Assets& operator=(Assets&&) = default;
-
-  Assets(const Assets&) = delete;
-  Assets& operator=(const Assets&) = delete;
-
   expected<void, AssetError> refresh();
 
   void strip();
-
-  auto field_list()
-  {
-    return FieldList(
-      Field{"images", images},
-      Field{"fonts", fonts},
-      Field{"shaders", shaders},
-      Field{"textures", textures},
-      Field{"tile_sets", tile_sets},
-      Field{"type_sets", type_sets},
-      Field{"render_targets", render_targets});
-  }
 };
 
 }  // namespace sde::graphics

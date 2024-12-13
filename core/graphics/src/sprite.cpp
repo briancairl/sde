@@ -21,7 +21,7 @@ void Sprite::draw(RenderPass& rp, const Rect2f& rect) const
     return;
   }
 
-  const auto frames = rp.assets().tile_sets(options_.frames);
+  const auto frames = rp.assets().get_if(options_.frames);
   if (!frames)
   {
     return;
@@ -59,7 +59,7 @@ void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Rect2f& rect) cons
     return;
   }
 
-  const auto frames = rp.assets().tile_sets(options_.frames);
+  const auto frames = rp.assets().get_if(options_.frames);
   if (!frames)
   {
     return;

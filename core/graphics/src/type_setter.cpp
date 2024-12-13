@@ -20,7 +20,7 @@ void TypeSetter::draw(
   const TextOptions& options,
   const Vec4f& color)
 {
-  const auto glyphs = rp.assets().type_sets(type_set_handle_);
+  const auto glyphs = rp.assets().get_if(type_set_handle_);
   if (!glyphs)
   {
     return;
