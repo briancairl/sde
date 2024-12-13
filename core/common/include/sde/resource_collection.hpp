@@ -43,16 +43,31 @@ template <resource_label kName, typename ResourceCacheT> struct ResourceCollecti
   static constexpr const char* name() { return kName.data(); }
 };
 
+template <typename EntryT> struct IsResourceCollectionEntry : std::false_type
+{};
+
+template <resource_label kName, typename ResourceCacheT>
+struct IsResourceCollectionEntry<ResourceCollectionEntry<kName, ResourceCacheT>> : std::true_type
+{};
+
+
+template <typename EntryT> constexpr bool is_resource_collection_entry_v = IsResourceCollectionEntry<EntryT>::value;
+
+
 template <typename... ResourceCollectionEntryTs>
 class ResourceCollection : public Resource<ResourceCollection<ResourceCollectionEntryTs...>>
 {
   friend class fundemental_type;
 
-public:
+  static_assert(
+    (is_resource_collection_entry_v<ResourceCollectionEntryTs> && ...),
+    "ResourceCollectionEntryTs must be a ResourceCollectionEntry<LABLE, CACHE>");
+
   static_assert(
     (is_resource_cache_v<typename ResourceCollectionEntryTs::type> && ...),
     "ResourceCacheTs must be a ResourceCache<T>");
 
+public:
   using handle_to_cache_map = dont::Map<dont::KeyValue<
     typename ResourceCacheTraits<typename ResourceCollectionEntryTs::type>::handle_type,
     typename ResourceCollectionEntryTs::type>...>;
