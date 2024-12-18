@@ -115,7 +115,7 @@ bool NativeScriptInstance::save(OArchive& ar) const
 }
 
 expected<void, NativeScriptCallError>
-NativeScriptInstance::initialize(Assets& assets, const AppProperties& app_properties) const
+NativeScriptInstance::initialize(GameResources& resources, const AppProperties& app_properties) const
 {
   SDE_ASSERT_FALSE(initialized_) << "'NativeScriptInstance::initialize' called previously";
 
@@ -124,7 +124,7 @@ NativeScriptInstance::initialize(Assets& assets, const AppProperties& app_proper
   initialized_ =
     fn_.on_initialize(
       reinterpret_cast<void*>(instance_),
-      reinterpret_cast<void*>(&assets),
+      reinterpret_cast<void*>(&resources),
       reinterpret_cast<const void*>(&app_properties));
 
   // clang-format on
@@ -136,14 +136,14 @@ NativeScriptInstance::initialize(Assets& assets, const AppProperties& app_proper
 }
 
 expected<void, NativeScriptCallError>
-NativeScriptInstance::call(Assets& assets, const AppProperties& app_properties) const
+NativeScriptInstance::call(GameResources& resources, const AppProperties& app_properties) const
 {
   SDE_ASSERT_TRUE(initialized_) << "'NativeScriptInstance::initialize' not yet called";
 
   // run update behavior
   if (fn_.on_update(
         reinterpret_cast<void*>(instance_),
-        reinterpret_cast<void*>(&assets),
+        reinterpret_cast<void*>(&resources),
         reinterpret_cast<const void*>(&app_properties)))
   {
     return {};

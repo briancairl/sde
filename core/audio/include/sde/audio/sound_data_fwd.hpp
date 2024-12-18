@@ -25,4 +25,9 @@ template <> struct ResourceCacheTraits<audio::SoundDataCache>
   using value_type = audio::SoundData;
   using dependencies = no_dependencies;
 };
+
+template <> struct ResourceHandleToCache<audio::SoundDataHandle>
+{
+  using type = audio::SoundDataCache;
+};
 }  // namespace sde

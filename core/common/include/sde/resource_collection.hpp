@@ -6,11 +6,13 @@
 #pragma once
 
 // C++ Standard Library
+#include <iosfwd>
 #include <tuple>
 #include <type_traits>
 
 // Dont
 #include <dont/map.hpp>
+#include <dont/stl/tuple/for_each.hpp>
 
 // SDE
 #include "sde/resource.hpp"
@@ -29,25 +31,42 @@ template <std::size_t Len> struct resource_label_data
 
 template <auto str> struct resource_label
 {
-  using type_string_tag = void;
   static constexpr const char* data() { return str.data; }
   static constexpr size_t size() { return str.size(); }
   static constexpr std::string_view view() { return std::string_view{data(), size()}; }
 };
 
+template <resource_label_data str> std::ostream& operator<<(std::ostream& os, const resource_label<str>& label)
+{
+  return os << "Resource[" << label.view() << ']';
+}
+
 template <resource_label_data str> constexpr auto operator"" _rl() { return resource_label<str>{}; }
 
-template <resource_label kName, typename ResourceCacheT> struct ResourceCollectionEntry
+template <resource_label kName, typename ResourceCacheT, bool kSerializable = true> struct ResourceCollectionEntry
 {
   using type = ResourceCacheT;
+  static constexpr bool kIsSerializable{kSerializable};
   static constexpr const char* name() { return kName.data(); }
+
+  template <typename CacheTupleT> static decltype(auto) toField(CacheTupleT&& caches)
+  {
+    if constexpr (kSerializable)
+    {
+      return Field{name(), std::get<ResourceCacheT>(std::forward<CacheTupleT>(caches))};
+    }
+    else
+    {
+      return _Stub{name(), std::get<ResourceCacheT>(std::forward<CacheTupleT>(caches))};
+    }
+  }
 };
 
 template <typename EntryT> struct IsResourceCollectionEntry : std::false_type
 {};
 
-template <resource_label kName, typename ResourceCacheT>
-struct IsResourceCollectionEntry<ResourceCollectionEntry<kName, ResourceCacheT>> : std::true_type
+template <resource_label kName, typename ResourceCacheT, bool kSerializable>
+struct IsResourceCollectionEntry<ResourceCollectionEntry<kName, ResourceCacheT, kSerializable>> : std::true_type
 {};
 
 
@@ -57,7 +76,7 @@ template <typename EntryT> constexpr bool is_resource_collection_entry_v = IsRes
 template <typename... ResourceCollectionEntryTs>
 class ResourceCollection : public Resource<ResourceCollection<ResourceCollectionEntryTs...>>
 {
-  friend class fundemental_type;
+  friend class Resource<ResourceCollection<ResourceCollectionEntryTs...>>;
 
   static_assert(
     (is_resource_collection_entry_v<ResourceCollectionEntryTs> && ...),
@@ -72,6 +91,9 @@ public:
     typename ResourceCacheTraits<typename ResourceCollectionEntryTs::type>::handle_type,
     typename ResourceCollectionEntryTs::type>...>;
 
+  using cache_to_entry_map =
+    dont::Map<dont::KeyValue<typename ResourceCollectionEntryTs::type, ResourceCollectionEntryTs>...>;
+
   template <typename CacheT> constexpr CacheT& get() { return std::get<CacheT>(caches_); }
 
   template <typename CacheT> constexpr const CacheT& get() const { return std::get<CacheT>(caches_); }
@@ -85,13 +107,14 @@ public:
 
   template <typename CacheT, typename... CreateArgTs> [[nodiscard]] auto create(CreateArgTs&&... args)
   {
+    auto& cache = this->template get<CacheT>();
     if constexpr (resource_cache_has_dependencies_v<CacheT>)
     {
-      return this->template get<CacheT>().create(this->all(), std::forward<CreateArgTs>(args)...);
+      return cache.create(this->all(), std::forward<CreateArgTs>(args)...);
     }
     else
     {
-      return this->template get<CacheT>().create(std::forward<CreateArgTs>(args)...);
+      return cache.create(std::forward<CreateArgTs>(args)...);
     }
   }
 
@@ -99,15 +122,14 @@ public:
   [[nodiscard]] auto find_or_replace(HandleT&& handle, CreateArgTs&&... args)
   {
     using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
+    auto& cache = this->template get<CacheType>();
     if constexpr (resource_cache_has_dependencies_v<CacheType>)
     {
-      return this->template get<CacheType>().find_or_replace(
-        std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
+      return cache.find_or_replace(std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
     }
     else
     {
-      return this->template get<CacheType>().find_or_replace(
-        std::forward<HandleT>(handle), std::forward<CreateArgTs>(args)...);
+      return cache.find_or_replace(std::forward<HandleT>(handle), std::forward<CreateArgTs>(args)...);
     }
   }
 
@@ -115,15 +137,14 @@ public:
   [[nodiscard]] auto find_or_create(HandleT&& handle, CreateArgTs&&... args)
   {
     using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
+    auto& cache = this->template get<CacheType>();
     if constexpr (resource_cache_has_dependencies_v<CacheType>)
     {
-      return this->template get<CacheType>().find_or_create(
-        std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
+      return cache.find_or_create(std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
     }
     else
     {
-      return this->template get<CacheType>().find_or_create(
-        std::forward<HandleT>(handle), std::forward<CreateArgTs>(args)...);
+      return cache.find_or_create(std::forward<HandleT>(handle), std::forward<CreateArgTs>(args)...);
     }
   }
 
@@ -131,16 +152,46 @@ public:
   [[nodiscard]] auto emplace_with_hint(HandleT&& handle, CreateArgTs&&... args)
   {
     using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
+    auto& cache = this->template get<CacheType>();
     if constexpr (resource_cache_has_dependencies_v<CacheType>)
     {
-      return this->template get<CacheType>().emplace_with_hint(
-        std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
+      return cache.emplace_with_hint(std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
     }
     else
     {
-      return this->template get<CacheType>().emplace_with_hint(
-        std::forward<HandleT>(handle), std::forward<CreateArgTs>(args)...);
+      return cache.emplace_with_hint(std::forward<HandleT>(handle), std::forward<CreateArgTs>(args)...);
     }
+  }
+
+  template <typename HandleT, typename... CreateArgTs>
+  [[nodiscard]] auto assign(HandleT& handle, CreateArgTs&&... asset_create_args)
+  {
+    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
+
+    expected<ResourceStatus, typename ResourceCacheTraits<CacheType>::error_type> status_or_error;
+
+    auto& cache = this->template get<CacheType>();
+    auto handle_and_value_or_error = [&] {
+      using dependencies = typename ResourceCacheTraits<CacheType>::dependencies;
+      if constexpr (dependencies::size() > 0)
+      {
+        return cache.find_or_create(handle, this->all(), std::forward<CreateArgTs>(asset_create_args)...);
+      }
+      else
+      {
+        return cache.find_or_create(handle, std::forward<CreateArgTs>(asset_create_args)...);
+      }
+    }();
+    if (handle_and_value_or_error.has_value())
+    {
+      handle = handle_and_value_or_error->handle;
+      status_or_error = handle_and_value_or_error->status;
+    }
+    else
+    {
+      status_or_error = make_unexpected(handle_and_value_or_error.error());
+    }
+    return status_or_error;
   }
 
   template <typename HandleT> [[nodiscard]] auto get_if(HandleT&& handle) const
@@ -179,6 +230,37 @@ public:
     this->template get<CacheType>().update_if_exists(std::forward<HandleT>(handle), std::forward<UpdateFn>(update));
   }
 
+  expected<void, std::string_view> refresh()
+  {
+    expected<void, std::string_view> ok_or_error = {};
+    dont::tuple::for_each(
+      [this, &ok_or_error](auto& cache) {
+        using CacheType = std::remove_reference_t<decltype(cache)>;
+        using EntryType = dont::map_lookup_t<cache_to_entry_map, CacheType>;
+        if constexpr (!EntryType::kIsSerializable)
+        {
+          return true;
+        }
+        else if constexpr (resource_cache_has_dependencies_v<CacheType>)
+        {
+          if (auto ok = cache.refresh(this->all()); !ok.has_value())
+          {
+            ok_or_error = make_unexpected(std::string_view{EntryType::name()});
+          }
+        }
+        else
+        {
+          if (auto ok = cache.refresh(); !ok.has_value())
+          {
+            ok_or_error = make_unexpected(std::string_view{EntryType::name()});
+          }
+        }
+        return ok_or_error.has_value();
+      },
+      caches_);
+    return ok_or_error;
+  }
+
   void swap(ResourceCollection& other) { std::swap(this->caches_, other.caches_); }
 
   ResourceCollection() = default;
@@ -192,11 +274,7 @@ public:
 private:
   std::tuple<typename ResourceCollectionEntryTs::type...> caches_;
 
-  auto field_list()
-  {
-    return FieldList(
-      Field{ResourceCollectionEntryTs::name(), this->template get<typename ResourceCollectionEntryTs::type>()}...);
-  }
+  auto field_list() { return FieldList(ResourceCollectionEntryTs::toField(caches_)...); }
 };
 
 }  // namespace sde

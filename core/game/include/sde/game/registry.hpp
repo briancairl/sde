@@ -1,12 +1,13 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file archive.hpp
+ * @file registry.hpp
  */
 #pragma once
 
 // SDE
 #include "sde/memory.hpp"
+#include "sde/resource_cache.hpp"
 
 /// EnTT
 #include <entt/entity/registry.hpp>
@@ -18,3 +19,22 @@ using EntityID = entt::entity;
 using Registry = entt::basic_registry<EntityID, allocator<EntityID>>;
 
 }  // namespace sde::game
+
+namespace sde
+{
+template <> struct ResourceCacheTraits<game::Registry>
+{
+  using error_type = void;
+  using handle_type = game::EntityID;
+  using value_type = void;
+  using dependencies = no_dependencies;
+};
+
+template <> struct ResourceHandleToCache<game::EntityID>
+{
+  using type = game::Registry;
+};
+
+template <> struct IsResourceCache<game::Registry> : std::true_type
+{};
+}  // namespace sde

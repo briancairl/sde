@@ -27,9 +27,9 @@ bool load(imgui_end* self, sde::game::IArchive& ar) { return true; }
 bool save(imgui_end* self, sde::game::OArchive& ar) { return true; }
 
 
-bool initialize(imgui_end* self, sde::game::Assets& assets, const sde::AppProperties& app) { return true; }
+bool initialize(imgui_end* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 
-bool update(imgui_end* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool update(imgui_end* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   if (ImGui::GetCurrentContext() == nullptr)
   {

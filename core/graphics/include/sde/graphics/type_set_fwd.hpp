@@ -13,6 +13,7 @@ struct TypeSetOptions;
 struct TypeSetHandle;
 struct TypeSet;
 class TypeSetCache;
+class FontCache;
 }  // namespace sde::graphics
 
 namespace sde
@@ -23,5 +24,10 @@ template <> struct ResourceCacheTraits<graphics::TypeSetCache>
   using handle_type = graphics::TypeSetHandle;
   using value_type = graphics::TypeSet;
   using dependencies = ResourceDependencies<graphics::TextureCache, graphics::FontCache>;
+};
+
+template <> struct ResourceHandleToCache<graphics::TypeSetHandle>
+{
+  using type = graphics::TypeSetCache;
 };
 }  // namespace sde

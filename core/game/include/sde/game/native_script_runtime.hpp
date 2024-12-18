@@ -10,8 +10,8 @@
 #include "sde/dl/export.hpp"
 #include "sde/expected.hpp"
 #include "sde/game/archive.hpp"
-#include "sde/game/assets.hpp"
 #include "sde/game/entity.hpp"
+#include "sde/game/game_resources.hpp"
 #include "sde/game/native_script_fwd.hpp"
 #include "sde/game/native_script_runtime_fwd.hpp"
 #include "sde/geometry_io.hpp"
@@ -75,20 +75,20 @@
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(InstanceDataT, f)                                                       \
-  SDE_EXPORT bool on_initialize(void* self, void* assets, const void* app_properties)                                  \
+  SDE_EXPORT bool on_initialize(void* self, void* resources, const void* app_properties)                               \
   {                                                                                                                    \
     return f(                                                                                                          \
       reinterpret_cast<InstanceDataT*>(self),                                                                          \
-      *reinterpret_cast<::sde::game::Assets*>(assets),                                                                 \
+      *reinterpret_cast<::sde::game::GameResources*>(resources),                                                       \
       *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                                                 \
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_UPDATE(InstanceDataT, f)                                                           \
-  SDE_EXPORT bool on_update(void* self, void* assets, const void* app_properties)                                      \
+  SDE_EXPORT bool on_update(void* self, void* resources, const void* app_properties)                                   \
   {                                                                                                                    \
     return f(                                                                                                          \
       reinterpret_cast<InstanceDataT*>(self),                                                                          \
-      *reinterpret_cast<::sde::game::Assets*>(assets),                                                                 \
+      *reinterpret_cast<::sde::game::GameResources*>(resources),                                                       \
       *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                                                 \
   }
 

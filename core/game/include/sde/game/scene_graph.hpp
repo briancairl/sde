@@ -11,7 +11,7 @@
 
 // SDE
 #include "sde/app_fwd.hpp"
-#include "sde/game/assets.hpp"
+#include "sde/game/game_resources_fwd.hpp"
 #include "sde/game/native_script_fwd.hpp"
 #include "sde/game/native_script_handle.hpp"
 #include "sde/game/scene_fwd.hpp"
@@ -63,26 +63,27 @@ public:
   SceneGraph(const SceneGraph&) = delete;
   SceneGraph& operator=(const SceneGraph&) = delete;
 
-  [[nodiscard]] expected<void, SceneGraphError> initialize(Assets& assets, const AppProperties& properties);
+  [[nodiscard]] expected<void, SceneGraphError> initialize(GameResources& resources, const AppProperties& properties);
 
-  [[nodiscard]] expected<void, SceneGraphError> tick(Assets& assets, const AppProperties& properties);
+  [[nodiscard]] expected<void, SceneGraphError> tick(GameResources& resources, const AppProperties& properties);
 
-  [[nodiscard]] expected<void, SceneGraphError> load(Assets& assets, const asset::path& directory);
+  [[nodiscard]] expected<void, SceneGraphError> load(GameResources& resources, const asset::path& directory);
 
-  [[nodiscard]] expected<void, SceneGraphError> save(Assets& assets, const asset::path& directory);
+  [[nodiscard]] expected<void, SceneGraphError> save(GameResources& resources, const asset::path& directory);
 
-  [[nodiscard]] expected<SceneManifest, SceneGraphError> manifest(Assets& assets) const;
+  [[nodiscard]] expected<SceneManifest, SceneGraphError> manifest(GameResources& resources) const;
 
-  [[nodiscard]] static expected<SceneGraph, SceneGraphErrorCode> create(Assets& assets, const SceneManifest& manifest);
+  [[nodiscard]] static expected<SceneGraph, SceneGraphErrorCode>
+  create(GameResources& resources, const SceneManifest& manifest);
 
 private:
   template <typename OnVisitScriptT>
   [[nodiscard]] expected<void, SceneGraphError>
-  visit(Assets& assets, SceneHandle scene_handle, OnVisitScriptT on_visit_script);
+  visit(GameResources& resources, SceneHandle scene_handle, OnVisitScriptT on_visit_script);
 
   template <typename OnVisitSceneT>
   [[nodiscard]] expected<void, SceneGraphError>
-  visit_scene(Assets& assets, SceneHandle scene_handle, OnVisitSceneT on_visit_scene) const;
+  visit_scene(GameResources& resources, SceneHandle scene_handle, OnVisitSceneT on_visit_scene) const;
 
   SceneHandle root_;
 

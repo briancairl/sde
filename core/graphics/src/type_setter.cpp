@@ -3,10 +3,10 @@
 #include <ostream>
 
 // SDE
-#include "sde/graphics/assets.hpp"
 #include "sde/graphics/render_buffer.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shapes.hpp"
+#include "sde/graphics/type_set.hpp"
 #include "sde/graphics/type_setter.hpp"
 
 namespace sde::graphics
@@ -15,12 +15,13 @@ TypeSetter::TypeSetter(const TypeSetHandle& glyphs) : type_set_handle_{glyphs} {
 
 void TypeSetter::draw(
   RenderPass& rp,
+  const dependencies& deps,
   std::string_view text,
   const Vec2f& pos,
   const TextOptions& options,
   const Vec4f& color)
 {
-  const auto glyphs = rp.assets().get_if(type_set_handle_);
+  const auto glyphs = deps(type_set_handle_);
   if (!glyphs)
   {
     return;

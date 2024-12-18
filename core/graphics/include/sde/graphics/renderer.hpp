@@ -13,14 +13,17 @@
 // SDE
 #include "sde/expected.hpp"
 #include "sde/geometry.hpp"
-#include "sde/graphics/assets_fwd.hpp"
 #include "sde/graphics/render_buffer_fwd.hpp"
+#include "sde/graphics/render_target_fwd.hpp"
 #include "sde/graphics/render_target_handle.hpp"
+#include "sde/graphics/shader_fwd.hpp"
 #include "sde/graphics/shader_handle.hpp"
 #include "sde/graphics/shapes_fwd.hpp"
+#include "sde/graphics/texture_fwd.hpp"
 #include "sde/graphics/texture_units.hpp"
 #include "sde/graphics/typedef.hpp"
 #include "sde/resource.hpp"
+#include "sde/resource_dependencies.hpp"
 #include "sde/time.hpp"
 #include "sde/vector.hpp"
 #include "sde/view.hpp"
@@ -141,13 +144,15 @@ struct RenderStats
 class Renderer2D
 {
 public:
+  using dependencies = ResourceDependencies<RenderTargetCache, ShaderCache, TextureCache>;
+
   ~Renderer2D();
 
   Renderer2D(Renderer2D&&);
 
   static expected<Renderer2D, RendererError> create(const Renderer2DOptions& options = {});
 
-  void flush(const Assets& assets, const RenderUniforms& uniforms, const Mat3f& viewport_from_world);
+  void flush(const dependencies& deps, const RenderUniforms& uniforms, const Mat3f& viewport_from_world);
 
   void refresh(const RenderResources& resources);
 
@@ -192,13 +197,12 @@ public:
   expected<void, RenderPassError> submit(View<const Circle> circles);
   expected<void, RenderPassError> submit(View<const TexturedQuad> quads);
 
-  const Assets& assets() const { return *assets_; };
   std::optional<std::size_t> assign(const TextureHandle& texture) { return renderer_->assign(texture); }
 
   static expected<RenderPass, RenderPassError> create(
     RenderBuffer& buffer,
     Renderer2D& renderer,
-    const Assets& assets,
+    const Renderer2D::dependencies& deps,
     const RenderUniforms& uniforms,
     const RenderResources& resources,
     Vec2i viewport_size = Vec2i::Zero());
@@ -209,19 +213,29 @@ public:
 
   constexpr RenderBuffer* operator->() { return buffer_; }
 
+  const auto& deps() const { return deps_; }
+
   void clear(const Vec4f& color = Vec4f::Zero());
   bool visible(const Bounds2f& query_aabb) const { return getViewportInWorldBounds().intersects(query_aabb); }
 
 private:
-  RenderPass() = default;
+  RenderPass() = delete;
   RenderPass(const RenderPass&) = delete;
+  RenderPass(
+    Renderer2D* renderer,
+    RenderBuffer* buffer,
+    const RenderUniforms* uniforms,
+    const Renderer2D::dependencies& deps,
+    const Mat3f& world_from_viewport,
+    const Mat3f& viewport_from_world,
+    const Bounds2f& viewport_in_world_bounds);
 
-  static bool retarget(Vec2i& viewport_size, RenderTargetHandle render_target, const Assets& assets);
+  static bool retarget(Vec2i& viewport_size, RenderTargetHandle render_target, const Renderer2D::dependencies& deps);
 
   Renderer2D* renderer_;
   RenderBuffer* buffer_;
-  const Assets* assets_;
   const RenderUniforms* uniforms_;
+  Renderer2D::dependencies deps_;
   Mat3f world_from_viewport_;
   Mat3f viewport_from_world_;
   Bounds2f viewport_in_world_bounds_;

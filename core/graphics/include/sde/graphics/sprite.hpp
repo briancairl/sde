@@ -9,8 +9,10 @@
 #include "sde/geometry.hpp"
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/texture_handle.hpp"
+#include "sde/graphics/tile_set_fwd.hpp"
 #include "sde/graphics/tile_set_handle.hpp"
 #include "sde/resource.hpp"
+#include "sde/resource_dependencies.hpp"
 #include "sde/time.hpp"
 
 namespace sde::graphics
@@ -36,11 +38,12 @@ class Sprite : public Resource<Sprite>
 
 public:
   using Options = SpriteOptions;
+  using dependencies = ResourceDependencies<TileSetCache>;
 
   Sprite() = default;
   explicit Sprite(const Options& options);
 
-  void draw(RenderPass& rp, const Rect2f& rect) const;
+  void draw(RenderPass& rp, const dependencies& deps, const Rect2f& rect) const;
 
   void setup(const Options& options) { options_ = options; }
   void setTintColor(const Vec4f& color) { options_.tint_color = color; }
@@ -90,11 +93,12 @@ class AnimatedSprite : public Resource<AnimatedSprite>
 public:
   using Mode = AnimatedSpriteMode;
   using Options = AnimatedSpriteOptions;
+  using dependencies = ResourceDependencies<TileSetCache>;
 
   AnimatedSprite() = default;
   explicit AnimatedSprite(const Options& options);
 
-  void draw(RenderPass& rp, TimeOffset t, const Rect2f& rect) const;
+  void draw(RenderPass& rp, const dependencies& deps, TimeOffset t, const Rect2f& rect) const;
 
   void setup(const Options& options) { options_ = options; }
   void setTintColor(const Vec4f& color) { options_.tint_color = color; }

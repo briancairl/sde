@@ -122,4 +122,8 @@ template <typename T> struct is_resource_handle : std::is_base_of<ResourceHandle
 
 template <typename T> constexpr bool is_resource_handle_v = is_resource_handle<std::remove_const_t<T>>::value;
 
+template <typename T> struct ResourceHandleToCache;
+
+template <typename T> using resource_handle_to_cache_t = typename ResourceHandleToCache<T>::type;
+
 }  // namespace sde

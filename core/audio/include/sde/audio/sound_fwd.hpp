@@ -21,7 +21,6 @@ class SoundDataCache;
 
 namespace sde
 {
-
 template <> struct ResourceCacheTraits<audio::SoundCache>
 {
   using error_type = audio::SoundError;
@@ -30,4 +29,8 @@ template <> struct ResourceCacheTraits<audio::SoundCache>
   using dependencies = ResourceDependencies<audio::SoundDataCache>;
 };
 
+template <> struct ResourceHandleToCache<audio::SoundHandle>
+{
+  using type = audio::SoundCache;
+};
 }  // namespace sde

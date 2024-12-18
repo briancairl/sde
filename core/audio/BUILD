@@ -3,8 +3,6 @@
 cc_library(
   name="audio_hdrs",
   hdrs=[
-    "include/sde/audio/assets.hpp",
-    "include/sde/audio/assets_fwd.hpp",
     "include/sde/audio/mixer.hpp",
     "include/sde/audio/mixer_fwd.hpp",
     "include/sde/audio/sound.hpp",
@@ -46,7 +44,6 @@ cc_library(
 cc_library(
   name="audio",
   srcs=[
-    "src/assets.cpp",
     "src/mixer.cpp",
     "src/sound.cpp",
     "src/sound_channel_format.cpp",

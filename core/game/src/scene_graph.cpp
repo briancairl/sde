@@ -1,11 +1,8 @@
-// C++ Standard Library
-#include <ostream>
-
 // SDE
-#include "sde/game/assets.hpp"
+#include "sde/game/scene_graph.hpp"
+#include "sde/game/game_resources.hpp"
 #include "sde/game/native_script.hpp"
 #include "sde/game/scene.hpp"
-#include "sde/game/scene_graph.hpp"
 #include "sde/game/scene_handle.hpp"
 #include "sde/game/scene_manifest.hpp"
 #include "sde/logging.hpp"
@@ -20,12 +17,12 @@ namespace
 {
 
 expected<SceneScriptInstance, SceneGraphErrorCode> instance(
-  Assets& assets,
+  GameResources& resources,
   const SceneScriptData& script_data,
   const LibraryFlags& script_library_flags = {.required = true})
 {
   // Find/load script library
-  auto script_or_error = assets.scripts.create(assets.dependencies(), script_data.path, script_library_flags);
+  auto script_or_error = resources.create<NativeScriptCache>(script_data.path, script_library_flags);
   if (!script_or_error.has_value())
   {
     SDE_LOG_ERROR() << "SceneGraphErrorCode::kInvalidScript (failed to load: " << script_data.path << ')';
@@ -82,9 +79,9 @@ std::ostream& operator<<(std::ostream& os, SceneGraphErrorCode error)
 
 template <typename OnVisitScriptT>
 expected<void, SceneGraphError>
-SceneGraph::visit(Assets& assets, const SceneHandle scene_handle, OnVisitScriptT on_visit_script)
+SceneGraph::visit(GameResources& resources, const SceneHandle scene_handle, OnVisitScriptT on_visit_script)
 {
-  auto this_scene = assets.scenes(scene_handle);
+  auto this_scene = resources(scene_handle);
 
   SDE_ASSERT_TRUE(this_scene) << scene_handle << " is not a valid scene handle";
 
@@ -101,7 +98,7 @@ SceneGraph::visit(Assets& assets, const SceneHandle scene_handle, OnVisitScriptT
   // Run child scenes
   for (const auto& child_handle : this_scene->children)
   {
-    if (const auto ok_or_error = visit(assets, child_handle, on_visit_script); !ok_or_error.has_value())
+    if (const auto ok_or_error = visit(resources, child_handle, on_visit_script); !ok_or_error.has_value())
     {
       SDE_LOG_ERROR() << ok_or_error.error();
       return make_unexpected(ok_or_error.error());
@@ -122,9 +119,9 @@ SceneGraph::visit(Assets& assets, const SceneHandle scene_handle, OnVisitScriptT
 
 template <typename OnVisitSceneT>
 expected<void, SceneGraphError>
-SceneGraph::visit_scene(Assets& assets, const SceneHandle scene_handle, OnVisitSceneT on_visit_scene) const
+SceneGraph::visit_scene(GameResources& resources, const SceneHandle scene_handle, OnVisitSceneT on_visit_scene) const
 {
-  auto this_scene = assets.scenes(scene_handle);
+  auto this_scene = resources(scene_handle);
 
   SDE_ASSERT_TRUE(this_scene) << scene_handle << " is not a valid scene handle";
 
@@ -132,7 +129,7 @@ SceneGraph::visit_scene(Assets& assets, const SceneHandle scene_handle, OnVisitS
 
   for (const auto& child_handle : this_scene->children)
   {
-    if (const auto ok_or_error = visit_scene(assets, child_handle, on_visit_scene); !ok_or_error.has_value())
+    if (const auto ok_or_error = visit_scene(resources, child_handle, on_visit_scene); !ok_or_error.has_value())
     {
       SDE_LOG_ERROR() << ok_or_error.error();
       return make_unexpected(ok_or_error.error());
@@ -141,9 +138,9 @@ SceneGraph::visit_scene(Assets& assets, const SceneHandle scene_handle, OnVisitS
   return {};
 }
 
-expected<void, SceneGraphError> SceneGraph::load(Assets& assets, const asset::path& directory)
+expected<void, SceneGraphError> SceneGraph::load(GameResources& resources, const asset::path& directory)
 {
-  return SceneGraph::visit(assets, root_, [&](const SceneScriptInstance& script) -> bool {
+  return SceneGraph::visit(resources, root_, [&](const SceneScriptInstance& script) -> bool {
     // Skip loading if there is no data path
     if (!script.instance_data_path.has_value())
     {
@@ -177,9 +174,9 @@ expected<void, SceneGraphError> SceneGraph::load(Assets& assets, const asset::pa
   });
 }
 
-expected<void, SceneGraphError> SceneGraph::save(Assets& assets, const asset::path& directory)
+expected<void, SceneGraphError> SceneGraph::save(GameResources& resources, const asset::path& directory)
 {
-  return SceneGraph::visit(assets, root_, [&directory](const SceneScriptInstance& script) -> bool {
+  return SceneGraph::visit(resources, root_, [&directory](const SceneScriptInstance& script) -> bool {
     const auto data_file_path = directory / getDataFilePath(script);
 
     // Load script data for this instance
@@ -198,18 +195,18 @@ expected<void, SceneGraphError> SceneGraph::save(Assets& assets, const asset::pa
   });
 }
 
-expected<SceneManifest, SceneGraphError> SceneGraph::manifest(Assets& assets) const
+expected<SceneManifest, SceneGraphError> SceneGraph::manifest(GameResources& resources) const
 {
   const auto to_scene_name = [&](const SceneHandle& scene_handle) {
-    const auto scene = assets.scenes(scene_handle);
+    const auto scene = resources(scene_handle);
     SDE_ASSERT_TRUE(scene);
     return static_cast<const sde::string&>(scene->name);
   };
 
   const auto to_scene_script_data = [&](const SceneScriptInstance& instance) -> SceneScriptData {
-    const auto script = assets.scripts(instance.handle);
+    const auto script = resources(instance.handle);
     SDE_ASSERT_TRUE(script);
-    const auto library = assets.libraries(script->library);
+    const auto library = resources(script->library);
     SDE_ASSERT_TRUE(library);
     return {.path = library->path, .data = getDataFilePath(instance), .version = instance.instance.version()};
   };
@@ -218,7 +215,7 @@ expected<SceneManifest, SceneGraphError> SceneGraph::manifest(Assets& assets) co
   SceneManifest manifest;
   manifest.setRoot(to_scene_name(root_));
   auto ok_or_error =
-    SceneGraph::visit_scene(assets, root_, [&]([[maybe_unused]] const SceneHandle handle, const SceneData& scene) {
+    SceneGraph::visit_scene(resources, root_, [&]([[maybe_unused]] const SceneHandle handle, const SceneData& scene) {
       SceneManifestEntry manifest_entry;
       manifest_entry.pre_scripts.reserve(scene.pre_scripts.size());
       std::transform(
@@ -248,10 +245,10 @@ expected<SceneManifest, SceneGraphError> SceneGraph::manifest(Assets& assets) co
   return make_unexpected(ok_or_error.error());
 }
 
-expected<void, SceneGraphError> SceneGraph::initialize(Assets& assets, const AppProperties& properties)
+expected<void, SceneGraphError> SceneGraph::initialize(GameResources& resources, const AppProperties& properties)
 {
-  return SceneGraph::visit(assets, root_, [&](const SceneScriptInstance& script) -> bool {
-    if (const auto ok_or_error = script.instance.initialize(assets, properties); ok_or_error.has_value())
+  return SceneGraph::visit(resources, root_, [&](const SceneScriptInstance& script) -> bool {
+    if (const auto ok_or_error = script.instance.initialize(resources, properties); ok_or_error.has_value())
     {
       return true;
     }
@@ -263,10 +260,10 @@ expected<void, SceneGraphError> SceneGraph::initialize(Assets& assets, const App
   });
 }
 
-expected<void, SceneGraphError> SceneGraph::tick(Assets& assets, const AppProperties& properties)
+expected<void, SceneGraphError> SceneGraph::tick(GameResources& resources, const AppProperties& properties)
 {
-  return SceneGraph::visit(assets, root_, [&](const SceneScriptInstance& script) -> bool {
-    if (const auto ok_or_error = script.instance.call(assets, properties); ok_or_error.has_value())
+  return SceneGraph::visit(resources, root_, [&](const SceneScriptInstance& script) -> bool {
+    if (const auto ok_or_error = script.instance.call(resources, properties); ok_or_error.has_value())
     {
       return true;
     }
@@ -278,7 +275,7 @@ expected<void, SceneGraphError> SceneGraph::tick(Assets& assets, const AppProper
   });
 }
 
-expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(Assets& assets, const SceneManifest& manifest)
+expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(GameResources& resources, const SceneManifest& manifest)
 {
   SceneGraph graph;
 
@@ -288,7 +285,7 @@ expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(Assets& assets, con
     sde::vector<SceneScriptInstance> pre_scripts;
     for (const auto& script_data : scene_data.pre_scripts)
     {
-      if (auto script_instance_or_error = instance(assets, script_data); script_instance_or_error.has_value())
+      if (auto script_instance_or_error = instance(resources, script_data); script_instance_or_error.has_value())
       {
         pre_scripts.push_back(std::move(script_instance_or_error).value());
       }
@@ -301,7 +298,7 @@ expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(Assets& assets, con
     sde::vector<SceneScriptInstance> post_scripts;
     for (const auto& script_data : scene_data.post_scripts)
     {
-      if (auto script_instance_or_error = instance(assets, script_data); script_instance_or_error.has_value())
+      if (auto script_instance_or_error = instance(resources, script_data); script_instance_or_error.has_value())
       {
         post_scripts.push_back(std::move(script_instance_or_error).value());
       }
@@ -311,7 +308,7 @@ expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(Assets& assets, con
       }
     }
 
-    auto scene_or_error = assets.scenes.create(scene_name, std::move(pre_scripts), std::move(post_scripts));
+    auto scene_or_error = resources.create<SceneCache>(scene_name, std::move(pre_scripts), std::move(post_scripts));
     if (!scene_or_error.has_value())
     {
       SDE_LOG_ERROR() << "SceneGraphErrorCode::kInvalidSceneCreation (failed to create scene: " << scene_name << ')';
@@ -326,7 +323,7 @@ expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(Assets& assets, con
   {
     const auto scene_itr = name_to_handle.find(scene_name);
     SDE_ASSERT_NE(scene_itr, std::end(name_to_handle));
-    assets.scenes.update_if_exists(scene_itr->second, [&name_to_handle, &children = scene_data.children](auto& scene) {
+    resources.update_if_exists(scene_itr->second, [&name_to_handle, &children = scene_data.children](auto& scene) {
       for (const auto& child_name : children)
       {
         const auto child_script_itr = name_to_handle.find(child_name);

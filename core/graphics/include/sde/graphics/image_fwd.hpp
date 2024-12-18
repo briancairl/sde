@@ -28,4 +28,10 @@ template <> struct ResourceCacheTraits<graphics::ImageCache>
   using value_type = graphics::Image;
   using dependencies = no_dependencies;
 };
+
+template <> struct ResourceHandleToCache<graphics::ImageHandle>
+{
+  using type = graphics::ImageCache;
+};
+
 }  // namespace sde

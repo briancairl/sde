@@ -26,4 +26,9 @@ template <> struct ResourceCacheTraits<game::SceneCache>
   using value_type = game::SceneData;
   using dependencies = no_dependencies;
 };
+
+template <> struct ResourceHandleToCache<game::SceneHandle>
+{
+  using type = game::SceneCache;
+};
 }  // namespace sde

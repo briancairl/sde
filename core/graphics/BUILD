@@ -56,8 +56,6 @@ cc_library(
 cc_library(
   name="graphics_impl__renderer__hdrs",
   hdrs=[
-    "include/sde/graphics/assets.hpp",
-    "include/sde/graphics/assets_fwd.hpp",
     "include/sde/graphics/colors.hpp",
     "include/sde/graphics/debug.hpp",
     "include/sde/graphics/font.hpp",
@@ -135,7 +133,6 @@ graphics_impl__renderer__opengl_debug_selector = select({
 cc_library(
   name="graphics_impl__renderer__opengl",
   srcs=[
-    "src/assets.cpp",
     "src/font.cpp",
     "src/render_target.cpp",
     "src/renderer.cpp",

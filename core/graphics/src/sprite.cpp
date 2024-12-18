@@ -3,25 +3,25 @@
 #include <ostream>
 
 // SDE
-#include "sde/graphics/assets.hpp"
 #include "sde/graphics/render_buffer.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shapes.hpp"
 #include "sde/graphics/sprite.hpp"
+#include "sde/graphics/tile_set.hpp"
 
 namespace sde::graphics
 {
 
 Sprite::Sprite(const Options& options) : options_{options} {}
 
-void Sprite::draw(RenderPass& rp, const Rect2f& rect) const
+void Sprite::draw(RenderPass& rp, const dependencies& deps, const Rect2f& rect) const
 {
   if (!rp.visible(rect.bounds()))
   {
     return;
   }
 
-  const auto frames = rp.assets().get_if(options_.frames);
+  const auto frames = deps(options_.frames);
   if (!frames)
   {
     return;
@@ -52,14 +52,14 @@ bool operator==(const Sprite& lhs, const Sprite& rhs) { return lhs.options() == 
 
 AnimatedSprite::AnimatedSprite(const Options& options) : options_{options} {}
 
-void AnimatedSprite::draw(RenderPass& rp, TimeOffset t, const Rect2f& rect) const
+void AnimatedSprite::draw(RenderPass& rp, const dependencies& deps, TimeOffset t, const Rect2f& rect) const
 {
   if (!rp.visible(rect.bounds()))
   {
     return;
   }
 
-  const auto frames = rp.assets().get_if(options_.frames);
+  const auto frames = deps(options_.frames);
   if (!frames)
   {
     return;

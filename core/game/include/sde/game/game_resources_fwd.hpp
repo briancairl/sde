@@ -1,11 +1,11 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file assets_fwd.hpp
+ * @file game_resources_fwd.hpp
  */
 #pragma once
 
 namespace sde::game
 {
-class Assets;
+struct GameResources;
 }  // namespace sde::game

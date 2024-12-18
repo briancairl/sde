@@ -76,19 +76,20 @@ bool save(player_character* self, sde::game::OArchive& ar)
 }
 
 
-bool initialize(player_character* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool initialize(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   if (!self->entity.isNull())
   {
     return true;
   }
-  auto entity_or_error =
-    assets.entities.make_entity([](EntityCache& cache, const EntityHandle& e, const EntityData& data) {
-      SDE_ASSERT_OK(cache.attach<Size>(e, Size{.extent = {0.1, 0.1}}));
-      SDE_ASSERT_OK(cache.attach<Position>(e, Position{.center = {0, 0}}));
-      SDE_ASSERT_OK(cache.attach<Dynamics>(e, Dynamics{}));
-      SDE_ASSERT_OK(cache.attach<graphics::AnimatedSprite>(e));
-      SDE_ASSERT_OK(cache.attach<Foreground>(e));
+  auto deps = resources.all();
+  auto entity_or_error = resources.get<EntityCache>().make_entity(
+    deps, [&deps](EntityCache& cache, const EntityHandle& e, const EntityData& data) {
+      SDE_ASSERT_OK(cache.attach<Size>(deps, e, Size{.extent = {0.1, 0.1}}));
+      SDE_ASSERT_OK(cache.attach<Position>(deps, e, Position{.center = {0, 0}}));
+      SDE_ASSERT_OK(cache.attach<Dynamics>(deps, e, Dynamics{}));
+      SDE_ASSERT_OK(cache.attach<graphics::AnimatedSprite>(deps, e));
+      SDE_ASSERT_OK(cache.attach<Foreground>(deps, e));
     });
   if (!entity_or_error.has_value())
   {
@@ -104,13 +105,13 @@ bool initialize(player_character* self, sde::game::Assets& assets, const sde::Ap
 }
 
 
-void edit(player_character* self, sde::game::Assets& assets, const sde::AppProperties& app)
+void edit(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   ImGui::Begin("player");
 
-  auto entity = assets.entities.get_if(self->entity);
+  auto entity = resources(self->entity);
   SDE_LOG_INFO() << static_cast<int>(entity->id);
-  auto [size, position, sprite] = assets.registry.get<Size, Position, graphics::AnimatedSprite>(entity->id);
+  auto [size, position, sprite] = resources.get<Registry>().get<Size, Position, graphics::AnimatedSprite>(entity->id);
 
   ImGui::InputFloat2("size", size.extent.data());
 
@@ -145,8 +146,7 @@ void edit(player_character* self, sde::game::Assets& assets, const sde::AppPrope
           if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SDE_TILESET_ASSET"))
           {
             SDE_ASSERT_EQ(payload->DataSize, sizeof(TileSetHandle));
-            if (const auto h = *reinterpret_cast<const TileSetHandle*>(payload->Data);
-                assets.graphics.tile_sets.exists(h))
+            if (const auto h = *reinterpret_cast<const TileSetHandle*>(payload->Data); resources.exists(h))
             {
               (*frames_itr) = h;
             }
@@ -159,13 +159,13 @@ void edit(player_character* self, sde::game::Assets& assets, const sde::AppPrope
   ImGui::End();
 }
 
-bool update(player_character* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool update(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
-  edit(self, assets, app);
+  edit(self, resources, app);
 
-  auto entity = assets.entities.get_if(self->entity);
+  auto entity = resources(self->entity);
   auto [size, position, state, sprite] =
-    assets.registry.get<Size, Position, Dynamics, graphics::AnimatedSprite>(entity->id);
+    resources.get<Registry>().get<Size, Position, Dynamics, graphics::AnimatedSprite>(entity->id);
 
   static constexpr float kSpeedWalking = 0.5;
   static constexpr float kSpeedRunning = 1.0;
@@ -263,7 +263,7 @@ bool update(player_character* self, sde::game::Assets& assets, const sde::AppPro
   }
 
   // Set sprite stuff
-  if ((state.velocity.array() != 0.0F).any())
+  if (state.velocity.x() != 0.0F or state.velocity.y() != 0.0F)
   {
     state.looking = state.velocity;
     sprite.setFrameRate(Hertz(next_speed * 15.0F));

@@ -8,7 +8,7 @@
 #include <nlohmann/json.hpp>
 
 // SDE
-#include "sde/game/assets.hpp"
+#include "sde/game/native_script_runtime_fwd.hpp"
 #include "sde/game/scene_manifest.hpp"
 #include "sde/logging.hpp"
 

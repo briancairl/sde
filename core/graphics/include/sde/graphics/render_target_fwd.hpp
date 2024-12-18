@@ -26,4 +26,9 @@ template <> struct ResourceCacheTraits<graphics::RenderTargetCache>
   using value_type = graphics::RenderTarget;
   using dependencies = ResourceDependencies<graphics::TextureCache>;
 };
+
+template <> struct ResourceHandleToCache<graphics::RenderTargetHandle>
+{
+  using type = graphics::RenderTargetCache;
+};
 }  // namespace sde

@@ -25,4 +25,9 @@ template <> struct ResourceCacheTraits<graphics::ShaderCache>
   using value_type = graphics::Shader;
   using dependencies = no_dependencies;
 };
+
+template <> struct ResourceHandleToCache<graphics::ShaderHandle>
+{
+  using type = graphics::ShaderCache;
+};
 }  // namespace sde

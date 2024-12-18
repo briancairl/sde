@@ -27,4 +27,9 @@ template <> struct ResourceCacheTraits<game::EntityCache>
   using value_type = game::EntityData;
   using dependencies = ResourceDependencies<game::ComponentCache, game::Registry>;
 };
+
+template <> struct ResourceHandleToCache<game::EntityHandle>
+{
+  using type = game::EntityCache;
+};
 }  // namespace sde

@@ -55,7 +55,7 @@ public:
   template <typename AttachComponentsT>
   decltype(auto) make_entity(dependencies deps, AttachComponentsT attach_components)
   {
-    auto value_or_error = this->create();
+    auto value_or_error = this->create(deps);
     if (value_or_error.has_value())
     {
       auto entity_itr = handle_to_value_cache_.find(value_or_error->handle);
@@ -90,7 +90,7 @@ public:
       return make_unexpected(EntityError::kComponentAlreadyAttached);
     }
 
-    if (auto component = locate_component_if_registered(type_name<ComponentT>()))
+    if (auto component = locate_component_if_registered(deps, type_name<ComponentT>()))
     {
       entity.components.push_back(component);
     }

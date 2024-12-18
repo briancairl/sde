@@ -3,8 +3,6 @@ cc_library(
   hdrs=[
     "include/sde/game/archive.hpp",
     "include/sde/game/archive_fwd.hpp",
-    "include/sde/game/assets.hpp",
-    "include/sde/game/assets_fwd.hpp",
     "include/sde/game/component.hpp",
     "include/sde/game/component_fwd.hpp",
     "include/sde/game/component_handle.hpp",
@@ -13,6 +11,8 @@ cc_library(
     "include/sde/game/entity_fwd.hpp",
     "include/sde/game/entity_handle.hpp",
     "include/sde/game/game.hpp",
+    "include/sde/game/game_resources.hpp",
+    "include/sde/game/game_resources_fwd.hpp",
     "include/sde/game/library.hpp",
     "include/sde/game/library_fwd.hpp",
     "include/sde/game/library_handle.hpp",
@@ -30,7 +30,6 @@ cc_library(
     "include/sde/game/scene_manifest_fwd.hpp",
   ],
   srcs = [
-    "src/assets.cpp",
     "src/component.cpp",
     "src/entity.cpp",
     "src/game.cpp",
@@ -50,6 +49,7 @@ cc_library(
     "//core/dl:export",
     "//core/dl:library",
     "//core/serialization",
+    "@dont//:stl",
     "@entt//:entt",
     "@nlohmann//:json",
   ],

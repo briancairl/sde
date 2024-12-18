@@ -37,14 +37,17 @@ bool save(texture_viewer* self, sde::game::OArchive& ar)
 }
 
 
-bool initialize(texture_viewer* self, sde::game::Assets& assets, const sde::AppProperties& app) { return true; }
+bool initialize(texture_viewer* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+{
+  return true;
+}
 
-bool update(texture_viewer* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool update(texture_viewer* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   std::optional<TextureHandle> delete_this_texture;
 
   ImGui::Begin("textures");
-  for (const auto& [handle, element] : assets.graphics.textures)
+  for (const auto& [handle, element] : resources.get<graphics::TextureCache>())
   {
     if (element->source_image.isNull())
     {
@@ -96,7 +99,7 @@ bool update(texture_viewer* self, sde::game::Assets& assets, const sde::AppPrope
 
   if (delete_this_texture)
   {
-    assets.graphics.textures.remove(*delete_this_texture);
+    resources.remove(*delete_this_texture);
   }
 
   return true;

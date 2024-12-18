@@ -29,4 +29,9 @@ template <> struct ResourceCacheTraits<game::NativeScriptCache>
   using value_type = game::NativeScriptData;
   using dependencies = ResourceDependencies<game::LibraryCache>;
 };
+
+template <> struct ResourceHandleToCache<game::NativeScriptHandle>
+{
+  using type = game::NativeScriptCache;
+};
 }  // namespace sde

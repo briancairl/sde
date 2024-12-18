@@ -8,6 +8,6 @@ cc_library(
 cc_library(
     name = 'stl',
     visibility = ['//visibility:public'],
-    hdrs = glob(['include/stl/**/*.hpp']),
+    hdrs = glob(['include/stl/**/**/*.hpp']),
     strip_include_prefix="include/stl"
 )

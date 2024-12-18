@@ -84,7 +84,7 @@ bool save(renderer_state* self, sde::game::OArchive& ar)
 }
 
 
-bool initialize(renderer_state* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool initialize(renderer_state* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   if (!graphics::Window::try_backend_initialization())
   {
@@ -102,31 +102,31 @@ bool initialize(renderer_state* self, sde::game::Assets& assets, const sde::AppP
     return false;
   }
 
-  if (!assets.assign(self->render_target))
+  if (!resources.assign(self->render_target))
   {
     SDE_LOG_ERROR() << "Missing sprite shader";
     return false;
   }
 
-  if (!assets.assign(self->sprite_shader, "/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl"_path))
+  if (!resources.assign(self->sprite_shader, "/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl"_path))
   {
     SDE_LOG_ERROR() << "Missing sprite shader";
     return false;
   }
 
-  if (!assets.assign(self->player_text_shader, "/home/brian/dev/assets/shaders/glsl/simple_text.glsl"_path))
+  if (!resources.assign(self->player_text_shader, "/home/brian/dev/assets/shaders/glsl/simple_text.glsl"_path))
   {
     SDE_LOG_ERROR() << "Missing text shader";
     return false;
   }
 
-  if (!assets.assign(self->player_text_font, "/home/brian/dev/assets/fonts/white_rabbit.ttf"_path))
+  if (!resources.assign(self->player_text_font, "/home/brian/dev/assets/fonts/white_rabbit.ttf"_path))
   {
     SDE_LOG_ERROR() << "Missing font";
     return false;
   }
 
-  if (!assets.assign(self->player_text_type_set, self->player_text_font, TypeSetOptions{.height_px = 100}))
+  if (!resources.assign(self->player_text_type_set, self->player_text_font, TypeSetOptions{.height_px = 100}))
   {
     SDE_LOG_ERROR() << "Failed to create player typeset";
     return false;
@@ -136,7 +136,7 @@ bool initialize(renderer_state* self, sde::game::Assets& assets, const sde::AppP
   return true;
 }
 
-bool update(renderer_state* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool update(renderer_state* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   using namespace sde::graphics;
 
@@ -169,29 +169,29 @@ bool update(renderer_state* self, sde::game::Assets& assets, const sde::AppPrope
     }
   }
 
-  // assets.registry.view<Focused, Position>().each(
+  // resources.registry.view<Focused, Position>().each(
   //   [&](const Position& pos) { uniforms.world_from_camera.block<2, 1>(0, 2) = pos.center; });
 
   if (auto render_pass_or_error = RenderPass::create(
-        self->render_buffer, *self->renderer, assets.graphics, uniforms, render_resources, app.viewport_size);
+        self->render_buffer, *self->renderer, resources.all(), uniforms, render_resources, app.viewport_size);
       render_pass_or_error.has_value())
   {
     render_pass_or_error->clear(Black());
 
-    // assets.registry.view<TransformQuery>().each(
+    // resources.registry.view<TransformQuery>().each(
     //   [&rp = *render_pass_or_error](auto& query) { query.world_from_viewport = rp.getWorldFromViewportMatrix(); });
 
-    // assets.registry.view<Position, TileMap>().each(
+    // resources.registry.view<Position, TileMap>().each(
     //   [&](const Position& pos, const TileMap& tile_map) { tile_map.draw(*render_pass_or_error, pos.center); });
 
-    // assets.registry.view<Midground, Size, Position, AnimatedSprite>().each(
+    // resources.registry.view<Midground, Size, Position, AnimatedSprite>().each(
     //   [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
     //     const Vec2f min_corner{pos.center - 0.5F * size.extent};
     //     const Vec2f max_corner{pos.center + 0.5F * size.extent};
     //     sprite.draw(*render_pass_or_error, app.time, {min_corner, max_corner});
     //   });
 
-    // assets.registry.view<Foreground, Size, Position, AnimatedSprite>().each(
+    // resources.registry.view<Foreground, Size, Position, AnimatedSprite>().each(
     //   [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
     //     const Vec2f min_corner{pos.center - 0.5F * size.extent};
     //     const Vec2f max_corner{pos.center + 0.5F * size.extent};
@@ -203,16 +203,16 @@ bool update(renderer_state* self, sde::game::Assets& assets, const sde::AppPrope
   render_resources.shader = self->sprite_shader;
 
   if (auto render_pass_or_error = RenderPass::create(
-        self->render_buffer, *self->renderer, assets.graphics, uniforms, render_resources, app.viewport_size);
+        self->render_buffer, *self->renderer, resources.all(), uniforms, render_resources, app.viewport_size);
       render_pass_or_error.has_value())
   {
-    // assets.registry.view<Position, TileMap, DebugWireFrame>().each(
+    // resources.registry.view<Position, TileMap, DebugWireFrame>().each(
     //   [&](const Position& pos, const TileMap& tile_map, const DebugWireFrame& debug) {
     //     self->render_buffer.quads.push_back(
     //       {.rect = Rect2f{pos.center, pos.center + tile_map.mapSize()}, .color = debug.color});
     //   });
 
-    // assets.registry.view<Size, Position, DebugWireFrame>().each(
+    // resources.registry.view<Size, Position, DebugWireFrame>().each(
     //   [&](const Size& size, const Position& pos, const DebugWireFrame& debug) {
     //     const Vec2f min_corner{pos.center - 0.5F * size.extent};
     //     const Vec2f max_corner{pos.center + 0.5F * size.extent};
@@ -224,11 +224,11 @@ bool update(renderer_state* self, sde::game::Assets& assets, const sde::AppPrope
   render_resources.shader = self->player_text_shader;
 
   if (auto render_pass_or_error = RenderPass::create(
-        self->render_buffer, *self->renderer, assets.graphics, uniforms, render_resources, app.viewport_size);
+        self->render_buffer, *self->renderer, resources.all(), uniforms, render_resources, app.viewport_size);
       render_pass_or_error.has_value())
   {
     // TypeSetter type_setter{self->player_text_type_set};
-    // assets.registry.view<Info, Size, Position, Dynamics>().each(
+    // resources.registry.view<Info, Size, Position, Dynamics>().each(
     //   [&](const Info& info, const Size& size, const Position& pos, const Dynamics& state) {
     //     if ((state.velocity.array() == 0.0F).all())
     //     {

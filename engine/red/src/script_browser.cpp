@@ -31,9 +31,12 @@ bool save(script_browser* self, sde::game::OArchive& ar)
 }
 
 
-bool initialize(script_browser* self, sde::game::Assets& assets, const sde::AppProperties& app) { return true; }
+bool initialize(script_browser* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+{
+  return true;
+}
 
-bool update(script_browser* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool update(script_browser* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   ImGui::Begin("scripts");
 
@@ -42,7 +45,7 @@ bool update(script_browser* self, sde::game::Assets& assets, const sde::AppPrope
     ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders;
   if (ImGui::BeginTable("scripts", kTableCols, kTableFlags))
   {
-    for (const auto& [handle, script] : assets.scripts)
+    for (const auto& [handle, script] : resources.get<NativeScriptCache>())
     {
       ImGui::TableNextColumn();
       ImGui::Text("%d", static_cast<int>(handle.id()));
@@ -56,7 +59,7 @@ bool update(script_browser* self, sde::game::Assets& assets, const sde::AppPrope
       {
         SDE_ASSERT_EQ(payload->DataSize, sizeof(LibraryHandle));
         const LibraryHandle library_handle{*reinterpret_cast<const LibraryHandle*>(payload->Data)};
-        const auto script_or_error = assets.scripts.create(assets.dependencies(), library_handle);
+        const auto script_or_error = resources.create<NativeScriptCache>(library_handle);
         (void)script_or_error;
       }
       ImGui::EndDragDropTarget();

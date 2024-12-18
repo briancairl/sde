@@ -3,8 +3,8 @@
 
 // SDE
 #include "sde/app.hpp"
-#include "sde/game/assets.hpp"
 #include "sde/game/game.hpp"
+#include "sde/game/game_resources.hpp"
 #include "sde/game/scene_graph.hpp"
 #include "sde/game/scene_manifest.hpp"
 #include "sde/geometry_io.hpp"
@@ -22,40 +22,40 @@ namespace sde::game
 namespace
 {
 
-[[nodiscard]] bool load(Assets& assets, const asset::path& assets_path)
+[[nodiscard]] bool load(GameResources& resources, const asset::path& resources_path)
 {
-  if (auto ifs_or_error = serial::file_istream::create(assets_path); ifs_or_error.has_value())
+  if (auto ifs_or_error = serial::file_istream::create(resources_path); ifs_or_error.has_value())
   {
     IArchive iar{*ifs_or_error};
-    iar >> Field{"assets", assets};
-    if (auto ok_or_error = assets.refresh(); !ok_or_error.has_value())
+    iar >> Field{"resources", resources};
+    if (auto ok_or_error = resources.refresh(); !ok_or_error.has_value())
     {
-      SDE_LOG_ERROR() << ok_or_error.error() << " " << SDE_OSNV(assets_path);
+      SDE_LOG_ERROR() << ok_or_error.error() << " " << SDE_OSNV(resources_path);
       return false;
     }
   }
   else if (ifs_or_error.error() == serial::FileStreamError::kFileDoesNotExist)
   {
-    SDE_LOG_WARN() << SDE_OSNV(assets_path);
+    SDE_LOG_WARN() << SDE_OSNV(resources_path);
   }
   else
   {
-    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(assets_path);
+    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(resources_path);
     return false;
   }
   return true;
 }
 
-[[nodiscard]] bool save(const Assets& assets, const asset::path& assets_path)
+[[nodiscard]] bool save(const GameResources& resources, const asset::path& resources_path)
 {
-  if (auto ofs_or_error = serial::file_ostream::create(assets_path); ofs_or_error.has_value())
+  if (auto ofs_or_error = serial::file_ostream::create(resources_path); ofs_or_error.has_value())
   {
     OArchive oar{*ofs_or_error};
-    oar << Field{"assets", assets};
+    oar << Field{"resources", resources};
   }
   else
   {
-    SDE_LOG_ERROR() << ofs_or_error.error() << " " << SDE_OSNV(assets_path);
+    SDE_LOG_ERROR() << ofs_or_error.error() << " " << SDE_OSNV(resources_path);
     return false;
   }
   return true;
@@ -77,14 +77,15 @@ std::ostream& operator<<(std::ostream& os, GameError error)
   return os;
 }
 
-Game::Game(Assets&& assets, SceneGraph&& scene_graph) : assets_{std::move(assets)}, scene_graph_{std::move(scene_graph)}
+Game::Game(GameResources&& resources, SceneGraph&& scene_graph) :
+    resources_{std::move(resources)}, scene_graph_{std::move(scene_graph)}
 {}
 
 void Game::spin(App& app)
 {
   app.spin(
     [this](const auto& app_properties) {
-      if (const auto ok_or_error = scene_graph_.initialize(assets_, app_properties); !ok_or_error.has_value())
+      if (const auto ok_or_error = scene_graph_.initialize(resources_, app_properties); !ok_or_error.has_value())
       {
         SDE_LOG_ERROR() << ok_or_error.error();
         return AppDirective::kClose;
@@ -92,7 +93,7 @@ void Game::spin(App& app)
       return AppDirective::kContinue;
     },
     [this](const auto& app_properties) {
-      if (const auto ok_or_error = scene_graph_.tick(assets_, app_properties); !ok_or_error.has_value())
+      if (const auto ok_or_error = scene_graph_.tick(resources_, app_properties); !ok_or_error.has_value())
       {
         SDE_LOG_ERROR() << ok_or_error.error();
         return AppDirective::kClose;
@@ -110,9 +111,9 @@ expected<Game, GameError> Game::create(const asset::path& path)
     return make_unexpected(GameError::kInvalidRootDirectory);
   }
 
-  Assets assets;
+  GameResources resources;
 
-  if (!load(assets, path / "assets.bin"))
+  if (!load(resources, path / "resources.bin"))
   {
     return make_unexpected(GameError::kAssetLoadError);
   }
@@ -124,7 +125,7 @@ expected<Game, GameError> Game::create(const asset::path& path)
     return make_unexpected(GameError::kSceneGraphLoadError);
   }
 
-  auto scene_graph_or_error = SceneGraph::create(assets, *scene_manifest_or_error);
+  auto scene_graph_or_error = SceneGraph::create(resources, *scene_manifest_or_error);
   if (!scene_graph_or_error.has_value())
   {
     SDE_LOG_ERROR() << scene_graph_or_error.error();
@@ -135,13 +136,13 @@ expected<Game, GameError> Game::create(const asset::path& path)
   {
     SDE_LOG_WARN() << "No script data: " << SDE_OSNV(script_data_path);
   }
-  else if (const auto ok_or_error = scene_graph_or_error->load(assets, script_data_path))
+  else if (const auto ok_or_error = scene_graph_or_error->load(resources, script_data_path))
   {
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(GameError::kSceneGraphLoadError);
   }
 
-  return {Game{std::move(assets), std::move(scene_graph_or_error).value()}};
+  return {Game{std::move(resources), std::move(scene_graph_or_error).value()}};
 }
 
 expected<void, GameError> Game::dump(Game& game, const asset::path& path)
@@ -152,12 +153,12 @@ expected<void, GameError> Game::dump(Game& game, const asset::path& path)
     return make_unexpected(GameError::kInvalidRootDirectory);
   }
 
-  if (!save(game.assets_, path / "assets.bin"))
+  if (!save(game.resources_, path / "resources.bin"))
   {
     return make_unexpected(GameError::kAssetSaveError);
   }
 
-  auto scene_manifest_or_error = game.scene_graph_.manifest(game.assets_);
+  auto scene_manifest_or_error = game.scene_graph_.manifest(game.resources_);
   if (!scene_manifest_or_error.has_value())
   {
     SDE_LOG_ERROR() << scene_manifest_or_error.error();
@@ -170,7 +171,7 @@ expected<void, GameError> Game::dump(Game& game, const asset::path& path)
     SDE_LOG_ERROR() << "Invalid script data directory: " << SDE_OSNV(script_data_path);
     return make_unexpected(GameError::kSceneGraphSaveError);
   }
-  else if (const auto ok_or_error = game.scene_graph_.save(game.assets_, script_data_path))
+  else if (const auto ok_or_error = game.scene_graph_.save(game.resources_, script_data_path))
   {
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(GameError::kSceneGraphSaveError);

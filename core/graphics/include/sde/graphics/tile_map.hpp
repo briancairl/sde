@@ -13,6 +13,7 @@
 #include "sde/graphics/render_buffer_fwd.hpp"
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/tile_map_fwd.hpp"
+#include "sde/graphics/tile_set_fwd.hpp"
 #include "sde/graphics/tile_set_handle.hpp"
 #include "sde/resource.hpp"
 #include "sde/vector.hpp"
@@ -45,13 +46,15 @@ class TileMap : public Resource<TileMap>
   friend fundemental_type;
 
 public:
+  using dependencies = ResourceDependencies<TileSetCache>;
+
   explicit TileMap(const TileMapOptions& options);
 
   TileMap() = default;
   TileMap(TileMap&&);
   TileMap& operator=(TileMap&&);
 
-  void draw(RenderPass& rp, const Vec2f& origin) const;
+  void draw(RenderPass& rp, const dependencies& deps, const Vec2f& origin) const;
 
   const TileMapOptions& options() const { return options_; }
 

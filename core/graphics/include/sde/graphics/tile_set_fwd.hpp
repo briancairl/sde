@@ -6,6 +6,7 @@
 #pragma once
 
 // SDE
+#include "sde/graphics/texture_fwd.hpp"
 #include "sde/resource_cache_traits.hpp"
 
 namespace sde::graphics
@@ -24,5 +25,10 @@ template <> struct ResourceCacheTraits<graphics::TileSetCache>
   using handle_type = graphics::TileSetHandle;
   using value_type = graphics::TileSet;
   using dependencies = ResourceDependencies<graphics::TextureCache>;
+};
+
+template <> struct ResourceHandleToCache<graphics::TileSetHandle>
+{
+  using type = graphics::TileSetCache;
 };
 }  // namespace sde

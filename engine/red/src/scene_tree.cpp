@@ -31,11 +31,11 @@ bool save(scene_viewer* self, sde::game::OArchive& ar)
 }
 
 
-bool initialize(scene_viewer* self, sde::game::Assets& assets, const sde::AppProperties& app) { return true; }
+bool initialize(scene_viewer* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 
-void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
+void scene_hierarchy(SceneHandle handle, sde::game::GameResources& resources)
 {
-  const auto scene_ref = assets.scenes.get_if(handle);
+  const auto scene_ref = resources(handle);
   if (!scene_ref)
   {
     return;
@@ -51,7 +51,7 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       SDE_ASSERT_EQ(payload->DataSize, sizeof(SceneHandle));
       if (const SceneHandle child_handle{*reinterpret_cast<const SceneHandle*>(payload->Data)}; child_handle != handle)
       {
-        assets.scenes.update_if_exists(handle, [child_handle](auto& v) { v.children.push_back(child_handle); });
+        resources.update_if_exists(handle, [child_handle](auto& v) { v.children.push_back(child_handle); });
       }
     }
     ImGui::EndDragDropTarget();
@@ -93,7 +93,7 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
       {
         for (const auto& scene_handle : scene_ref->children)
         {
-          scene_hierarchy(scene_handle, assets);
+          scene_hierarchy(scene_handle, resources);
         }
         ImGui::TreePop();
       };
@@ -119,7 +119,7 @@ void scene_hierarchy(SceneHandle handle, sde::game::Assets& assets)
   ImGui::PopID();
 }
 
-bool update(scene_viewer* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool update(scene_viewer* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   if (ImGui::GetCurrentContext() == nullptr)
   {
@@ -129,14 +129,14 @@ bool update(scene_viewer* self, sde::game::Assets& assets, const sde::AppPropert
   ImGui::Begin("scenes");
   if (ImGui::SmallButton("new scene"))
   {
-    if (const auto ok_or_error = assets.scenes.create(sde::string{"unamed"}); !ok_or_error.has_value())
+    if (const auto ok_or_error = resources.create<SceneCache>(sde::string{"unamed"}); !ok_or_error.has_value())
     {
       SDE_LOG_ERROR() << "Failed to create new scene: " << ok_or_error.error();
     }
   }
-  for (const auto& [handle, scene] : assets.scenes)
+  for (const auto& [handle, scene] : resources.get<SceneCache>())
   {
-    scene_hierarchy(handle, assets);
+    scene_hierarchy(handle, resources);
   }
   ImGui::End();
 

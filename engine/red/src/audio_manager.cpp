@@ -30,7 +30,7 @@ bool load(audio_manager* self, sde::game::IArchive& ar) { return true; }
 
 bool save(audio_manager* self, sde::game::OArchive& ar) { return true; }
 
-bool initialize(audio_manager* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool initialize(audio_manager* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   auto mixer_or_error = Mixer::create(app.sound_device);
 
@@ -47,10 +47,10 @@ bool initialize(audio_manager* self, sde::game::Assets& assets, const sde::AppPr
   }
 }
 
-bool update(audio_manager* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool update(audio_manager* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   ImGui::Begin("sounds");
-  for (const auto& [handle, sound] : assets.audio.sounds)
+  for (const auto& [handle, sound] : resources.get<audio::SoundCache>())
   {
     ImGui::PushID(handle.id());
     ImGui::Text("sound[%lu]", handle.id());

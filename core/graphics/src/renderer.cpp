@@ -15,7 +15,6 @@
 #include "sde/format.hpp"
 #include "sde/geometry.hpp"
 #include "sde/geometry_utils.hpp"
-#include "sde/graphics/assets.hpp"
 #include "sde/graphics/render_buffer.hpp"
 #include "sde/graphics/render_target.hpp"
 #include "sde/graphics/renderer.hpp"
@@ -747,9 +746,9 @@ void Renderer2D::refresh(const RenderResources& resources)
   backend__opengl->start(next_active_resources_.buffer_group);
 }
 
-void Renderer2D::flush(const Assets& assets, const RenderUniforms& uniforms, const Mat3f& viewport_from_world)
+void Renderer2D::flush(const dependencies& deps, const RenderUniforms& uniforms, const Mat3f& viewport_from_world)
 {
-  const auto shader = assets(next_active_resources_.shader);
+  const auto shader = deps.get<ShaderCache>()(next_active_resources_.shader);
   SDE_ASSERT_TRUE(shader);
 
   // Set active shader
@@ -765,7 +764,7 @@ void Renderer2D::flush(const Assets& assets, const RenderUniforms& uniforms, con
   {
     if (next_active_textures_[u] and next_active_textures_[u] != last_active_textures_[u])
     {
-      const auto texture = assets(next_active_textures_[u]);
+      const auto texture = deps.get<TextureCache>()(next_active_textures_[u]);
       SDE_ASSERT_TRUE(texture);
 
       glActiveTexture(GL_TEXTURE0 + u);
@@ -799,14 +798,31 @@ expected<void, RenderPassError> RenderPass::submit(View<const TexturedQuad> quad
 RenderPass::RenderPass(RenderPass&& other) :
     renderer_{other.renderer_},
     buffer_{other.buffer_},
-    assets_{other.assets_},
     uniforms_{other.uniforms_},
+    deps_{std::move(other.deps_)},
     world_from_viewport_{other.world_from_viewport_},
     viewport_from_world_{other.viewport_from_world_},
     viewport_in_world_bounds_{other.viewport_in_world_bounds_}
 {
   other.renderer_ = nullptr;
 }
+
+RenderPass::RenderPass(
+  Renderer2D* renderer,
+  RenderBuffer* buffer,
+  const RenderUniforms* uniforms,
+  const Renderer2D::dependencies& deps,
+  const Mat3f& world_from_viewport,
+  const Mat3f& viewport_from_world,
+  const Bounds2f& viewport_in_world_bounds) :
+    renderer_{renderer},
+    buffer_{buffer},
+    uniforms_{uniforms},
+    deps_{deps},
+    world_from_viewport_{world_from_viewport},
+    viewport_from_world_{viewport_from_world},
+    viewport_in_world_bounds_{viewport_in_world_bounds}
+{}
 
 RenderPass::~RenderPass()
 {
@@ -820,7 +836,7 @@ RenderPass::~RenderPass()
   submit(make_const_view(buffer_->textured_quads));
   buffer_->reset();
 
-  renderer_->flush(*assets_, *uniforms_, viewport_from_world_);
+  renderer_->flush(deps_, *uniforms_, viewport_from_world_);
   backend__render_pass_active.clear();
 }
 
@@ -830,11 +846,11 @@ void RenderPass::clear(const Vec4f& color)
   glClear(GL_COLOR_BUFFER_BIT);
 }
 
-bool RenderPass::retarget(Vec2i& viewport_size, RenderTargetHandle render_target, const Assets& assets)
+bool RenderPass::retarget(Vec2i& viewport_size, RenderTargetHandle render_target, const Renderer2D::dependencies& deps)
 {
   // Pick render target
-  const auto* render_target_info = assets.get_if(render_target);
-  if (render_target_info == nullptr)
+  const auto render_target_info = deps(render_target);
+  if (!render_target_info)
   {
     return false;
   }
@@ -848,8 +864,8 @@ bool RenderPass::retarget(Vec2i& viewport_size, RenderTargetHandle render_target
   }
 
   // If render target is an off-screen target, update viewport size
-  const auto* color_attachment_texture = assets.get_if(render_target_info->color_attachment);
-  if (color_attachment_texture == nullptr)
+  const auto color_attachment_texture = deps(render_target_info->color_attachment);
+  if (!color_attachment_texture)
   {
     return false;
   }
@@ -862,7 +878,7 @@ bool RenderPass::retarget(Vec2i& viewport_size, RenderTargetHandle render_target
 expected<RenderPass, RenderPassError> RenderPass::create(
   RenderBuffer& buffer,
   Renderer2D& renderer,
-  const Assets& assets,
+  const Renderer2D::dependencies& deps,
   const RenderUniforms& uniforms,
   const RenderResources& resources,
   Vec2i viewport_size)
@@ -872,7 +888,7 @@ expected<RenderPass, RenderPassError> RenderPass::create(
     return make_unexpected(RenderPassError::kRenderPassActive);
   }
 
-  if (!retarget(viewport_size, resources.target, assets))
+  if (!retarget(viewport_size, resources.target, deps))
   {
     return make_unexpected(RenderPassError::kInvalidRenderTarget);
   }
@@ -881,17 +897,16 @@ expected<RenderPass, RenderPassError> RenderPass::create(
 
   renderer.refresh(resources);
 
-  RenderPass render_pass;
-  render_pass.renderer_ = std::addressof(renderer);
-  render_pass.buffer_ = std::addressof(buffer);
-  render_pass.assets_ = std::addressof(assets);
-  render_pass.uniforms_ = std::addressof(uniforms);
-  render_pass.world_from_viewport_ = uniforms.getWorldFromViewportMatrix(viewport_size);
-  render_pass.viewport_from_world_ = render_pass.world_from_viewport_.inverse();
-  render_pass.viewport_in_world_bounds_ =
-    transform(render_pass.world_from_viewport_, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()});
+  const auto world_from_viewport = uniforms.getWorldFromViewportMatrix(viewport_size);
 
-  return render_pass;
+  return RenderPass{
+    std::addressof(renderer),
+    std::addressof(buffer),
+    std::addressof(uniforms),
+    deps,
+    world_from_viewport,
+    world_from_viewport.inverse(),
+    transform(world_from_viewport, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()})};
 }
 
 }  // namespace sde::graphics

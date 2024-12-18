@@ -55,10 +55,10 @@ template <typename... ResourceCacheTs> struct ExpandResourceDependencies<Resourc
 
 
 template <typename ResourceCacheT>
-class ResourceCacheHasDependencies
+struct ResourceCacheHasDependencies
     : std::integral_constant<
         bool,
-        std::is_same_v<typename ResourceCacheTraits<ResourceCacheT>::dependencies, ResourceDependencies<>>>
+        !std::is_same_v<typename ResourceCacheTraits<ResourceCacheT>::dependencies, ResourceDependencies<>>>
 {};
 
 template <typename ResourceCacheT>
@@ -388,10 +388,10 @@ private:
   static void when_removed([[maybe_unused]] handle_type h, [[maybe_unused]] const value_type* value) {}
 };
 
-template <typename T> struct is_resource_cache : std::is_base_of<ResourceCache<T>, T>
+template <typename T> struct IsResourceCache : std::is_base_of<ResourceCache<T>, T>
 {};
 
-template <typename R> constexpr bool is_resource_cache_v = is_resource_cache<std::remove_const_t<R>>::value;
+template <typename R> constexpr bool is_resource_cache_v = IsResourceCache<std::remove_const_t<R>>::value;
 
 
 }  // namespace sde

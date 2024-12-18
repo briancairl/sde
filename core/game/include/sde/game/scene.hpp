@@ -14,7 +14,6 @@
 #include "sde/expected.hpp"
 #include "sde/format.hpp"
 #include "sde/game/archive_fwd.hpp"
-#include "sde/game/assets_fwd.hpp"
 #include "sde/game/native_script.hpp"
 #include "sde/game/native_script_handle.hpp"
 #include "sde/game/scene_fwd.hpp"

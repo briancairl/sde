@@ -25,4 +25,9 @@ template <> struct ResourceCacheTraits<game::LibraryCache>
   using value_type = game::LibraryData;
   using dependencies = no_dependencies;
 };
+
+template <> struct ResourceHandleToCache<game::LibraryHandle>
+{
+  using type = game::LibraryCache;
+};
 }  // namespace sde

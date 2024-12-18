@@ -12,6 +12,7 @@
 #include "sde/graphics/renderer_fwd.hpp"
 #include "sde/graphics/shapes.hpp"
 #include "sde/graphics/type_set_fwd.hpp"
+#include "sde/graphics/type_set_handle.hpp"
 
 namespace sde::graphics
 {
@@ -40,10 +41,13 @@ struct TextOptions
 class TypeSetter
 {
 public:
+  using dependencies = ResourceDependencies<TypeSetCache>;
+
   explicit TypeSetter(const TypeSetHandle& glyphs);
 
   void draw(
     RenderPass& rp,
+    const dependencies& deps,
     std::string_view text,
     const Vec2f& pos,
     const TextOptions& options,

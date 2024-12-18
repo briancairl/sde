@@ -11,6 +11,7 @@
 
 // SDE
 #include "sde/asset.hpp"
+#include "sde/game/game_resources_fwd.hpp"
 #include "sde/game/library.hpp"
 #include "sde/game/library_fwd.hpp"
 #include "sde/game/library_handle.hpp"
@@ -119,9 +120,8 @@ public:
 
   bool save(OArchive& ar) const;
 
-  expected<void, NativeScriptCallError> initialize(Assets& assets, const AppProperties& app_properties) const;
-
-  expected<void, NativeScriptCallError> call(Assets& assets, const AppProperties& app_properties) const;
+  expected<void, NativeScriptCallError> initialize(GameResources& resources, const AppProperties& app_properties) const;
+  expected<void, NativeScriptCallError> call(GameResources& resources, const AppProperties& app_properties) const;
 
 private:
   friend NativeScript;

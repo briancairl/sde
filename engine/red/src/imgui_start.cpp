@@ -50,7 +50,7 @@ bool save(imgui_start* self, sde::game::OArchive& ar)
 }
 
 
-bool initialize(imgui_start* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool initialize(imgui_start* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   IMGUI_CHECKVERSION();
 
@@ -67,7 +67,7 @@ bool initialize(imgui_start* self, sde::game::Assets& assets, const sde::AppProp
 }
 
 
-bool update(imgui_start* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool update(imgui_start* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   if (ImGui::GetCurrentContext() == nullptr)
   {

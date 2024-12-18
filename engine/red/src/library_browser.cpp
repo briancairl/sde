@@ -51,7 +51,7 @@ bool save(library_browser* self, sde::game::OArchive& ar)
 }
 
 
-bool initialize(library_browser* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool initialize(library_browser* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   self->search_paths.try_emplace("engine");
   refresh(self);
@@ -59,7 +59,7 @@ bool initialize(library_browser* self, sde::game::Assets& assets, const sde::App
 }
 
 
-bool update(library_browser* self, sde::game::Assets& assets, const sde::AppProperties& app)
+bool update(library_browser* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   if (ImGui::GetCurrentContext() == nullptr)
   {
@@ -79,18 +79,19 @@ bool update(library_browser* self, sde::game::Assets& assets, const sde::AppProp
       ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders;
     if (ImGui::BeginTable(search_path.string().c_str(), kTableCols, kTableFlags))
     {
+      auto& libraries = resources.get<LibraryCache>();
       for (const auto& path : library_paths)
       {
         ImGui::PushID(path.string().c_str());
 
-        if (const auto [handle, lib] = assets.libraries.get_if(path); handle.isNull())
+        if (const auto [handle, lib] = libraries.get_if(path); handle.isNull())
         {
           ImGui::TableNextColumn();
           ImGui::Text("%s", path.string().c_str());
           ImGui::TableNextColumn();
           if (ImGui::SmallButton("load"))
           {
-            [[maybe_unused]] const auto _ = assets.libraries.create(path);
+            [[maybe_unused]] const auto _ = libraries.create(path);
           }
         }
         else
