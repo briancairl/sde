@@ -38,6 +38,7 @@ ComponentIO& ComponentIO::operator=(ComponentIO&& other)
 
 void ComponentIO::swap(ComponentIO& other)
 {
+  std::swap(this->name_, other.name_);
   std::swap(this->on_load_, other.on_load_);
   std::swap(this->on_save_, other.on_save_);
 }
@@ -48,13 +49,14 @@ void ComponentIO::reset()
   on_save_.reset();
 }
 
-bool ComponentIO::reset(const dl::Library& library)
+bool ComponentIO::reset(const sde::string& name, const dl::Library& library)
 {
   return IterateUntil(*this, [&](auto& field) {
-    auto symbol_or_error = library.get(field.name);
+    const sde::string field_name = (name + "_" + field.name);
+    auto symbol_or_error = library.get(field_name.c_str());
     if (!symbol_or_error.has_value())
     {
-      SDE_LOG_ERROR() << "ComponentIO : " << field.name << " : " << symbol_or_error.error();
+      SDE_LOG_ERROR() << "ComponentIO : " << field_name << " : " << symbol_or_error.error();
       return false;
     }
     else
@@ -86,13 +88,12 @@ expected<void, ComponentError> ComponentCache::reload(dependencies dep, Componen
     return make_unexpected(ComponentError::kComponentLibraryInvalid);
   }
 
-  if (!component.io.reset(library_ptr->lib))
+  if (!component.io.reset(component.name, library_ptr->lib))
   {
-    SDE_LOG_ERROR() << "ComponentLibraryMissingFunction: " << SDE_OSNV(component.library);
+    SDE_LOG_ERROR() << "ComponentLibraryMissingFunction: " << SDE_OSNV(component.library) << " "
+                    << SDE_OSNV(library_ptr->path);
     return make_unexpected(ComponentError::kComponentLibraryMissingFunction);
   }
-
-  component.name = component.io.name();
 
   return {};
 }
@@ -103,9 +104,10 @@ expected<void, ComponentError> ComponentCache::unload(dependencies dep, Componen
   return {};
 }
 
-expected<ComponentData, ComponentError> ComponentCache::generate(dependencies dep, LibraryHandle library)
+expected<ComponentData, ComponentError>
+ComponentCache::generate(dependencies dep, const sde::string& name, LibraryHandle library)
 {
-  ComponentData data{.library = library};
+  ComponentData data{.library = library, .name = name};
 
   auto ok_or_error = reload(dep, data);
 
@@ -123,38 +125,29 @@ expected<ComponentData, ComponentError> ComponentCache::generate(dependencies de
   return data;
 }
 
-expected<ComponentData, ComponentError> ComponentCache::generate(dependencies dep, const asset::path& path)
+expected<ComponentData, ComponentError>
+ComponentCache::generate(dependencies dep, const sde::string& name, const asset::path& path)
 {
-  auto library_or_error = dep.get<LibraryCache>().create(path);
+  auto library_or_error = dep.get<LibraryCache>().find_or_create(path, path);
   if (!library_or_error.has_value())
   {
     SDE_LOG_ERROR() << "ComponentLibraryInvalid: " << SDE_OSNV(path) << ", " << SDE_OSNV(library_or_error.error());
     return make_unexpected(ComponentError::kComponentLibraryInvalid);
   }
-  return this->generate(dep, library_or_error->handle);
+  return this->generate(dep, name, library_or_error->handle);
 }
 
 void ComponentCache::when_created(ComponentHandle handle, const ComponentData* data)
 {
-  type_name_to_component_handle_lookup_.emplace(data->name, handle);
+  type_name_to_component_handle_lookup_.emplace(sde::string{data->io.name()}, handle);
 }
 
 void ComponentCache::when_removed(ComponentHandle handle, const ComponentData* data)
 {
-  type_name_to_component_handle_lookup_.erase(data->name);
+  type_name_to_component_handle_lookup_.erase(sde::string{data->io.name()});
 }
 
-const ComponentData* ComponentCache::get_if(const sde::string& name) const
-{
-  const auto itr = type_name_to_component_handle_lookup_.find(name);
-  if (itr == std::end(type_name_to_component_handle_lookup_))
-  {
-    return nullptr;
-  }
-  return this->get_if(itr->second);
-}
-
-const ComponentHandle ComponentCache::get_handle(const sde::string& name) const
+ComponentHandle ComponentCache::to_handle(const sde::string& name) const
 {
   const auto itr = type_name_to_component_handle_lookup_.find(name);
   if (itr == std::end(type_name_to_component_handle_lookup_))

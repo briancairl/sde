@@ -46,7 +46,9 @@ template <resource_label_data str> constexpr auto operator"" _rl() { return reso
 template <resource_label kName, typename ResourceCacheT, bool kSerializable = true> struct ResourceCollectionEntry
 {
   using type = ResourceCacheT;
+
   static constexpr bool kIsSerializable{kSerializable};
+
   static constexpr const char* name() { return kName.data(); }
 
   template <typename CacheTupleT> static decltype(auto) toField(CacheTupleT&& caches)

@@ -60,7 +60,7 @@ public:
     {
       return make_unexpected(EntityError::kComponentAlreadyAttached);
     }
-    else if (auto component = components_->get_handle(sde::string{type_name<ComponentT>()}))
+    else if (auto component = components_->to_handle(sde::string{type_name<ComponentT>()}))
     {
       entity_->components.push_back(component);
     }

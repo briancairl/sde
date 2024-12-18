@@ -3,6 +3,7 @@
 
 // SDE
 #include "sde/app.hpp"
+#include "sde/game/component_preload.hpp"
 #include "sde/game/game.hpp"
 #include "sde/game/game_resources.hpp"
 #include "sde/game/scene_graph.hpp"
@@ -116,6 +117,12 @@ expected<Game, GameError> Game::create(const asset::path& path)
   if (!load(resources, path / "resources.bin"))
   {
     return make_unexpected(GameError::kAssetLoadError);
+  }
+
+  if (auto ok_or_error = componentPreload(resources, path / "components.json"); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << ok_or_error.error();
+    return make_unexpected(GameError::kComponentLoadError);
   }
 
   auto scene_manifest_or_error = SceneManifest::create(path / "scene_graph.json");

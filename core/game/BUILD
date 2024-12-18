@@ -6,6 +6,7 @@ cc_library(
     "include/sde/game/component.hpp",
     "include/sde/game/component_fwd.hpp",
     "include/sde/game/component_handle.hpp",
+    "include/sde/game/component_preload.hpp",
     "include/sde/game/component_runtime.hpp",
     "include/sde/game/entity.hpp",
     "include/sde/game/entity_fwd.hpp",
@@ -31,6 +32,7 @@ cc_library(
   ],
   srcs = [
     "src/component.cpp",
+    "src/component_preload.cpp",
     "src/entity.cpp",
     "src/game.cpp",
     "src/library.cpp",

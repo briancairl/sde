@@ -83,8 +83,7 @@ bool update(library_browser* self, sde::game::GameResources& resources, const sd
       for (const auto& path : library_paths)
       {
         ImGui::PushID(path.string().c_str());
-
-        if (const auto [handle, lib] = libraries.get_if(path); handle.isNull())
+        if (const auto handle = libraries.to_handle(path); handle.isNull())
         {
           ImGui::TableNextColumn();
           ImGui::Text("%s", path.string().c_str());
@@ -96,6 +95,7 @@ bool update(library_browser* self, sde::game::GameResources& resources, const sd
         }
         else
         {
+          const auto lib = libraries.get_if(handle);
           ImGui::TableNextColumn();
           ImGui::TextColored(ImVec4{0.0F, 0.8F, 0.0F, 1.0F}, "%s", path.string().c_str());
 

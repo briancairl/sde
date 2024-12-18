@@ -51,13 +51,11 @@ class LibraryCache : public ResourceCache<LibraryCache>
   friend fundemental_type;
 
 public:
-  using fundemental_type::get_if;
-
-  std::pair<LibraryHandle, const LibraryData*> get_if(const asset::path& path) const;
+  using fundemental_type::to_handle;
+  LibraryHandle to_handle(const asset::path& path) const;
 
 private:
   sde::unordered_map<asset::path, LibraryHandle> asset_path_lookup_;
-
   expected<void, LibraryError> reload(LibraryData& library);
   expected<void, LibraryError> unload(LibraryData& library);
   expected<LibraryData, LibraryError> generate(const asset::path& path, const LibraryFlags& flags = {});

@@ -54,7 +54,7 @@ public:
   void swap(ComponentIO& other);
 
   void reset();
-  bool reset(const dl::Library& library);
+  bool reset(const sde::string& name, const dl::Library& library);
 
   constexpr operator bool() const { return on_load_ and on_save_; }
 
@@ -92,16 +92,15 @@ class ComponentCache : public ResourceCache<ComponentCache>
   friend fundemental_type;
 
 public:
-  using fundemental_type::get_if;
-  const ComponentHandle get_handle(const sde::string& name) const;
-  const ComponentData* get_if(const sde::string& name) const;
+  using fundemental_type::to_handle;
+  ComponentHandle to_handle(const sde::string& name) const;
 
 private:
   sde::unordered_map<sde::string, ComponentHandle> type_name_to_component_handle_lookup_;
   expected<void, ComponentError> reload(dependencies dep, ComponentData& library);
   expected<void, ComponentError> unload(dependencies dep, ComponentData& library);
-  expected<ComponentData, ComponentError> generate(dependencies dep, const asset::path& path);
-  expected<ComponentData, ComponentError> generate(dependencies dep, LibraryHandle library);
+  expected<ComponentData, ComponentError> generate(dependencies dep, const sde::string& name, const asset::path& path);
+  expected<ComponentData, ComponentError> generate(dependencies dep, const sde::string& name, LibraryHandle library);
   void when_created(ComponentHandle handle, const ComponentData* data);
   void when_removed(ComponentHandle handle, const ComponentData* data);
 };

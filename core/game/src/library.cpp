@@ -61,22 +61,22 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
 void LibraryCache::when_created(LibraryHandle handle, const LibraryData* data)
 {
   SDE_LOG_INFO() << "New library added: " << SDE_OSNV(data->path);
-  asset_path_lookup_.emplace(data->path, handle);
+  asset_path_lookup_.emplace(asset::absolute(data->path), handle);
 }
 
 void LibraryCache::when_removed([[maybe_unused]] LibraryHandle handle, const LibraryData* data)
 {
-  asset_path_lookup_.erase(data->path);
+  asset_path_lookup_.erase(asset::absolute(data->path));
 }
 
-std::pair<LibraryHandle, const LibraryData*> LibraryCache::get_if(const asset::path& path) const
+LibraryHandle LibraryCache::to_handle(const asset::path& path) const
 {
   const auto itr = asset_path_lookup_.find(asset::absolute(path));
   if (itr == std::end(asset_path_lookup_))
   {
-    return {LibraryHandle::null(), nullptr};
+    return LibraryHandle::null();
   }
-  return {itr->second, this->get_if(itr->second)};
+  return itr->second;
 }
 
 }  // namespace sde::game

@@ -22,8 +22,8 @@ namespace sde::game
 template <typename ComponentT> const char* component_name_impl()
 {
   static constexpr auto kTypeName = type_name<ComponentT>();
-  static char type_name_buffer[kTypeName.size() + 1] = "\0";
-  if (type_name_buffer[0] == '\0')
+  static char type_name_buffer[kTypeName.size() + 2] = {};
+  if (type_name_buffer[0] == 0)
   {
     auto* end_itr = std::copy(std::begin(kTypeName), std::end(kTypeName), std::begin(type_name_buffer));
     (*end_itr) = '\0';
@@ -56,7 +56,7 @@ void component_save_impl(sde::game::OArchive& ar, entt::entity e, const entt::re
 }  // namespace sde::game
 
 #define SDE_COMPONENT__REGISTER_NAME(Name, ComponentT)                                                                 \
-  SDE_EXPORT const char* Name##_name() { return #Name; }
+  SDE_EXPORT const char* Name##_name() { return ::sde::game::component_name_impl<ComponentT>(); }
 
 
 #define SDE_COMPONENT__REGISTER_LOAD(Name, ComponentT)                                                                 \

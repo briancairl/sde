@@ -138,9 +138,11 @@ public:
     return make_unexpected(element_or_error.error());
   }
 
-  template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> find_or_replace(handle_type handle, CreateArgTs&&... args)
+  template <typename HandleT, typename... CreateArgTs>
+  [[nodiscard]] expected<element_ref, error_type> find_or_replace(HandleT&& handle_or, CreateArgTs&&... args)
   {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
+
     const auto current_itr = handle_to_value_cache_.find(handle);
 
     if (current_itr == handle_to_value_cache_.end())
@@ -158,25 +160,30 @@ public:
     return replace_at_position(current_itr, std::forward<CreateArgTs>(args)...);
   }
 
-  template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> find_or_create(handle_type handle, CreateArgTs&&... args)
+  template <typename HandleT, typename... CreateArgTs>
+  [[nodiscard]] expected<element_ref, error_type> find_or_create(HandleT&& handle_or, CreateArgTs&&... args)
   {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
+
     // If hint handle is null, create a new resource, otherwise attempt replacement
     return handle.isNull() ? create(std::forward<CreateArgTs>(args)...)
                            : find_or_replace(handle, std::forward<CreateArgTs>(args)...);
   }
 
-  template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> emplace_with_hint(handle_type handle, CreateArgTs&&... args)
+  template <typename HandleT, typename... CreateArgTs>
+  [[nodiscard]] expected<element_ref, error_type> emplace_with_hint(HandleT&& handle_or, CreateArgTs&&... args)
   {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
+
     // If hint handle is null, create a new resource, otherwise attempt creation at handle
     return handle.isNull() ? create(std::forward<CreateArgTs>(args)...)
                            : create_at_handle(handle, std::forward<CreateArgTs>(args)...);
   }
 
-  template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> insert(handle_type handle, version_type version, value_type&& value)
+  template <typename HandleT, typename... CreateArgTs>
+  [[nodiscard]] expected<element_ref, error_type> insert(HandleT&& handle_or, version_type version, value_type&& value)
   {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
     if (handle.isNull())
     {
       return make_unexpected(error_type::kInvalidHandle);
@@ -196,8 +203,9 @@ public:
     return make_unexpected(error_type::kElementAlreadyExists);
   }
 
-  [[nodiscard]] const value_type* get_if(handle_type handle) const
+  template <typename HandleT> [[nodiscard]] const value_type* get_if(HandleT&& handle_or) const
   {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
     if (auto itr = handle_to_value_cache_.find(handle); itr != std::end(handle_to_value_cache_))
     {
       return std::addressof(itr->second.value);
@@ -205,18 +213,27 @@ public:
     return nullptr;
   }
 
-  [[nodiscard]] element_ref operator()(handle_type handle) const { return find(handle); }
-
-  [[nodiscard]] element_ref find(handle_type handle) const
+  template <typename HandleT> [[nodiscard]] element_ref operator()(HandleT&& handle_or) const
   {
+    return find(std::forward<HandleT>(handle_or));
+  }
+
+  template <typename HandleT> [[nodiscard]] element_ref find(HandleT&& handle_or) const
+  {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
     const auto value_ptr = get_if(handle);
     return {(value_ptr == nullptr) ? ResourceStatus::kInvalid : ResourceStatus::kExisted, handle, value_ptr};
   }
 
-  [[nodiscard]] const bool exists(handle_type handle) const { return handle_to_value_cache_.count(handle) != 0; }
-
-  void remove(handle_type handle)
+  template <typename HandleT> [[nodiscard]] const bool exists(HandleT&& handle_or) const
   {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
+    return handle_to_value_cache_.count(handle) != 0;
+  }
+
+  template <typename HandleT> void remove(HandleT&& handle_or)
+  {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
     if (auto itr = handle_to_value_cache_.find(handle); itr != std::end(handle_to_value_cache_))
     {
       this->derived().when_removed(itr->first, std::addressof(itr->second.value));
@@ -284,8 +301,9 @@ public:
     return {};
   }
 
-  template <typename UpdateFn> void update_if_exists(handle_type handle, UpdateFn update)
+  template <typename HandleT, typename UpdateFn> void update_if_exists(HandleT&& handle_or, UpdateFn update)
   {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
     const auto handle_to_value_itr = handle_to_value_cache_.find(handle);
     if (handle_to_value_itr != handle_to_value_cache_.end())
     {
@@ -308,6 +326,9 @@ public:
     this->swap(other);
     return *this;
   }
+
+protected:
+  constexpr static handle_type to_handle(handle_type handle) { return handle; }
 
 private:
   template <typename... CreateArgTs>
