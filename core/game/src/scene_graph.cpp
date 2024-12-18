@@ -1,8 +1,11 @@
+// C++ Standard Library
+#include <ostream>
+
 // SDE
-#include "sde/game/scene_graph.hpp"
 #include "sde/game/game_resources.hpp"
 #include "sde/game/native_script.hpp"
 #include "sde/game/scene.hpp"
+#include "sde/game/scene_graph.hpp"
 #include "sde/game/scene_handle.hpp"
 #include "sde/game/scene_manifest.hpp"
 #include "sde/logging.hpp"

@@ -22,11 +22,6 @@ std::ostream& operator<<(std::ostream& os, EntityError error)
   return os;
 }
 
-ComponentHandle EntityCache::locate_component_if_registered(dependencies deps, std::string_view name) const
-{
-  return deps.get<ComponentCache>().get_handle(sde::string{name});
-}
-
 expected<void, EntityError> EntityCache::reload(dependencies deps, EntityData& entity)
 {
   entity.id = deps.get<Registry>().create();

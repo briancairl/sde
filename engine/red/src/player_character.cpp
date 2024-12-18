@@ -83,14 +83,13 @@ bool initialize(player_character* self, sde::game::GameResources& resources, con
     return true;
   }
   auto deps = resources.all();
-  auto entity_or_error = resources.get<EntityCache>().make_entity(
-    deps, [&deps](EntityCache& cache, const EntityHandle& e, const EntityData& data) {
-      SDE_ASSERT_OK(cache.attach<Size>(deps, e, Size{.extent = {0.1, 0.1}}));
-      SDE_ASSERT_OK(cache.attach<Position>(deps, e, Position{.center = {0, 0}}));
-      SDE_ASSERT_OK(cache.attach<Dynamics>(deps, e, Dynamics{}));
-      SDE_ASSERT_OK(cache.attach<graphics::AnimatedSprite>(deps, e));
-      SDE_ASSERT_OK(cache.attach<Foreground>(deps, e));
-    });
+  auto entity_or_error = resources.get<EntityCache>().make_entity(deps, [](EntityCreation new_entity) {
+    SDE_ASSERT_OK(new_entity.attach<Size>(Size{.extent = {0.1, 0.1}}));
+    SDE_ASSERT_OK(new_entity.attach<Position>(Position{.center = {0, 0}}));
+    SDE_ASSERT_OK(new_entity.attach<Dynamics>(Dynamics{}));
+    SDE_ASSERT_OK(new_entity.attach<graphics::AnimatedSprite>());
+    SDE_ASSERT_OK(new_entity.attach<Foreground>());
+  });
   if (!entity_or_error.has_value())
   {
     SDE_LOG_ERROR() << entity_or_error.error();

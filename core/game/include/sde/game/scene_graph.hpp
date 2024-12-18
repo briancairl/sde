@@ -11,6 +11,8 @@
 
 // SDE
 #include "sde/app_fwd.hpp"
+#include "sde/asset.hpp"
+#include "sde/expected.hpp"
 #include "sde/game/game_resources_fwd.hpp"
 #include "sde/game/native_script_fwd.hpp"
 #include "sde/game/native_script_handle.hpp"
