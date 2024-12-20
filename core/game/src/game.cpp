@@ -44,6 +44,7 @@ namespace
     SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(resources_path);
     return false;
   }
+  SDE_LOG_INFO() << "GameResources loaded: " << SDE_OSNV(resources_path);
   return true;
 }
 
@@ -143,7 +144,7 @@ expected<Game, GameError> Game::create(const asset::path& path)
   {
     SDE_LOG_WARN() << "No script data: " << SDE_OSNV(script_data_path);
   }
-  else if (const auto ok_or_error = scene_graph_or_error->load(resources, script_data_path))
+  else if (const auto ok_or_error = scene_graph_or_error->load(resources, script_data_path); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(GameError::kSceneGraphLoadError);
@@ -178,7 +179,7 @@ expected<void, GameError> Game::dump(Game& game, const asset::path& path)
     SDE_LOG_ERROR() << "Invalid script data directory: " << SDE_OSNV(script_data_path);
     return make_unexpected(GameError::kSceneGraphSaveError);
   }
-  else if (const auto ok_or_error = game.scene_graph_.save(game.resources_, script_data_path))
+  else if (const auto ok_or_error = game.scene_graph_.save(game.resources_, script_data_path); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(GameError::kSceneGraphSaveError);

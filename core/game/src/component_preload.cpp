@@ -25,17 +25,23 @@ expected<void, ComponentError> componentPreload(GameResources& resources, const 
     return make_unexpected(ComponentError::kComponentLibraryInvalid);
   }
 
-  for (const auto& [component_name, data] : manifest_json.items())
+  for (const auto& [key_json, data_json] : manifest_json.items())
   {
-    if (auto ok_or_error = resources.create<ComponentCache>(sde::string{component_name}, asset::path{data["path"]});
+    const sde::string component_name{key_json};
+    if (auto ok_or_error =
+          resources.find_or_create<ComponentCache>(component_name, component_name, asset::path{data_json["path"]});
         !ok_or_error.has_value())
     {
       SDE_LOG_ERROR() << "Failed load: " << component_name << " : " << ok_or_error.error();
       return make_unexpected(ok_or_error.error());
     }
+    else if (ok_or_error->status == ResourceStatus::kCreated)
+    {
+      SDE_LOG_INFO() << "Component loaded: " << component_name;
+    }
     else
     {
-      SDE_LOG_INFO() << "Componented loaded: " << component_name;
+      SDE_LOG_INFO() << "Component found: " << component_name;
     }
   }
 

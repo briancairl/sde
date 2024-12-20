@@ -180,12 +180,19 @@ class NativeScriptCache : public ResourceCache<NativeScriptCache>
 {
   friend fundemental_type;
 
+public:
+  using fundemental_type::to_handle;
+  NativeScriptHandle to_handle(const LibraryHandle& library) const;
+
 private:
+  sde::unordered_map<LibraryHandle, NativeScriptHandle, ResourceHandleStdHash> library_to_native_script_lookup_;
   expected<void, NativeScriptError> reload(dependencies deps, NativeScriptData& library);
   expected<void, NativeScriptError> unload(dependencies deps, NativeScriptData& library);
   expected<NativeScriptData, NativeScriptError>
   generate(dependencies deps, const asset::path& path, const LibraryFlags& flags = {});
   expected<NativeScriptData, NativeScriptError> generate(dependencies deps, LibraryHandle library);
+  void when_created(NativeScriptHandle handle, const NativeScriptData* data);
+  void when_removed(NativeScriptHandle handle, const NativeScriptData* data);
 };
 
 }  // namespace sde::game

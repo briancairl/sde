@@ -97,6 +97,14 @@ template <typename T> constexpr bool operator!=(const ResourceHandle<T>& lhs, co
   return lhs.id() != rhs.id();
 }
 
+struct ResourceHandleStdHash
+{
+  template <typename T> constexpr std::size_t operator()(const ResourceHandle<T>& handle) const
+  {
+    return static_cast<std::size_t>(handle.id());
+  }
+};
+
 struct ResourceHandleHash
 {
   template <typename T> constexpr Hash operator()(const ResourceHandle<T>& handle) const

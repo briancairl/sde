@@ -33,82 +33,21 @@ namespace sde::game
 // clang-format off
 struct GameResources : ResourceCollection
 <
-  ResourceCollectionEntry
-  <
-    "sound_data"_rl,
-    audio::SoundDataCache
-  >,
-  ResourceCollectionEntry
-  <
-    "sounds"_rl,
-    audio::SoundCache
-  >,
-  ResourceCollectionEntry
-  <
-    "images"_rl,
-    graphics::ImageCache
-  >,
-  ResourceCollectionEntry
-  <
-    "fonts"_rl,
-    graphics::FontCache
-  >,
-  ResourceCollectionEntry
-  <
-    "shaders"_rl,
-    graphics::ShaderCache
-  >,
-  ResourceCollectionEntry
-  <
-    "textures"_rl,
-    graphics::TextureCache
-  >,
-  ResourceCollectionEntry
-  <
-    "tile_sets"_rl,
-    graphics::TileSetCache
-  >,
-  ResourceCollectionEntry
-  <
-    "type_sets"_rl,
-    graphics::TypeSetCache
-  >,
-  ResourceCollectionEntry
-  <
-    "render_targets"_rl,
-    graphics::RenderTargetCache
-  >,
-  ResourceCollectionEntry
-  <
-    "registry"_rl,
-    Registry,
-    false
-  >,
-  ResourceCollectionEntry
-  <
-    "entities"_rl,
-    EntityCache
-  >,
-  ResourceCollectionEntry
-  <
-    "libraries"_rl,
-    LibraryCache
-  >,
-  ResourceCollectionEntry
-  <
-    "scripts"_rl,
-    NativeScriptCache
-  >,
-  ResourceCollectionEntry
-  <
-    "scenes"_rl,
-    SceneCache
-  >,
-  ResourceCollectionEntry
-  <
-    "components"_rl,
-    ComponentCache
-  >
+  ResourceCollectionEntry<"sound_data"_rl, audio::SoundDataCache>,
+  ResourceCollectionEntry<"sounds"_rl, audio::SoundCache>,
+  ResourceCollectionEntry<"images"_rl, graphics::ImageCache>,
+  ResourceCollectionEntry<"fonts"_rl, graphics::FontCache>,
+  ResourceCollectionEntry<"shaders"_rl, graphics::ShaderCache>,
+  ResourceCollectionEntry<"textures"_rl, graphics::TextureCache>,
+  ResourceCollectionEntry<"tile_sets"_rl, graphics::TileSetCache>,
+  ResourceCollectionEntry<"type_sets"_rl, graphics::TypeSetCache>,
+  ResourceCollectionEntry<"render_targets"_rl, graphics::RenderTargetCache>,
+  ResourceCollectionEntry<"registry"_rl, Registry, false>,
+  ResourceCollectionEntry<"entities"_rl, EntityCache>,
+  ResourceCollectionEntry<"libraries"_rl, LibraryCache>,
+  ResourceCollectionEntry<"scripts"_rl, NativeScriptCache>,
+  ResourceCollectionEntry<"components"_rl, ComponentCache>,
+  ResourceCollectionEntry<"scenes"_rl, SceneCache>
 >
 // clang-format on
 {};

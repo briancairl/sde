@@ -8,7 +8,7 @@
                 {
                     "data": "drag_and_drop_loader.bin",
                     "path": "engine/red/libdrag_and_drop_loader.so",
-                    "version": 56
+                    "version": 59
                 },
                 {
                     "data": "audio_manager.bin",
@@ -18,12 +18,12 @@
                 {
                     "data": "texture_viewer.bin",
                     "path": "engine/red/libtexture_viewer.so",
-                    "version": 106
+                    "version": 109
                 },
                 {
-                    "data": null,
+                    "data": "player_character.bin",
                     "path": "engine/red/libplayer_character.so",
-                    "version": null
+                    "version": 299
                 }
             ]
         },
@@ -35,7 +35,7 @@
                 {
                     "data": "script_browser.bin",
                     "path": "engine/red/libscript_browser.so",
-                    "version": 72
+                    "version": 75
                 },
                 {
                     "data": "imgui_end.bin",
@@ -57,7 +57,7 @@
                 {
                     "data": "engine_red_src_library_browser_cpp.bin",
                     "path": "engine/red/liblibrary_browser.so",
-                    "version": 128
+                    "version": 129
                 }
             ]
         }

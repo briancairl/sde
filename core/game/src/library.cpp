@@ -28,6 +28,7 @@ expected<void, LibraryError> LibraryCache::reload(LibraryData& library)
     SDE_LOG_ERROR() << "Failed to open library: " << lib_or_error.error();
     return make_unexpected(LibraryError::kLibraryMissing);
   }
+  SDE_LOG_INFO() << "Library loaded: " << SDE_OSNV(library.path);
   library.lib = std::move(lib_or_error).value();
   return {};
 }
@@ -60,7 +61,7 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
 
 void LibraryCache::when_created(LibraryHandle handle, const LibraryData* data)
 {
-  SDE_LOG_INFO() << "New library added: " << SDE_OSNV(data->path);
+  SDE_LOG_INFO() << "New library added: " << SDE_OSNV(handle) << " : " << SDE_OSNV(data->path);
   asset_path_lookup_.emplace(asset::absolute(data->path), handle);
 }
 

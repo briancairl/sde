@@ -106,9 +106,13 @@ bool initialize(player_character* self, sde::game::GameResources& resources, con
 
 void edit(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
-  ImGui::Begin("player");
-
   auto entity = resources(self->entity);
+  if (!entity)
+  {
+    return;
+  }
+
+  ImGui::Begin("player");
   SDE_LOG_INFO() << static_cast<int>(entity->id);
   auto [size, position, sprite] = resources.get<Registry>().get<Size, Position, graphics::AnimatedSprite>(entity->id);
 
@@ -163,6 +167,11 @@ bool update(player_character* self, sde::game::GameResources& resources, const s
   edit(self, resources, app);
 
   auto entity = resources(self->entity);
+  if (!entity)
+  {
+    return true;
+  }
+
   auto [size, position, state, sprite] =
     resources.get<Registry>().get<Size, Position, Dynamics, graphics::AnimatedSprite>(entity->id);
 

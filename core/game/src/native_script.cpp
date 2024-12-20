@@ -98,6 +98,7 @@ void NativeScriptInstance::reset()
 {
   if (instance_ != nullptr)
   {
+    SDE_ASSERT_TRUE(fn_.on_destroy);
     fn_.on_destroy(std::free, instance_);
   }
 }
@@ -114,10 +115,17 @@ bool NativeScriptInstance::save(OArchive& ar) const
   return fn_.on_save(instance_, reinterpret_cast<void*>(&ar));
 }
 
+NativeScriptInstance& NativeScriptInstance::operator=(NativeScriptInstance&& other)
+{
+  this->swap(other);
+  return *this;
+}
+
 expected<void, NativeScriptCallError>
 NativeScriptInstance::initialize(GameResources& resources, const AppProperties& app_properties) const
 {
   SDE_ASSERT_FALSE(initialized_) << "'NativeScriptInstance::initialize' called previously";
+  SDE_LOG_INFO() << "Initializing: " << fn_.on_get_name();
 
   // run initialization routine, if not already run successfully
   // clang-format off
@@ -161,6 +169,27 @@ NativeScript& NativeScript::operator=(NativeScript&& other)
 
 NativeScriptInstance NativeScript::instance() const { return NativeScriptInstance{this->fn_}; }
 
+NativeScriptHandle NativeScriptCache::to_handle(const LibraryHandle& library) const
+{
+  const auto itr = library_to_native_script_lookup_.find(library);
+  if (itr == std::end(library_to_native_script_lookup_))
+  {
+    return NativeScriptHandle::null();
+  }
+  return itr->second;
+}
+
+
+void NativeScriptCache::when_created(NativeScriptHandle handle, const NativeScriptData* data)
+{
+  library_to_native_script_lookup_.emplace(data->library, handle);
+}
+
+void NativeScriptCache::when_removed(NativeScriptHandle handle, const NativeScriptData* data)
+{
+  library_to_native_script_lookup_.erase(data->library);
+}
+
 expected<void, NativeScriptError> NativeScriptCache::reload(dependencies deps, NativeScriptData& script)
 {
   const auto* library_ptr = deps.get<LibraryCache>().get_if(script.library);
@@ -199,7 +228,7 @@ expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(depend
 expected<NativeScriptData, NativeScriptError>
 NativeScriptCache::generate(dependencies deps, const asset::path& path, const LibraryFlags& flags)
 {
-  auto library_or_error = deps.get<LibraryCache>().create(path, flags);
+  auto library_or_error = deps.get<LibraryCache>().find_or_create(path, path, flags);
   if (!library_or_error.has_value())
   {
     SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << library_or_error.error();

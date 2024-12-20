@@ -135,12 +135,11 @@ public:
     }
   }
 
-  template <typename HandleT, typename... CreateArgTs>
+  template <typename CacheT, typename HandleT, typename... CreateArgTs>
   [[nodiscard]] auto find_or_create(HandleT&& handle, CreateArgTs&&... args)
   {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
-    auto& cache = this->template get<CacheType>();
-    if constexpr (resource_cache_has_dependencies_v<CacheType>)
+    auto& cache = this->template get<CacheT>();
+    if constexpr (resource_cache_has_dependencies_v<CacheT>)
     {
       return cache.find_or_create(std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
     }
@@ -248,6 +247,7 @@ public:
           if (auto ok = cache.refresh(this->all()); !ok.has_value())
           {
             ok_or_error = make_unexpected(std::string_view{EntryType::name()});
+            return false;
           }
         }
         else
@@ -255,15 +255,23 @@ public:
           if (auto ok = cache.refresh(); !ok.has_value())
           {
             ok_or_error = make_unexpected(std::string_view{EntryType::name()});
+            return false;
           }
         }
-        return ok_or_error.has_value();
+        return true;
       },
       caches_);
     return ok_or_error;
   }
 
   void swap(ResourceCollection& other) { std::swap(this->caches_, other.caches_); }
+
+  void clear()
+  {
+    dont::tuple::for_each([](auto& cache) { cache.clear(); }, dont::tuple::reversed(caches_));
+  }
+
+  ~ResourceCollection() { this->clear(); }
 
   ResourceCollection() = default;
 

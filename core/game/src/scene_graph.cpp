@@ -25,7 +25,17 @@ expected<SceneScriptInstance, SceneGraphErrorCode> instance(
   const LibraryFlags& script_library_flags = {.required = true})
 {
   // Find/load script library
-  auto script_or_error = resources.create<NativeScriptCache>(script_data.path, script_library_flags);
+  auto library_or_error =
+    resources.find_or_create<LibraryCache>(script_data.path, script_data.path, script_library_flags);
+  if (!library_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << "SceneGraphErrorCode::kInvalidScript (failed to load: " << script_data.path << ')';
+    return make_unexpected(SceneGraphErrorCode::kInvalidScript);
+  }
+
+  // Find/load script library
+  auto script_or_error =
+    resources.find_or_create<NativeScriptCache>(library_or_error->handle, library_or_error->handle);
   if (!script_or_error.has_value())
   {
     SDE_LOG_ERROR() << "SceneGraphErrorCode::kInvalidScript (failed to load: " << script_data.path << ')';
@@ -272,7 +282,7 @@ expected<void, SceneGraphError> SceneGraph::tick(GameResources& resources, const
     }
 
     {
-      SDE_LOG_ERROR() << "Failed to initialize: " << script.instance;
+      SDE_LOG_ERROR() << "Failed to update: " << script.instance;
       return false;
     }
   });

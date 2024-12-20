@@ -7,6 +7,7 @@
 
 // C++ Standard Library
 #include <cstdint>
+#include <iosfwd>
 #include <type_traits>
 
 // Dont
@@ -258,6 +259,7 @@ public:
       {
         return ok_or_error;
       }
+      this->derived().when_created(handle, std::addressof(element.value));
     }
     return {};
   }
@@ -271,6 +273,7 @@ public:
       {
         return ok_or_error;
       }
+      this->derived().when_created(handle, std::addressof(element.value));
     }
     return {};
   }
@@ -315,6 +318,16 @@ public:
   {
     std::swap(this->handle_lower_bound_, other.handle_lower_bound_);
     std::swap(this->handle_to_value_cache_, other.handle_to_value_cache_);
+  }
+
+  void clear()
+  {
+    for (auto& [handle, storage] : handle_to_value_cache_)
+    {
+      this->derived().when_removed(handle, std::addressof(storage.value));
+    }
+    handle_to_value_cache_.clear();
+    handle_lower_bound_ = handle_type::null();
   }
 
   ResourceCache() = default;
@@ -413,6 +426,5 @@ template <typename T> struct IsResourceCache : std::is_base_of<ResourceCache<T>,
 {};
 
 template <typename R> constexpr bool is_resource_cache_v = IsResourceCache<std::remove_const_t<R>>::value;
-
 
 }  // namespace sde
