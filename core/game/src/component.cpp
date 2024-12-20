@@ -139,12 +139,12 @@ ComponentCache::generate(dependencies dep, const sde::string& name, const asset:
 
 void ComponentCache::when_created(ComponentHandle handle, const ComponentData* data)
 {
-  type_name_to_component_handle_lookup_.emplace(sde::string{data->io.name()}, handle);
+  type_name_to_component_handle_lookup_.emplace(data->name, handle);
 }
 
 void ComponentCache::when_removed(ComponentHandle handle, const ComponentData* data)
 {
-  type_name_to_component_handle_lookup_.erase(sde::string{data->io.name()});
+  type_name_to_component_handle_lookup_.erase(data->name);
 }
 
 ComponentHandle ComponentCache::to_handle(const sde::string& name) const

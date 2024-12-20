@@ -48,6 +48,7 @@ template <> struct ResourceCacheTraits<SimpleResourceCache>
   using error_type = SimpleResourceError;
   using handle_type = SimpleResourceHandle;
   using value_type = SimpleResource;
+  using dependencies = no_dependencies;
 };
 
 struct SimpleResourceCache : ResourceCache<SimpleResourceCache>

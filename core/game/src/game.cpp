@@ -113,7 +113,7 @@ expected<Game, GameError> Game::create(const asset::path& path)
     return make_unexpected(GameError::kInvalidRootDirectory);
   }
 
-  GameResources resources;
+  GameResources resources{path};
 
   if (!load(resources, path / "resources.bin"))
   {

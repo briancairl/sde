@@ -48,7 +48,7 @@ constexpr std::array kDirectionLabels = {
 
 struct player_character
 {
-  EntityHandle entity;
+  EntityHandle entity = EntityHandle::null();
   TileSetHandle idle_frames[8UL];
   TileSetHandle walk_frames[8UL];
   TileSetHandle run_frames[8UL];
@@ -78,12 +78,13 @@ bool save(player_character* self, sde::game::OArchive& ar)
 
 bool initialize(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
+  SDE_LOG_INFO() << self->entity;
   if (!self->entity.isNull())
   {
     return true;
   }
-  auto deps = resources.all();
-  auto entity_or_error = resources.get<EntityCache>().make_entity(deps, [](EntityCreation new_entity) {
+  SDE_LOG_INFO() << self->entity;
+  auto entity_or_error = resources.get<EntityCache>().make_entity(resources.all(), [](EntityCreation new_entity) {
     SDE_ASSERT_OK(new_entity.attach<Size>(Size{.extent = {0.1, 0.1}}));
     SDE_ASSERT_OK(new_entity.attach<Position>(Position{.center = {0, 0}}));
     SDE_ASSERT_OK(new_entity.attach<Dynamics>(Dynamics{}));
@@ -113,7 +114,6 @@ void edit(player_character* self, sde::game::GameResources& resources, const sde
   }
 
   ImGui::Begin("player");
-  SDE_LOG_INFO() << static_cast<int>(entity->id);
   auto [size, position, sprite] = resources.get<Registry>().get<Size, Position, graphics::AnimatedSprite>(entity->id);
 
   ImGui::InputFloat2("size", size.extent.data());

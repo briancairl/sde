@@ -1,3 +1,5 @@
+#define SDE_SCRIPT_NAME "library_browser"
+
 // C++ Standard Library
 #include <ostream>
 

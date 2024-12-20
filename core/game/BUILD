@@ -1,9 +1,28 @@
 cc_library(
+  name="game_archive",
+  hdrs=[
+    "include/sde/game/archive.hpp",
+    "include/sde/game/archive_fwd.hpp",
+    "include/sde/game/archive_kv.hpp",
+  ],
+  srcs = [
+    "src/archive_kv.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    "//core/serialization",
+  ],
+  visibility=["//visibility:public"]
+)
+
+
+cc_library(
   name="game",
   hdrs=[
     "include/sde/game/archive.hpp",
     "include/sde/game/archive_fwd.hpp",
     "include/sde/game/component.hpp",
+    "include/sde/game/component_decl.hpp",
     "include/sde/game/component_fwd.hpp",
     "include/sde/game/component_handle.hpp",
     "include/sde/game/component_preload.hpp",
@@ -43,6 +62,7 @@ cc_library(
   ],
   strip_include_prefix="include",
   deps=[
+    ":game_archive",
     "//core/app",
     "//core/audio",
     "//core/graphics",

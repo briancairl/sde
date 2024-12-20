@@ -31,7 +31,7 @@ namespace sde::game
 {
 
 // clang-format off
-struct GameResources : ResourceCollection
+class GameResources : public ResourceCollection
 <
   ResourceCollectionEntry<"sound_data"_rl, audio::SoundDataCache>,
   ResourceCollectionEntry<"sounds"_rl, audio::SoundCache>,
@@ -50,6 +50,14 @@ struct GameResources : ResourceCollection
   ResourceCollectionEntry<"scenes"_rl, SceneCache>
 >
 // clang-format on
-{};
+{
+public:
+  explicit GameResources(asset::path root) : root_{std::move(root)} {}
+
+  const asset::path& root() const { return root_; }
+
+private:
+  asset::path root_;
+};
 
 }  // namespace sde::game

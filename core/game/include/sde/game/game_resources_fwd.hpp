@@ -7,5 +7,5 @@
 
 namespace sde::game
 {
-struct GameResources;
+class GameResources;
 }  // namespace sde::game
