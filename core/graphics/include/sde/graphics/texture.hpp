@@ -23,8 +23,8 @@
 #include "sde/graphics/typedef.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
-#include "sde/resource_wrapper.hpp"
 #include "sde/type.hpp"
+#include "sde/unique_resource.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics

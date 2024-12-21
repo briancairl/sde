@@ -50,10 +50,9 @@ expected<SceneScriptInstance, SceneGraphErrorCode> instance(
     .instance_version_target = script_data.version};
 }
 
-template <typename StringT> StringT toDataFilePath(StringT path)
+asset::path createDataFilePath(const SceneScriptInstance& script)
 {
-  static constexpr std::string_view kDataFileExtension{".bin"};
-  path.reserve(path.size() + kDataFileExtension.size());
+  sde::string path = format("%s_%lu_%lu", script.instance.name().data(), script.handle.id(), script.instance.version());
   for (auto& c : path)
   {
     if (c == '/' || c == '.')
@@ -61,8 +60,8 @@ template <typename StringT> StringT toDataFilePath(StringT path)
       c = '_';
     }
   }
-  path += kDataFileExtension;
-  return path;
+  path += ".bin";
+  return asset::path{std::move(path)};
 }
 
 asset::path getDataFilePath(const SceneScriptInstance& script)
@@ -71,7 +70,10 @@ asset::path getDataFilePath(const SceneScriptInstance& script)
   {
     return *script.instance_data_path;
   }
-  return asset::path{toDataFilePath(sde::string{script.instance.name()})};
+  else
+  {
+    return createDataFilePath(script);
+  }
 }
 
 }  // namespace

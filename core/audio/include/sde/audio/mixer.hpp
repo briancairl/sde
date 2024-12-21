@@ -15,7 +15,7 @@
 #include "sde/expected.hpp"
 #include "sde/geometry.hpp"
 #include "sde/resource.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
 #include "sde/vector.hpp"
 #include "sde/view.hpp"
 

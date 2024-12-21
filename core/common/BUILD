@@ -76,7 +76,6 @@ cc_library(
     "include/sde/resource_dependencies.hpp",
     "include/sde/resource_handle.hpp",
     "include/sde/resource_handle_io.hpp",
-    "include/sde/resource_wrapper.hpp",
   ],
   strip_include_prefix="include",
   deps=[
@@ -116,6 +115,7 @@ cc_library(
     "include/sde/type_name.hpp",
     "include/sde/traits.hpp",
     "include/sde/view.hpp",
+    "include/sde/unique_resource.hpp",
   ],
   strip_include_prefix="include",
   deps=[":build", ":logging"],

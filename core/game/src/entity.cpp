@@ -16,6 +16,8 @@ std::ostream& operator<<(std::ostream& os, EntityError error)
     SDE_OS_ENUM_CASE(EntityError::kElementAlreadyExists)
     SDE_OS_ENUM_CASE(EntityError::kComponentAlreadyAttached)
     SDE_OS_ENUM_CASE(EntityError::kComponentNotRegistered)
+    SDE_OS_ENUM_CASE(EntityError::kComponentDumpFailure)
+    SDE_OS_ENUM_CASE(EntityError::kComponentLoadFailure)
     SDE_OS_ENUM_CASE(EntityError::kInvalidHandle)
     SDE_OS_ENUM_CASE(EntityError::kCreationFailure)
   }
@@ -42,6 +44,52 @@ expected<EntityData, EntityError> EntityCache::generate(dependencies deps)
     return entity;
   }
   return make_unexpected(EntityError::kCreationFailure);
+}
+
+expected<void, EntityError> EntityCache::load(dependencies deps, IArchive& archive)
+{
+  auto& registry = deps.get<Registry>();
+  const auto& components = deps.get<ComponentCache>();
+  for (auto& [handle, data] : handle_to_value_cache_)
+  {
+    for (const auto& component_handle : data->components)
+    {
+      if (const auto c = components(component_handle); c)
+      {
+        c->io.load(archive, data->id, registry);
+        SDE_LOG_INFO() << handle << ": loaded component: " << c->name;
+      }
+      else
+      {
+        SDE_LOG_ERROR() << handle << ": failed to find component: " << component_handle;
+        return make_unexpected(EntityError::kComponentLoadFailure);
+      }
+    }
+  }
+  return {};
+}
+
+expected<void, EntityError> EntityCache::dump(dependencies deps, OArchive& archive) const
+{
+  const auto& registry = deps.get<Registry>();
+  const auto& components = deps.get<ComponentCache>();
+  for (auto& [handle, data] : handle_to_value_cache_)
+  {
+    for (const auto& component_handle : data->components)
+    {
+      if (const auto c = components(component_handle); c)
+      {
+        c->io.save(archive, data->id, registry);
+        SDE_LOG_INFO() << handle << ": saved component: " << c->name;
+      }
+      else
+      {
+        SDE_LOG_ERROR() << handle << ": failed to find component: " << component_handle;
+        return make_unexpected(EntityError::kComponentDumpFailure);
+      }
+    }
+  }
+  return {};
 }
 
 }  // namespace sde::game

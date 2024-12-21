@@ -11,7 +11,7 @@
 // SDE
 #include "sde/audio/sound_device_fwd.hpp"
 #include "sde/expected.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
 
 namespace sde::audio
 {

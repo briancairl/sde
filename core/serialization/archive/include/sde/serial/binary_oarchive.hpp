@@ -29,6 +29,8 @@ public:
   using oarchive_base::operator<<;
   using oarchive_base::operator&;
 
+  const OStreamT* operator->() const { return os_; }
+
 private:
   static constexpr void write_impl(const label& _)
   { /* labels are ignored */

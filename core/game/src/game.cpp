@@ -23,7 +23,7 @@ namespace sde::game
 namespace
 {
 
-[[nodiscard]] bool load(GameResources& resources, const asset::path& resources_path)
+[[nodiscard]] bool load(GameResources& resources, const asset::path& resources_path, const asset::path& components_path)
 {
   if (auto ifs_or_error = serial::file_istream::create(resources_path); ifs_or_error.has_value())
   {
@@ -44,16 +44,43 @@ namespace
     SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(resources_path);
     return false;
   }
+
+  if (auto ifs_or_error = serial::file_istream::create(resources_path); ifs_or_error.has_value())
+  {
+    IArchive iar{*ifs_or_error};
+    resources.get<EntityCache>().load(resources.all(), iar);
+  }
+  else if (ifs_or_error.error() == serial::FileStreamError::kFileDoesNotExist)
+  {
+    SDE_LOG_WARN() << SDE_OSNV(resources_path);
+  }
+  else
+  {
+    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(resources_path);
+    return false;
+  }
+
   SDE_LOG_INFO() << "GameResources loaded: " << SDE_OSNV(resources_path);
   return true;
 }
 
-[[nodiscard]] bool save(const GameResources& resources, const asset::path& resources_path)
+[[nodiscard]] bool save(GameResources& resources, const asset::path& resources_path, const asset::path& components_path)
 {
   if (auto ofs_or_error = serial::file_ostream::create(resources_path); ofs_or_error.has_value())
   {
     OArchive oar{*ofs_or_error};
     oar << Field{"resources", resources};
+  }
+  else
+  {
+    SDE_LOG_ERROR() << ofs_or_error.error() << " " << SDE_OSNV(resources_path);
+    return false;
+  }
+
+  if (auto ofs_or_error = serial::file_ostream::create(components_path); ofs_or_error.has_value())
+  {
+    OArchive oar{*ofs_or_error};
+    resources.get<EntityCache>().dump(resources.all(), oar);
   }
   else
   {
@@ -115,7 +142,7 @@ expected<Game, GameError> Game::create(const asset::path& path)
 
   GameResources resources{path};
 
-  if (!load(resources, path / "resources.bin"))
+  if (!load(resources, path / "resources.bin", path / "components.bin"))
   {
     return make_unexpected(GameError::kAssetLoadError);
   }
@@ -161,7 +188,7 @@ expected<void, GameError> Game::dump(Game& game, const asset::path& path)
     return make_unexpected(GameError::kInvalidRootDirectory);
   }
 
-  if (!save(game.resources_, path / "resources.bin"))
+  if (!save(game.resources_, path / "resources.bin", path / "components.bin"))
   {
     return make_unexpected(GameError::kAssetSaveError);
   }

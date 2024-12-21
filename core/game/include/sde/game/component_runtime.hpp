@@ -14,6 +14,7 @@
 // SDE
 #include "sde/dl/export.hpp"
 #include "sde/game/archive.hpp"
+#include "sde/game/registry.hpp"
 #include "sde/type_name.hpp"
 
 namespace sde::game
@@ -31,8 +32,7 @@ template <typename ComponentT> const char* component_name_impl()
   return type_name_buffer;
 }
 
-template <typename ComponentT>
-void component_load_impl(sde::game::IArchive& ar, entt::entity e, entt::registry& registry)
+template <typename ComponentT> void component_load_impl(sde::game::IArchive& ar, EntityID e, Registry& registry)
 {
   if constexpr (std::is_void_v<decltype(registry.template emplace<ComponentT>(e))>)
   {
@@ -40,16 +40,15 @@ void component_load_impl(sde::game::IArchive& ar, entt::entity e, entt::registry
   }
   else
   {
-    ar >> registry.template emplace<ComponentT>(e);
+    // ar >> registry.template emplace<ComponentT>(e);
   }
 }
 
-template <typename ComponentT>
-void component_save_impl(sde::game::OArchive& ar, entt::entity e, const entt::registry& registry)
+template <typename ComponentT> void component_save_impl(sde::game::OArchive& ar, EntityID e, const Registry& registry)
 {
   if constexpr (!std::is_void_v<decltype(registry.template get<ComponentT>(e))>)
   {
-    ar << registry.template get<ComponentT>(e);
+    // ar << registry.template get<ComponentT>(e);
   }
 }
 
@@ -64,8 +63,8 @@ void component_save_impl(sde::game::OArchive& ar, entt::entity e, const entt::re
   {                                                                                                                    \
     ::sde::game::component_load_impl<ComponentT>(                                                                      \
       *reinterpret_cast<::sde::game::IArchive*>(iarchive),                                                             \
-      *reinterpret_cast<entt::entity*>(entity),                                                                        \
-      *reinterpret_cast<entt::registry*>(registry));                                                                   \
+      *reinterpret_cast<::sde::game::EntityID*>(entity),                                                               \
+      *reinterpret_cast<::sde::game::Registry*>(registry));                                                            \
   }
 
 #define SDE_COMPONENT__REGISTER_SAVE(Name, ComponentT)                                                                 \
@@ -73,8 +72,8 @@ void component_save_impl(sde::game::OArchive& ar, entt::entity e, const entt::re
   {                                                                                                                    \
     ::sde::game::component_save_impl<ComponentT>(                                                                      \
       *reinterpret_cast<::sde::game::OArchive*>(oarchive),                                                             \
-      *reinterpret_cast<entt::entity*>(entity),                                                                        \
-      *reinterpret_cast<const entt::registry*>(registry));                                                             \
+      *reinterpret_cast<::sde::game::EntityID*>(entity),                                                               \
+      *reinterpret_cast<const ::sde::game::Registry*>(registry));                                                      \
   }
 
 

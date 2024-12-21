@@ -45,8 +45,10 @@ void ComponentIO::swap(ComponentIO& other)
 
 void ComponentIO::reset()
 {
-  on_load_.reset();
-  on_save_.reset();
+  IterateUntil(*this, [](auto& field) {
+    field->reset();
+    return true;
+  });
 }
 
 bool ComponentIO::reset(const sde::string& name, const dl::Library& library)
@@ -67,16 +69,16 @@ bool ComponentIO::reset(const sde::string& name, const dl::Library& library)
   });
 }
 
-bool ComponentIO::load(IArchive& ar, entt::entity id, entt::registry& registry) const
+void ComponentIO::load(IArchive& ar, EntityID id, Registry& registry) const
 {
   SDE_ASSERT_TRUE(on_load_);
-  return on_load_(reinterpret_cast<void*>(&ar), reinterpret_cast<void*>(&id), reinterpret_cast<void*>(&registry));
+  on_load_(reinterpret_cast<void*>(&ar), reinterpret_cast<void*>(&id), reinterpret_cast<void*>(&registry));
 }
 
-bool ComponentIO::save(OArchive& ar, entt::entity id, const entt::registry& registry) const
+void ComponentIO::save(OArchive& ar, EntityID id, const Registry& registry) const
 {
   SDE_ASSERT_TRUE(on_save_);
-  return on_save_(reinterpret_cast<void*>(&ar), reinterpret_cast<void*>(&id), reinterpret_cast<const void*>(&registry));
+  on_save_(reinterpret_cast<void*>(&ar), reinterpret_cast<void*>(&id), reinterpret_cast<const void*>(&registry));
 }
 
 expected<void, ComponentError> ComponentCache::reload(dependencies dep, ComponentData& component)

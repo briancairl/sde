@@ -8,6 +8,7 @@
 namespace sde::serial
 {
 
+class dummy_ostream;
 class mem_ostream;
 class mem_istream;
 class file_handle_ostream;

@@ -29,6 +29,8 @@ public:
   using iarchive_base::operator>>;
   using iarchive_base::operator&;
 
+  const IStreamT* operator->() const { return is_; }
+
 private:
   static constexpr void read_impl(label _)
   { /* labels are ignored */

@@ -10,7 +10,7 @@
 #include "sde/audio/sound.hpp"
 #include "sde/audio/sound_device.hpp"
 #include "sde/logging.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
 
 namespace sde::audio
 {

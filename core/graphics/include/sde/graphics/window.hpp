@@ -13,7 +13,7 @@
 #include "sde/geometry.hpp"
 #include "sde/graphics/image_ref.hpp"
 #include "sde/graphics/window_fwd.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
 
 namespace sde::graphics
 {

@@ -12,7 +12,7 @@
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/logging.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
 
 namespace sde::graphics
 {

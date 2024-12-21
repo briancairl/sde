@@ -20,6 +20,7 @@
 #include "sde/game/component_handle.hpp"
 #include "sde/game/library_fwd.hpp"
 #include "sde/game/library_handle.hpp"
+#include "sde/game/registry.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/string.hpp"
@@ -59,16 +60,16 @@ public:
   constexpr operator bool() const { return on_load_ and on_save_; }
 
   std::string_view name() const { return name_(); }
-  bool load(IArchive& ar, entt::entity id, entt::registry& registry) const;
-  bool save(OArchive& ar, entt::entity id, const entt::registry& registry) const;
+  void load(IArchive& ar, EntityID id, Registry& registry) const;
+  void save(OArchive& ar, EntityID id, const Registry& registry) const;
 
 private:
   ComponentIO(const ComponentIO&) = delete;
   ComponentIO& operator=(const ComponentIO&) = delete;
 
   dl::Function<const char*(void)> name_;
-  dl::Function<bool(void*, void*, void*)> on_load_;
-  dl::Function<bool(void*, void*, const void*)> on_save_;
+  dl::Function<void(void*, void*, void*)> on_load_;
+  dl::Function<void(void*, void*, const void*)> on_save_;
 
   auto field_list()
   {

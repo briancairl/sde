@@ -27,7 +27,11 @@ public:
   explicit file_handle_istream(std::FILE* file_handle);
 
   file_handle_istream(file_handle_istream&& other);
+  file_handle_istream& operator=(file_handle_istream&& other);
+
   ~file_handle_istream() = default;
+
+  void swap(file_handle_istream& other);
 
 private:
   /**
@@ -78,6 +82,7 @@ public:
   create(const std::filesystem::path& path, const flags fileopt = default_flags);
 
   file_istream(file_istream&& other) = default;
+  file_istream& operator=(file_istream&& other) = default;
 
   ~file_istream();
 

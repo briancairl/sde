@@ -8,7 +8,7 @@
 // SDE
 #include "sde/audio/sound_data.hpp"
 #include "sde/logging.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
 
 namespace sde::audio
 {

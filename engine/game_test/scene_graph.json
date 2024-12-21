@@ -6,24 +6,24 @@
             "post_scripts": [],
             "pre_scripts": [
                 {
-                    "data": "drag_and_drop_loader.bin",
+                    "data": "drag_and_drop_loader_6_59.bin",
                     "path": "engine/red/libdrag_and_drop_loader.so",
                     "version": 59
                 },
                 {
-                    "data": "audio_manager.bin",
+                    "data": "audio_manager_7_90.bin",
                     "path": "engine/red/libaudio_manager.so",
                     "version": 90
                 },
                 {
-                    "data": "texture_viewer.bin",
+                    "data": "texture_viewer_8_109.bin",
                     "path": "engine/red/libtexture_viewer.so",
                     "version": 109
                 },
                 {
-                    "data": "player_character.bin",
+                    "data": "player_character_9_293.bin",
                     "path": "engine/red/libplayer_character.so",
-                    "version": 299
+                    "version": 293
                 }
             ]
         },
@@ -33,29 +33,29 @@
             ],
             "post_scripts": [
                 {
-                    "data": "script_browser.bin",
+                    "data": "script_browser_4_75.bin",
                     "path": "engine/red/libscript_browser.so",
                     "version": 75
                 },
                 {
-                    "data": "imgui_end.bin",
+                    "data": "imgui_end_5_45.bin",
                     "path": "engine/red/libimgui_end.so",
                     "version": 45
                 }
             ],
             "pre_scripts": [
                 {
-                    "data": "imgui_start.bin",
+                    "data": "imgui_start_1_88.bin",
                     "path": "engine/red/libimgui_start.so",
                     "version": 88
                 },
                 {
-                    "data": "renderer.bin",
+                    "data": "renderer_2_265.bin",
                     "path": "engine/red/librenderer.so",
                     "version": 265
                 },
                 {
-                    "data": "engine_red_src_library_browser_cpp.bin",
+                    "data": "library_browser_3_131.bin",
                     "path": "engine/red/liblibrary_browser.so",
                     "version": 131
                 }

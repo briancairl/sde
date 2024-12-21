@@ -13,8 +13,8 @@ cc_library(
   deps=[
     "//core/serialization/archive",
     "//core/serialization/archive:binary_archive",
-    "//core/serialization/archive:json_archive",
     "//core/serialization/stream",
+    "//core/serialization/stream:dummy_stream",
     "//core/serialization/stream:file_stream",
     "//core/serialization/stream:mem_stream",
     "//core/serialization/primitives",

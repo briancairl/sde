@@ -21,15 +21,3 @@ cc_library(
   deps=[":archive", "//core/serialization/stream"],
   visibility=["//visibility:public"]
 )
-
-cc_library(
-  name="json_archive",
-  hdrs=[
-    "include/sde/serial/json_archive.hpp",
-    "include/sde/serial/json_iarchive.hpp",
-    "include/sde/serial/json_oarchive.hpp"
-  ],
-  strip_include_prefix="include",
-  deps=[":archive", "//core/serialization/stream", "//core/serialization/primitives"],
-  visibility=["//visibility:public"]
-)
