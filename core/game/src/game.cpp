@@ -142,7 +142,13 @@ expected<Game, GameError> Game::create(const asset::path& path)
 
   GameResources resources{path};
 
-  if (!load(resources, path / "resources.bin", path / "components.bin"))
+  const auto data_path = path / "data";
+
+  if (!asset::exists(data_path))
+  {
+    SDE_LOG_WARN() << "No core data: " << SDE_OSNV(data_path);
+  }
+  else if (!load(resources, data_path / "resources.bin", data_path / "components.bin"))
   {
     return make_unexpected(GameError::kAssetLoadError);
   }
@@ -167,11 +173,11 @@ expected<Game, GameError> Game::create(const asset::path& path)
     return make_unexpected(GameError::kSceneGraphLoadError);
   }
 
-  if (const auto script_data_path = path / "script_data"; !asset::exists(script_data_path))
+  if (!asset::exists(data_path))
   {
-    SDE_LOG_WARN() << "No script data: " << SDE_OSNV(script_data_path);
+    SDE_LOG_WARN() << "No script data: " << SDE_OSNV(data_path);
   }
-  else if (const auto ok_or_error = scene_graph_or_error->load(resources, script_data_path); !ok_or_error.has_value())
+  else if (const auto ok_or_error = scene_graph_or_error->load(resources, data_path); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(GameError::kSceneGraphLoadError);
@@ -184,11 +190,19 @@ expected<void, GameError> Game::dump(Game& game, const asset::path& path)
 {
   if (!asset::exists(path) and !asset::create_directories(path))
   {
-    SDE_LOG_ERROR() << "Invalid script data directory: " << SDE_OSNV(path);
+    SDE_LOG_ERROR() << "Invalid root directory: " << SDE_OSNV(path);
     return make_unexpected(GameError::kInvalidRootDirectory);
   }
 
-  if (!save(game.resources_, path / "resources.bin", path / "components.bin"))
+  const auto data_path = path / "data";
+
+  if (!asset::exists(data_path) and !asset::create_directories(data_path))
+  {
+    SDE_LOG_ERROR() << "Invalid data directory: " << SDE_OSNV(data_path);
+    return make_unexpected(GameError::kSceneGraphSaveError);
+  }
+
+  if (!save(game.resources_, data_path / "resources.bin", data_path / "components.bin"))
   {
     return make_unexpected(GameError::kAssetSaveError);
   }
@@ -200,13 +214,7 @@ expected<void, GameError> Game::dump(Game& game, const asset::path& path)
     return make_unexpected(GameError::kSceneGraphSaveError);
   }
 
-  if (const auto script_data_path = path / "script_data";
-      !asset::exists(script_data_path) and !asset::create_directories(script_data_path))
-  {
-    SDE_LOG_ERROR() << "Invalid script data directory: " << SDE_OSNV(script_data_path);
-    return make_unexpected(GameError::kSceneGraphSaveError);
-  }
-  else if (const auto ok_or_error = game.scene_graph_.save(game.resources_, script_data_path); !ok_or_error.has_value())
+  if (const auto ok_or_error = game.scene_graph_.save(game.resources_, data_path); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(GameError::kSceneGraphSaveError);

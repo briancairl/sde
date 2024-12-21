@@ -78,14 +78,13 @@ bool save(player_character* self, sde::game::OArchive& ar)
 
 bool initialize(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
-  auto entity_or_error =
-    resources.get<EntityCache>().instance(self->entity, resources.all(), [](EntityCreator new_entity) {
-      new_entity.attach<Size>(Size{.extent = {0.1, 0.1}});
-      new_entity.attach<Position>(Position{.center = {0, 0}});
-      new_entity.attach<Dynamics>(Dynamics{});
-      new_entity.attach<graphics::AnimatedSprite>();
-      new_entity.attach<Foreground>();
-    });
+  auto entity_or_error = resources.instance(self->entity, [](EntityCreator new_entity) {
+    new_entity.attach<Size>(Size{.extent = {0.1, 0.1}});
+    new_entity.attach<Position>(Position{.center = {0, 0}});
+    new_entity.attach<Dynamics>(Dynamics{});
+    new_entity.attach<graphics::AnimatedSprite>();
+    new_entity.attach<Foreground>();
+  });
   if (!entity_or_error.has_value())
   {
     SDE_LOG_ERROR() << entity_or_error.error();

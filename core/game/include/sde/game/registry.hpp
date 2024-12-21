@@ -16,7 +16,16 @@ namespace sde::game
 {
 
 using EntityID = entt::entity;
-using Registry = entt::basic_registry<EntityID, allocator<EntityID>>;
+struct Registry : entt::basic_registry<EntityID, allocator<EntityID>>
+{
+  Registry() = default;
+
+  Registry(Registry&& other) = default;
+  Registry& operator=(Registry&& other) = default;
+
+  Registry(const Registry& other) = delete;
+  Registry& operator=(const Registry& other) = delete;
+};
 
 }  // namespace sde::game
 

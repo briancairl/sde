@@ -18,7 +18,6 @@ cc_library(
   visibility=["//visibility:public"]
 )
 
-
 cc_library(
   name="file_stream",
   hdrs=[

@@ -30,7 +30,7 @@ std::ostream& operator<<(std::ostream& os, ImageChannels channels);
 /**
  * @brief Returns number of channels associated with a particular channel layout
  */
-inline std::size_t to_channel_count(ImageChannels channels)
+constexpr std::size_t to_channel_count(ImageChannels channels)
 {
   switch (channels)
   {
@@ -141,20 +141,17 @@ struct Image : Resource<Image>
   /**
    * @brief Returns image channel count
    */
-  [[nodiscard]] constexpr std::size_t getChannelCount() const { return to_channel_count(options.channels); }
+  [[nodiscard]] std::size_t getChannelCount() const { return to_channel_count(options.channels); }
 
   /**
    * @brief Returns size of single pixel, in bytes
    */
-  [[nodiscard]] constexpr std::size_t getPixelSizeInBytes() const
-  {
-    return getChannelCount() * byte_count(options.element_type);
-  }
+  [[nodiscard]] std::size_t getPixelSizeInBytes() const { return getChannelCount() * byte_count(options.element_type); }
 
   /**
    * @brief Returns total size of image in bytes
    */
-  [[nodiscard]] constexpr std::size_t getTotalSizeInBytes() const { return shape.pixels() * getPixelSizeInBytes(); }
+  [[nodiscard]] std::size_t getTotalSizeInBytes() const { return shape.pixels() * getPixelSizeInBytes(); }
 
   /**
    * @brief Returns pointer to image data

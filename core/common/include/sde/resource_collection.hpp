@@ -43,32 +43,42 @@ template <resource_label_data str> std::ostream& operator<<(std::ostream& os, co
 
 template <resource_label_data str> constexpr auto operator"" _rl() { return resource_label<str>{}; }
 
-template <resource_label kName, typename ResourceCacheT, bool kSerializable = true> struct ResourceCollectionEntry
+template <resource_label kName, typename ResourceCacheT, bool _kShouldSerialize = true> struct ResourceCollectionEntry
 {
   using type = ResourceCacheT;
 
-  static constexpr bool kIsSerializable{kSerializable};
+  static constexpr bool kShouldSerialize{_kShouldSerialize};
 
   static constexpr const char* name() { return kName.data(); }
 
-  template <typename CacheTupleT> static decltype(auto) toField(CacheTupleT&& caches)
+  auto as_field()
   {
-    if constexpr (kSerializable)
+    if constexpr (kShouldSerialize)
     {
-      return Field{name(), std::get<ResourceCacheT>(std::forward<CacheTupleT>(caches))};
+      return Field{name(), cache};
     }
     else
     {
-      return _Stub{name(), std::get<ResourceCacheT>(std::forward<CacheTupleT>(caches))};
+      return _Stub{name(), cache};
     }
   }
+
+  ResourceCacheT cache;
+
+  ResourceCollectionEntry() = default;
+
+  ResourceCollectionEntry(ResourceCollectionEntry&& other) = default;
+  ResourceCollectionEntry& operator=(ResourceCollectionEntry&& other) = default;
+
+  ResourceCollectionEntry(const ResourceCollectionEntry& other) = delete;
+  ResourceCollectionEntry& operator=(const ResourceCollectionEntry& other) = delete;
 };
 
 template <typename EntryT> struct IsResourceCollectionEntry : std::false_type
 {};
 
-template <resource_label kName, typename ResourceCacheT, bool kSerializable>
-struct IsResourceCollectionEntry<ResourceCollectionEntry<kName, ResourceCacheT, kSerializable>> : std::true_type
+template <resource_label kName, typename ResourceCacheT, bool kShouldSerialize>
+struct IsResourceCollectionEntry<ResourceCollectionEntry<kName, ResourceCacheT, kShouldSerialize>> : std::true_type
 {};
 
 
@@ -81,11 +91,11 @@ class ResourceCollection : public Resource<ResourceCollection<ResourceCollection
   friend class Resource<ResourceCollection<ResourceCollectionEntryTs...>>;
 
   static_assert(
-    (is_resource_collection_entry_v<ResourceCollectionEntryTs> && ...),
+    (is_resource_collection_entry_v<ResourceCollectionEntryTs> and ...),
     "ResourceCollectionEntryTs must be a ResourceCollectionEntry<LABLE, CACHE>");
 
   static_assert(
-    (is_resource_cache_v<typename ResourceCollectionEntryTs::type> && ...),
+    (is_resource_cache_v<typename ResourceCollectionEntryTs::type> and ...),
     "ResourceCacheTs must be a ResourceCache<T>");
 
 public:
@@ -96,11 +106,19 @@ public:
   using cache_to_entry_map =
     dont::Map<dont::KeyValue<typename ResourceCollectionEntryTs::type, ResourceCollectionEntryTs>...>;
 
-  template <typename CacheT> constexpr CacheT& get() { return std::get<CacheT>(caches_); }
+  template <typename CacheT> constexpr CacheT& get()
+  {
+    using EntryType = dont::map_lookup_t<cache_to_entry_map, CacheT>;
+    return std::get<EntryType>(caches_).cache;
+  }
 
-  template <typename CacheT> constexpr const CacheT& get() const { return std::get<CacheT>(caches_); }
+  template <typename CacheT> constexpr const CacheT& get() const
+  {
+    using EntryType = dont::map_lookup_t<cache_to_entry_map, CacheT>;
+    return std::get<EntryType>(caches_).cache;
+  }
 
-  constexpr auto all() { return ResourceDependencies{std::get<typename ResourceCollectionEntryTs::type>(caches_)...}; }
+  constexpr auto all() { return ResourceDependencies{std::get<ResourceCollectionEntryTs>(caches_).cache...}; }
 
   constexpr operator ResourceDependencies<typename ResourceCollectionEntryTs::type...>()
   {
@@ -235,16 +253,16 @@ public:
   {
     expected<void, std::string_view> ok_or_error = {};
     dont::tuple::for_each(
-      [this, &ok_or_error](auto& cache) {
-        using CacheType = std::remove_reference_t<decltype(cache)>;
+      [this, &ok_or_error](auto& entry) {
+        using CacheType = std::remove_reference_t<decltype(entry.cache)>;
         using EntryType = dont::map_lookup_t<cache_to_entry_map, CacheType>;
-        if constexpr (!EntryType::kIsSerializable)
+        if constexpr (!EntryType::kShouldSerialize)
         {
           return true;
         }
         else if constexpr (resource_cache_has_dependencies_v<CacheType>)
         {
-          if (auto ok = cache.refresh(this->all()); !ok.has_value())
+          if (auto ok = entry.cache.refresh(this->all()); !ok.has_value())
           {
             ok_or_error = make_unexpected(std::string_view{EntryType::name()});
             return false;
@@ -252,7 +270,7 @@ public:
         }
         else
         {
-          if (auto ok = cache.refresh(); !ok.has_value())
+          if (auto ok = entry.cache.refresh(); !ok.has_value())
           {
             ok_or_error = make_unexpected(std::string_view{EntryType::name()});
             return false;
@@ -268,7 +286,7 @@ public:
 
   void clear()
   {
-    dont::tuple::for_each([](auto& cache) { cache.clear(); }, dont::tuple::reversed(caches_));
+    dont::tuple::for_each([](auto& entry) { entry.cache.clear(); }, dont::tuple::reversed(caches_));
   }
 
   ~ResourceCollection() { this->clear(); }
@@ -282,9 +300,9 @@ public:
   ResourceCollection& operator=(const ResourceCollection&) = delete;
 
 private:
-  std::tuple<typename ResourceCollectionEntryTs::type...> caches_;
+  std::tuple<ResourceCollectionEntryTs...> caches_;
 
-  auto field_list() { return FieldList(ResourceCollectionEntryTs::toField(caches_)...); }
+  auto field_list() { return FieldList(std::get<ResourceCollectionEntryTs>(caches_).as_field()...); }
 };
 
 }  // namespace sde

@@ -90,7 +90,8 @@ expected<void, SoundDataError> SoundDataCache::reload(SoundData& sound)
 
   // Read WAV data
   auto* wave_data = reinterpret_cast<char*>(std::malloc(wave->dataSize));
-  if (const auto read_size = WaveReadFile(wave_data, wave->dataSize, wave); read_size != wave->dataSize)
+  if (const auto read_size = WaveReadFile(wave_data, wave->dataSize, wave);
+      (read_size < 0) or (static_cast<AuUint32>(read_size) != wave->dataSize))
   {
     SDE_LOG_ERROR() << "InvalidSoundFile: " << SDE_OSNV(sound.path) << " (" << SDE_OSNV(read_size) << ", "
                     << SDE_OSNV(wave->dataSize) << ')';

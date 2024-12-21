@@ -42,19 +42,32 @@ class GameResources : public ResourceCollection
   ResourceCollectionEntry<"tile_sets"_rl, graphics::TileSetCache>,
   ResourceCollectionEntry<"type_sets"_rl, graphics::TypeSetCache>,
   ResourceCollectionEntry<"render_targets"_rl, graphics::RenderTargetCache>,
-  ResourceCollectionEntry<"registry"_rl, Registry, false>,
   ResourceCollectionEntry<"entities"_rl, EntityCache>,
   ResourceCollectionEntry<"libraries"_rl, LibraryCache>,
   ResourceCollectionEntry<"scripts"_rl, NativeScriptCache>,
   ResourceCollectionEntry<"components"_rl, ComponentCache>,
-  ResourceCollectionEntry<"scenes"_rl, SceneCache>
+  ResourceCollectionEntry<"scenes"_rl, SceneCache>,
+  ResourceCollectionEntry<"registry"_rl, Registry, false>
 >
 // clang-format on
 {
 public:
+  GameResources() = default;
+
+  GameResources(GameResources&& other) = default;
+  GameResources& operator=(GameResources&& other) = default;
+
+  GameResources(const GameResources& other) = delete;
+  GameResources& operator=(const GameResources& other) = delete;
+
   explicit GameResources(asset::path root) : root_{std::move(root)} {}
 
   const asset::path& root() const { return root_; }
+
+  template <typename CreateT> decltype(auto) instance(EntityHandle& h, CreateT&& create)
+  {
+    return this->template get<EntityCache>().instance(h, this->all(), std::forward<CreateT>(create));
+  }
 
 private:
   asset::path root_;

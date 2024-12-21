@@ -45,7 +45,11 @@ bool save(imgui_start* self, sde::game::OArchive& ar)
 {
   using namespace sde::serial;
   ar << named{"imgui_ini_path", self->imgui_ini_path};
-  ImGui::SaveIniSettingsToDisk(self->imgui_ini_path.string().c_str());
+
+  if (self->imgui_context)
+  {
+    ImGui::SaveIniSettingsToDisk(self->imgui_ini_path.string().c_str());
+  }
   return true;
 }
 
