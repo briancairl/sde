@@ -316,6 +316,7 @@ std::ostream& operator<<(std::ostream& os, TextureError error)
     SDE_OS_ENUM_CASE(TextureError::kReplaceAreaEmpty)
     SDE_OS_ENUM_CASE(TextureError::kReplaceAreaOutOfBounds)
   }
+  return os;
 }
 
 template <typename DataT>
