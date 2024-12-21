@@ -15,7 +15,16 @@
 #include "sde/dl/export.hpp"
 #include "sde/game/archive.hpp"
 #include "sde/game/registry.hpp"
+#include "sde/geometry_io.hpp"
+#include "sde/resource_io.hpp"
+#include "sde/serial/std/filesystem.hpp"
+#include "sde/serial/std/optional.hpp"
+#include "sde/serial/std/string.hpp"
+#include "sde/serial/std/unordered_map.hpp"
+#include "sde/serial/std/vector.hpp"
+#include "sde/time_io.hpp"
 #include "sde/type_name.hpp"
+
 
 namespace sde::game
 {
@@ -32,7 +41,8 @@ template <typename ComponentT> const char* component_name_impl()
   return type_name_buffer;
 }
 
-template <typename ComponentT> void component_load_impl(sde::game::IArchive& ar, EntityID e, Registry& registry)
+template <typename ComponentT>
+void component_load_impl(const char* name, sde::game::IArchive& ar, EntityID e, Registry& registry)
 {
   if constexpr (std::is_void_v<decltype(registry.template emplace<ComponentT>(e))>)
   {
@@ -40,15 +50,16 @@ template <typename ComponentT> void component_load_impl(sde::game::IArchive& ar,
   }
   else
   {
-    // ar >> registry.template emplace<ComponentT>(e);
+    ar >> Field{name, registry.template emplace<ComponentT>(e)};
   }
 }
 
-template <typename ComponentT> void component_save_impl(sde::game::OArchive& ar, EntityID e, const Registry& registry)
+template <typename ComponentT>
+void component_save_impl(const char* name, sde::game::OArchive& ar, EntityID e, const Registry& registry)
 {
   if constexpr (!std::is_void_v<decltype(registry.template get<ComponentT>(e))>)
   {
-    // ar << registry.template get<ComponentT>(e);
+    ar << Field{name, registry.template get<ComponentT>(e)};
   }
 }
 
@@ -62,6 +73,7 @@ template <typename ComponentT> void component_save_impl(sde::game::OArchive& ar,
   SDE_EXPORT void Name##_on_load(void* iarchive, void* entity, void* registry)                                         \
   {                                                                                                                    \
     ::sde::game::component_load_impl<ComponentT>(                                                                      \
+      #Name,                                                                                                           \
       *reinterpret_cast<::sde::game::IArchive*>(iarchive),                                                             \
       *reinterpret_cast<::sde::game::EntityID*>(entity),                                                               \
       *reinterpret_cast<::sde::game::Registry*>(registry));                                                            \
@@ -71,6 +83,7 @@ template <typename ComponentT> void component_save_impl(sde::game::OArchive& ar,
   SDE_EXPORT void Name##_on_save(void* oarchive, void* entity, const void* registry)                                   \
   {                                                                                                                    \
     ::sde::game::component_save_impl<ComponentT>(                                                                      \
+      #Name,                                                                                                           \
       *reinterpret_cast<::sde::game::OArchive*>(oarchive),                                                             \
       *reinterpret_cast<::sde::game::EntityID*>(entity),                                                               \
       *reinterpret_cast<const ::sde::game::Registry*>(registry));                                                      \
