@@ -209,18 +209,18 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
         self->render_buffer, *self->renderer, resources.all(), uniforms, render_resources, app.viewport_size);
       render_pass_or_error.has_value())
   {
-    // registry.view<Position, TileMap, DebugWireFrame>().each(
-    //   [&](const Position& pos, const TileMap& tile_map, const DebugWireFrame& debug) {
-    //     self->render_buffer.quads.push_back(
-    //       {.rect = Rect2f{pos.center, pos.center + tile_map.mapSize()}, .color = debug.color});
-    //   });
+    registry.view<Position, TileMap, DebugWireFrame>().each(
+      [&](const Position& pos, const TileMap& tile_map, const DebugWireFrame& debug) {
+        self->render_buffer.quads.push_back(
+          {.rect = Rect2f{pos.center, pos.center + tile_map.mapSize()}, .color = debug.color});
+      });
 
-    // registry.view<Size, Position, DebugWireFrame>().each(
-    //   [&](const Size& size, const Position& pos, const DebugWireFrame& debug) {
-    //     const Vec2f min_corner{pos.center - 0.5F * size.extent};
-    //     const Vec2f max_corner{pos.center + 0.5F * size.extent};
-    //     self->render_buffer.quads.push_back({.rect = Rect2f{min_corner, max_corner}, .color = debug.color});
-    //   });
+    registry.view<Size, Position, DebugWireFrame>().each(
+      [&](const Size& size, const Position& pos, const DebugWireFrame& debug) {
+        const Vec2f min_corner{pos.center - 0.5F * size.extent};
+        const Vec2f max_corner{pos.center + 0.5F * size.extent};
+        self->render_buffer.quads.push_back({.rect = Rect2f{min_corner, max_corner}, .color = debug.color});
+      });
   }
 
   render_resources.buffer_group = 0;
@@ -230,34 +230,37 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
         self->render_buffer, *self->renderer, resources.all(), uniforms, render_resources, app.viewport_size);
       render_pass_or_error.has_value())
   {
-    // TypeSetter type_setter{self->player_text_type_set};
-    // registry.view<Info, Size, Position, Dynamics>().each(
-    //   [&](const Info& info, const Size& size, const Position& pos, const Dynamics& state) {
-    //     if ((state.velocity.array() == 0.0F).all())
-    //     {
-    //       const float t = toSeconds(app.time);
-    //       const Vec4f color{
-    //         std::abs(std::cos(t * 3.0F)), std::abs(std::sin(t * 3.0F)), std::abs(std::cos(t * 2.0F)), 1.0F};
-    //       type_setter.draw(
-    //         *render_pass_or_error,
-    //         info.name,
-    //         pos.center + sde::Vec2f{0.0, 0.45F + std::sin(5.0F * t) * 0.05F},
-    //         {0.075F},
-    //         color);
-    //     }
-    //     type_setter.draw(
-    //       *render_pass_or_error,
-    //       sde::format("pos: (%.3f, %.3f)", pos.center.x(), pos.center.y()),
-    //       pos.center + sde::Vec2f{0.0, -0.3F},
-    //       {0.025F},
-    //       Yellow(0.8));
-    //     type_setter.draw(
-    //       *render_pass_or_error,
-    //       sde::format("vel: (%.3f, %.3f)", state.velocity.x(), state.velocity.y()),
-    //       pos.center + sde::Vec2f{0.0, -0.3F - 0.05},
-    //       {0.025F},
-    //       Yellow(0.8));
-    //   });
+    TypeSetter type_setter{self->player_text_type_set};
+    registry.view<Info, Size, Position, Dynamics>().each(
+      [&](const Info& info, const Size& size, const Position& pos, const Dynamics& state) {
+        if (state.velocity.x() == 0.0F and state.velocity.y() == 0.0F)
+        {
+          const float t = toSeconds(app.time);
+          const Vec4f color{
+            std::abs(std::cos(t * 3.0F)), std::abs(std::sin(t * 3.0F)), std::abs(std::cos(t * 2.0F)), 1.0F};
+          type_setter.draw(
+            *render_pass_or_error,
+            resources.all(),
+            info.name,
+            pos.center + sde::Vec2f{0.0, 0.45F + std::sin(5.0F * t) * 0.05F},
+            {0.075F},
+            color);
+        }
+        type_setter.draw(
+          *render_pass_or_error,
+          resources.all(),
+          sde::format("pos: (%.3f, %.3f)", pos.center.x(), pos.center.y()),
+          pos.center + sde::Vec2f{0.0, -0.3F},
+          {0.025F},
+          Yellow(0.8));
+        type_setter.draw(
+          *render_pass_or_error,
+          resources.all(),
+          sde::format("vel: (%.3f, %.3f)", state.velocity.x(), state.velocity.y()),
+          pos.center + sde::Vec2f{0.0, -0.3F - 0.05},
+          {0.025F},
+          Yellow(0.8));
+      });
   }
 
 

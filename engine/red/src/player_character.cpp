@@ -84,6 +84,8 @@ bool initialize(player_character* self, sde::game::GameResources& resources, con
     new_entity.attach<Dynamics>(Dynamics{});
     new_entity.attach<graphics::AnimatedSprite>();
     new_entity.attach<Foreground>();
+    new_entity.attach<DebugWireFrame>();
+    new_entity.attach<Focused>();
   });
   if (!entity_or_error.has_value())
   {
@@ -107,7 +109,7 @@ void edit(player_character* self, sde::game::GameResources& resources, const sde
     return;
   }
 
-  ImGui::Begin("player");
+  ImGui::Begin(sde::format("player-%lu", self->entity.id()));
   auto [size, position, sprite] = resources.get<Registry>().get<Size, Position, graphics::AnimatedSprite>(entity->id);
 
   ImGui::InputFloat2("size", size.extent.data());

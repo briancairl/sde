@@ -42,17 +42,38 @@ expected<SceneScriptInstance, SceneGraphErrorCode> instance(
     return make_unexpected(SceneGraphErrorCode::kInvalidScript);
   }
 
-  // Create an instance of this script
-  return SceneScriptInstance{
-    .handle = std::move(script_or_error->handle),
-    .instance = (*script_or_error)->script.instance(),
-    .instance_data_path = script_data.data,
-    .instance_version_target = script_data.version};
+  // Instance the script
+  auto script_instance = (*script_or_error)->script.instance();
+
+  // Check that previous script version matches current
+  if (script_data.version.has_value() and (script_data.version != script_instance.version()))
+  {
+    SDE_LOG_WARN() << "Script has new version: old: " << SDE_OSNV(*script_data.version)
+                   << " --> new: " << SDE_OSNV(script_instance.version());
+    return SceneScriptInstance{
+      .handle = std::move(script_or_error->handle),
+      .instance = std::move(script_instance),
+      .instance_data_path = std::nullopt,
+      .instance_version_target = std::nullopt};
+  }
+  else
+  {
+    return SceneScriptInstance{
+      .handle = std::move(script_or_error->handle),
+      .instance = std::move(script_instance),
+      .instance_data_path = script_data.data,
+      .instance_version_target = script_data.version};
+  }
 }
 
 asset::path createDataFilePath(const SceneScriptInstance& script)
 {
-  sde::string path = format("%s_%lu_%lu", script.instance.name().data(), script.handle.id(), script.instance.version());
+  sde::string path = format(
+    "%s_%lu_%lu_%p",
+    script.instance.name().data(),
+    script.handle.id(),
+    script.instance.version(),
+    std::addressof(script));
   for (auto& c : path)
   {
     if (c == '/' || c == '.')
@@ -164,14 +185,6 @@ expected<void, SceneGraphError> SceneGraph::load(GameResources& resources, const
     }
 
     const auto data_file_path = directory / (*script.instance_data_path);
-
-    // Check that previous script version matches current
-    if (script.instance_version_target.has_value() and (*script.instance_version_target) != script.instance.version())
-    {
-      SDE_LOG_WARN() << "Not loading data from: " << data_file_path << " for " << script.instance
-                     << " (expected version: " << *script.instance_version_target << ')';
-      return true;
-    }
 
     // Load script data for this instance
     if (auto ifs_or_error = serial::file_istream::create(data_file_path); ifs_or_error.has_value())

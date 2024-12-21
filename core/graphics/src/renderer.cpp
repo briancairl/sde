@@ -898,7 +898,6 @@ expected<RenderPass, RenderPassError> RenderPass::create(
   renderer.refresh(resources);
 
   const auto world_from_viewport = uniforms.getWorldFromViewportMatrix(viewport_size);
-
   return RenderPass{
     std::addressof(renderer),
     std::addressof(buffer),

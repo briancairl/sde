@@ -6,27 +6,32 @@
             "post_scripts": [],
             "pre_scripts": [
                 {
-                    "data": "drag_and_drop_loader_6_59.bin",
+                    "data": "drag_and_drop_loader_6_59_0x64a3ff981550.bin",
                     "path": "engine/red/libdrag_and_drop_loader.so",
                     "version": 59
                 },
                 {
-                    "data": "audio_manager_7_90.bin",
+                    "data": "audio_manager_7_90_0x64a3ff9815e8.bin",
                     "path": "engine/red/libaudio_manager.so",
                     "version": 90
                 },
                 {
-                    "data": "texture_viewer_8_109.bin",
+                    "data": "texture_viewer_8_109_0x64a3ff981680.bin",
                     "path": "engine/red/libtexture_viewer.so",
                     "version": 109
                 },
                 {
-                    "data": "player_character_9_293.bin",
+                    "data": "player_character_9_295_0x64a3ff981718.bin",
                     "path": "engine/red/libplayer_character.so",
-                    "version": 293
+                    "version": 295
                 },
                 {
-                    "data": "tile_set_editor_10_347.bin",
+                    "data": "player_character_9_295_0x64a3ff9817b0.bin",
+                    "path": "engine/red/libplayer_character.so",
+                    "version": 295
+                },
+                {
+                    "data": "tile_set_editor_10_347_0x64a3ff981848.bin",
                     "path": "engine/red/libtile_set_editor.so",
                     "version": 347
                 }
@@ -38,29 +43,29 @@
             ],
             "post_scripts": [
                 {
-                    "data": "script_browser_4_75.bin",
+                    "data": "script_browser_4_75_0x64a3ff980010.bin",
                     "path": "engine/red/libscript_browser.so",
                     "version": 75
                 },
                 {
-                    "data": "imgui_end_5_45.bin",
+                    "data": "imgui_end_5_45_0x64a3ff9800a8.bin",
                     "path": "engine/red/libimgui_end.so",
                     "version": 45
                 }
             ],
             "pre_scripts": [
                 {
-                    "data": "imgui_start_1_102.bin",
+                    "data": "imgui_start_1_102_0x64a3ff9829d0.bin",
                     "path": "engine/red/libimgui_start.so",
                     "version": 102
                 },
                 {
-                    "data": "renderer_2_268.bin",
+                    "data": "renderer_2_271_0x64a3ff982a68.bin",
                     "path": "engine/red/librenderer.so",
-                    "version": 268
+                    "version": 271
                 },
                 {
-                    "data": "library_browser_3_131.bin",
+                    "data": "library_browser_3_131_0x64a3ff982b00.bin",
                     "path": "engine/red/liblibrary_browser.so",
                     "version": 131
                 }
