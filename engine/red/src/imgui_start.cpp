@@ -66,6 +66,16 @@ bool initialize(imgui_start* self, sde::game::GameResources& resources, const sd
   ImGui_ImplGlfw_InitForOpenGL(static_cast<GLFWwindow*>(app.window), true);
   ImGui_ImplOpenGL3_Init(kGLSLVersion);
 
+  if (asset::exists(self->imgui_ini_path))
+  {
+    SDE_ASSERT_NE(self->imgui_context, nullptr);
+    ImGui::LoadIniSettingsFromDisk(self->imgui_ini_path.string().c_str());
+  }
+  else
+  {
+    self->imgui_ini_path = resources.root() / "imgui.ini";
+  }
+
   SDE_LOG_INFO() << "ImGui initialized";
   return true;
 }

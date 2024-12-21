@@ -98,6 +98,14 @@ cc_binary(
 )
 
 cc_binary(
+  name="tile_set_editor",
+  srcs=["src/tile_set_editor.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
   name="audio_manager",
   srcs=["src/audio_manager.cpp"],
   linkshared=True,
@@ -127,6 +135,7 @@ cc_library(
     ":script_browser",
     ":scene_tree",
     ":texture_viewer",
+    ":tile_set_editor",
   ],
   visibility=["//visibility:public"]
 )

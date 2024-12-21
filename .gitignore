@@ -18,3 +18,4 @@ MODULE*
 *.swp
 *.pyc
 *.bin
+*.ini

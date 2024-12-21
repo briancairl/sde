@@ -169,8 +169,10 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
     }
   }
 
-  // resources.registry.view<Focused, Position>().each(
-  //   [&](const Position& pos) { uniforms.world_from_camera.block<2, 1>(0, 2) = pos.center; });
+  auto& registry = resources.get<Registry>();
+
+  registry.view<Focused, Position>().each(
+    [&](const Position& pos) { uniforms.world_from_camera.block<2, 1>(0, 2) = pos.center; });
 
   if (auto render_pass_or_error = RenderPass::create(
         self->render_buffer, *self->renderer, resources.all(), uniforms, render_resources, app.viewport_size);
@@ -178,25 +180,26 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
   {
     render_pass_or_error->clear(Black());
 
-    // resources.registry.view<TransformQuery>().each(
-    //   [&rp = *render_pass_or_error](auto& query) { query.world_from_viewport = rp.getWorldFromViewportMatrix(); });
+    registry.view<TransformQuery>().each(
+      [&rp = *render_pass_or_error](auto& query) { query.world_from_viewport = rp.getWorldFromViewportMatrix(); });
 
-    // resources.registry.view<Position, TileMap>().each(
-    //   [&](const Position& pos, const TileMap& tile_map) { tile_map.draw(*render_pass_or_error, pos.center); });
+    registry.view<Position, TileMap>().each([&](const Position& pos, const TileMap& tile_map) {
+      tile_map.draw(*render_pass_or_error, resources.all(), pos.center);
+    });
 
-    // resources.registry.view<Midground, Size, Position, AnimatedSprite>().each(
-    //   [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
-    //     const Vec2f min_corner{pos.center - 0.5F * size.extent};
-    //     const Vec2f max_corner{pos.center + 0.5F * size.extent};
-    //     sprite.draw(*render_pass_or_error, app.time, {min_corner, max_corner});
-    //   });
+    registry.view<Midground, Size, Position, AnimatedSprite>().each(
+      [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
+        const Vec2f min_corner{pos.center - 0.5F * size.extent};
+        const Vec2f max_corner{pos.center + 0.5F * size.extent};
+        sprite.draw(*render_pass_or_error, resources.all(), app.time, {min_corner, max_corner});
+      });
 
-    // resources.registry.view<Foreground, Size, Position, AnimatedSprite>().each(
-    //   [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
-    //     const Vec2f min_corner{pos.center - 0.5F * size.extent};
-    //     const Vec2f max_corner{pos.center + 0.5F * size.extent};
-    //     sprite.draw(*render_pass_or_error, app.time, {min_corner, max_corner});
-    //   });
+    registry.view<Foreground, Size, Position, AnimatedSprite>().each(
+      [&](const Size& size, const Position& pos, const AnimatedSprite& sprite) {
+        const Vec2f min_corner{pos.center - 0.5F * size.extent};
+        const Vec2f max_corner{pos.center + 0.5F * size.extent};
+        sprite.draw(*render_pass_or_error, resources.all(), app.time, {min_corner, max_corner});
+      });
   }
 
   render_resources.buffer_group = 1;
@@ -206,13 +209,13 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
         self->render_buffer, *self->renderer, resources.all(), uniforms, render_resources, app.viewport_size);
       render_pass_or_error.has_value())
   {
-    // resources.registry.view<Position, TileMap, DebugWireFrame>().each(
+    // registry.view<Position, TileMap, DebugWireFrame>().each(
     //   [&](const Position& pos, const TileMap& tile_map, const DebugWireFrame& debug) {
     //     self->render_buffer.quads.push_back(
     //       {.rect = Rect2f{pos.center, pos.center + tile_map.mapSize()}, .color = debug.color});
     //   });
 
-    // resources.registry.view<Size, Position, DebugWireFrame>().each(
+    // registry.view<Size, Position, DebugWireFrame>().each(
     //   [&](const Size& size, const Position& pos, const DebugWireFrame& debug) {
     //     const Vec2f min_corner{pos.center - 0.5F * size.extent};
     //     const Vec2f max_corner{pos.center + 0.5F * size.extent};
@@ -228,7 +231,7 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
       render_pass_or_error.has_value())
   {
     // TypeSetter type_setter{self->player_text_type_set};
-    // resources.registry.view<Info, Size, Position, Dynamics>().each(
+    // registry.view<Info, Size, Position, Dynamics>().each(
     //   [&](const Info& info, const Size& size, const Position& pos, const Dynamics& state) {
     //     if ((state.velocity.array() == 0.0F).all())
     //     {

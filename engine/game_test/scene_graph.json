@@ -24,6 +24,11 @@
                     "data": "player_character_9_293.bin",
                     "path": "engine/red/libplayer_character.so",
                     "version": 293
+                },
+                {
+                    "data": "tile_set_editor_10_350.bin",
+                    "path": "engine/red/libtile_set_editor.so",
+                    "version": 350
                 }
             ]
         },
@@ -47,12 +52,12 @@
                 {
                     "data": "imgui_start_1_88.bin",
                     "path": "engine/red/libimgui_start.so",
-                    "version": 92
+                    "version": 102
                 },
                 {
                     "data": "renderer_2_265.bin",
                     "path": "engine/red/librenderer.so",
-                    "version": 265
+                    "version": 267
                 },
                 {
                     "data": "library_browser_3_131.bin",
