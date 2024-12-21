@@ -26,9 +26,9 @@
                     "version": 293
                 },
                 {
-                    "data": "tile_set_editor_10_350.bin",
+                    "data": "tile_set_editor_10_347.bin",
                     "path": "engine/red/libtile_set_editor.so",
-                    "version": 350
+                    "version": 347
                 }
             ]
         },
@@ -50,14 +50,14 @@
             ],
             "pre_scripts": [
                 {
-                    "data": "imgui_start_1_88.bin",
+                    "data": "imgui_start_1_102.bin",
                     "path": "engine/red/libimgui_start.so",
                     "version": 102
                 },
                 {
-                    "data": "renderer_2_265.bin",
+                    "data": "renderer_2_268.bin",
                     "path": "engine/red/librenderer.so",
-                    "version": 267
+                    "version": 268
                 },
                 {
                     "data": "library_browser_3_131.bin",

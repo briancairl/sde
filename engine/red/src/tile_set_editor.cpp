@@ -27,8 +27,8 @@ struct tile_set_editor
   float atlas_tile_display_width = 0;
   bool flip_horizontal = false;
   bool flip_vertical = false;
-  std::vector<std::pair<int, Rect2f>> candidate_index_and_tiles;
-  std::vector<Rect2f> candidate_tiles;
+  sde::vector<std::pair<int, Rect2f>> candidate_index_and_tiles;
+  sde::vector<Rect2f> candidate_tiles;
   int next_index = 0;
 };
 

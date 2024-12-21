@@ -9,6 +9,7 @@
 #include "sde/game/component.hpp"
 #include "sde/game/library.hpp"
 #include "sde/logging.hpp"
+#include "sde/serialization.hpp"
 
 namespace sde::game
 {

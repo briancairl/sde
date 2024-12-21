@@ -25,15 +25,11 @@ namespace
 
 [[nodiscard]] bool load(GameResources& resources, const asset::path& resources_path, const asset::path& components_path)
 {
+  SDE_LOG_INFO() << "Loading:" << SDE_OSNV(resources_path);
   if (auto ifs_or_error = serial::file_istream::create(resources_path); ifs_or_error.has_value())
   {
     IArchive iar{*ifs_or_error};
     iar >> Field{"resources", resources};
-    if (auto ok_or_error = resources.refresh(); !ok_or_error.has_value())
-    {
-      SDE_LOG_ERROR() << ok_or_error.error() << " " << SDE_OSNV(resources_path);
-      return false;
-    }
   }
   else if (ifs_or_error.error() == serial::FileStreamError::kFileDoesNotExist)
   {
@@ -45,27 +41,36 @@ namespace
     return false;
   }
 
-  if (auto ifs_or_error = serial::file_istream::create(resources_path); ifs_or_error.has_value())
+  SDE_LOG_INFO() << "Refreshing resources";
+  if (auto ok_or_error = resources.refresh(); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << ok_or_error.error() << " " << SDE_OSNV(resources_path);
+    return false;
+  }
+
+  SDE_LOG_INFO() << "Loading:" << SDE_OSNV(components_path);
+  if (auto ifs_or_error = serial::file_istream::create(components_path); ifs_or_error.has_value())
   {
     IArchive iar{*ifs_or_error};
     resources.get<EntityCache>().load(resources.all(), iar);
   }
   else if (ifs_or_error.error() == serial::FileStreamError::kFileDoesNotExist)
   {
-    SDE_LOG_WARN() << SDE_OSNV(resources_path);
+    SDE_LOG_WARN() << SDE_OSNV(components_path);
   }
   else
   {
-    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(resources_path);
+    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(components_path);
     return false;
   }
 
-  SDE_LOG_INFO() << "GameResources loaded: " << SDE_OSNV(resources_path);
+  SDE_LOG_INFO() << "GameResources loaded: " << SDE_OSNV(components_path);
   return true;
 }
 
 [[nodiscard]] bool save(GameResources& resources, const asset::path& resources_path, const asset::path& components_path)
 {
+  SDE_LOG_INFO() << "Saving:" << SDE_OSNV(resources_path);
   if (auto ofs_or_error = serial::file_ostream::create(resources_path); ofs_or_error.has_value())
   {
     OArchive oar{*ofs_or_error};
@@ -77,6 +82,7 @@ namespace
     return false;
   }
 
+  SDE_LOG_INFO() << "Saving:" << SDE_OSNV(components_path);
   if (auto ofs_or_error = serial::file_ostream::create(components_path); ofs_or_error.has_value())
   {
     OArchive oar{*ofs_or_error};
