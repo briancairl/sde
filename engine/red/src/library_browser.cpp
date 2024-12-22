@@ -65,7 +65,7 @@ bool update(library_browser* self, sde::game::GameResources& resources, const sd
 {
   if (ImGui::GetCurrentContext() == nullptr)
   {
-    return false;
+    return true;
   }
 
   ImGui::Begin("libraries");

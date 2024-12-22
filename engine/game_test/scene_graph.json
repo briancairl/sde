@@ -11,29 +11,24 @@
                     "version": 59
                 },
                 {
-                    "data": "audio_manager_7_90_0x64a3ff9815e8.bin",
+                    "data": "audio_manager_7_94_0x5c97fc0d8b10.bin",
                     "path": "engine/red/libaudio_manager.so",
-                    "version": 90
+                    "version": 94
                 },
                 {
-                    "data": "texture_viewer_8_109_0x64a3ff981680.bin",
+                    "data": "texture_viewer_8_114_0x5c97fc0d8bb0.bin",
                     "path": "engine/red/libtexture_viewer.so",
-                    "version": 109
+                    "version": 114
                 },
                 {
-                    "data": "player_character_9_295_0x64a3ff981718.bin",
+                    "data": "player_character_9_301_0x5c97fc0d8c50.bin",
                     "path": "engine/red/libplayer_character.so",
-                    "version": 295
+                    "version": 301
                 },
                 {
-                    "data": "player_character_9_295_0x64a3ff9817b0.bin",
-                    "path": "engine/red/libplayer_character.so",
-                    "version": 295
-                },
-                {
-                    "data": "tile_set_editor_10_347_0x64a3ff981848.bin",
+                    "data": "tile_set_editor_10_352_0x5c97fc0d8cf0.bin",
                     "path": "engine/red/libtile_set_editor.so",
-                    "version": 347
+                    "version": 352
                 }
             ]
         },
@@ -43,9 +38,14 @@
             ],
             "post_scripts": [
                 {
-                    "data": "script_browser_4_75_0x64a3ff980010.bin",
+                    "data": "script_browser_4_80_0x5c97fc0d8350.bin",
                     "path": "engine/red/libscript_browser.so",
-                    "version": 75
+                    "version": 80
+                },
+                {
+                    "data": "entity_browser_12_74_0x5c97fc0d83f0.bin",
+                    "path": "engine/red/libentity_browser.so",
+                    "version": 74
                 },
                 {
                     "data": "imgui_end_5_45_0x64a3ff9800a8.bin",
@@ -60,9 +60,14 @@
                     "version": 102
                 },
                 {
-                    "data": "renderer_2_271_0x64a3ff982a68.bin",
+                    "data": "physics_11_45_0x647780d45bc8.bin",
+                    "path": "engine/red/libphysics.so",
+                    "version": 45
+                },
+                {
+                    "data": "renderer_2_277_0x55ca5bbd7140.bin",
                     "path": "engine/red/librenderer.so",
-                    "version": 271
+                    "version": 277
                 },
                 {
                     "data": "library_browser_3_131_0x64a3ff982b00.bin",

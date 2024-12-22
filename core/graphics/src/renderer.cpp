@@ -369,7 +369,11 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
-  void draw() { glDrawArrays(toGLDrawMode(draw_mode()), 0, vertex_count_); }
+  void draw()
+  {
+    SDE_LOG_ERROR() << draw_mode() << " " << vertex_count_;
+    glDrawArrays(toGLDrawMode(draw_mode()), 0, vertex_count_);
+  }
 
   auto attributes()
   {
@@ -748,7 +752,7 @@ void Renderer2D::refresh(const RenderResources& resources)
 
 void Renderer2D::flush(const dependencies& deps, const RenderUniforms& uniforms, const Mat3f& viewport_from_world)
 {
-  const auto shader = deps.get<ShaderCache>()(next_active_resources_.shader);
+  const auto shader = deps(next_active_resources_.shader);
   SDE_ASSERT_TRUE(shader);
 
   // Set active shader
@@ -897,7 +901,7 @@ expected<RenderPass, RenderPassError> RenderPass::create(
 
   renderer.refresh(resources);
 
-  const auto world_from_viewport = uniforms.getWorldFromViewportMatrix(viewport_size);
+  const Mat3f world_from_viewport = uniforms.getWorldFromViewportMatrix(viewport_size);
   return RenderPass{
     std::addressof(renderer),
     std::addressof(buffer),

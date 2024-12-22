@@ -123,7 +123,7 @@ bool update(scene_viewer* self, sde::game::GameResources& resources, const sde::
 {
   if (ImGui::GetCurrentContext() == nullptr)
   {
-    return false;
+    return true;
   }
 
   ImGui::Begin("scenes");

@@ -57,7 +57,10 @@ public:
   void reset();
   bool reset(const sde::string& name, const dl::Library& library);
 
-  constexpr operator bool() const { return on_load_ and on_save_; }
+  operator bool() const
+  {
+    return IterateUntil(*this, [](auto& field) -> bool { return field.get(); });
+  }
 
   std::string_view name() const { return name_(); }
   void load(IArchive& ar, EntityID id, Registry& registry) const;

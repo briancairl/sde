@@ -49,6 +49,10 @@ bool initialize(audio_manager* self, sde::game::GameResources& resources, const 
 
 bool update(audio_manager* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
+  if (ImGui::GetCurrentContext() == nullptr)
+  {
+    return true;
+  }
   ImGui::Begin("sounds");
   for (const auto& [handle, sound] : resources.get<audio::SoundCache>())
   {

@@ -42,6 +42,14 @@ cc_binary(
 )
 
 cc_binary(
+  name="entity_browser",
+  srcs=["src/entity_browser.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
   name="renderer",
   srcs=["src/renderer.cpp"],
   linkshared=True,
@@ -121,12 +129,22 @@ cc_binary(
   visibility=["//visibility:public"]
 )
 
+cc_binary(
+  name="physics",
+  srcs=["src/physics.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
 cc_library(
   name="builtin_native_scripts",
   deps=[
     ":audio_manager",
     ":components",
+    ":entity_browser",
     ":player_character",
+    ":physics",
     ":drag_and_drop_loader",
     ":renderer",
     ":imgui_start",

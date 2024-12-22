@@ -38,6 +38,11 @@ bool initialize(script_browser* self, sde::game::GameResources& resources, const
 
 bool update(script_browser* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
+  if (ImGui::GetCurrentContext() == nullptr)
+  {
+    return true;
+  }
+
   ImGui::Begin("scripts");
 
   static constexpr auto kTableCols = 2;

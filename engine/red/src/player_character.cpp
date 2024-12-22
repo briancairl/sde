@@ -103,6 +103,11 @@ bool initialize(player_character* self, sde::game::GameResources& resources, con
 
 void edit(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
+  if (ImGui::GetCurrentContext() == nullptr)
+  {
+    return;
+  }
+
   auto entity = resources(self->entity);
   if (!entity)
   {
@@ -113,6 +118,7 @@ void edit(player_character* self, sde::game::GameResources& resources, const sde
   auto [size, position, sprite] = resources.get<Registry>().get<Size, Position, graphics::AnimatedSprite>(entity->id);
 
   ImGui::InputFloat2("size", size.extent.data());
+  ImGui::InputFloat2("position", position.center.data());
 
   std::array frames = {
     std::make_pair("idle", self->idle_frames),

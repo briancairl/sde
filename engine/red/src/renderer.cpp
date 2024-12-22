@@ -150,9 +150,12 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
   uniforms.time = app.time;
   uniforms.time_delta = app.time_delta;
 
-  ImGui::Begin("renderer");
-  ImGui::SliderFloat("scaling", &self->scaling, 0.0F, 1e0F);
-  ImGui::End();
+  if (ImGui::GetCurrentContext() != nullptr)
+  {
+    ImGui::Begin("renderer");
+    ImGui::SliderFloat("scaling", &self->scaling, 0.0F, 1e0F);
+    ImGui::End();
+  }
 
   // Handle screen zoom
   if (true)
@@ -179,6 +182,8 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
       render_pass_or_error.has_value())
   {
     render_pass_or_error->clear(Black());
+
+    self->render_buffer.quads.push_back({.rect = Rect2f{{-1.0f, -1.0f}, {+1.0f, +1.0f}}, .color = Vec4f::Ones()});
 
     registry.view<TransformQuery>().each(
       [&rp = *render_pass_or_error](auto& query) { query.world_from_viewport = rp.getWorldFromViewportMatrix(); });

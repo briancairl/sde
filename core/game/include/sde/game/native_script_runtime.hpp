@@ -44,6 +44,7 @@
     deallocator(self);                                                                                                 \
   }
 
+
 #ifndef SDE_SCRIPT_NAME
 #define SDE_NATIVE_SCRIPT__REGISTER_NAME(InstanceDataT)                                                                \
   SDE_EXPORT const char* on_get_name() { return __FILE__; }
@@ -51,6 +52,15 @@
 #define SDE_NATIVE_SCRIPT__REGISTER_NAME(InstanceDataT)                                                                \
   SDE_EXPORT const char* on_get_name() { return SDE_SCRIPT_NAME; }
 #endif  // SDE_SCRIPT_NAME
+
+
+#ifndef SDE_SCRIPT_DESCRIPTION
+#define SDE_NATIVE_SCRIPT__REGISTER_DESCRIPTION(InstanceDataT)                                                         \
+  SDE_EXPORT const char* on_get_description() { return __FILE__; }
+#else
+#define SDE_NATIVE_SCRIPT__REGISTER_DESCRIPTION(InstanceDataT)                                                         \
+  SDE_EXPORT const char* on_get_description() { return SDE_SCRIPT_DESCRIPTION; }
+#endif  // SDE_SCRIPT_DESCRIPTION
 
 
 #ifndef SDE_SCRIPT_VERSION
@@ -96,6 +106,7 @@
   SDE_NATIVE_SCRIPT__REGISTER_CREATE(InstanceDataT);                                                                   \
   SDE_NATIVE_SCRIPT__REGISTER_DESTROY(InstanceDataT);                                                                  \
   SDE_NATIVE_SCRIPT__REGISTER_NAME(InstanceDataT);                                                                     \
+  SDE_NATIVE_SCRIPT__REGISTER_DESCRIPTION(InstanceDataT);                                                              \
   SDE_NATIVE_SCRIPT__REGISTER_VERSION(InstanceDataT);                                                                  \
   SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, load);                                                               \
   SDE_NATIVE_SCRIPT__REGISTER_SAVE(InstanceDataT, save);                                                               \

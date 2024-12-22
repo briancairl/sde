@@ -46,6 +46,11 @@ bool update(texture_viewer* self, sde::game::GameResources& resources, const sde
 {
   std::optional<TextureHandle> delete_this_texture;
 
+  if (ImGui::GetCurrentContext() == nullptr)
+  {
+    return true;
+  }
+
   ImGui::Begin("textures");
   for (const auto& [handle, element] : resources.get<graphics::TextureCache>())
   {

@@ -322,6 +322,11 @@ bool initialize(tile_set_editor* self, GameResources& resources, const AppProper
 
 bool update(tile_set_editor* self, GameResources& resources, const AppProperties& app)
 {
+  if (ImGui::GetCurrentContext() == nullptr)
+  {
+    return true;
+  }
+
   update_selector(self, resources, app);
 
   if (ImGui::BeginDragDropTarget())

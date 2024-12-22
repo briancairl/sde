@@ -38,6 +38,7 @@ struct NativeScriptFn : public Resource<NativeScriptFn>
   dl::Function<void*(ScriptInstanceAllocator)> on_create;
   dl::Function<void(ScriptInstanceDeallocator, void*)> on_destroy;
   dl::Function<const char*()> on_get_name;
+  dl::Function<const char*()> on_get_description;
   dl::Function<script_version_t()> on_get_version;
   dl::Function<bool(void*, void*)> on_load;
   dl::Function<bool(void*, void*)> on_save;
@@ -55,6 +56,7 @@ struct NativeScriptFn : public Resource<NativeScriptFn>
       _Stub{"on_create", on_create},
       _Stub{"on_destroy", on_destroy},
       _Stub{"on_get_name", on_get_name},
+      _Stub{"on_get_description", on_get_description},
       _Stub{"on_get_version", on_get_version},
       _Stub{"on_load", on_load},
       _Stub{"on_save", on_save},
