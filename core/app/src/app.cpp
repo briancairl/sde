@@ -180,9 +180,6 @@ void App::spin(OnStart on_start, OnUpdate on_update, const Rate spin_rate)
 
   while (!glfwWindowShouldClose(glfw_window))
   {
-    // glClearColor(0.F, 0.F, 0.F, 0.F);
-    // glClear(GL_COLOR_BUFFER_BIT);
-
     glfwGetFramebufferSize(
       glfw_window, (app_properties.viewport_size.data() + 0), (app_properties.viewport_size.data() + 1));
 

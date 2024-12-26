@@ -143,7 +143,7 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
   RenderResources render_resources;
   render_resources.target = self->render_target;
   render_resources.shader = self->sprite_shader;
-  render_resources.buffer_group = 0;
+  render_resources.buffer = 0;
 
   RenderUniforms uniforms;
   uniforms.scaling = self->scaling;
@@ -206,8 +206,12 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
         sprite.draw(*render_pass_or_error, resources.all(), app.time, {min_corner, max_corner});
       });
   }
+  else
+  {
+    return false;
+  }
 
-  render_resources.buffer_group = 1;
+  render_resources.buffer = 1;
   render_resources.shader = self->sprite_shader;
 
   if (auto render_pass_or_error = RenderPass::create(
@@ -227,8 +231,13 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
         self->render_buffer.quads.push_back({.rect = Rect2f{min_corner, max_corner}, .color = debug.color});
       });
   }
+  else
+  {
+    return false;
+  }
 
-  render_resources.buffer_group = 0;
+
+  render_resources.buffer = 0;
   render_resources.shader = self->player_text_shader;
 
   if (auto render_pass_or_error = RenderPass::create(
@@ -266,6 +275,10 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
           {0.025F},
           Yellow(0.8));
       });
+  }
+  else
+  {
+    return false;
   }
 
 

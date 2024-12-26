@@ -14,6 +14,8 @@ template <typename... DependTs> struct ResourceDependencies
 public:
   static constexpr bool kDoNotHash{true};
 
+  ResourceDependencies() = default;
+
   explicit ResourceDependencies(std::add_lvalue_reference_t<DependTs>&... deps) : tup_{std::addressof(deps)...} {}
 
   template <typename... ParentDependTs>

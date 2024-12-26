@@ -40,6 +40,16 @@ enum class VertexAccessMode
   kNormalized  ///< Specifies that fixed-point data values should be normalized when they are accessed
 };
 
+std::ostream& operator<<(std::ostream& os, VertexAccessMode mode)
+{
+  switch (mode)
+  {
+    SDE_OS_ENUM_CASE(VertexAccessMode::kDirect)
+    SDE_OS_ENUM_CASE(VertexAccessMode::kNormalized)
+  }
+  return os;
+}
+
 template <
   typename ElementT,
   std::size_t ElementCount,
@@ -58,6 +68,12 @@ struct VertexAttribute
   static void setup(std::size_t layout_index, std::size_t offset_bytes)
   {
     static constexpr std::uint8_t* kOffsetStart{nullptr};
+
+    SDE_LOG_DEBUG() << "glVertexAttribPointer(" << SDE_OSNV(layout_index) << SDE_OSNV(kElementCount)
+                    << SDE_OSNV(typecode<ElementT>()) << SDE_OSNV(AccessMode) << SDE_OSNV(kBytesPerVertex)
+                    << SDE_OSNV(offset_bytes) << ')';
+
+    SDE_LOG_DEBUG() << "glVertexAttribDivisor(" << SDE_OSNV(layout_index) << SDE_OSNV(InstanceDivisor) << ')';
 
     glEnableVertexAttribArray(layout_index);
 
@@ -154,6 +170,15 @@ enum class ElementLayout
   kCircle,
 };
 
+[[maybe_unused]] std::ostream& operator<<(std::ostream& os, ElementLayout layout)
+{
+  switch (layout)
+  {
+    SDE_OS_ENUM_CASE(ElementLayout::kQuad)
+    SDE_OS_ENUM_CASE(ElementLayout::kCircle)
+  }
+  return os;
+}
 
 template <typename ShapeT> ElementLayout element_layout_of();
 
@@ -294,6 +319,8 @@ public:
 
     // Allocate vertex buffer
     glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+
+    SDE_LOG_DEBUG() << SDE_OSNV(max_vertex_count) << SDE_OSNV(buffer_mode) << SDE_OSNV(draw_mode);
     const auto total_bytes = std::apply(
       [&](auto... attrs) -> std::size_t {
         std::size_t total_bytes_accum = 0;
@@ -310,21 +337,17 @@ public:
         return total_bytes_accum;
       },
       std::tuple<Attributes...>{});
+
     glBufferData(GL_ARRAY_BUFFER, total_bytes, nullptr, toGLBufferMode(buffer_mode));
+
+    SDE_LOG_DEBUG() << "glBufferData(" << SDE_OSNV(total_bytes) << SDE_OSNV(nullptr) << SDE_OSNV(buffer_mode) << ')';
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    SDE_LOG_DEBUG() << "Created array buffer: " << total_bytes << " bytes";
   }
 
-  VertexArray(VertexArray&& other) :
-      vao_{other.vao_},
-      vbo_{other.vbo_},
-      vertex_buffer_mapped_{other.vertex_buffer_mapped_},
-      vertex_count_{other.vertex_count_},
-      vertex_attribute_byte_offsets_{other.vertex_attribute_byte_offsets_}
-  {
-    other.vao_ = 0;
-    other.vbo_ = 0;
-    other.vertex_buffer_mapped_ = nullptr;
-  }
+  VertexArray(VertexArray&& other) { this->swap(other); }
 
   ~VertexArray()
   {
@@ -335,9 +358,26 @@ public:
     }
     if (vao_ != 0)
     {
+      SDE_LOG_DEBUG() << "glDeleteBuffers: " << SDE_OSNV(vbo_);
       glDeleteBuffers(1, &vbo_);
+      SDE_LOG_DEBUG() << "glDeleteVertexArrays: " << SDE_OSNV(vao_);
       glDeleteVertexArrays(1, &vao_);
     }
+  }
+
+  VertexArray& operator=(VertexArray&& other)
+  {
+    this->swap(other);
+    return *this;
+  }
+
+  void swap(VertexArray& other)
+  {
+    std::swap(vao_, other.vao_);
+    std::swap(vbo_, other.vbo_);
+    std::swap(vertex_buffer_mapped_, other.vertex_buffer_mapped_);
+    std::swap(vertex_count_, other.vertex_count_);
+    std::swap(vertex_attribute_byte_offsets_, other.vertex_attribute_byte_offsets_);
   }
 
   template <typename ShapeT> void add(std::size_t shape_count)
@@ -369,24 +409,21 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
-  void draw()
+  void draw() { glDrawArrays(toGLDrawMode(draw_mode()), 0, vertex_count_); }
+
+  auto attributes(std::size_t index)
   {
-    SDE_LOG_ERROR() << draw_mode() << " " << vertex_count_;
-    glDrawArrays(toGLDrawMode(draw_mode()), 0, vertex_count_);
+    auto offset_itr = std::rbegin(vertex_attribute_byte_offsets_);
+    const auto get_offset = [&offset_itr]() -> std::size_t { return *(offset_itr++); };
+    return std::make_tuple((mapped_attribute<Attributes>(get_offset(), vertex_buffer_mapped_) + index)...);
   }
 
-  auto attributes()
-  {
-    auto offset_itr = std::begin(vertex_attribute_byte_offsets_);
-    const auto get_offset = [&offset_itr]() -> std::size_t {
-      auto curr_itr = offset_itr;
-      ++offset_itr;
-      return *curr_itr;
-    };
-    return std::make_tuple((mapped_attribute<Attributes>(get_offset(), vertex_buffer_mapped_) + vertex_count_)...);
-  }
+  auto next_attributes() { return attributes(vertex_count_); }
 
 private:
+  VertexArray(const VertexArray& other) = delete;
+  VertexArray& operator=(const VertexArray& other) = delete;
+
   explicit VertexArray(std::size_t vertex_count_max, VertexDrawMode draw_mode) :
       vertex_count_max_{vertex_count_max}, vertex_draw_mode_{draw_mode}
   {}
@@ -425,6 +462,7 @@ public:
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, total_bytes, nullptr, toGLBufferMode(buffer_mode));
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    SDE_LOG_DEBUG() << "Created element buffer: " << total_bytes << " bytes";
   }
 
   ElementVertexArray(ElementVertexArray&& other) :
@@ -439,6 +477,7 @@ public:
   {
     if (ebo_ != 0)
     {
+      SDE_LOG_DEBUG() << "glDeleteBuffers: " << SDE_OSNV(ebo_);
       glDeleteBuffers(1, &ebo_);
     }
   }
@@ -557,9 +596,10 @@ public:
       va_.emplace_back(
         kElementsPerTriangle * options.max_triangle_count_per_render_pass, options.buffer_mode, options.draw_mode);
     }
+    SDE_LOG_DEBUG() << "OpenGLBackend created";
   }
 
-  ~OpenGLBackend() = default;
+  ~OpenGLBackend() { SDE_LOG_DEBUG() << "OpenGLBackend destroyed"; };
 
   void start(std::size_t active_buffer_index)
   {
@@ -590,7 +630,7 @@ public:
     }
 
     // Add vertex attribute data
-    auto [position, texcoord, texunit, tint] = va_active_->attributes();
+    auto [position, texcoord, texunit, tint] = va_active_->next_attributes();
     for (const auto& q : quads)
     {
       static constexpr float kNoTextureUnitAssigned = -1.0F;
@@ -617,7 +657,7 @@ public:
     }
 
     // Add vertex attribute data
-    auto [position, texcoord, texunit, tint] = va_active_->attributes();
+    auto [position, texcoord, texunit, tint] = va_active_->next_attributes();
     for (const auto& tq : textured_quads)
     {
       // clang-format off
@@ -642,7 +682,7 @@ public:
     }
 
     // Add vertex attribute data
-    auto [position, texcoord, texunit, tint] = va_active_->attributes();
+    auto [position, texcoord, texunit, tint] = va_active_->next_attributes();
     for (const auto& c : circles)
     {
       static constexpr float kNoTextureUnitAssigned = -1.0F;
@@ -676,6 +716,52 @@ float toAspectRatio(const Vec2i viewport_size)
 
 }  // namespace
 
+std::ostream& operator<<(std::ostream& os, VertexBufferMode mode)
+{
+  switch (mode)
+  {
+    SDE_OS_ENUM_CASE(VertexBufferMode::kStatic)
+    SDE_OS_ENUM_CASE(VertexBufferMode::kDynamic)
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, VertexDrawMode mode)
+{
+  switch (mode)
+  {
+    SDE_OS_ENUM_CASE(VertexDrawMode::kFilled)
+    SDE_OS_ENUM_CASE(VertexDrawMode::kWireFrame)
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, RendererError value_type)
+{
+  switch (value_type)
+  {
+    SDE_OS_ENUM_CASE(RendererError::kRendererPreviouslyInitialized)
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, RenderPassError error)
+{
+  switch (error)
+  {
+    SDE_OS_ENUM_CASE(RenderPassError::kRenderPassActive)
+    SDE_OS_ENUM_CASE(RenderPassError::kInvalidRenderTarget)
+    SDE_OS_ENUM_CASE(RenderPassError::kMaxVertexCountExceeded)
+    SDE_OS_ENUM_CASE(RenderPassError::kMaxElementCountExceeded)
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const RenderStats& stats)
+{
+  return os << SDE_OSNV(stats.max_vertex_count) << ", " << SDE_OSNV(stats.max_element_count);
+}
+
 Mat3f RenderUniforms::getWorldFromViewportMatrix(const Vec2i& viewport_size) const
 {
   return world_from_camera * toInverseCameraMatrix(scaling, toAspectRatio(viewport_size));
@@ -705,16 +791,22 @@ Renderer2D::~Renderer2D()
   backend__opengl.reset();
 }
 
-Renderer2D::Renderer2D(Renderer2D&& other) :
-    last_active_resources_{std::move(other.last_active_resources_)},
-    next_active_resources_{std::move(other.next_active_resources_)},
-    last_active_textures_{std::move(other.last_active_textures_)},
-    next_active_textures_{std::move(other.next_active_textures_)},
-    backend_{other.backend_}
+Renderer2D::Renderer2D(Renderer2D&& other) { this->swap(other); }
+
+Renderer2D& Renderer2D::operator=(Renderer2D&& other)
 {
-  other.backend_ = nullptr;
+  this->swap(other);
+  return *this;
 }
 
+void Renderer2D::swap(Renderer2D& other)
+{
+  std::swap(last_active_resources_, other.last_active_resources_);
+  std::swap(next_active_resources_, other.next_active_resources_);
+  std::swap(last_active_textures_, other.last_active_textures_);
+  std::swap(next_active_textures_, other.next_active_textures_);
+  std::swap(backend_, other.backend_);
+}
 
 std::optional<std::size_t> Renderer2D::assign(const TextureHandle& texture)
 {
@@ -747,7 +839,7 @@ void Renderer2D::refresh(const RenderResources& resources)
   SDE_ASSERT_TRUE(resources.isValid());
   last_active_resources_ = next_active_resources_;
   next_active_resources_ = resources;
-  backend__opengl->start(next_active_resources_.buffer_group);
+  backend__opengl->start(next_active_resources_.buffer);
 }
 
 void Renderer2D::flush(const dependencies& deps, const RenderUniforms& uniforms, const Mat3f& viewport_from_world)
@@ -759,8 +851,6 @@ void Renderer2D::flush(const dependencies& deps, const RenderUniforms& uniforms,
   if (next_active_resources_.shader != last_active_resources_.shader)
   {
     glUseProgram(shader->native_id);
-    // Make sure all texture units are set ???
-    // last_active_texture_units_.reset();
   }
 
   // Set active texture units
@@ -768,7 +858,7 @@ void Renderer2D::flush(const dependencies& deps, const RenderUniforms& uniforms,
   {
     if (next_active_textures_[u] and next_active_textures_[u] != last_active_textures_[u])
     {
-      const auto texture = deps.get<TextureCache>()(next_active_textures_[u]);
+      const auto texture = deps(next_active_textures_[u]);
       SDE_ASSERT_TRUE(texture);
 
       glActiveTexture(GL_TEXTURE0 + u);
@@ -799,17 +889,7 @@ expected<void, RenderPassError> RenderPass::submit(View<const TexturedQuad> quad
   return backend__opengl->submit(quads);
 }
 
-RenderPass::RenderPass(RenderPass&& other) :
-    renderer_{other.renderer_},
-    buffer_{other.buffer_},
-    uniforms_{other.uniforms_},
-    deps_{std::move(other.deps_)},
-    world_from_viewport_{other.world_from_viewport_},
-    viewport_from_world_{other.viewport_from_world_},
-    viewport_in_world_bounds_{other.viewport_in_world_bounds_}
-{
-  other.renderer_ = nullptr;
-}
+RenderPass::RenderPass(RenderPass&& other) { this->swap(other); }
 
 RenderPass::RenderPass(
   Renderer2D* renderer,
@@ -828,6 +908,23 @@ RenderPass::RenderPass(
     viewport_in_world_bounds_{viewport_in_world_bounds}
 {}
 
+RenderPass& RenderPass::operator=(RenderPass&& other)
+{
+  this->swap(other);
+  return *this;
+}
+
+void RenderPass::swap(RenderPass& other)
+{
+  std::swap(renderer_, other.renderer_);
+  std::swap(buffer_, other.buffer_);
+  std::swap(uniforms_, other.uniforms_);
+  std::swap(deps_, other.deps_);
+  std::swap(world_from_viewport_, other.world_from_viewport_);
+  std::swap(viewport_from_world_, other.viewport_from_world_);
+  std::swap(viewport_in_world_bounds_, other.viewport_in_world_bounds_);
+}
+
 RenderPass::~RenderPass()
 {
   if (renderer_ == nullptr)
@@ -835,11 +932,22 @@ RenderPass::~RenderPass()
     return;
   }
 
-  submit(make_const_view(buffer_->circles));
-  submit(make_const_view(buffer_->quads));
-  submit(make_const_view(buffer_->textured_quads));
-  buffer_->reset();
+  if (auto ok_or_error = submit(make_const_view(buffer_->circles)); !ok_or_error)
+  {
+    SDE_LOG_ERROR() << "error on submit(circles): " << SDE_OSNV(ok_or_error.error());
+  }
 
+  if (auto ok_or_error = submit(make_const_view(buffer_->quads)); !ok_or_error)
+  {
+    SDE_LOG_ERROR() << "error on submit(quads): " << SDE_OSNV(ok_or_error.error());
+  }
+
+  if (auto ok_or_error = submit(make_const_view(buffer_->textured_quads)); !ok_or_error)
+  {
+    SDE_LOG_ERROR() << "error on submit(textured_quads): " << SDE_OSNV(ok_or_error.error());
+  }
+
+  buffer_->reset();
   renderer_->flush(deps_, *uniforms_, viewport_from_world_);
   backend__render_pass_active.clear();
 }
@@ -899,10 +1007,8 @@ expected<RenderPass, RenderPassError> RenderPass::create(
 
   glViewport(0, 0, viewport_size.x(), viewport_size.y());
 
-  renderer.refresh(resources);
-
   const Mat3f world_from_viewport = uniforms.getWorldFromViewportMatrix(viewport_size);
-  return RenderPass{
+  RenderPass rp{
     std::addressof(renderer),
     std::addressof(buffer),
     std::addressof(uniforms),
@@ -910,6 +1016,8 @@ expected<RenderPass, RenderPassError> RenderPass::create(
     world_from_viewport,
     world_from_viewport.inverse(),
     transform(world_from_viewport, Bounds2f{-Vec2f::Ones(), Vec2f::Ones()})};
+  renderer.refresh(resources);
+  return rp;
 }
 
 }  // namespace sde::graphics

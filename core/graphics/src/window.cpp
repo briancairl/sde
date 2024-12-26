@@ -42,9 +42,9 @@ bool glfwTryFirstInit()
   glfwSetErrorCallback(glfwErrorCallback);
 #endif  // SDE_GLFW_DEBUG
 
-  SDE_LOG_INFO() << "Initializing GLFW...";
+  SDE_LOG_DEBUG() << "Initializing GLFW...";
   SDE_ASSERT(glfwInit()) << "Failed to initialize GLFW";
-  SDE_LOG_INFO() << "Initialized GLFW";
+  SDE_LOG_DEBUG() << "Initialized GLFW";
 
   // Decide GL+GLSL versions
 #if __APPLE__
@@ -88,6 +88,22 @@ void WindowDeleter::operator()(NativeWindowHandle native_handle) const
 Window::Window(NativeWindowHandle native_handle) : UniqueResource<NativeWindowHandle, WindowDeleter>{native_handle} {}
 
 void Window::activate() const { glfwMakeContextCurrent(reinterpret_cast<GLFWwindow*>(value())); }
+
+bool Window::poll() const
+{
+  auto* w = reinterpret_cast<GLFWwindow*>(value());
+  glfwSwapBuffers(w);
+  glfwPollEvents();
+  return !glfwWindowShouldClose(w);
+}
+
+Vec2i Window::size() const
+{
+  auto* w = reinterpret_cast<GLFWwindow*>(value());
+  Vec2i size;
+  glfwGetFramebufferSize(w, (size.data() + 0), (size.data() + 1));
+  return size;
+}
 
 bool Window::backend_initialized() { return glfw_is_initialized.load(); }
 
@@ -146,18 +162,18 @@ expected<void, WindowError> Window::setIcon(ImageRef icon) const
   // Handle window icon setting
   if (!icon.isValid())
   {
-    SDE_LOG_DEBUG() << "No icon set to window";
+    SDE_LOG_ERROR() << "No icon set to window";
     glfwSetWindowIcon(glfw_window, 0, nullptr);
     return {};
   }
   else if (icon.channels != ImageChannels::kRGBA)
   {
-    SDE_LOG_DEBUG() << "WindowIconInvalidPixelFormat";
+    SDE_LOG_ERROR() << "WindowIconInvalidPixelFormat";
     return make_unexpected(WindowError::kWindowIconInvalidPixelFormat);
   }
   else if (icon.pixels() == 0)
   {
-    SDE_LOG_DEBUG() << "WindowIconInvalidSize";
+    SDE_LOG_ERROR() << "WindowIconInvalidSize";
     return make_unexpected(WindowError::kWindowIconInvalidSize);
   }
 
@@ -176,18 +192,18 @@ expected<void, WindowError> Window::setCursor(ImageRef cursor) const
   // Handle window cursor setting
   if (!cursor.isValid())
   {
-    SDE_LOG_DEBUG() << "No cursor set to window";
+    SDE_LOG_ERROR() << "No cursor set to window";
     glfwSetCursor(glfw_window, glfwCreateStandardCursor(GLFW_ARROW_CURSOR));
     return {};
   }
   else if (cursor.channels != ImageChannels::kRGBA)
   {
-    SDE_LOG_DEBUG() << "WindowCursorInvalidPixelFormat";
+    SDE_LOG_ERROR() << "WindowCursorInvalidPixelFormat";
     return make_unexpected(WindowError::kWindowCursorInvalidPixelFormat);
   }
   else if (cursor.pixels() == 0)
   {
-    SDE_LOG_DEBUG() << "WindowCursorInvalidSize";
+    SDE_LOG_ERROR() << "WindowCursorInvalidSize";
     return make_unexpected(WindowError::kWindowCursorInvalidSize);
   }
 

@@ -439,17 +439,12 @@ std::ostream& operator<<(std::ostream& os, ShaderVariableType value_type)
 
 std::ostream& operator<<(std::ostream& os, const ShaderVariables& variables)
 {
-  // clang-format off
-  os << "{ layout: "     << variables.layout
-     << ", uniforms: "   << variables.uniforms
-     << " }";
-  // clang-format on
-  return os;
+  return os << SDE_OSNV(variables.layout) << SDE_OSNV(variables.uniforms);
 }
 
 std::ostream& operator<<(std::ostream& os, const ShaderVariable& value)
 {
-  return os << "{ key: " << value.key << ", type: " << value.type << " }";
+  return os << SDE_OSNV(value.key) << SDE_OSNV(value.type);
 }
 
 std::ostream& operator<<(std::ostream& os, ShaderError error)
@@ -488,12 +483,7 @@ std::ostream& operator<<(std::ostream& os, ShaderComponents components)
 
 std::ostream& operator<<(std::ostream& os, const Shader& info)
 {
-  // clang-format off
-  os << "{ components: " << info.components
-     << ", variables: "  << info.variables
-     << " }";
-  // clang-format on
-  return os;
+  return os << SDE_OSNV(info.components) << SDE_OSNV(info.variables);
 }
 
 bool hasLayout(const Shader& info, std::string_view key, ShaderVariableType type, std::size_t index)
@@ -547,6 +537,7 @@ expected<Shader, ShaderError> ShaderCache::generate(const asset::path& path)
   {
     return make_unexpected(ok_or_error.error());
   }
+  SDE_LOG_INFO() << "Created shader: " << SDE_OSNV(shader.native_id);
   return shader;
 }
 

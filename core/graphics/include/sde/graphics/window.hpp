@@ -50,6 +50,10 @@ public:
 
   void activate() const;
 
+  bool poll() const;
+
+  Vec2i size() const;
+
   expected<void, WindowError> setIcon(ImageRef icon) const;
 
   expected<void, WindowError> setCursor(ImageRef cursor) const;

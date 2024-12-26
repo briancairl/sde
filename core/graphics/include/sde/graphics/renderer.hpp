@@ -35,14 +35,16 @@ namespace sde::graphics
  */
 struct RenderResources : Resource<RenderResources>
 {
+  /// Target to render to
   RenderTargetHandle target = RenderTargetHandle::null();
-  ShaderHandle shader = ShaderHandle::null();
-  std::size_t buffer_group = 0UL;
 
-  auto field_list()
-  {
-    return FieldList(Field{"target", target}, Field{"shader", shader}, Field{"buffer_group", buffer_group});
-  }
+  /// Shader program to use
+  ShaderHandle shader = ShaderHandle::null();
+
+  /// Draw buffer to use
+  std::size_t buffer = 0UL;
+
+  auto field_list() { return FieldList(Field{"target", target}, Field{"shader", shader}, Field{"buffer", buffer}); }
 
   bool isValid() const { return shader.isValid(); }
 };
@@ -78,6 +80,8 @@ enum class VertexBufferMode
   kDynamic
 };
 
+std::ostream& operator<<(std::ostream& os, VertexBufferMode mode);
+
 /**
  * @brief Buffer mode
  */
@@ -86,6 +90,8 @@ enum class VertexDrawMode
   kFilled,
   kWireFrame,
 };
+
+std::ostream& operator<<(std::ostream& os, VertexDrawMode mode);
 
 /**
  * @brief Texture creation options
@@ -132,11 +138,15 @@ enum class RendererError
   kRendererPreviouslyInitialized,
 };
 
+std::ostream& operator<<(std::ostream& os, RendererError value_type);
+
 struct RenderStats
 {
   std::size_t max_vertex_count = 0;
   std::size_t max_element_count = 0;
 };
+
+std::ostream& operator<<(std::ostream& os, const RenderStats& stats);
 
 /**
  * @brief High-level interface into the rendering backend (for 2D objects)
@@ -148,7 +158,10 @@ public:
 
   ~Renderer2D();
 
-  Renderer2D(Renderer2D&&);
+  Renderer2D(Renderer2D&& other);
+  Renderer2D& operator=(Renderer2D&& other);
+
+  void swap(Renderer2D& other);
 
   static expected<Renderer2D, RendererError> create(const Renderer2DOptions& options = {});
 
@@ -164,13 +177,15 @@ public:
 
 private:
   Renderer2D() = default;
-  Renderer2D(const Renderer2D&) = delete;
 
-  RenderStats stats_;
-  RenderResources last_active_resources_;
-  RenderResources next_active_resources_;
-  TextureUnits last_active_textures_;
-  TextureUnits next_active_textures_;
+  Renderer2D(const Renderer2D&) = delete;
+  Renderer2D& operator=(const Renderer2D&) = delete;
+
+  RenderStats stats_ = {};
+  RenderResources last_active_resources_ = {};
+  RenderResources next_active_resources_ = {};
+  TextureUnits last_active_textures_ = {};
+  TextureUnits next_active_textures_ = {};
   RenderBackend* backend_ = nullptr;
 };
 
@@ -183,6 +198,8 @@ enum class RenderPassError
   kMaxElementCountExceeded,
 };
 
+std::ostream& operator<<(std::ostream& os, RenderPassError error);
+
 /**
  * @brief Encapsulates a single render pass
  */
@@ -192,6 +209,9 @@ public:
   ~RenderPass();
 
   RenderPass(RenderPass&& other);
+  RenderPass& operator=(RenderPass&& other);
+
+  void swap(RenderPass& other);
 
   expected<void, RenderPassError> submit(View<const Quad> quads);
   expected<void, RenderPassError> submit(View<const Circle> circles);
@@ -213,14 +233,15 @@ public:
 
   constexpr RenderBuffer* operator->() { return buffer_; }
 
-  const auto& deps() const { return deps_; }
-
   void clear(const Vec4f& color = Vec4f::Zero());
   bool visible(const Bounds2f& query_aabb) const { return getViewportInWorldBounds().intersects(query_aabb); }
 
 private:
-  RenderPass() = delete;
-  RenderPass(const RenderPass&) = delete;
+  RenderPass() = default;
+
+  RenderPass(const RenderPass& other) = delete;
+  RenderPass& operator=(const RenderPass& other) = delete;
+
   RenderPass(
     Renderer2D* renderer,
     RenderBuffer* buffer,
@@ -232,13 +253,13 @@ private:
 
   static bool retarget(Vec2i& viewport_size, RenderTargetHandle render_target, const Renderer2D::dependencies& deps);
 
-  Renderer2D* renderer_;
-  RenderBuffer* buffer_;
-  const RenderUniforms* uniforms_;
-  Renderer2D::dependencies deps_;
-  Mat3f world_from_viewport_;
-  Mat3f viewport_from_world_;
-  Bounds2f viewport_in_world_bounds_;
+  Renderer2D* renderer_ = nullptr;
+  RenderBuffer* buffer_ = nullptr;
+  const RenderUniforms* uniforms_ = nullptr;
+  Renderer2D::dependencies deps_ = {};
+  Mat3f world_from_viewport_ = {};
+  Mat3f viewport_from_world_ = {};
+  Bounds2f viewport_in_world_bounds_ = {};
 };
 
 }  // namespace sde::graphics
