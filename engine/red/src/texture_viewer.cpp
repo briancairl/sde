@@ -18,24 +18,16 @@ using namespace sde::game;
 using namespace sde::graphics;
 
 
-struct texture_viewer
+struct texture_viewer : native_script_data
 {
   TextureHandle selected_texture;
 };
 
-bool load(texture_viewer* self, sde::game::IArchive& ar)
+template <typename ArchiveT> bool serialize(texture_viewer* self, ArchiveT& ar)
 {
   using namespace sde::serial;
   return true;
 }
-
-
-bool save(texture_viewer* self, sde::game::OArchive& ar)
-{
-  using namespace sde::serial;
-  return true;
-}
-
 
 bool initialize(texture_viewer* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

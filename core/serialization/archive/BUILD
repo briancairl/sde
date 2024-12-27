@@ -21,3 +21,15 @@ cc_library(
   deps=[":archive", "//core/serialization/stream"],
   visibility=["//visibility:public"]
 )
+
+
+cc_library(
+  name="hash_archive",
+  hdrs=[
+    "include/sde/serial/hash_archive.hpp",
+    "include/sde/serial/hash_oarchive.hpp"
+  ],
+  strip_include_prefix="include",
+  deps=[":archive", "//core/serialization/stream"],
+  visibility=["//visibility:public"]
+)

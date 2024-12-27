@@ -20,15 +20,13 @@ struct SoundHandleHash
   std::size_t operator()(const SoundHandle& handle) const { return handle.id(); }
 };
 
-struct audio_manager
+struct audio_manager : native_script_data
 {
   std::optional<Mixer> mixer;
   std::unordered_map<SoundHandle, TrackPlayback, SoundHandleHash> sound_playing;
 };
 
-bool load(audio_manager* self, sde::game::IArchive& ar) { return true; }
-
-bool save(audio_manager* self, sde::game::OArchive& ar) { return true; }
+template <typename ArchiveT> bool serialize(audio_manager* self, ArchiveT& ar) { return true; }
 
 bool initialize(audio_manager* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

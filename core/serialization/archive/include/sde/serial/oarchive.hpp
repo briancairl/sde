@@ -48,7 +48,7 @@ public:
     return this->derived();
   }
 
-  OArchiveT& operator<<(const label& l)
+  template <typename ValueT> OArchiveT& operator<<(const label<ValueT> l)
   {
     this->derived().write_impl(l);
     return this->derived();
@@ -72,7 +72,7 @@ public:
 private:
   oarchive(const oarchive&) = default;
 
-  static constexpr void write_impl(const label& _) {}
+  template <typename ValueT> static constexpr void write_impl(const label<ValueT> _) {}
 };
 
 }  // namespace sde::serial

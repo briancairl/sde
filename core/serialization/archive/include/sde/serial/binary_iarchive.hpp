@@ -32,7 +32,7 @@ public:
   const IStreamT* operator->() const { return is_; }
 
 private:
-  static constexpr void read_impl(label _)
+  template <typename ValueT> static constexpr void read_impl(label<ValueT> _)
   { /* labels are ignored */
   }
 

@@ -12,7 +12,7 @@
 namespace sde::serial
 {
 
-struct label
+template <typename T> struct label
 {
   std::string_view value;
 };
@@ -20,7 +20,7 @@ struct label
 template <typename T> struct is_label : std::false_type
 {};
 
-template <> struct is_label<label> : std::true_type
+template <typename T> struct is_label<label<T>> : std::true_type
 {};
 
 template <typename T>

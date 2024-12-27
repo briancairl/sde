@@ -14,22 +14,14 @@ using namespace sde;
 using namespace sde::game;
 
 
-struct scene_viewer
+struct scene_viewer : native_script_data
 {};
 
-bool load(scene_viewer* self, sde::game::IArchive& ar)
+template <typename ArchiveT> bool serialize(scene_viewer* self, ArchiveT& ar)
 {
   using namespace sde::serial;
   return true;
 }
-
-
-bool save(scene_viewer* self, sde::game::OArchive& ar)
-{
-  using namespace sde::serial;
-  return true;
-}
-
 
 bool initialize(scene_viewer* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 

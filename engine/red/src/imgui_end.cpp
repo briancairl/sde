@@ -17,15 +17,11 @@ using namespace sde;
 using namespace sde::game;
 
 
-struct imgui_end
+struct imgui_end : native_script_data
 {};
 
 
-bool load(imgui_end* self, sde::game::IArchive& ar) { return true; }
-
-
-bool save(imgui_end* self, sde::game::OArchive& ar) { return true; }
-
+template <typename ArchiveT> bool serialize(imgui_end* self, ArchiveT& ar) { return true; }
 
 bool initialize(imgui_end* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 

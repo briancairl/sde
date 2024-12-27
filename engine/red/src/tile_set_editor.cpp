@@ -18,7 +18,7 @@ using namespace sde;
 using namespace sde::game;
 using namespace sde::graphics;
 
-struct tile_set_editor
+struct tile_set_editor : native_script_data
 {
   TileSetHandle selected_tile_set;
   TextureHandle atlas_texture_selected;
@@ -294,29 +294,16 @@ void update_previewer(tile_set_editor* self, GameResources& resources, const App
   }
 }
 
-bool load(tile_set_editor* self, sde::game::IArchive& ar)
+template <typename ArchiveT> bool serialize(tile_set_editor* self, ArchiveT& ar)
 {
   using namespace sde::serial;
-  ar >> Field{"selected_tile_set", self->selected_tile_set};
-  ar >> Field{"atlas_texture_selected", self->atlas_texture_selected};
-  ar >> Field{"atlas_tile_size", self->atlas_tile_size};
-  ar >> Field{"atlas_tile_selected", self->atlas_tile_selected};
-  ar >> Field{"atlas_tile_display_width", self->atlas_tile_display_width};
+  ar& Field{"selected_tile_set", self->selected_tile_set};
+  ar& Field{"atlas_texture_selected", self->atlas_texture_selected};
+  ar& Field{"atlas_tile_size", self->atlas_tile_size};
+  ar& Field{"atlas_tile_selected", self->atlas_tile_selected};
+  ar& Field{"atlas_tile_display_width", self->atlas_tile_display_width};
   return true;
 }
-
-
-bool save(tile_set_editor* self, sde::game::OArchive& ar)
-{
-  using namespace sde::serial;
-  ar << Field{"selected_tile_set", self->selected_tile_set};
-  ar << Field{"atlas_texture_selected", self->atlas_texture_selected};
-  ar << Field{"atlas_tile_size", self->atlas_tile_size};
-  ar << Field{"atlas_tile_selected", self->atlas_tile_selected};
-  ar << Field{"atlas_tile_display_width", self->atlas_tile_display_width};
-  return true;
-}
-
 
 bool initialize(tile_set_editor* self, GameResources& resources, const AppProperties& app) { return true; }
 

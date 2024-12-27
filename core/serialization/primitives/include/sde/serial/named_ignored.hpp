@@ -61,7 +61,7 @@ template <typename T> static constexpr bool is_named_ignored_v = is_named_ignore
  */
 template <typename OArchive, typename ValueT> struct save<OArchive, named_ignored<ValueT>>
 {
-  void operator()(OArchive& ar, const named_ignored<ValueT>& obj) { ar << label{obj.name}; }
+  void operator()(OArchive& ar, const named_ignored<ValueT>& obj) { ar << label<ValueT>{obj.name}; }
 };
 
 /**
@@ -69,7 +69,7 @@ template <typename OArchive, typename ValueT> struct save<OArchive, named_ignore
  */
 template <typename IArchive, typename ValueT> struct load<IArchive, named_ignored<ValueT>>
 {
-  void operator()(IArchive& ar, named_ignored<ValueT> obj) { ar >> label{obj.name}; }
+  void operator()(IArchive& ar, named_ignored<ValueT> obj) { ar >> label<ValueT>{obj.name}; }
 };
 
 }  // namespace sde::serial

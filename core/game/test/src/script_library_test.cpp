@@ -1,6 +1,6 @@
 #include "sde/game/native_script_runtime.hpp"
 
-struct custom_script
+struct custom_script : native_script_data
 {};
 
 bool load(custom_script* self, sde::game::IArchive& ar) { return true; }

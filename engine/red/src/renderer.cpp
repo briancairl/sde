@@ -40,7 +40,7 @@ template <typename Archive> struct save<Archive, VertexBufferOptions> : save<Arc
 }  // sde::serial
 
 
-struct renderer_state
+struct renderer_state : native_script_data
 {
   std::optional<Renderer2D> renderer;
   Renderer2DOptions renderer_options;
@@ -55,34 +55,18 @@ struct renderer_state
   RenderTargetHandle render_target;
 };
 
-
-bool load(renderer_state* self, sde::game::IArchive& ar)
+template <typename ArchiveT> bool serialize(renderer_state* self, ArchiveT& ar)
 {
   using namespace sde::serial;
-  ar >> Field{"scaling", self->scaling};
-  ar >> Field{"renderer_options", self->renderer_options};
-  ar >> Field{"render_target", self->render_target};
-  ar >> Field{"sprite_shader", self->sprite_shader};
-  ar >> Field{"player_text_font", self->player_text_font};
-  ar >> Field{"player_text_type_set", self->player_text_type_set};
-  ar >> Field{"player_text_shader", self->player_text_shader};
+  ar& Field{"scaling", self->scaling};
+  ar& Field{"renderer_options", self->renderer_options};
+  ar& Field{"render_target", self->render_target};
+  ar& Field{"sprite_shader", self->sprite_shader};
+  ar& Field{"player_text_font", self->player_text_font};
+  ar& Field{"player_text_type_set", self->player_text_type_set};
+  ar& Field{"player_text_shader", self->player_text_shader};
   return true;
 }
-
-
-bool save(renderer_state* self, sde::game::OArchive& ar)
-{
-  using namespace sde::serial;
-  ar << Field{"scaling", self->scaling};
-  ar << Field{"renderer_options", self->renderer_options};
-  ar << Field{"render_target", self->render_target};
-  ar << Field{"sprite_shader", self->sprite_shader};
-  ar << Field{"player_text_font", self->player_text_font};
-  ar << Field{"player_text_type_set", self->player_text_type_set};
-  ar << Field{"player_text_shader", self->player_text_shader};
-  return true;
-}
-
 
 bool initialize(renderer_state* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

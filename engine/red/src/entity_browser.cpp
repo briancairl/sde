@@ -16,16 +16,10 @@ using namespace sde;
 using namespace sde::game;
 using namespace sde::graphics;
 
-struct entity_browser
+struct entity_browser : native_script_data
 {};
 
-bool load(entity_browser* self, sde::game::IArchive& ar)
-{
-  using namespace sde::serial;
-  return true;
-}
-
-bool save(entity_browser* self, sde::game::OArchive& ar)
+template <typename ArchiveT> bool serialize(entity_browser* self, ArchiveT& ar)
 {
   using namespace sde::serial;
   return true;

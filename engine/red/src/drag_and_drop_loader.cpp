@@ -10,12 +10,10 @@ using namespace sde;
 using namespace sde::game;
 
 
-struct drag_and_drop_loader
+struct drag_and_drop_loader : native_script_data
 {};
 
-bool load(drag_and_drop_loader* self, sde::game::IArchive& ar) { return true; }
-
-bool save(drag_and_drop_loader* self, sde::game::OArchive& ar) { return true; }
+template <typename ArchiveT> bool serialize(drag_and_drop_loader* self, ArchiveT& ar) { return true; }
 
 bool initialize(drag_and_drop_loader* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

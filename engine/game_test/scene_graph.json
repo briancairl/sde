@@ -6,29 +6,29 @@
             "post_scripts": [],
             "pre_scripts": [
                 {
-                    "data": "drag_and_drop_loader_6_59_0x64a3ff981550.bin",
+                    "data": "drag_and_drop_loader_8_2654435769_0x5f397b0bb130.bin",
                     "path": "engine/red/libdrag_and_drop_loader.so",
-                    "version": 59
+                    "version": 2654435769
                 },
                 {
-                    "data": "audio_manager_7_94_0x5c97fc0d8b10.bin",
+                    "data": "audio_manager_9_2654435769_0x5f397b0bb1d0.bin",
                     "path": "engine/red/libaudio_manager.so",
-                    "version": 94
+                    "version": 2654435769
                 },
                 {
-                    "data": "texture_viewer_8_114_0x5c97fc0d8bb0.bin",
+                    "data": "texture_viewer_10_2654435769_0x5f397b0bb270.bin",
                     "path": "engine/red/libtexture_viewer.so",
-                    "version": 114
+                    "version": 2654435769
                 },
                 {
-                    "data": "player_character_9_301_0x5c97fc0d8c50.bin",
+                    "data": "player_character_11_2620961751454483180_0x5f397b0bb310.bin",
                     "path": "engine/red/libplayer_character.so",
-                    "version": 301
+                    "version": 2620961751454483180
                 },
                 {
-                    "data": "tile_set_editor_10_352_0x5c97fc0d8cf0.bin",
+                    "data": "tile_set_editor_12_10345737895985392209_0x5f397b0bb3b0.bin",
                     "path": "engine/red/libtile_set_editor.so",
-                    "version": 352
+                    "version": 10345737895985392209
                 }
             ]
         },
@@ -38,41 +38,41 @@
             ],
             "post_scripts": [
                 {
-                    "data": "script_browser_4_80_0x5c97fc0d8350.bin",
+                    "data": "script_browser_5_2654435769_0x5f397a9e2260.bin",
                     "path": "engine/red/libscript_browser.so",
-                    "version": 80
+                    "version": 2654435769
                 },
                 {
-                    "data": "entity_browser_6_85_0x5788c01b3080.bin",
+                    "data": "entity_browser_6_2654435769_0x5f397a9e2300.bin",
                     "path": "engine/red/libentity_browser.so",
-                    "version": 85
+                    "version": 2654435769
                 },
                 {
-                    "data": "imgui_end_5_45_0x64a3ff9800a8.bin",
+                    "data": "imgui_end_7_2654435769_0x5f397a9e23a0.bin",
                     "path": "engine/red/libimgui_end.so",
-                    "version": 45
+                    "version": 2654435769
                 }
             ],
             "pre_scripts": [
                 {
-                    "data": "imgui_start_1_102_0x64a3ff9829d0.bin",
+                    "data": "imgui_start_1_6269239539353827784_0x5f397aa303b0.bin",
                     "path": "engine/red/libimgui_start.so",
-                    "version": 102
+                    "version": 6269239539353827784
                 },
                 {
-                    "data": "physics_11_39_0x5b9eae213250.bin",
+                    "data": "physics_2_2654435769_0x5f397aa30450.bin",
                     "path": "engine/red/libphysics.so",
-                    "version": 39
+                    "version": 2654435769
                 },
                 {
-                    "data": "renderer_2_289_0x642bb6ebc910.bin",
+                    "data": "renderer_3_14449130026549573527_0x5f397aa304f0.bin",
                     "path": "engine/red/librenderer.so",
-                    "version": 289
+                    "version": 14449130026549573527
                 },
                 {
-                    "data": "library_browser_3_131_0x64a3ff982b00.bin",
+                    "data": "library_browser_4_12604529067720715583_0x5f397aa30590.bin",
                     "path": "engine/red/liblibrary_browser.so",
-                    "version": 131
+                    "version": 12604529067720715583
                 }
             ]
         }

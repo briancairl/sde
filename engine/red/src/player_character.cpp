@@ -46,7 +46,7 @@ constexpr std::array kDirectionLabels = {
 
 }  // namespace
 
-struct player_character
+struct player_character : native_script_data
 {
   EntityHandle entity = EntityHandle::null();
   TileSetHandle idle_frames[8UL];
@@ -54,24 +54,13 @@ struct player_character
   TileSetHandle run_frames[8UL];
 };
 
-bool load(player_character* self, sde::game::IArchive& ar)
+template <typename ArchiveT> bool serialize(player_character* self, ArchiveT& ar)
 {
   using namespace sde::serial;
-  ar >> Field{"entity", self->entity};
-  ar >> Field{"idle_frames", self->idle_frames};
-  ar >> Field{"walk_frames", self->walk_frames};
-  ar >> Field{"run_frames", self->run_frames};
-  return true;
-}
-
-
-bool save(player_character* self, sde::game::OArchive& ar)
-{
-  using namespace sde::serial;
-  ar << Field{"entity", self->entity};
-  ar << Field{"idle_frames", self->idle_frames};
-  ar << Field{"walk_frames", self->walk_frames};
-  ar << Field{"run_frames", self->run_frames};
+  ar& Field{"entity", self->entity};
+  ar& Field{"idle_frames", self->idle_frames};
+  ar& Field{"walk_frames", self->walk_frames};
+  ar& Field{"run_frames", self->run_frames};
   return true;
 }
 

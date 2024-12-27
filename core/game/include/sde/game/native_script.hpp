@@ -39,7 +39,7 @@ struct NativeScriptFn : public Resource<NativeScriptFn>
   dl::Function<void(ScriptInstanceDeallocator, void*)> on_destroy;
   dl::Function<const char*()> on_get_name;
   dl::Function<const char*()> on_get_description;
-  dl::Function<script_version_t()> on_get_version;
+  dl::Function<script_version_t()> on_version;
   dl::Function<bool(void*, void*)> on_load;
   dl::Function<bool(void*, void*)> on_save;
   dl::Function<bool(void*, void*, const void*)> on_initialize;
@@ -57,7 +57,7 @@ struct NativeScriptFn : public Resource<NativeScriptFn>
       _Stub{"on_destroy", on_destroy},
       _Stub{"on_get_name", on_get_name},
       _Stub{"on_get_description", on_get_description},
-      _Stub{"on_get_version", on_get_version},
+      _Stub{"on_version", on_version},
       _Stub{"on_load", on_load},
       _Stub{"on_save", on_save},
       _Stub{"on_initialize", on_initialize},
@@ -84,7 +84,7 @@ public:
 
   constexpr std::string_view name() const { return isValid() ? fn_.on_get_name() : "<INVALID>"; }
 
-  constexpr script_version_t version() const { return isValid() ? fn_.on_get_version() : 0UL; }
+  constexpr script_version_t version() const { return isValid() ? fn_.on_version() : 0UL; }
 
 protected:
   explicit NativeScriptBase(NativeScriptFn fn);

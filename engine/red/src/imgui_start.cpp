@@ -26,33 +26,27 @@ constexpr const char* kGLSLVersion{"#version 130"};  // 3.0+ only
 #endif
 
 
-struct imgui_start
+struct imgui_start : native_script_data
 {
   asset::path imgui_ini_path = {};
   ImGuiContext* imgui_context = nullptr;
 };
 
 
-bool load(imgui_start* self, sde::game::IArchive& ar)
+template <typename ArchiveT> bool serialize(imgui_start* self, ArchiveT& ar)
 {
   using namespace sde::serial;
-  ar >> named{"imgui_ini_path", self->imgui_ini_path};
-  return true;
-}
+  ar& named{"imgui_ini_path", self->imgui_ini_path};
 
-
-bool save(imgui_start* self, sde::game::OArchive& ar)
-{
-  using namespace sde::serial;
-  ar << named{"imgui_ini_path", self->imgui_ini_path};
-
-  if (self->imgui_context)
+  if constexpr (std::is_same_v<sde::game::OArchive, ArchiveT>)
   {
-    ImGui::SaveIniSettingsToDisk(self->imgui_ini_path.string().c_str());
+    if (self->imgui_context)
+    {
+      ImGui::SaveIniSettingsToDisk(self->imgui_ini_path.string().c_str());
+    }
   }
   return true;
 }
-
 
 bool initialize(imgui_start* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

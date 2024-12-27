@@ -7,18 +7,6 @@ cc_library(
 )
 
 cc_library(
-  name="dummy_stream",
-  hdrs=[
-    "include/sde/serial/dummy_ostream.hpp",
-  ],
-  srcs=[
-  ],
-  strip_include_prefix="include",
-  deps=[":stream", "//core/common:expected"],
-  visibility=["//visibility:public"]
-)
-
-cc_library(
   name="file_stream",
   hdrs=[
     "include/sde/serial/file_istream.hpp",

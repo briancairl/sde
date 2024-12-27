@@ -28,91 +28,119 @@
 #include "sde/serialization_binary_file.hpp"
 #include "sde/time_io.hpp"
 
+struct native_script_data
+{
+  script_version_t version = 0;
+  script_id_t id = 0;
+};
 
-#define SDE_NATIVE_SCRIPT__REGISTER_CREATE(InstanceDataT)                                                              \
+namespace sde::serial
+{
+template <typename Archive> struct serialize<Archive, native_script_data>
+{
+  void operator()(Archive& ar, const native_script_data& data) const
+  {
+    ar& named{"data", data.version};
+    ar& named{"id", data.id};
+  }
+};
+}  // namespace sde::serial
+
+
+#define SDE_NATIVE_SCRIPT__DATA(ScriptDataT) struct ScriptDataT : native_script_data
+
+
+#define SDE_NATIVE_SCRIPT__REGISTER_CREATE(ScriptDataT)                                                                \
   SDE_EXPORT void* on_create(ScriptInstanceAllocator allocator)                                                        \
   {                                                                                                                    \
-    void* instance = allocator(sizeof(InstanceDataT));                                                                 \
-    new (instance) InstanceDataT{};                                                                                    \
+    static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
+    void* instance = allocator(sizeof(ScriptDataT));                                                                   \
+    new (instance) ScriptDataT{};                                                                                      \
     return instance;                                                                                                   \
   }
 
-#define SDE_NATIVE_SCRIPT__REGISTER_DESTROY(InstanceDataT)                                                             \
+#define SDE_NATIVE_SCRIPT__REGISTER_DESTROY(ScriptDataT)                                                               \
   SDE_EXPORT void on_destroy(ScriptInstanceDeallocator deallocator, void* self)                                        \
   {                                                                                                                    \
-    reinterpret_cast<InstanceDataT*>(self)->~InstanceDataT();                                                          \
+    static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
+    reinterpret_cast<ScriptDataT*>(self)->~ScriptDataT();                                                              \
     deallocator(self);                                                                                                 \
   }
 
-
 #ifndef SDE_SCRIPT_NAME
-#define SDE_NATIVE_SCRIPT__REGISTER_NAME(InstanceDataT)                                                                \
+#define SDE_NATIVE_SCRIPT__REGISTER_NAME(ScriptDataT)                                                                  \
   SDE_EXPORT const char* on_get_name() { return __FILE__; }
 #else
-#define SDE_NATIVE_SCRIPT__REGISTER_NAME(InstanceDataT)                                                                \
+#define SDE_NATIVE_SCRIPT__REGISTER_NAME(ScriptDataT)                                                                  \
   SDE_EXPORT const char* on_get_name() { return SDE_SCRIPT_NAME; }
 #endif  // SDE_SCRIPT_NAME
 
 
 #ifndef SDE_SCRIPT_DESCRIPTION
-#define SDE_NATIVE_SCRIPT__REGISTER_DESCRIPTION(InstanceDataT)                                                         \
+#define SDE_NATIVE_SCRIPT__REGISTER_DESCRIPTION(ScriptDataT)                                                           \
   SDE_EXPORT const char* on_get_description() { return __FILE__; }
 #else
-#define SDE_NATIVE_SCRIPT__REGISTER_DESCRIPTION(InstanceDataT)                                                         \
+#define SDE_NATIVE_SCRIPT__REGISTER_DESCRIPTION(ScriptDataT)                                                           \
   SDE_EXPORT const char* on_get_description() { return SDE_SCRIPT_DESCRIPTION; }
 #endif  // SDE_SCRIPT_DESCRIPTION
 
 
-#ifndef SDE_SCRIPT_VERSION
-#define SDE_NATIVE_SCRIPT__REGISTER_VERSION(InstanceDataT)                                                             \
-  SDE_EXPORT script_version_t on_get_version() { return __LINE__; }
-#else
-#define SDE_NATIVE_SCRIPT__REGISTER_VERSION(InstanceDataT)                                                             \
-  SDE_EXPORT script_version_t on_get_version() { return SDE_SCRIPT_VERSION; }
-#endif  // SDE_SCRIPT_VERSION
+#define SDE_NATIVE_SCRIPT__REGISTER_VERSION(ScriptDataT, fn)                                                           \
+  SDE_EXPORT script_version_t on_version()                                                                             \
+  {                                                                                                                    \
+    static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
+    ::sde::game::VArchive varchive;                                                                                    \
+    ScriptDataT data;                                                                                                  \
+    fn(&data, varchive);                                                                                               \
+    return varchive.digest().value;                                                                                    \
+  }
 
 
-#define SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, fn)                                                            \
+#define SDE_NATIVE_SCRIPT__REGISTER_LOAD(ScriptDataT, fn)                                                              \
   SDE_EXPORT bool on_load(void* self, void* iarchive)                                                                  \
   {                                                                                                                    \
-    return fn(reinterpret_cast<InstanceDataT*>(self), *reinterpret_cast<::sde::game::IArchive*>(iarchive));            \
+    static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
+    return fn(reinterpret_cast<ScriptDataT*>(self), *reinterpret_cast<::sde::game::IArchive*>(iarchive));              \
   }
 
-#define SDE_NATIVE_SCRIPT__REGISTER_SAVE(InstanceDataT, fn)                                                            \
+#define SDE_NATIVE_SCRIPT__REGISTER_SAVE(ScriptDataT, fn)                                                              \
   SDE_EXPORT bool on_save(void* self, void* oarchive)                                                                  \
   {                                                                                                                    \
-    return fn(reinterpret_cast<InstanceDataT*>(self), *reinterpret_cast<::sde::game::OArchive*>(oarchive));            \
+    static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
+    return fn(reinterpret_cast<ScriptDataT*>(self), *reinterpret_cast<::sde::game::OArchive*>(oarchive));              \
   }
 
-#define SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(InstanceDataT, f)                                                       \
+#define SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(ScriptDataT, f)                                                         \
   SDE_EXPORT bool on_initialize(void* self, void* resources, const void* app_properties)                               \
   {                                                                                                                    \
+    static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
     return f(                                                                                                          \
-      reinterpret_cast<InstanceDataT*>(self),                                                                          \
+      reinterpret_cast<ScriptDataT*>(self),                                                                            \
       *reinterpret_cast<::sde::game::GameResources*>(resources),                                                       \
       *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                                                 \
   }
 
-#define SDE_NATIVE_SCRIPT__REGISTER_UPDATE(InstanceDataT, f)                                                           \
+#define SDE_NATIVE_SCRIPT__REGISTER_UPDATE(ScriptDataT, f)                                                             \
   SDE_EXPORT bool on_update(void* self, void* resources, const void* app_properties)                                   \
   {                                                                                                                    \
+    static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
     return f(                                                                                                          \
-      reinterpret_cast<InstanceDataT*>(self),                                                                          \
+      reinterpret_cast<ScriptDataT*>(self),                                                                            \
       *reinterpret_cast<::sde::game::GameResources*>(resources),                                                       \
       *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                                                 \
   }
 
-#define SDE_NATIVE_SCRIPT__REGISTER(InstanceDataT, load, save, initialize, update)                                     \
-  SDE_NATIVE_SCRIPT__REGISTER_CREATE(InstanceDataT);                                                                   \
-  SDE_NATIVE_SCRIPT__REGISTER_DESTROY(InstanceDataT);                                                                  \
-  SDE_NATIVE_SCRIPT__REGISTER_NAME(InstanceDataT);                                                                     \
-  SDE_NATIVE_SCRIPT__REGISTER_DESCRIPTION(InstanceDataT);                                                              \
-  SDE_NATIVE_SCRIPT__REGISTER_VERSION(InstanceDataT);                                                                  \
-  SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, load);                                                               \
-  SDE_NATIVE_SCRIPT__REGISTER_SAVE(InstanceDataT, save);                                                               \
-  SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(InstanceDataT, initialize);                                                   \
-  SDE_NATIVE_SCRIPT__REGISTER_UPDATE(InstanceDataT, update);
+#define SDE_NATIVE_SCRIPT__REGISTER(ScriptDataT, serialize, initialize, update)                                        \
+  SDE_NATIVE_SCRIPT__REGISTER_CREATE(ScriptDataT);                                                                     \
+  SDE_NATIVE_SCRIPT__REGISTER_DESTROY(ScriptDataT);                                                                    \
+  SDE_NATIVE_SCRIPT__REGISTER_NAME(ScriptDataT);                                                                       \
+  SDE_NATIVE_SCRIPT__REGISTER_DESCRIPTION(ScriptDataT);                                                                \
+  SDE_NATIVE_SCRIPT__REGISTER_VERSION(ScriptDataT, serialize);                                                         \
+  SDE_NATIVE_SCRIPT__REGISTER_LOAD(ScriptDataT, serialize);                                                            \
+  SDE_NATIVE_SCRIPT__REGISTER_SAVE(ScriptDataT, serialize);                                                            \
+  SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(ScriptDataT, initialize);                                                     \
+  SDE_NATIVE_SCRIPT__REGISTER_UPDATE(ScriptDataT, update);
 
 
-#define SDE_NATIVE_SCRIPT__REGISTER_AUTO(InstanceDataT)                                                                \
-  SDE_NATIVE_SCRIPT__REGISTER(InstanceDataT, load, save, initialize, update)
+#define SDE_NATIVE_SCRIPT__REGISTER_AUTO(ScriptDataT)                                                                  \
+  SDE_NATIVE_SCRIPT__REGISTER(ScriptDataT, serialize, initialize, update)

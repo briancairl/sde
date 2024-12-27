@@ -16,7 +16,7 @@ using namespace sde;
 using namespace sde::game;
 
 
-struct library_browser
+struct library_browser : native_script_data
 {
   sde::unordered_map<asset::path, sde::vector<asset::path>> search_paths = {};
 };
@@ -37,18 +37,10 @@ void refresh(library_browser* self)
   }
 }
 
-bool load(library_browser* self, sde::game::IArchive& ar)
+template <typename ArchiveT> bool serialize(library_browser* self, ArchiveT& ar)
 {
   using namespace sde::serial;
-  ar >> named{"search_paths", self->search_paths};
-  return true;
-}
-
-
-bool save(library_browser* self, sde::game::OArchive& ar)
-{
-  using namespace sde::serial;
-  ar << named{"search_paths", self->search_paths};
+  ar& named{"search_paths", self->search_paths};
   return true;
 }
 

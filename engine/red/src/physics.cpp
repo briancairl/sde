@@ -11,16 +11,10 @@ using namespace sde;
 using namespace sde::game;
 using namespace sde::graphics;
 
-struct physics
+struct physics : native_script_data
 {};
 
-bool load(physics* self, sde::game::IArchive& ar)
-{
-  using namespace sde::serial;
-  return true;
-}
-
-bool save(physics* self, sde::game::OArchive& ar)
+template <typename ArchiveT> bool serialize(physics* self, ArchiveT& ar)
 {
   using namespace sde::serial;
   return true;
