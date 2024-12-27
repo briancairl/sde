@@ -77,10 +77,11 @@ template <typename ScriptT> bool NativeScriptBase<ScriptT>::reset(const dl::Libr
   });
 }
 
-NativeScriptInstance::NativeScriptInstance(NativeScriptFn fn) :
+NativeScriptInstance::NativeScriptInstance(NativeScriptHandle handle, NativeScriptFn fn) :
     NativeScriptBase{std::move(fn)}, initialized_{false}, instance_{nullptr}
 {
   instance_ = fn_.on_create(std::malloc);
+  reinterpret_cast<native_script_data>(instance_)->uid = handle.id();
 }
 
 NativeScriptInstance::NativeScriptInstance(NativeScriptInstance&& other) { NativeScriptInstance::swap(other); }
@@ -167,7 +168,7 @@ NativeScript& NativeScript::operator=(NativeScript&& other)
   return *this;
 }
 
-NativeScriptInstance NativeScript::instance() const { return NativeScriptInstance{this->fn_}; }
+NativeScriptInstance NativeScript::instance(script_id_t uid) const { return NativeScriptInstance{uid, this->fn_}; }
 
 NativeScriptHandle NativeScriptCache::to_handle(const LibraryHandle& library) const
 {

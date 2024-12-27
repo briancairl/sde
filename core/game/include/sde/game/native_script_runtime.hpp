@@ -30,19 +30,14 @@
 
 struct native_script_data
 {
-  script_version_t version = 0;
-  script_id_t id = 0;
+  script_id_t uid = 0;
 };
 
 namespace sde::serial
 {
 template <typename Archive> struct serialize<Archive, native_script_data>
 {
-  void operator()(Archive& ar, const native_script_data& data) const
-  {
-    ar& named{"data", data.version};
-    ar& named{"id", data.id};
-  }
+  void operator()(Archive& ar, native_script_data& data) const { ar& named{"uid", data.uid}; }
 };
 }  // namespace sde::serial
 
@@ -100,14 +95,18 @@ template <typename Archive> struct serialize<Archive, native_script_data>
   SDE_EXPORT bool on_load(void* self, void* iarchive)                                                                  \
   {                                                                                                                    \
     static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
-    return fn(reinterpret_cast<ScriptDataT*>(self), *reinterpret_cast<::sde::game::IArchive*>(iarchive));              \
+    auto& iar = *reinterpret_cast<::sde::game::IArchive*>(iarchive);                                                   \
+    iar >> ::sde::serial::named{"__native_script_data", *reinterpret_cast<native_script_data*>(self)};                 \
+    return fn(reinterpret_cast<ScriptDataT*>(self), iar);                                                              \
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_SAVE(ScriptDataT, fn)                                                              \
   SDE_EXPORT bool on_save(void* self, void* oarchive)                                                                  \
   {                                                                                                                    \
     static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
-    return fn(reinterpret_cast<ScriptDataT*>(self), *reinterpret_cast<::sde::game::OArchive*>(oarchive));              \
+    auto& oar = *reinterpret_cast<::sde::game::OArchive*>(oarchive);                                                   \
+    oar << ::sde::serial::named{"__native_script_data", *reinterpret_cast<native_script_data*>(self)};                 \
+    return fn(reinterpret_cast<ScriptDataT*>(self), oar);                                                              \
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(ScriptDataT, f)                                                         \

@@ -104,9 +104,9 @@ class NativeScriptInstance : public NativeScriptBase<NativeScriptInstance>
   using Base = NativeScriptBase<NativeScriptInstance>;
 
 public:
-  NativeScriptInstance() = default;
-  NativeScriptInstance(NativeScriptFn fn);
   ~NativeScriptInstance();
+
+  NativeScriptInstance(script_id_t uid, NativeScriptFn fn);
   NativeScriptInstance(NativeScriptInstance&& other);
   NativeScriptInstance& operator=(NativeScriptInstance&& other);
 
@@ -126,6 +126,8 @@ public:
   expected<void, NativeScriptCallError> call(GameResources& resources, const AppProperties& app_properties) const;
 
 private:
+  NativeScriptInstance() = default;
+
   friend NativeScript;
   using Base::isValid;
   using Base::reset;
@@ -149,7 +151,7 @@ public:
 
   constexpr operator bool() const { return this->isValid(); }
 
-  NativeScriptInstance instance() const;
+  NativeScriptInstance instance(script_id_t uid) const;
 
 private:
   NativeScript(const NativeScript&) = delete;
