@@ -72,16 +72,16 @@
 #endif  // SDE_SCRIPT_VERSION
 
 
-#define SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, f)                                                             \
+#define SDE_NATIVE_SCRIPT__REGISTER_LOAD(InstanceDataT, fn)                                                            \
   SDE_EXPORT bool on_load(void* self, void* iarchive)                                                                  \
   {                                                                                                                    \
-    return f(reinterpret_cast<InstanceDataT*>(self), *reinterpret_cast<::sde::game::IArchive*>(iarchive));             \
+    return fn(reinterpret_cast<InstanceDataT*>(self), *reinterpret_cast<::sde::game::IArchive*>(iarchive));            \
   }
 
-#define SDE_NATIVE_SCRIPT__REGISTER_SAVE(InstanceDataT, f)                                                             \
+#define SDE_NATIVE_SCRIPT__REGISTER_SAVE(InstanceDataT, fn)                                                            \
   SDE_EXPORT bool on_save(void* self, void* oarchive)                                                                  \
   {                                                                                                                    \
-    return f(reinterpret_cast<InstanceDataT*>(self), *reinterpret_cast<::sde::game::OArchive*>(oarchive));             \
+    return fn(reinterpret_cast<InstanceDataT*>(self), *reinterpret_cast<::sde::game::OArchive*>(oarchive));            \
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_INITIALIZE(InstanceDataT, f)                                                       \

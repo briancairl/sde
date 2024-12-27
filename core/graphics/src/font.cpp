@@ -53,7 +53,7 @@ void FontNativeDeleter::operator()(void* font) const
   FT_Done_Face(reinterpret_cast<FT_Face>(font));
 }
 
-expected<void, FontError> FontCache::reload(Font& font)
+expected<void, FontError> FontCache::reload([[maybe_unused]] dependencies deps, Font& font)
 {
   if (!asset::exists(font.path))
   {
@@ -77,16 +77,16 @@ expected<void, FontError> FontCache::reload(Font& font)
   return {};
 }
 
-expected<void, FontError> FontCache::unload(Font& font)
+expected<void, FontError> FontCache::unload([[maybe_unused]] dependencies deps, Font& font)
 {
   font.native_id = FontNativeID{nullptr};
   return {};
 }
 
-expected<Font, FontError> FontCache::generate(const asset::path& font_path)
+expected<Font, FontError> FontCache::generate(dependencies deps, const asset::path& font_path)
 {
   Font font{.path = font_path, .native_id = FontNativeID{nullptr}};
-  if (auto ok_or_error = reload(font); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, font); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }

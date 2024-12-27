@@ -85,19 +85,23 @@ class SceneCache : public ResourceCache<SceneCache>
   friend fundemental_type;
 
 private:
-  expected<void, SceneError> reload(SceneData& library);
-  expected<void, SceneError> unload(SceneData& library);
+  expected<void, SceneError> reload(dependencies deps, SceneData& library);
+  expected<void, SceneError> unload(dependencies deps, SceneData& library);
 
   expected<SceneData, SceneError> generate(
+    dependencies deps,
     sde::string name,
     sde::vector<SceneScriptInstance>&& pre,
     sde::vector<SceneScriptInstance>&& post,
     sde::vector<SceneHandle>&& children);
 
-  expected<SceneData, SceneError>
-  generate(sde::string name, sde::vector<SceneScriptInstance> pre, sde::vector<SceneScriptInstance> post);
+  expected<SceneData, SceneError> generate(
+    dependencies deps,
+    sde::string name,
+    sde::vector<SceneScriptInstance> pre,
+    sde::vector<SceneScriptInstance> post);
 
-  expected<SceneData, SceneError> generate(sde::string name);
+  expected<SceneData, SceneError> generate(dependencies deps, sde::string name);
 };
 
 }  // namespace sde::game

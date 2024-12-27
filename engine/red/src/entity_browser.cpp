@@ -44,14 +44,21 @@ bool update(entity_browser* self, sde::game::GameResources& resources, const sde
   }
   ImGui::Begin("entities");
 
-  static constexpr auto kTableCols = 2;
+  static constexpr auto kTableCols = 3;
   static constexpr auto kTableFlags =
     ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders;
 
   if (ImGui::BeginTable("entities", kTableCols, kTableFlags))
   {
+    EntityHandle remove_next = {};
     for (const auto& [handle, entity] : resources.get<EntityCache>())
     {
+      ImGui::PushID(handle.id());
+      ImGui::TableNextColumn();
+      if (ImGui::Button("x"))
+      {
+        remove_next = handle;
+      }
       ImGui::TableNextColumn();
       ImGui::Text("%d", static_cast<int>(handle.id()));
       ImGui::TableNextColumn();
@@ -62,6 +69,11 @@ bool update(entity_browser* self, sde::game::GameResources& resources, const sde
           ImGui::Text("%s", c->name.c_str());
         }
       }
+      ImGui::PopID();
+    }
+    if (remove_next)
+    {
+      resources.remove(remove_next);
     }
     ImGui::EndTable();
   }

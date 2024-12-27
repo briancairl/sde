@@ -507,7 +507,7 @@ void NativeShaderDeleter::operator()(native_shader_id_t id) const
   glDeleteTextures(1, &id);
 }
 
-expected<void, ShaderError> ShaderCache::reload(Shader& shader)
+expected<void, ShaderError> ShaderCache::reload([[maybe_unused]] dependencies deps, Shader& shader)
 {
   // Check if image point is valid
   if (!asset::exists(shader.path))
@@ -523,17 +523,17 @@ expected<void, ShaderError> ShaderCache::reload(Shader& shader)
   return compile(shader, shader_source_code.str());
 }
 
-expected<void, ShaderError> ShaderCache::unload(Shader& shader)
+expected<void, ShaderError> ShaderCache::unload([[maybe_unused]] dependencies deps, Shader& shader)
 {
   shader.native_id = NativeShaderID{0};
   return {};
 }
 
-expected<Shader, ShaderError> ShaderCache::generate(const asset::path& path)
+expected<Shader, ShaderError> ShaderCache::generate(dependencies deps, const asset::path& path)
 {
   SDE_LOG_INFO() << "Loading: " << SDE_OSNV(path);
   Shader shader{.path = path, .components = {}, .variables = {}, .native_id = NativeShaderID{0}};
-  if (auto ok_or_error = reload(shader); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, shader); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }

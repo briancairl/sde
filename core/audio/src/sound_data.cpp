@@ -57,13 +57,13 @@ std::ostream& operator<<(std::ostream& os, SoundDataError count)
 
 void SoundDataBufferDeleter::operator()(void* data) const { std::free(data); }
 
-expected<void, SoundDataError> SoundDataCache::unload(SoundData& sound)
+expected<void, SoundDataError> SoundDataCache::unload([[maybe_unused]] dependencies deps, SoundData& sound)
 {
   sound.buffered_samples = SoundDataBuffer{nullptr};
   return {};
 }
 
-expected<void, SoundDataError> SoundDataCache::reload(SoundData& sound)
+expected<void, SoundDataError> SoundDataCache::reload([[maybe_unused]] dependencies deps, SoundData& sound)
 {
   // Check that sound file exists
   if (!asset::exists(sound.path))
@@ -123,11 +123,11 @@ expected<void, SoundDataError> SoundDataCache::reload(SoundData& sound)
   return {};
 }
 
-expected<SoundData, SoundDataError> SoundDataCache::generate(const asset::path& sound_path)
+expected<SoundData, SoundDataError> SoundDataCache::generate(dependencies deps, const asset::path& sound_path)
 {
   SoundData sound{
     .path = sound_path, .buffered_samples = SoundDataBuffer{nullptr}, .buffer_length = 0, .buffer_channel_format = {}};
-  if (auto ok_or_error = reload(sound); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, sound); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }

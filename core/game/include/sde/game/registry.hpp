@@ -16,8 +16,9 @@ namespace sde::game
 {
 
 using EntityID = entt::entity;
-struct Registry : entt::basic_registry<EntityID, allocator<EntityID>>
+class Registry : public entt::basic_registry<EntityID, allocator<EntityID>>
 {
+public:
   Registry() = default;
 
   Registry(Registry&& other) = default;
@@ -25,6 +26,12 @@ struct Registry : entt::basic_registry<EntityID, allocator<EntityID>>
 
   Registry(const Registry& other) = delete;
   Registry& operator=(const Registry& other) = delete;
+
+  void clear([[maybe_unused]] no_dependencies _) { base::clear(); }
+
+private:
+  using base = entt::basic_registry<EntityID, allocator<EntityID>>;
+  using base::clear;
 };
 
 }  // namespace sde::game

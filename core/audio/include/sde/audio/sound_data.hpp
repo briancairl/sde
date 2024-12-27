@@ -82,9 +82,9 @@ class SoundDataCache : public ResourceCache<SoundDataCache>
   friend fundemental_type;
 
 private:
-  static expected<void, SoundDataError> reload(SoundData& sound);
-  static expected<void, SoundDataError> unload(SoundData& sound);
-  expected<SoundData, SoundDataError> generate(const asset::path& sound_path);
+  static expected<void, SoundDataError> reload(dependencies deps, SoundData& sound);
+  static expected<void, SoundDataError> unload(dependencies deps, SoundData& sound);
+  expected<SoundData, SoundDataError> generate(dependencies deps, const asset::path& sound_path);
 };
 
 }  // namespace sde::audio

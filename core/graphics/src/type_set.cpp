@@ -244,7 +244,7 @@ expected<void, TypeSetError> TypeSetCache::reload(dependencies deps, TypeSet& ty
 
 expected<void, TypeSetError> TypeSetCache::unload(dependencies deps, TypeSet& type_set)
 {
-  deps.get<TextureCache>().remove(type_set.glyph_atlas);
+  deps.get<TextureCache>().remove(type_set.glyph_atlas, deps);
   type_set.glyphs.clear();
   return {};
 }

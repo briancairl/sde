@@ -135,9 +135,9 @@ class ShaderCache : public ResourceCache<ShaderCache>
   friend fundemental_type;
 
 private:
-  static expected<void, ShaderError> reload(Shader& shader);
-  static expected<void, ShaderError> unload(Shader& shader);
-  expected<Shader, ShaderError> generate(const asset::path& path);
+  static expected<void, ShaderError> reload(dependencies deps, Shader& shader);
+  static expected<void, ShaderError> unload(dependencies deps, Shader& shader);
+  expected<Shader, ShaderError> generate(dependencies deps, const asset::path& path);
 };
 
 }  // namespace sde::graphics

@@ -92,7 +92,7 @@ bool update(library_browser* self, sde::game::GameResources& resources, const sd
           ImGui::TableNextColumn();
           if (ImGui::SmallButton("load"))
           {
-            [[maybe_unused]] const auto _ = libraries.create(path);
+            [[maybe_unused]] const auto _ = libraries.create(resources.all(), path);
           }
         }
         else

@@ -51,9 +51,9 @@ class FontCache : public ResourceCache<FontCache>
   friend fundemental_type;
 
 private:
-  static expected<void, FontError> reload(Font& font);
-  static expected<void, FontError> unload(Font& font);
-  expected<Font, FontError> generate(const asset::path& font_path);
+  static expected<void, FontError> reload(dependencies deps, Font& font);
+  static expected<void, FontError> unload(dependencies deps, Font& font);
+  expected<Font, FontError> generate(dependencies deps, const asset::path& font_path);
 };
 
 }  // namespace sde::graphics

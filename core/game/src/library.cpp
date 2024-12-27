@@ -20,7 +20,7 @@ std::ostream& operator<<(std::ostream& os, LibraryError error)
   return os;
 }
 
-expected<void, LibraryError> LibraryCache::reload(LibraryData& library)
+expected<void, LibraryError> LibraryCache::reload([[maybe_unused]] dependencies deps, LibraryData& library)
 {
   auto lib_or_error = dl::Library::load(library.path.string().c_str());
   if (!lib_or_error.has_value())
@@ -33,13 +33,14 @@ expected<void, LibraryError> LibraryCache::reload(LibraryData& library)
   return {};
 }
 
-expected<void, LibraryError> LibraryCache::unload(LibraryData& library)
+expected<void, LibraryError> LibraryCache::unload([[maybe_unused]] dependencies deps, LibraryData& library)
 {
   library.lib.reset();
   return {};
 }
 
-expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& path, const LibraryFlags& flags)
+expected<LibraryData, LibraryError>
+LibraryCache::generate(dependencies deps, const asset::path& path, const LibraryFlags& flags)
 {
   const auto absolute_path = asset::absolute(path);
   if (asset_path_lookup_.count(absolute_path) > 0)
@@ -50,7 +51,7 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
 
   LibraryData data{.flags = flags, .path = path, .lib = {}};
 
-  auto ok_or_error = reload(data);
+  auto ok_or_error = reload(deps, data);
   if (!ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
@@ -59,13 +60,16 @@ expected<LibraryData, LibraryError> LibraryCache::generate(const asset::path& pa
   return data;
 }
 
-void LibraryCache::when_created(LibraryHandle handle, const LibraryData* data)
+void LibraryCache::when_created([[maybe_unused]] dependencies deps, LibraryHandle handle, const LibraryData* data)
 {
   SDE_LOG_INFO() << "New library added: " << SDE_OSNV(handle) << " : " << SDE_OSNV(data->path);
   asset_path_lookup_.emplace(asset::absolute(data->path), handle);
 }
 
-void LibraryCache::when_removed([[maybe_unused]] LibraryHandle handle, const LibraryData* data)
+void LibraryCache::when_removed(
+  [[maybe_unused]] dependencies deps,
+  [[maybe_unused]] LibraryHandle handle,
+  const LibraryData* data)
 {
   asset_path_lookup_.erase(asset::absolute(data->path));
 }

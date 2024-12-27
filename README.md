@@ -41,7 +41,7 @@ sudo apt install           \
 - [x] Stream-style logging
 - [ ] Add static text entity with pre-computed bounds
 - [ ] Camera zoom to focus
-- [ ] Cleanup graphics build targets
+- [x] Cleanup graphics build targets
 - [ ] Add drawable base and common on-draw errors
 + [ ] Add draw-layer argument
 + [ ] Add debug draw-layer
@@ -54,3 +54,11 @@ sudo apt install           \
 
 - [ ] "Script" interface
 - [ ] Character script
+
+---
+
+## Running Todo
+
+- [ ] Update script and comonent version computation to be based on IO fields
+- [ ] Remove entities from registry when removed from cache
+- [ ] Labels for asset browsers (tilesets, sounds, etc.)

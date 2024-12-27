@@ -127,10 +127,11 @@ public:
   >;
   // clang-format on
 
-  template <typename... CreateArgTs> [[nodiscard]] expected<element_ref, error_type> create(CreateArgTs&&... args)
+  template <typename... CreateArgTs>
+  [[nodiscard]] expected<element_ref, error_type> create(dependencies deps, CreateArgTs&&... args)
   {
     const auto handle = this->derived().next_unique_id(handle_to_value_cache_, handle_lower_bound_);
-    auto element_or_error = this->create_at_handle(handle, std::forward<CreateArgTs>(args)...);
+    auto element_or_error = this->create_at_handle(handle, deps, std::forward<CreateArgTs>(args)...);
     if (element_or_error.has_value())
     {
       handle_lower_bound_ = std::max(handle_lower_bound_, handle);
@@ -140,7 +141,8 @@ public:
   }
 
   template <typename HandleT, typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> find_or_replace(HandleT&& handle_or, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_ref, error_type>
+  find_or_replace(HandleT&& handle_or, dependencies deps, CreateArgTs&&... args)
   {
     const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
 
@@ -148,37 +150,37 @@ public:
 
     if (current_itr == handle_to_value_cache_.end())
     {
-      return create_at_handle(handle, std::forward<CreateArgTs>(args)...);
+      return create_at_handle(handle, deps, std::forward<CreateArgTs>(args)...);
     }
 
-    const auto current_version = ComputeHash(args...);
-
-    if (current_version == current_itr->second.version)
+    if (const auto current_version = ComputeHash(args...); current_version == current_itr->second.version)
     {
       return element_ref{ResourceStatus::kExisted, handle, std::addressof(current_itr->second.value)};
     }
 
-    return replace_at_position(current_itr, std::forward<CreateArgTs>(args)...);
+    return replace_at_position(current_itr, deps, std::forward<CreateArgTs>(args)...);
   }
 
   template <typename HandleT, typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> find_or_create(HandleT&& handle_or, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_ref, error_type>
+  find_or_create(HandleT&& handle_or, dependencies deps, CreateArgTs&&... args)
   {
     const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
 
     // If hint handle is null, create a new resource, otherwise attempt replacement
-    return handle.isNull() ? create(std::forward<CreateArgTs>(args)...)
-                           : find_or_replace(handle, std::forward<CreateArgTs>(args)...);
+    return handle.isNull() ? create(deps, std::forward<CreateArgTs>(args)...)
+                           : find_or_replace(handle, deps, std::forward<CreateArgTs>(args)...);
   }
 
   template <typename HandleT, typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> emplace_with_hint(HandleT&& handle_or, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_ref, error_type>
+  emplace_with_hint(HandleT&& handle_or, dependencies deps, CreateArgTs&&... args)
   {
     const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
 
     // If hint handle is null, create a new resource, otherwise attempt creation at handle
-    return handle.isNull() ? create(std::forward<CreateArgTs>(args)...)
-                           : create_at_handle(handle, std::forward<CreateArgTs>(args)...);
+    return handle.isNull() ? create(deps, std::forward<CreateArgTs>(args)...)
+                           : create_at_handle(handle, deps, std::forward<CreateArgTs>(args)...);
   }
 
   template <typename HandleT, typename... CreateArgTs>
@@ -190,9 +192,14 @@ public:
       return make_unexpected(error_type::kInvalidHandle);
     }
 
+    // clang-format off
     // Add it to the cache
     const auto [itr, added] = handle_to_value_cache_.emplace(
-      std::piecewise_construct, std::forward_as_tuple(handle), std::forward_as_tuple(version, std::move(value)));
+      std::piecewise_construct,
+      std::forward_as_tuple(handle),
+      std::forward_as_tuple(version, std::move(value))
+    );
+    // clang-format on
 
     if (added)
     {
@@ -232,16 +239,6 @@ public:
     return handle_to_value_cache_.count(handle) != 0;
   }
 
-  template <typename HandleT> void remove(HandleT&& handle_or)
-  {
-    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
-    if (auto itr = handle_to_value_cache_.find(handle); itr != std::end(handle_to_value_cache_))
-    {
-      this->derived().when_removed(itr->first, std::addressof(itr->second.value));
-      handle_to_value_cache_.erase(itr);
-    }
-  }
-
   [[nodiscard]] const auto& cache() const { return handle_to_value_cache_; }
 
   [[nodiscard]] const auto begin() const { return std::begin(handle_to_value_cache_); }
@@ -250,8 +247,7 @@ public:
 
   [[nodiscard]] std::size_t size() const { return handle_to_value_cache_.size(); }
 
-  template <bool U = (dependencies::size() > 0)>
-  [[nodiscard]] std::enable_if_t<U, expected<void, error_type>> refresh(dependencies deps)
+  [[nodiscard]] expected<void, error_type> refresh(dependencies deps)
   {
     for (auto& [handle, element] : handle_to_value_cache_)
     {
@@ -259,44 +255,16 @@ public:
       {
         return ok_or_error;
       }
-      this->derived().when_created(handle, std::addressof(element.value));
+      this->derived().when_created(deps, handle, std::addressof(element.value));
     }
     return {};
   }
 
-  template <bool U = (dependencies::size() > 0)>
-  [[nodiscard]] std::enable_if_t<!U, expected<void, error_type>> refresh()
-  {
-    for (auto& [handle, element] : handle_to_value_cache_)
-    {
-      if (auto ok_or_error = this->derived().reload(element.value); !ok_or_error.has_value())
-      {
-        return ok_or_error;
-      }
-      this->derived().when_created(handle, std::addressof(element.value));
-    }
-    return {};
-  }
-
-  template <bool U = (dependencies::size() > 0)>
-  [[nodiscard]] std::enable_if_t<U, expected<void, error_type>> relinquish(dependencies deps)
+  [[nodiscard]] expected<void, error_type> relinquish(dependencies deps)
   {
     for (auto& [handle, element] : handle_to_value_cache_)
     {
       if (auto ok_or_error = this->derived().unload(deps, element.value); !ok_or_error.has_value())
-      {
-        return ok_or_error;
-      }
-    }
-    return {};
-  }
-
-  template <bool U = (dependencies::size() > 0)>
-  [[nodiscard]] std::enable_if_t<!U, expected<void, error_type>> relinquish()
-  {
-    for (auto& [handle, element] : handle_to_value_cache_)
-    {
-      if (auto ok_or_error = this->derived().unload(element.value); !ok_or_error.has_value())
       {
         return ok_or_error;
       }
@@ -320,11 +288,23 @@ public:
     std::swap(this->handle_to_value_cache_, other.handle_to_value_cache_);
   }
 
-  void clear()
+  template <typename HandleT> bool remove(HandleT&& handle_or, dependencies deps)
+  {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
+    if (auto itr = handle_to_value_cache_.find(handle); itr != std::end(handle_to_value_cache_))
+    {
+      this->derived().when_removed(deps, itr->first, std::addressof(itr->second.value));
+      handle_to_value_cache_.erase(itr);
+      return true;
+    }
+    return false;
+  }
+
+  void clear(dependencies deps)
   {
     for (auto& [handle, storage] : handle_to_value_cache_)
     {
-      this->derived().when_removed(handle, std::addressof(storage.value));
+      this->derived().when_removed(deps, handle, std::addressof(storage.value));
     }
     handle_to_value_cache_.clear();
     handle_lower_bound_ = handle_type::null();
@@ -345,12 +325,13 @@ protected:
 
 private:
   template <typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> create_at_handle(handle_type handle, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_ref, error_type>
+  create_at_handle(handle_type handle, dependencies deps, CreateArgTs&&... args)
   {
     const auto current_version = ComputeHash(args...);
 
     // Create a new element
-    auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
+    auto value_or_error = this->derived().generate(deps, std::forward<CreateArgTs>(args)...);
     if (!value_or_error.has_value())
     {
       return make_unexpected(value_or_error.error());
@@ -366,19 +347,20 @@ private:
     if (added)
     {
       handle_lower_bound_ = std::max(handle_lower_bound_, handle);
-      this->derived().when_created(itr->first, std::addressof(itr->second.value));
+      this->derived().when_created(deps, itr->first, std::addressof(itr->second.value));
       return element_ref{ResourceStatus::kCreated, itr->first, std::addressof(itr->second.value)};
     }
     return make_unexpected(error_type::kInvalidHandle);
   }
 
   template <typename Iterator, typename... CreateArgTs>
-  [[nodiscard]] expected<element_ref, error_type> replace_at_position(Iterator itr, CreateArgTs&&... args)
+  [[nodiscard]] expected<element_ref, error_type>
+  replace_at_position(Iterator itr, dependencies deps, CreateArgTs&&... args)
   {
     const auto current_version = ComputeHash(args...);
 
     // Create a new element
-    auto value_or_error = this->derived().generate(std::forward<CreateArgTs>(args)...);
+    auto value_or_error = this->derived().generate(deps, std::forward<CreateArgTs>(args)...);
     if (!value_or_error.has_value())
     {
       return make_unexpected(value_or_error.error());
@@ -387,7 +369,7 @@ private:
     // Replace current value
     itr->second.version = current_version;
     itr->second.value = std::move(value_or_error).value();
-    this->derived().when_created(itr->first, std::addressof(itr->second.value));
+    this->derived().when_created(deps, itr->first, std::addressof(itr->second.value));
     return element_ref{ResourceStatus::kReplaced, itr->first, std::addressof(itr->second.value)};
   }
 
@@ -418,8 +400,16 @@ protected:
   CacheMap handle_to_value_cache_;
 
 private:
-  static void when_created([[maybe_unused]] handle_type h, [[maybe_unused]] const value_type* value) {}
-  static void when_removed([[maybe_unused]] handle_type h, [[maybe_unused]] const value_type* value) {}
+  static void when_created(
+    [[maybe_unused]] dependencies deps,
+    [[maybe_unused]] handle_type h,
+    [[maybe_unused]] const value_type* value)
+  {}
+  static void when_removed(
+    [[maybe_unused]] dependencies deps,
+    [[maybe_unused]] handle_type h,
+    [[maybe_unused]] const value_type* value)
+  {}
 };
 
 template <typename T> struct IsResourceCache : std::is_base_of<ResourceCache<T>, T>

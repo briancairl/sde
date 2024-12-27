@@ -180,12 +180,18 @@ NativeScriptHandle NativeScriptCache::to_handle(const LibraryHandle& library) co
 }
 
 
-void NativeScriptCache::when_created(NativeScriptHandle handle, const NativeScriptData* data)
+void NativeScriptCache::when_created(
+  [[maybe_unused]] dependencies deps,
+  NativeScriptHandle handle,
+  const NativeScriptData* data)
 {
   library_to_native_script_lookup_.emplace(data->library, handle);
 }
 
-void NativeScriptCache::when_removed(NativeScriptHandle handle, const NativeScriptData* data)
+void NativeScriptCache::when_removed(
+  [[maybe_unused]] dependencies deps,
+  NativeScriptHandle handle,
+  const NativeScriptData* data)
 {
   library_to_native_script_lookup_.erase(data->library);
 }
@@ -228,7 +234,7 @@ expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(depend
 expected<NativeScriptData, NativeScriptError>
 NativeScriptCache::generate(dependencies deps, const asset::path& path, const LibraryFlags& flags)
 {
-  auto library_or_error = deps.get<LibraryCache>().find_or_create(path, path, flags);
+  auto library_or_error = deps.get<LibraryCache>().find_or_create(path, deps, path, flags);
   if (!library_or_error.has_value())
   {
     SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << library_or_error.error();

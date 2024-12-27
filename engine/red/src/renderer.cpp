@@ -158,7 +158,7 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
   }
 
   // Handle screen zoom
-  if (true)
+  if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
   {
     static constexpr float kScaleRate = 500.0;
     const float scroll_sensitivity = std::clamp(self->scaling, 1e-4F, 1e-2F);

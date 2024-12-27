@@ -180,9 +180,10 @@ class ImageCache : public ResourceCache<ImageCache>
   friend fundemental_type;
 
 private:
-  static expected<void, ImageError> reload(Image& image);
-  static expected<void, ImageError> unload(Image& image);
-  expected<Image, ImageError> generate(const asset::path& image_path, const ImageOptions& options = {});
+  static expected<void, ImageError> reload(dependencies deps, Image& image);
+  static expected<void, ImageError> unload(dependencies deps, Image& image);
+  expected<Image, ImageError>
+  generate(dependencies deps, const asset::path& image_path, const ImageOptions& options = {});
 };
 
 }  // namespace sde::graphics

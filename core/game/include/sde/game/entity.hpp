@@ -118,6 +118,7 @@ private:
   expected<void, EntityError> reload(dependencies deps, EntityData& entity);
   expected<void, EntityError> unload(dependencies deps, const EntityData& entity);
   expected<EntityData, EntityError> generate(dependencies deps);
+  void when_removed(dependencies deps, EntityHandle handle, const EntityData* data);
 };
 
 }  // namespace sde::game

@@ -75,7 +75,7 @@ std::ostream& operator<<(std::ostream& os, ImageError error)
 
 void ImageDataBufferDeleter::operator()(void* data) const { stbi_image_free(data); }
 
-expected<void, ImageError> ImageCache::reload(Image& image)
+expected<void, ImageError> ImageCache::reload([[maybe_unused]] dependencies deps, Image& image)
 {
   // Already loaded
   if (image.data_buffer.isValid())
@@ -137,18 +137,19 @@ expected<void, ImageError> ImageCache::reload(Image& image)
   return {};
 }
 
-expected<void, ImageError> ImageCache::unload(Image& image)
+expected<void, ImageError> ImageCache::unload([[maybe_unused]] dependencies deps, Image& image)
 {
   image.data_buffer = ImageDataBuffer{nullptr};
   image.shape.value.setZero();
   return {};
 }
 
-expected<Image, ImageError> ImageCache::generate(const asset::path& image_path, const ImageOptions& options)
+expected<Image, ImageError>
+ImageCache::generate([[maybe_unused]] dependencies deps, const asset::path& image_path, const ImageOptions& options)
 {
   Image info{
     .path = image_path, .options = options, .shape = {.value = {0, 0}}, .data_buffer = ImageDataBuffer{nullptr}};
-  if (auto ok_or_error = reload(info); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, info); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }

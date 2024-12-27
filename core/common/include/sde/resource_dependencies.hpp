@@ -55,6 +55,12 @@ template <> struct ResourceDependencies<>
 {
   static constexpr bool kDoNotHash{true};
   static constexpr auto size() { return 0; }
+
+  ResourceDependencies() = default;
+
+  template <typename... ParentDependTs>
+  ResourceDependencies([[maybe_unused]] ResourceDependencies<ParentDependTs...> parent)
+  {}
 };
 
 using no_dependencies = ResourceDependencies<>;

@@ -128,14 +128,7 @@ public:
   template <typename CacheT, typename... CreateArgTs> [[nodiscard]] auto create(CreateArgTs&&... args)
   {
     auto& cache = this->template get<CacheT>();
-    if constexpr (resource_cache_has_dependencies_v<CacheT>)
-    {
-      return cache.create(this->all(), std::forward<CreateArgTs>(args)...);
-    }
-    else
-    {
-      return cache.create(std::forward<CreateArgTs>(args)...);
-    }
+    return cache.create(this->all(), std::forward<CreateArgTs>(args)...);
   }
 
   template <typename HandleT, typename... CreateArgTs>
@@ -143,28 +136,14 @@ public:
   {
     using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     auto& cache = this->template get<CacheType>();
-    if constexpr (resource_cache_has_dependencies_v<CacheType>)
-    {
-      return cache.find_or_replace(std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
-    }
-    else
-    {
-      return cache.find_or_replace(std::forward<HandleT>(handle), std::forward<CreateArgTs>(args)...);
-    }
+    return cache.find_or_replace(std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
   }
 
   template <typename CacheT, typename HandleT, typename... CreateArgTs>
   [[nodiscard]] auto find_or_create(HandleT&& handle, CreateArgTs&&... args)
   {
     auto& cache = this->template get<CacheT>();
-    if constexpr (resource_cache_has_dependencies_v<CacheT>)
-    {
-      return cache.find_or_create(std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
-    }
-    else
-    {
-      return cache.find_or_create(std::forward<HandleT>(handle), std::forward<CreateArgTs>(args)...);
-    }
+    return cache.find_or_create(std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
   }
 
   template <typename HandleT, typename... CreateArgTs>
@@ -172,14 +151,7 @@ public:
   {
     using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
     auto& cache = this->template get<CacheType>();
-    if constexpr (resource_cache_has_dependencies_v<CacheType>)
-    {
-      return cache.emplace_with_hint(std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
-    }
-    else
-    {
-      return cache.emplace_with_hint(std::forward<HandleT>(handle), std::forward<CreateArgTs>(args)...);
-    }
+    return cache.emplace_with_hint(std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
   }
 
   template <typename HandleT, typename... CreateArgTs>
@@ -190,17 +162,8 @@ public:
     expected<ResourceStatus, typename ResourceCacheTraits<CacheType>::error_type> status_or_error;
 
     auto& cache = this->template get<CacheType>();
-    auto handle_and_value_or_error = [&] {
-      using dependencies = typename ResourceCacheTraits<CacheType>::dependencies;
-      if constexpr (dependencies::size() > 0)
-      {
-        return cache.find_or_create(handle, this->all(), std::forward<CreateArgTs>(asset_create_args)...);
-      }
-      else
-      {
-        return cache.find_or_create(handle, std::forward<CreateArgTs>(asset_create_args)...);
-      }
-    }();
+    auto handle_and_value_or_error =
+      cache.find_or_create(handle, this->all(), std::forward<CreateArgTs>(asset_create_args)...);
     if (handle_and_value_or_error.has_value())
     {
       handle = handle_and_value_or_error->handle;
@@ -240,7 +203,7 @@ public:
   template <typename HandleT> void remove(HandleT&& handle)
   {
     using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
-    this->template get<CacheType>().remove(std::forward<HandleT>(handle));
+    this->template get<CacheType>().remove(std::forward<HandleT>(handle), this->all());
   }
 
   template <typename HandleT, typename UpdateFn> void update_if_exists(HandleT&& handle, UpdateFn update)
@@ -256,21 +219,9 @@ public:
       [this, &ok_or_error](auto& entry) {
         using CacheType = std::remove_reference_t<decltype(entry.cache)>;
         using EntryType = dont::map_lookup_t<cache_to_entry_map, CacheType>;
-        if constexpr (!EntryType::kShouldSerialize)
-        {
-          return true;
-        }
-        else if constexpr (resource_cache_has_dependencies_v<CacheType>)
+        if constexpr (EntryType::kShouldSerialize)
         {
           if (auto ok = entry.cache.refresh(this->all()); !ok.has_value())
-          {
-            ok_or_error = make_unexpected(std::string_view{EntryType::name()});
-            return false;
-          }
-        }
-        else
-        {
-          if (auto ok = entry.cache.refresh(); !ok.has_value())
           {
             ok_or_error = make_unexpected(std::string_view{EntryType::name()});
             return false;
@@ -286,7 +237,8 @@ public:
 
   void clear()
   {
-    dont::tuple::for_each([](auto& entry) { entry.cache.clear(); }, dont::tuple::reversed(caches_));
+    dont::tuple::for_each(
+      [deps = this->all()](auto& entry) { entry.cache.clear(deps); }, dont::tuple::reversed(caches_));
   }
 
   ~ResourceCollection() { this->clear(); }

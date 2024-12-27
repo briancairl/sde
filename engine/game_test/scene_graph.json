@@ -43,9 +43,9 @@
                     "version": 80
                 },
                 {
-                    "data": "entity_browser_12_73_0x5b9eae213f50.bin",
+                    "data": "entity_browser_6_85_0x5788c01b3080.bin",
                     "path": "engine/red/libentity_browser.so",
-                    "version": 73
+                    "version": 85
                 },
                 {
                     "data": "imgui_end_5_45_0x64a3ff9800a8.bin",
@@ -65,9 +65,9 @@
                     "version": 39
                 },
                 {
-                    "data": "renderer_2_290_0x64c4f39b0530.bin",
+                    "data": "renderer_2_289_0x642bb6ebc910.bin",
                     "path": "engine/red/librenderer.so",
-                    "version": 290
+                    "version": 289
                 },
                 {
                     "data": "library_browser_3_131_0x64a3ff982b00.bin",

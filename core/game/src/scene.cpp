@@ -20,6 +20,7 @@ std::ostream& operator<<(std::ostream& os, SceneError error)
 }
 
 expected<SceneData, SceneError> SceneCache::generate(
+  dependencies deps,
   sde::string name,
   sde::vector<SceneScriptInstance>&& pre,
   sde::vector<SceneScriptInstance>&& post,
@@ -30,7 +31,7 @@ expected<SceneData, SceneError> SceneCache::generate(
   data.children = std::move(children);
   data.pre_scripts = std::move(pre);
   data.post_scripts = std::move(post);
-  if (const auto ok_or_error = reload(data); !ok_or_error.has_value())
+  if (const auto ok_or_error = reload(deps, data); !ok_or_error.has_value())
   {
     SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(ok_or_error.error());
@@ -38,23 +39,33 @@ expected<SceneData, SceneError> SceneCache::generate(
   return data;
 }
 
-expected<SceneData, SceneError>
-SceneCache::generate(sde::string name, sde::vector<SceneScriptInstance> pre, sde::vector<SceneScriptInstance> post)
+expected<SceneData, SceneError> SceneCache::generate(
+  dependencies deps,
+  sde::string name,
+  sde::vector<SceneScriptInstance> pre,
+  sde::vector<SceneScriptInstance> post)
 {
-  return this->generate(std::move(name), std::move(pre), std::move(post), sde::vector<SceneHandle>{});
+  return this->generate(deps, std::move(name), std::move(pre), std::move(post), sde::vector<SceneHandle>{});
 }
 
-expected<SceneData, SceneError> SceneCache::generate(sde::string name)
+expected<SceneData, SceneError> SceneCache::generate(dependencies deps, sde::string name)
 {
   return this->generate(
+    deps,
     std::move(name),
     sde::vector<SceneScriptInstance>{},
     sde::vector<SceneScriptInstance>{},
     sde::vector<SceneHandle>{});
 }
 
-expected<void, SceneError> SceneCache::reload(SceneData& library) { return {}; }
+expected<void, SceneError> SceneCache::reload([[maybe_unused]] dependencies deps, [[maybe_unused]] SceneData& library)
+{
+  return {};
+}
 
-expected<void, SceneError> SceneCache::unload(SceneData& library) { return {}; }
+expected<void, SceneError> SceneCache::unload([[maybe_unused]] dependencies deps, [[maybe_unused]] SceneData& library)
+{
+  return {};
+}
 
 }  // namespace sde::game

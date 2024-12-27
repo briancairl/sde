@@ -104,7 +104,7 @@ expected<void, SoundError> SoundCache::unload(dependencies deps, Sound& sound)
 
 expected<Sound, SoundError> SoundCache::generate(dependencies deps, const asset::path& sound_data_path)
 {
-  auto sound_data_or_error = deps.get<SoundDataCache>().create(sound_data_path);
+  auto sound_data_or_error = deps.get<SoundDataCache>().create(deps, sound_data_path);
   if (!sound_data_or_error.has_value())
   {
     SDE_LOG_ERROR() << "InvalidSoundData: " << sound_data_or_error.error();

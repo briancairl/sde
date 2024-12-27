@@ -56,11 +56,12 @@ public:
 
 private:
   sde::unordered_map<asset::path, LibraryHandle> asset_path_lookup_;
-  expected<void, LibraryError> reload(LibraryData& library);
-  expected<void, LibraryError> unload(LibraryData& library);
-  expected<LibraryData, LibraryError> generate(const asset::path& path, const LibraryFlags& flags = {});
-  void when_created(LibraryHandle handle, const LibraryData* data);
-  void when_removed(LibraryHandle handle, const LibraryData* data);
+  expected<void, LibraryError> reload(dependencies deps, LibraryData& library);
+  expected<void, LibraryError> unload(dependencies deps, LibraryData& library);
+  expected<LibraryData, LibraryError>
+  generate(dependencies deps, const asset::path& path, const LibraryFlags& flags = {});
+  void when_created(dependencies deps, LibraryHandle handle, const LibraryData* data);
+  void when_removed(dependencies deps, LibraryHandle handle, const LibraryData* data);
 };
 
 }  // namespace sde::game

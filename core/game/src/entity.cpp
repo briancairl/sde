@@ -37,8 +37,16 @@ expected<void, EntityError> EntityCache::reload(dependencies deps, EntityData& e
 
 expected<void, EntityError> EntityCache::unload(dependencies deps, const EntityData& entity)
 {
-  deps.get<Registry>().destroy(entity.id);
+  EntityCache::when_removed(deps, EntityHandle::null(), std::addressof(entity));
   return {};
+}
+
+void EntityCache::when_removed(dependencies deps, EntityHandle handle, const EntityData* data)
+{
+  if (auto& registry = deps.get<Registry>(); registry.valid(data->id))
+  {
+    registry.destroy(data->id);
+  }
 }
 
 expected<EntityData, EntityError> EntityCache::generate(dependencies deps)
