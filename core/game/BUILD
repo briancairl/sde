@@ -69,6 +69,7 @@ cc_library(
     "include/sde/game/native_script.hpp",
     "include/sde/game/native_script_fwd.hpp",
     "include/sde/game/native_script_handle.hpp",
+    "include/sde/game/native_script_header.hpp",
     "include/sde/game/native_script_methods.hpp",
     "include/sde/game/native_script_typedefs.hpp",
   ],
@@ -92,13 +93,33 @@ cc_library(
     "include/sde/game/native_script_runtime.hpp",
     "include/sde/game/native_script_runtime_fwd.hpp",
   ],
+  srcs = [],
+  strip_include_prefix="include",
+  deps=[
+    ":archive",
+    ":ecs",
+    "//core/common:resource",
+    "//core/common:stl",
+  ],
+  visibility=["//visibility:public"]
+)
+
+
+cc_library(
+  name="native_script_instance",
+  hdrs=[
+    "include/sde/game/native_script_instance.hpp",
+    "include/sde/game/native_script_instance_fwd.hpp",
+    "include/sde/game/native_script_instance_handle.hpp",
+  ],
   srcs = [
-    "src/native_script.cpp",
+    "src/native_script_instance.cpp",
   ],
   strip_include_prefix="include",
   deps=[
     ":archive",
-    ":library",
+    ":native_script",
+    "//core/app",
     "//core/common:resource",
     "//core/common:stl",
   ],
@@ -113,11 +134,6 @@ cc_library(
     "include/sde/game/game.hpp",
     "include/sde/game/game_resources.hpp",
     "include/sde/game/game_resources_fwd.hpp",
-    "include/sde/game/native_script.hpp",
-    "include/sde/game/native_script_fwd.hpp",
-    "include/sde/game/native_script_handle.hpp",
-    "include/sde/game/native_script_runtime.hpp",
-    "include/sde/game/native_script_runtime_fwd.hpp",
     "include/sde/game/registry.hpp",
     "include/sde/game/scene.hpp",
     "include/sde/game/scene_fwd.hpp",

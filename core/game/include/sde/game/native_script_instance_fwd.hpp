@@ -13,7 +13,7 @@ namespace sde::game
 {
 enum class NativeScriptInstanceError;
 struct NativeScriptInstanceHandle;
-class NativeScriptInstance;
+class NativeScriptInstanceData;
 class NativeScriptInstanceCache;
 }  // namespace sde::game
 

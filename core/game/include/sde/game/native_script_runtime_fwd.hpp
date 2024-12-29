@@ -8,8 +8,4 @@
 // SDE
 #include "sde/app_fwd.hpp"
 #include "sde/game/archive_fwd.hpp"
-
-using script_id_t = std::size_t;
-using script_version_t = std::size_t;
-using ScriptInstanceAllocator = void*(std::size_t);
-using ScriptInstanceDeallocator = void(void*);
+#include "sde/native_script_typedefs.hpp"

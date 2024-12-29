@@ -33,36 +33,14 @@
 #include "sde/time.hpp"
 #include "sde/time_io.hpp"
 
-struct native_script_header
-{
-  std::optional<sde::TimeOffset> initialization_time_point = {};
-  std::string_view name = {};
-  script_id_t uid = 0;
-  script_version_t version = 0;
-};
 
-struct native_script_data : private native_script_header
+struct native_script_data : private sde::game::native_script_header
 {
   constexpr bool initialized() const { return initialization_time_point.has_value(); }
   constexpr std::string_view name() const { return name; }
   constexpr script_id_t uid() const { return uid; }
   constexpr script_version_t version() const { return version; }
 };
-
-namespace sde::serial
-{
-template <typename Archive> struct serialize<Archive, native_script_data>
-{
-  void operator()(Archive& ar, native_script_data& data) const
-  {
-    ar& named{"uid", data.uid};
-    ar& named{"version", data.version};
-  }
-};
-}  // namespace sde::serial
-
-
-#define SDE_NATIVE_SCRIPT__DATA(ScriptDataT) struct ScriptDataT : native_script_data
 
 
 #define SDE_NATIVE_SCRIPT__REGISTER_CREATE(ScriptDataT)                                                                \

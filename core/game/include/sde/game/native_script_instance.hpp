@@ -11,16 +11,15 @@
 #include <string_view>
 
 // SDE
+#include "sde/app_fwd.hpp"
 #include "sde/asset.hpp"
 #include "sde/game/archive_fwd.hpp"
-#include "sde/game/game_resources_fwd.hpp"
-#include "sde/game/library.hpp"
-#include "sde/game/library_fwd.hpp"
-#include "sde/game/library_handle.hpp"
-#include "sde/game/native_script_base.hpp"
 #include "sde/game/native_script_fwd.hpp"
 #include "sde/game/native_script_handle.hpp"
-#include "sde/game/native_script_runtime_fwd.hpp"
+#include "sde/game/native_script_instance_fwd.hpp"
+#include "sde/game/native_script_instance_handle.hpp"
+#include "sde/game/native_script_methods.hpp"
+#include "sde/game/native_script_typedefs.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/string.hpp"
@@ -28,6 +27,9 @@
 
 namespace sde::game
 {
+
+class GameResources;
+
 /**
  * @brief A weak reference to a native script's "update" method and associated instance data
  *
@@ -77,7 +79,7 @@ public:
   NativeScriptInstance(const NativeScriptInstance& other) = default;
   NativeScriptInstance& operator=(const NativeScriptInstance& other) = default;
 
-  constexpr bool isValid() const { return methods_.isValid() and (data_ != nullptr); }
+  bool isValid() const { return methods_.isValid() and (data_ != nullptr); }
 
   void reset(NativeScriptMethods methods);
 
@@ -85,7 +87,11 @@ public:
 
   void swap(NativeScriptInstance& other);
 
-  bool initialize(NativeScriptInstanceHandle handle, GameResources& resources, const AppProperties& app) const;
+  bool initialize(
+    NativeScriptInstanceHandle handle,
+    std::string_view name,
+    GameResources& resources,
+    const AppProperties& app) const;
 
   bool load(IArchive& iar) const;
 
@@ -108,7 +114,7 @@ private:
   /// Instance data
   mutable void* data_ = nullptr;
 
-  auto field_list() { return FieldList(Field{"methods", methods_}, _Stub{"data", data_}); }
+  auto field_list() { return FieldList(Field{"methods", methods_}); }
 };
 
 
@@ -126,12 +132,6 @@ struct NativeScriptInstanceData : Resource<NativeScriptInstanceData>
   /// Actual script instance
   NativeScriptInstance instance = {};
 
-  /// Returns true if script data was loaded from disk
-  bool isDataFromDisk() const
-  {
-    return instance.isValid() and instance_data_path.has_value() and data_version == instance.version();
-  }
-
   // clang-format off
   auto field_list()
   {
@@ -139,7 +139,7 @@ struct NativeScriptInstanceData : Resource<NativeScriptInstanceData>
       Field{"name", name},
       Field{"instance_parent", instance_parent},
       Field{"instance_data_path", instance_data_path},
-      Field{"instance", instance},
+      Field{"instance", instance}
     );
   }
   // clang-format on
