@@ -1,60 +1,91 @@
 {
-    "audio": {
-        "data": "/home/brian/dev/sde/engine/game_test/audio.bin",
-        "version": 10815046911252335716
+    "config" :
+    {
+        "rate"              : 60.0,
+        "resources_path"    : "data/resources.bin",
+        "script_data_path"  : "data/scripts",
+        "window_icon_path"  : "/home/brian/dev/assets/icons/red.png",
+        "cursor_icon_path"  : "/home/brian/dev/assets/icons/sword.png"
     },
-    "components": {
-        "data": "/home/brian/dev/sde/engine/game_test/components",
-        "version": 0
+    "components" :
+    {
+        "AnimatedSprite"    : "engine/red/libcomponents.so",
+        "Background"        : "engine/red/libcomponents.so",
+        "DebugWireFrame"    : "engine/red/libcomponents.so",
+        "Dynamics"          : "engine/red/libcomponents.so",
+        "Focused"           : "engine/red/libcomponents.so",
+        "Foreground"        : "engine/red/libcomponents.so",
+        "Info"              : "engine/red/libcomponents.so",
+        "Midground"         : "engine/red/libcomponents.so",
+        "Position"          : "engine/red/libcomponents.so",
+        "Size"              : "engine/red/libcomponents.so",
+        "Sprite"            : "engine/red/libcomponents.so",
+        "TileMap"           : "engine/red/libcomponents.so",
+        "TransformQuery"    : "engine/red/libcomponents.so"
     },
-    "entities": {
-        "data": "/home/brian/dev/sde/engine/game_test/entities.bin",
-        "version": 7314741815003645058
+    "scripts" : {
+        "AudioManager"      : "engine/red/libaudio_manager.so",
+        "DragAndDrop"       : "engine/red/libdrag_and_drop_loader.so",
+        "EntityBrowser"     : "engine/red/libentity_browser.so",
+        "ImguiEnd"          : "engine/red/libimgui_end.so",
+        "ImguiStart"        : "engine/red/libimgui_start.so",
+        "LibraryBrowser"    : "engine/red/liblibrary_browser.so",
+        "Physics"           : "engine/red/libphysics.so",
+        "PlayerCharacter"   : "engine/red/libplayer_character.so",
+        "Renderer"          : "engine/red/librenderer.so",
+        "ScriptBrowser"     : "engine/red/libscript_browser.so",
+        "TextureViewer"     : "engine/red/libtexture_viewer.so",
+        "TileSetEditor"     : "engine/red/libtile_set_editor.so"
     },
-    "graphics": {
-        "data": "/home/brian/dev/sde/engine/game_test/graphics.bin",
-        "version": 6211604573817384117
-    },
-    "scripts": [
-        {
-            "data": "/home/brian/dev/sde/engine/game_test/scripts/drag_and_drop.bin",
-            "type": "drag_and_drop",
-            "version": 2654435769
-        },
-        {
-            "data": "/home/brian/dev/sde/engine/game_test/scripts/renderer.bin",
-            "type": "renderer",
-            "version": 2654435769
-        },
-        {
-            "data": "/home/brian/dev/sde/engine/game_test/scripts/imgui_start.bin",
-            "type": "imgui_start",
-            "version": 2654435769
-        },
-        {
-            "data": "/home/brian/dev/sde/engine/game_test/scripts/player_character.bin",
-            "type": "player_character",
-            "version": 2654435769
-        },
-        {
-            "data": "/home/brian/dev/sde/engine/game_test/scripts/tile_set_editor.bin",
-            "type": "tile_set_editor",
-            "version": 2654435769
-        },
-        {
-            "data": "/home/brian/dev/sde/engine/game_test/scripts/tile_map_editor.bin",
-            "type": "tile_map_editor",
-            "version": 2654435769
-        },
-        {
-            "data": "/home/brian/dev/sde/engine/game_test/scripts/texture_viewer.bin",
-            "type": "texture_viewer",
-            "version": 2654435769
-        },
-        {
-            "data": "/home/brian/dev/sde/engine/game_test/scripts/imgui_end.bin",
-            "type": "imgui_end",
-            "version": 2654435769
-        }
-    ]
+    "entry"  : "root",
+    "scenes" : {
+        "root" : [
+            {
+                "script" : "ImguiStart",
+                "name"   : null
+            },
+            "ui",
+            "game",
+            {
+                "script" : "ImguiEnd",
+                "name"   : null
+            }
+        ],
+        "game" : [
+            {
+                "script" : "PlayerCharacter",
+                "name"   : "player-1"
+            },
+            {
+                "script" : "Physics",
+                "name"   : null
+            },
+            {
+                "script" : "Renderer",
+                "name"   : null
+            }
+        ],
+        "ui" : [
+            {
+                "script" : "AudioManager",
+                "name"   : null
+            },
+            {
+                "script" : "EntityBrowser",
+                "name"   : null
+            },
+            {
+                "script" : "LibraryBrowser",
+                "name"   : null
+            },
+            {
+                "script" : "TextureViewer",
+                "name"   : null
+            },
+            {
+                "script" : "TileSetEditor",
+                "name"   : null
+            }
+        ]
+    }
 }

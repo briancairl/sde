@@ -103,7 +103,7 @@ void edit(player_character* self, sde::game::GameResources& resources, const sde
     return;
   }
 
-  ImGui::Begin(sde::format("player-%lu", self->entity.id()));
+  ImGui::Begin(sde::format("%s-%lu", self->name().data(), self->uid()));
   auto [size, position, sprite] = resources.get<Registry>().get<Size, Position, graphics::AnimatedSprite>(entity->id);
 
   ImGui::InputFloat2("size", size.extent.data());

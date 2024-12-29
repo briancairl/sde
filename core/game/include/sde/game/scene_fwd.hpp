@@ -6,6 +6,7 @@
 #pragma once
 
 // SDE
+#include "sde/game/native_script_instance_fwd.hpp"
 #include "sde/resource_cache_traits.hpp"
 
 namespace sde::game
@@ -24,7 +25,7 @@ template <> struct ResourceCacheTraits<game::SceneCache>
   using error_type = game::SceneError;
   using handle_type = game::SceneHandle;
   using value_type = game::SceneData;
-  using dependencies = no_dependencies;
+  using dependencies = ResourceDependencies<game::NativeScriptInstanceCache>;
 };
 
 template <> struct ResourceHandleToCache<game::SceneHandle>

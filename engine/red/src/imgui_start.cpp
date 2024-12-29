@@ -67,7 +67,7 @@ bool initialize(imgui_start* self, sde::game::GameResources& resources, const sd
   }
   else
   {
-    self->imgui_ini_path = resources.root() / "imgui.ini";
+    self->imgui_ini_path = resources.path("imgui.ini");
   }
 
   SDE_LOG_INFO() << "ImGui initialized";

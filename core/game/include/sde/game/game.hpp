@@ -12,7 +12,9 @@
 // SDE
 #include "sde/app_fwd.hpp"
 #include "sde/game/game_resources.hpp"
-#include "sde/game/scene_graph.hpp"
+#include "sde/game/scene.hpp"
+#include "sde/resource.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::game
 {
@@ -20,42 +22,65 @@ namespace sde::game
 enum class GameError
 {
   kInvalidRootDirectory,
+  kInvalidManifest,
+  kMissingManifest,
+  kScriptLoadError,
   kComponentLoadError,
-  kAssetLoadError,
-  kAssetSaveError,
-  kSceneGraphLoadError,
-  kSceneGraphSaveError,
+  kSceneLoadError,
+  kSceneEntryPointInvalid,
+  kResourceLoadError,
+  kResourceSaveError,
 };
 
 std::ostream& operator<<(std::ostream& os, GameError error);
 
+struct GameConfig : Resource<GameConfig>
+{
+  Rate rate = {};
+  asset::path resources_path = {};
+  asset::path script_data_path = {};
+  asset::path window_icon_path = {};
+  asset::path cursor_icon_path = {};
+
+  auto field_list()
+  {
+    return FieldList(
+      Field{"rate", rate},
+      Field{"resources_path", resources_path},
+      Field{"script_data_path", script_data_path},
+      Field{"window_icon_path", window_icon_path},
+      Field{"cursor_icon_path", cursor_icon_path});
+  }
+};
+
 class Game
 {
 public:
-  void spin(App& app);
-
   Game(Game&& other) = default;
   Game& operator=(Game&& other) = default;
 
-  Game(GameResources&& resources, SceneGraph&& scene_graph);
+  void spin(App& app);
 
+  [[nodiscard]] expected<void, GameError> dump();
   [[nodiscard]] static expected<Game, GameError> create(const asset::path& path);
-  [[nodiscard]] static expected<void, GameError> dump(Game& game, const asset::path& path);
 
 private:
+  Game() = default;
   Game(const Game& other) = delete;
   Game& operator=(const Game& other) = delete;
 
   GameResources resources_;
-  SceneGraph scene_graph_;
+
+  GameConfig config_;
+
+  SceneHandle active_scene_ = SceneHandle::null();
+
+  sde::vector<SceneNodeFlattened> active_scene_sequence_ = {};
 };
 
 [[nodiscard]] inline expected<Game, GameError> create(const asset::path& path) { return Game::create(path); }
 
-[[nodiscard]] inline expected<void, GameError> dump(Game& game, const asset::path& path)
-{
-  return Game::dump(game, path);
-}
+[[nodiscard]] inline expected<void, GameError> dump(Game& game) { return game.dump(); }
 
 
 }  // namespace sde::game

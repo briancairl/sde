@@ -168,16 +168,7 @@ void App::spin(OnStart on_start, OnUpdate on_update, const Rate spin_rate)
   auto previous_scroll_callback = glfwSetScrollCallback(glfw_window, glfwImplScrollEventHandler);
   auto previous_drop_callback = glfwSetDropCallback(glfw_window, glfwImplDropCallback);
 
-  switch (on_start(app_properties))
-  {
-  case AppDirective::kContinue:
-    break;
-  case AppDirective::kReset:
-    return;
-  case AppDirective::kClose:
-    return;
-  }
-
+  AppDirective next_directive = AppDirective::kReset;
   while (!glfwWindowShouldClose(glfw_window))
   {
     glfwGetFramebufferSize(
@@ -190,13 +181,15 @@ void App::spin(OnStart on_start, OnUpdate on_update, const Rate spin_rate)
 
     glfwImplScanKeyStates(glfw_window, app_properties.keys);
 
-    switch (on_update(app_properties))
+    switch (next_directive)
     {
     case AppDirective::kContinue:
+      next_directive = on_update(app_properties);
       break;
     case AppDirective::kReset:
       t_start = Clock::now();
       t_prev = t_start;
+      next_directive = on_start(app_properties);
       break;
     case AppDirective::kClose:
       return;

@@ -7,7 +7,6 @@
 
 // C++ Standard Library
 #include <iosfwd>
-#include <optional>
 #include <string_view>
 
 // SDE
@@ -24,54 +23,23 @@
 #include "sde/resource_cache.hpp"
 #include "sde/string.hpp"
 #include "sde/time.hpp"
+#include "sde/unordered_map.hpp"
 
 namespace sde::game
 {
 
 class GameResources;
 
-/**
- * @brief A weak reference to a native script's "update" method and associated instance data
- *
- * This is meant to be called in topologically sorted sequence of game updates
- */
-struct NativeScriptInstanceRef
-{
-public:
-  NativeScriptInstanceRef(const NativeScriptInstanceRef& other) = default;
-  NativeScriptInstanceRef& operator=(const NativeScriptInstanceRef& other) = default;
-
-  NativeScriptInstanceRef(NativeScriptInstanceRef&& other) = default;
-  NativeScriptInstanceRef& operator=(NativeScriptInstanceRef&& other) = default;
-
-  ~NativeScriptInstanceRef() = default;
-
-  NativeScriptInstanceRef(dl::Function<bool(void*, void*, const void*)> call, void* data);
-
-  bool call(GameResources& resources, const AppProperties& app) const
-  {
-    return call_(data_, reinterpret_cast<void*>(&resources), reinterpret_cast<const void*>(&app));
-  }
-
-  bool operator()(GameResources& resources, const AppProperties& app) const { return this->call(resources, app); }
-
-private:
-  /// Update/Initialize call
-  dl::Function<bool(void*, void*, const void*)> call_;
-
-  /// Weak reference to instance data
-  void* data_ = nullptr;
-};
-
-class NativeScriptInstance : Resource<NativeScriptInstance>
+class NativeScriptInstance : public Resource<NativeScriptInstance>
 {
   friend fundemental_type;
+  friend class NativeScriptInstanceCache;
 
 public:
   explicit NativeScriptInstance(NativeScriptMethods methods);
 
   NativeScriptInstance() = default;
-  ~NativeScriptInstance();
+  ~NativeScriptInstance() = default;
 
   NativeScriptInstance(NativeScriptInstance&& other);
   NativeScriptInstance& operator=(NativeScriptInstance&& other);
@@ -81,17 +49,7 @@ public:
 
   bool isValid() const { return methods_.isValid() and (data_ != nullptr); }
 
-  void reset(NativeScriptMethods methods);
-
-  void reset();
-
   void swap(NativeScriptInstance& other);
-
-  bool initialize(
-    NativeScriptInstanceHandle handle,
-    std::string_view name,
-    GameResources& resources,
-    const AppProperties& app) const;
 
   bool load(IArchive& iar) const;
 
@@ -101,13 +59,19 @@ public:
 
   script_version_t version() const { return methods_.on_get_version(); }
 
-  asset::path path() const;
+  bool initialize(
+    NativeScriptInstanceHandle handle,
+    std::string_view name,
+    GameResources& resources,
+    const AppProperties& app_properties) const;
 
-  NativeScriptInstanceRef get() const;
-
-  NativeScriptInstanceRef operator*() const { return this->get(); }
+  bool update(GameResources& resources, const AppProperties& app_properties) const;
 
 private:
+  void reset();
+
+  void reset(NativeScriptMethods methods);
+
   /// Instance methods
   NativeScriptMethods methods_ = {};
 
@@ -124,10 +88,7 @@ struct NativeScriptInstanceData : Resource<NativeScriptInstanceData>
   sde::string name = {};
 
   /// Script from which this instance is based
-  NativeScriptHandle instance_parent;
-
-  /// Path to script instance data
-  std::optional<asset::path> instance_data_path = std::nullopt;
+  NativeScriptHandle parent;
 
   /// Actual script instance
   NativeScriptInstance instance = {};
@@ -137,8 +98,7 @@ struct NativeScriptInstanceData : Resource<NativeScriptInstanceData>
   {
     return FieldList(
       Field{"name", name},
-      Field{"instance_parent", instance_parent},
-      Field{"instance_data_path", instance_data_path},
+      Field{"parent", parent},
       Field{"instance", instance}
     );
   }
@@ -150,7 +110,7 @@ enum class NativeScriptInstanceError
   kInvalidHandle,
   kElementAlreadyExists,
   kNativeScriptInvalid,
-  kInstanceLoadNotPossible,
+  kInstanceDataUnavailable,
   kInstanceLoadFailed,
   kInstanceSaveFailed,
 };
@@ -183,7 +143,7 @@ private:
   expected<void, NativeScriptInstanceError> reload(dependencies deps, NativeScriptInstanceData& library);
   expected<void, NativeScriptInstanceError> unload(dependencies deps, NativeScriptInstanceData& library);
   expected<NativeScriptInstanceData, NativeScriptInstanceError>
-  generate(dependencies deps, sde::string name, const NativeScriptHandle& instance_parent);
+  generate(dependencies deps, sde::string name, const NativeScriptHandle& parent);
   void when_created(dependencies deps, NativeScriptInstanceHandle handle, const NativeScriptInstanceData* data);
   void when_removed(dependencies deps, NativeScriptInstanceHandle handle, NativeScriptInstanceData* data);
 };

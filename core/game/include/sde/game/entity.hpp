@@ -112,7 +112,7 @@ public:
   }
 
   expected<void, EntityError> load(dependencies deps, IArchive& archive);
-  expected<void, EntityError> dump(dependencies deps, OArchive& archive) const;
+  expected<void, EntityError> save(dependencies deps, OArchive& archive) const;
 
 private:
   expected<void, EntityError> reload(dependencies deps, EntityData& entity);

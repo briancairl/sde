@@ -80,6 +80,7 @@ cc_library(
   strip_include_prefix="include",
   deps=[
     "@dont//:core",
+    "@dont//:stl",
     "//core/serialization",
     ":asset",
     ":core",

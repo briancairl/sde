@@ -5,9 +5,6 @@
  */
 #pragma once
 
-// C++ Standard Library
-#include <iosfwd>
-
 // SDE
 #include "sde/dl/library.hpp"
 #include "sde/game/native_script_typedefs.hpp"
@@ -50,7 +47,5 @@ struct NativeScriptMethods : public Resource<NativeScriptMethods>
     // clang-format on
   }
 };
-
-template <typename ScriptT> std::ostream& operator<<(std::ostream& os, const NativeScriptMethods& script);
 
 }  // namespace sde::game

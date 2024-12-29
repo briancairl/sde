@@ -32,20 +32,46 @@ NativeScriptHandle NativeScriptCache::to_handle(const LibraryHandle& library) co
 }
 
 
+NativeScriptHandle NativeScriptCache::to_handle(const sde::string& name) const
+{
+  const auto itr = name_to_native_script_lookup_.find(name);
+  if (itr == std::end(name_to_native_script_lookup_))
+  {
+    return NativeScriptHandle::null();
+  }
+  return itr->second;
+}
+
+
 void NativeScriptCache::when_created(
   [[maybe_unused]] dependencies deps,
   NativeScriptHandle handle,
-  const NativeScriptData* data)
+  NativeScriptData* script)
 {
-  library_to_native_script_lookup_.emplace(data->library, handle);
+  if (script->name.empty())
+  {
+    script->name = script->methods.on_get_name();
+    SDE_LOG_ERROR() << "NativeScript alias not set. Using default alias: " << SDE_OSNV(script->name);
+  }
+
+  {
+    const auto [itr, added] = name_to_native_script_lookup_.emplace(script->name, handle);
+    SDE_ASSERT_TRUE(added) << itr->first << ": is not a unique script alias for " << SDE_OSNV(handle);
+  }
+
+  {
+    const auto [itr, added] = library_to_native_script_lookup_.emplace(script->library, handle);
+    SDE_ASSERT_TRUE(added) << itr->first << ": is not a unique script library for " << SDE_OSNV(handle);
+  }
 }
 
 void NativeScriptCache::when_removed(
   [[maybe_unused]] dependencies deps,
   NativeScriptHandle handle,
-  const NativeScriptData* data)
+  const NativeScriptData* script)
 {
-  library_to_native_script_lookup_.erase(data->library);
+  name_to_native_script_lookup_.erase(script->name);
+  library_to_native_script_lookup_.erase(script->library);
 }
 
 expected<void, NativeScriptError> NativeScriptCache::reload(dependencies deps, NativeScriptData& script)
@@ -71,7 +97,13 @@ expected<void, NativeScriptError> NativeScriptCache::unload(dependencies deps, N
 
 expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(dependencies deps, LibraryHandle library)
 {
-  NativeScriptData data{.library = library};
+  return this->generate(deps, {}, library);
+}
+
+expected<NativeScriptData, NativeScriptError>
+NativeScriptCache::generate(dependencies deps, const sde::string& name, LibraryHandle library)
+{
+  NativeScriptData data{.name = name, .library = library};
 
   if (const auto ok_or_error = reload(deps, data); !ok_or_error.has_value())
   {
@@ -81,8 +113,11 @@ expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(depend
   return data;
 }
 
-expected<NativeScriptData, NativeScriptError>
-NativeScriptCache::generate(dependencies deps, const asset::path& path, const LibraryFlags& flags)
+expected<NativeScriptData, NativeScriptError> NativeScriptCache::generate(
+  dependencies deps,
+  const sde::string& name,
+  const asset::path& path,
+  const LibraryFlags& flags)
 {
   auto library_or_error = deps.get<LibraryCache>().find_or_create(path, deps, path, flags);
   if (!library_or_error.has_value())
@@ -90,7 +125,7 @@ NativeScriptCache::generate(dependencies deps, const asset::path& path, const Li
     SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << library_or_error.error();
     return make_unexpected(NativeScriptError::kScriptLibraryInvalid);
   }
-  return this->generate(deps, library_or_error->handle);
+  return this->generate(deps, name, library_or_error->handle);
 }
 
 }  // namespace sde::game

@@ -43,7 +43,7 @@ void scene_hierarchy(SceneHandle handle, sde::game::GameResources& resources)
       SDE_ASSERT_EQ(payload->DataSize, sizeof(SceneHandle));
       if (const SceneHandle child_handle{*reinterpret_cast<const SceneHandle*>(payload->Data)}; child_handle != handle)
       {
-        resources.update_if_exists(handle, [child_handle](auto& v) { v.children.push_back(child_handle); });
+        resources.update_if_exists(handle, [child_handle](auto& v) { v.nodes.push_back({.child = child_handle}); });
       }
     }
     ImGui::EndDragDropTarget();
@@ -61,51 +61,29 @@ void scene_hierarchy(SceneHandle handle, sde::game::GameResources& resources)
 
   if (node_open)
   {
-    if (!scene_ref->pre_scripts.empty())
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.8F, 0.8F, 0.8F, 1.0F});
+    const bool open = ImGui::TreeNode("nodes");
+    ImGui::PopStyleColor();
+    if (open)
     {
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.8F, 0.8F, 0.8F, 1.0F});
-      const bool open = ImGui::TreeNode("pre");
-      ImGui::PopStyleColor();
-      if (open)
+      for (const auto& node : scene_ref->nodes)
       {
-        for (const auto& script : scene_ref->pre_scripts)
+        if (node.child)
         {
-          ImGui::Text("%s (id=%lu)", script.instance.name().data(), static_cast<std::size_t>(script.handle.id()));
+          scene_hierarchy(node.child, resources);
         }
-        ImGui::TreePop();
-      };
-    }
-
-    if (!scene_ref->children.empty())
-    {
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.8F, 0.8F, 0.8F, 1.0F});
-      const bool open = ImGui::TreeNode("children");
-      ImGui::PopStyleColor();
-      if (open)
-      {
-        for (const auto& scene_handle : scene_ref->children)
+        else if (!node.script)
         {
-          scene_hierarchy(scene_handle, resources);
+          continue;
         }
-        ImGui::TreePop();
-      };
-    }
-
-    if (!scene_ref->post_scripts.empty())
-    {
-      ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{0.8F, 0.8F, 0.8F, 1.0F});
-      const bool open = ImGui::TreeNode("post");
-      ImGui::PopStyleColor();
-      if (open)
-      {
-        for (const auto& script : scene_ref->post_scripts)
+        else if (const auto script = resources(node.script))
         {
-          ImGui::Text("%s (id=%lu)", script.instance.name().data(), static_cast<std::size_t>(script.handle.id()));
+          ImGui::Text(
+            "%s (type:%s, ver:%lu)", script->name.c_str(), script->instance.name().data(), script->instance.version());
         }
-        ImGui::TreePop();
-      };
-    }
-
+      }
+      ImGui::TreePop();
+    };
     ImGui::TreePop();
   }
   ImGui::PopID();

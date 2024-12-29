@@ -20,6 +20,7 @@
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/unique_resource.hpp"
+#include "sde/unordered_map.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
@@ -179,11 +180,18 @@ class ImageCache : public ResourceCache<ImageCache>
 {
   friend fundemental_type;
 
+public:
+  using fundemental_type::to_handle;
+  ImageHandle to_handle(const asset::path& path) const;
+
 private:
+  sde::unordered_map<asset::path, ImageHandle> path_to_image_handle_;
   static expected<void, ImageError> reload(dependencies deps, Image& image);
   static expected<void, ImageError> unload(dependencies deps, Image& image);
   expected<Image, ImageError>
   generate(dependencies deps, const asset::path& image_path, const ImageOptions& options = {});
+  void when_created(dependencies deps, ImageHandle handle, const Image* image);
+  void when_removed(dependencies deps, ImageHandle handle, const Image* image);
 };
 
 }  // namespace sde::graphics

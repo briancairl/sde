@@ -148,14 +148,38 @@ private:
 #define SDE_ASSERT_GE(val_lhs, val_rhs) SDE_ASSERT((val_lhs >= val_rhs))
 
 #define SDE_UNREACHABLE() __builtin_unreachable()
+
+#define SDE_ASSERT_NO_THROW(section)                                                                                   \
+  try                                                                                                                  \
+  {                                                                                                                    \
+    section;                                                                                                           \
+  }                                                                                                                    \
+  catch (...)                                                                                                          \
+  {                                                                                                                    \
+    SDE_FAIL() << __SDE_STR_EXPR((section));                                                                           \
+    SDE_UNREACHABLE();                                                                                                 \
+  }
+
+#define SDE_ASSERT_NO_EXCEPT(section, exception)                                                                       \
+  try                                                                                                                  \
+  {                                                                                                                    \
+    section;                                                                                                           \
+  }                                                                                                                    \
+  catch (const exception& ex)                                                                                          \
+  {                                                                                                                    \
+    SDE_FAIL() << __SDE_STR_EXPR((section)) << "\n\nexception: " << ex.what();                                         \
+    SDE_UNREACHABLE();                                                                                                 \
+  }
+
+
 #define SDE_SHOULD_NEVER_HAPPEN(reason)                                                                                \
   SDE_FAIL() << reason;                                                                                                \
   SDE_UNREACHABLE();
 
-#define SDE_OSNV(x) '[' << __SDE_STR_EXPR(x) << "=" << x << ']'
 #define SDE_OS_ENUM_CASE(e)                                                                                            \
   case e: {                                                                                                            \
     return os << __SDE_STR_EXPR(e);                                                                                    \
   }
+#define SDE_OSNV(x) '[' << __SDE_STR_EXPR(x) << "=" << x << ']'
 
 #endif  // SDE_COMMON_LOG

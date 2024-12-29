@@ -54,9 +54,9 @@ public:
 
   Vec2i size() const;
 
-  expected<void, WindowError> setIcon(ImageRef icon) const;
+  expected<void, WindowError> setWindowIcon(ImageRef icon) const;
 
-  expected<void, WindowError> setCursor(ImageRef cursor) const;
+  expected<void, WindowError> setCursorIcon(ImageRef icon) const;
 
 private:
   explicit Window(NativeWindowHandle native_handle);

@@ -23,7 +23,6 @@ int main(int argc, char** argv)
   game_or_error->spin(*app_or_error);
 
   // Save game on close
-  SDE_ASSERT_OK(game::dump(*game_or_error, argv[1]));
-  SDE_LOG_INFO() << "saved game data to: " << argv[1];
+  SDE_ASSERT_OK(game::dump(*game_or_error));
   return 0;
 }

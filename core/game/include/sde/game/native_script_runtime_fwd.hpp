@@ -8,4 +8,4 @@
 // SDE
 #include "sde/app_fwd.hpp"
 #include "sde/game/archive_fwd.hpp"
-#include "sde/native_script_typedefs.hpp"
+#include "sde/game/native_script_typedefs.hpp"

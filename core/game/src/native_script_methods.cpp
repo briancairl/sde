@@ -38,13 +38,4 @@ bool NativeScriptMethods::reset(const dl::Library& library)
   });
 }
 
-std::ostream& operator<<(std::ostream& os, const NativeScriptMethods& methods)
-{
-  if (methods.isValid())
-  {
-    return os << methods.name() << '.' << methods.version();
-  }
-  return os << "<INVALID>";
-}
-
 }  // namespace sde::game

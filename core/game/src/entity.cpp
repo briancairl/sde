@@ -99,7 +99,7 @@ expected<void, EntityError> EntityCache::load(dependencies deps, IArchive& archi
   return {};
 }
 
-expected<void, EntityError> EntityCache::dump(dependencies deps, OArchive& archive) const
+expected<void, EntityError> EntityCache::save(dependencies deps, OArchive& archive) const
 {
   using namespace sde::serial;
 

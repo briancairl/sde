@@ -14,6 +14,7 @@
 #include "sde/game/entity.hpp"
 #include "sde/game/library.hpp"
 #include "sde/game/native_script.hpp"
+#include "sde/game/native_script_instance.hpp"
 #include "sde/game/registry.hpp"
 #include "sde/game/scene.hpp"
 #include "sde/graphics/font.hpp"
@@ -45,6 +46,7 @@ class GameResources : public ResourceCollection
   ResourceCollectionEntry<"entities"_rl, EntityCache>,
   ResourceCollectionEntry<"libraries"_rl, LibraryCache>,
   ResourceCollectionEntry<"scripts"_rl, NativeScriptCache>,
+  ResourceCollectionEntry<"script_instances"_rl, NativeScriptInstanceCache>,
   ResourceCollectionEntry<"components"_rl, ComponentCache>,
   ResourceCollectionEntry<"scenes"_rl, SceneCache>,
   ResourceCollectionEntry<"registry"_rl, Registry, false>
@@ -62,7 +64,17 @@ public:
 
   explicit GameResources(asset::path root);
 
-  const asset::path& root() const { return root_; }
+  const asset::path& root_path() const { return root_path_; }
+
+  asset::path directory(const asset::path& original_path) const;
+
+  asset::path path(const asset::path& original_path) const;
+
+  const SceneHandle& scene() const { return next_scene_; }
+
+  bool setNextScene(SceneHandle scene);
+
+  bool setNextScene(const sde::string& scene_name);
 
   template <typename CreateT> decltype(auto) instance(EntityHandle& h, CreateT&& create)
   {
@@ -70,7 +82,8 @@ public:
   }
 
 private:
-  asset::path root_;
+  asset::path root_path_;
+  SceneHandle next_scene_ = SceneHandle::null();
 };
 
 }  // namespace sde::game

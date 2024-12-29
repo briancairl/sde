@@ -17,6 +17,7 @@
 #include "sde/game/entity.hpp"
 #include "sde/game/game_resources.hpp"
 #include "sde/game/native_script_fwd.hpp"
+#include "sde/game/native_script_header.hpp"
 #include "sde/game/native_script_runtime_fwd.hpp"
 #include "sde/geometry_io.hpp"
 #include "sde/logging.hpp"
@@ -36,10 +37,10 @@
 
 struct native_script_data : private sde::game::native_script_header
 {
-  constexpr bool initialized() const { return initialization_time_point.has_value(); }
-  constexpr std::string_view name() const { return name; }
-  constexpr script_id_t uid() const { return uid; }
-  constexpr script_version_t version() const { return version; }
+  constexpr bool initialized() const { return !sde::game::native_script_header::name.empty(); }
+  constexpr std::string_view name() const { return sde::game::native_script_header::name; }
+  constexpr script_id_t uid() const { return sde::game::native_script_header::uid; }
+  constexpr script_version_t version() const { return sde::game::native_script_header::version; }
 };
 
 
@@ -79,7 +80,7 @@ struct native_script_data : private sde::game::native_script_header
 
 
 #define SDE_NATIVE_SCRIPT__REGISTER_VERSION(ScriptDataT, fn)                                                           \
-  SDE_EXPORT script_version_t on_version()                                                                             \
+  SDE_EXPORT script_version_t on_get_version()                                                                         \
   {                                                                                                                    \
     static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
     ::sde::game::VArchive varchive;                                                                                    \

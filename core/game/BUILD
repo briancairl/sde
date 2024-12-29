@@ -75,6 +75,7 @@ cc_library(
   ],
   srcs = [
     "src/native_script.cpp",
+    "src/native_script_methods.cpp",
   ],
   strip_include_prefix="include",
   deps=[
@@ -98,6 +99,7 @@ cc_library(
   deps=[
     ":archive",
     ":ecs",
+    ":native_script",
     "//core/common:resource",
     "//core/common:stl",
   ],
@@ -127,6 +129,28 @@ cc_library(
 )
 
 
+cc_library(
+  name="scene",
+  hdrs=[
+    "include/sde/game/scene.hpp",
+    "include/sde/game/scene_fwd.hpp",
+    "include/sde/game/scene_handle.hpp",
+  ],
+  srcs = [
+    "src/scene.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    ":archive",
+    ":native_script",
+    ":native_script_instance",
+    "//core/app",
+    "//core/common:resource",
+    "//core/common:stl",
+  ],
+  visibility=["//visibility:public"]
+)
+
 
 cc_library(
   name="game",
@@ -134,37 +158,22 @@ cc_library(
     "include/sde/game/game.hpp",
     "include/sde/game/game_resources.hpp",
     "include/sde/game/game_resources_fwd.hpp",
-    "include/sde/game/registry.hpp",
-    "include/sde/game/scene.hpp",
-    "include/sde/game/scene_fwd.hpp",
-    "include/sde/game/scene_graph.hpp",
-    "include/sde/game/scene_handle.hpp",
-    "include/sde/game/scene_manifest.hpp",
-    "include/sde/game/scene_manifest_fwd.hpp",
   ],
   srcs = [
-    "src/component.cpp",
-    "src/component_preload.cpp",
-    "src/entity.cpp",
     "src/game.cpp",
-    "src/library.cpp",
-    "src/native_script.cpp",
-    "src/scene.cpp",
-    "src/scene_graph.cpp",
-    "src/scene_manifest.cpp",
+    "src/game_resources.cpp",
   ],
   strip_include_prefix="include",
   deps=[
+    ":archive",
+    ":ecs",
+    ":native_script",
+    ":native_script_instance",
+    ":native_script_runtime",
+    ":scene",
     "//core/app",
     "//core/audio",
-    "//core/graphics",
-    "//core/common:resource",
-    "//core/common:stl",
-    "//core/dl:export",
-    "//core/dl:library",
     "//core/serialization",
-    "@dont//:stl",
-    "@entt//:entt",
     "@nlohmann//:json",
   ],
   visibility=["//visibility:public"]

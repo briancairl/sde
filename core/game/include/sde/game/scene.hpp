@@ -7,21 +7,22 @@
 
 // C++ Standard Library
 #include <iosfwd>
-#include <optional>
+#include <string_view>
 
 // SDE
 #include "sde/app_fwd.hpp"
 #include "sde/expected.hpp"
 #include "sde/format.hpp"
 #include "sde/game/archive_fwd.hpp"
-#include "sde/game/native_script.hpp"
-#include "sde/game/native_script_handle.hpp"
+#include "sde/game/native_script_instance.hpp"
+#include "sde/game/native_script_instance_handle.hpp"
 #include "sde/game/scene_fwd.hpp"
 #include "sde/game/scene_handle.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/string.hpp"
 #include "sde/type_name.hpp"
+#include "sde/unordered_map.hpp"
 #include "sde/vector.hpp"
 
 namespace sde::game
@@ -30,51 +31,46 @@ namespace sde::game
 enum class SceneError
 {
   kInvalidHandle,
+  kInvalidScript,
   kElementAlreadyExists,
 };
 
 std::ostream& operator<<(std::ostream& os, SceneError error);
 
-struct SceneScriptInstance : Resource<SceneScriptInstance>
+struct SceneNodeFlattened : Resource<SceneNodeFlattened>
 {
-  /// Handle to original script
-  NativeScriptHandle handle;
-  /// Current instance of the script
-  NativeScriptInstance instance;
-  /// Path to scripts load/save data
-  std::optional<asset::path> instance_data_path;
-  /// Instanced script on load
-  std::optional<script_version_t> instance_version_target;
+  /// Instance name
+  std::string_view name;
 
-  auto field_list()
-  {
-    return FieldList(
-      Field{"handle", handle},
-      _Stub{"instance", instance},
-      Field{"instance_version_target", instance_version_target},
-      Field{"instance_data_path", instance_data_path});
-  }
+  /// Instance handle
+  NativeScriptInstanceHandle handle = NativeScriptInstanceHandle::null();
+
+  /// Instance
+  NativeScriptInstance instance = {};
+
+  auto field_list() { return FieldList(Field{"handle", handle}, _Stub{"instance", instance}); }
+};
+
+struct SceneNode : Resource<SceneNode>
+{
+  /// Handle to another scene
+  SceneHandle child = SceneHandle::null();
+
+  /// Handle to script instance data
+  NativeScriptInstanceHandle script = NativeScriptInstanceHandle::null();
+
+  auto field_list() { return FieldList(Field{"child", child}, Field{"script", script}); }
 };
 
 struct SceneData : Resource<SceneData>
 {
   /// Name associated with this scene
   sde::string name;
-  /// Child scenes
-  sde::vector<SceneHandle> children;
-  /// Scripts to run before children
-  sde::vector<SceneScriptInstance> pre_scripts;
-  /// Scripts to run after children
-  sde::vector<SceneScriptInstance> post_scripts;
 
-  auto field_list()
-  {
-    return FieldList(
-      Field{"name", name},
-      Field{"children", children},
-      Field{"pre_scripts", pre_scripts},
-      Field{"post_scripts", post_scripts});
-  }
+  /// Scripts associated with this scene (run-ordered)
+  sde::vector<SceneNode> nodes;
+
+  auto field_list() { return FieldList(Field{"name", name}, Field{"nodes", nodes}); }
 };
 
 /**
@@ -84,30 +80,22 @@ class SceneCache : public ResourceCache<SceneCache>
 {
   friend fundemental_type;
 
+public:
+  using fundemental_type::to_handle;
+  SceneHandle to_handle(const sde::string& name) const;
+  expected<sde::vector<SceneNodeFlattened>, SceneError> expand(SceneHandle root, dependencies deps) const;
+
 private:
-  expected<void, SceneError> reload(dependencies deps, SceneData& library);
-  expected<void, SceneError> unload(dependencies deps, SceneData& library);
-
-  expected<SceneData, SceneError> generate(
-    dependencies deps,
-    sde::string name,
-    sde::vector<SceneScriptInstance>&& pre,
-    sde::vector<SceneScriptInstance>&& post,
-    sde::vector<SceneHandle>&& children);
-
-  expected<SceneData, SceneError> generate(
-    dependencies deps,
-    sde::string name,
-    sde::vector<SceneScriptInstance> pre,
-    sde::vector<SceneScriptInstance> post);
-
-  expected<SceneData, SceneError> generate(dependencies deps, sde::string name);
+  sde::unordered_map<sde::string, SceneHandle> name_to_scene_lookup_;
+  expected<SceneData, SceneError> generate(dependencies deps, sde::string name, sde::vector<SceneNode> nodes = {});
+  void when_created(dependencies deps, SceneHandle handle, const SceneData* data);
+  void when_removed(dependencies deps, SceneHandle handle, SceneData* data);
 };
 
 }  // namespace sde::game
 
 namespace sde
 {
-template <> struct Hasher<game::SceneScriptInstance> : ResourceHasher
+template <> struct Hasher<game::SceneNode> : ResourceHasher
 {};
 }  // namespace sde

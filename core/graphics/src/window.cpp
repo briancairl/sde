@@ -155,7 +155,7 @@ expected<Window, WindowError> Window::create(const WindowOptions& options)
   return window;
 }
 
-expected<void, WindowError> Window::setIcon(ImageRef icon) const
+expected<void, WindowError> Window::setWindowIcon(ImageRef icon) const
 {
   auto* glfw_window = reinterpret_cast<GLFWwindow*>(this->value());
 
@@ -185,30 +185,30 @@ expected<void, WindowError> Window::setIcon(ImageRef icon) const
   return {};
 }
 
-expected<void, WindowError> Window::setCursor(ImageRef cursor) const
+expected<void, WindowError> Window::setCursorIcon(ImageRef icon) const
 {
   auto* glfw_window = reinterpret_cast<GLFWwindow*>(this->value());
 
-  // Handle window cursor setting
-  if (!cursor.isValid())
+  // Handle window icon setting
+  if (!icon.isValid())
   {
-    SDE_LOG_ERROR() << "No cursor set to window";
+    SDE_LOG_ERROR() << "No icon set to window";
     glfwSetCursor(glfw_window, glfwCreateStandardCursor(GLFW_ARROW_CURSOR));
     return {};
   }
-  else if (cursor.channels != ImageChannels::kRGBA)
+  else if (icon.channels != ImageChannels::kRGBA)
   {
     SDE_LOG_ERROR() << "WindowCursorInvalidPixelFormat";
     return make_unexpected(WindowError::kWindowCursorInvalidPixelFormat);
   }
-  else if (cursor.pixels() == 0)
+  else if (icon.pixels() == 0)
   {
     SDE_LOG_ERROR() << "WindowCursorInvalidSize";
     return make_unexpected(WindowError::kWindowCursorInvalidSize);
   }
 
   const GLFWimage glfw_image{
-    .width = cursor.width, .height = cursor.height, .pixels = reinterpret_cast<std::uint8_t*>(cursor.data)};
+    .width = icon.width, .height = icon.height, .pixels = reinterpret_cast<std::uint8_t*>(icon.data)};
 
   glfwSetCursor(glfw_window, glfwCreateCursor(&glfw_image, 0, 0));
 

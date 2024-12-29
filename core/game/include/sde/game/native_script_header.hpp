@@ -12,14 +12,12 @@
 // SDE
 #include "sde/game/native_script_typedefs.hpp"
 #include "sde/serialization.hpp"
-#include "sde/time.hpp"
 
 namespace sde::game
 {
 
 struct native_script_header
 {
-  std::optional<TimeOffset> initialization_time_point = {};
   std::string_view name = {};
   script_id_t uid = 0;
   script_version_t version = 0;

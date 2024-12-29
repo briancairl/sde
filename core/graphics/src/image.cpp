@@ -75,6 +75,27 @@ std::ostream& operator<<(std::ostream& os, ImageError error)
 
 void ImageDataBufferDeleter::operator()(void* data) const { stbi_image_free(data); }
 
+ImageHandle ImageCache::to_handle(const asset::path& path) const
+{
+  const auto itr = path_to_image_handle_.find(path);
+  if (itr == std::end(path_to_image_handle_))
+  {
+    return ImageHandle::null();
+  }
+  return itr->second;
+}
+
+void ImageCache::when_created(dependencies deps, ImageHandle handle, const Image* image)
+{
+  const auto [itr, added] = path_to_image_handle_.emplace(image->path, handle);
+  SDE_ASSERT_TRUE(added) << "Image " << SDE_OSNV(image->path) << " was already added as " << itr->first;
+}
+
+void ImageCache::when_removed(dependencies deps, ImageHandle handle, const Image* image)
+{
+  path_to_image_handle_.erase(image->path);
+}
+
 expected<void, ImageError> ImageCache::reload([[maybe_unused]] dependencies deps, Image& image)
 {
   // Already loaded
