@@ -1,0 +1,318 @@
+// C++ Standard Library
+#include <ostream>
+
+// SDE
+#include "sde/format.hpp"
+#include "sde/game/native_script_instance.hpp"
+#include "sde/logging.hpp"
+#include "sde/serialization_binary_file.hpp"
+
+namespace sde::game
+{
+
+std::ostream& operator<<(std::ostream& os, NativeScriptInstanceError error)
+{
+  switch (error)
+  {
+    SDE_OS_ENUM_CASE(NativeScriptInstanceError::kInvalidHandle)
+    SDE_OS_ENUM_CASE(NativeScriptInstanceError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASE(NativeScriptInstanceError::kNativeScriptInvalid)
+    SDE_OS_ENUM_CASE(NativeScriptInstanceError::kInstanceDataInvalid)
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const NativeScriptInstanceLoadStatus& status)
+{
+  return os << SDE_OSNV(status.current_version) << " " << SDE_OSNV(status.previous_version);
+}
+
+NativeScriptInstance::NativeScriptInstance(NativeScriptMethods methods) : methods_{std::move(methods)}, data_{nullptr}
+{}
+
+NativeScriptInstance::NativeScriptInstance(NativeScriptInstance&& other) { this->swap(other); }
+
+NativeScriptInstance::~NativeScriptInstance() { this->reset(); }
+
+NativeScriptInstance::NativeScriptInstance& operator=(NativeScriptInstance&& other)
+{
+  this->swap(other);
+  return *this;
+}
+
+void NativeScriptInstance::swap(NativeScriptInstance& other)
+{
+  std::swap(other.data_, this->data_);
+  std::swap(other.methods_, this->methods_);
+}
+
+void NativeScriptInstance::reset(NativeScriptMethods methods)
+{
+  SDE_ASSERT_TRUE(methods.isValid()) << "attempting to reset a NativeScriptInstance with invalid methods";
+
+  // Clear previous instance data
+  this->reset();
+  SDE_ASSERT_EQ(data_, nullptr);
+
+  // Set new methods
+  methods_ = std::move(methods);
+
+  // Create new instance data
+  data_ = methods_.on_create(std::malloc);
+  SDE_ASSERT_NE(data_, nullptr);
+}
+
+void NativeScriptInstance::reset()
+{
+  if (data_ == nullptr)
+  {
+    return;
+  }
+
+  SDE_ASSERT_TRUE(methods_.on_destroy);
+  methods_.on_destroy(std::free, data_);
+  data_ = nullptr;
+}
+
+bool NativeScriptInstance::initialize(
+  NativeScriptInstanceHandle handle,
+  std::string_view name,
+  GameResources& resources,
+  const AppProperties& app) const
+{
+  SDE_ASSERT_NE(data_, nullptr);
+  SDE_ASSERT_TRUE(methods_.on_initialize);
+  SDE_ASSERT_TRUE(methods_.on_get_version);
+
+  auto* basic_data = reinterpret_cast<native_script_header*>(data_);
+
+  // Set basic info
+  basic_data->uid = handle.id();
+  basic_data->name = name;
+  basic_data->version = methods_.on_get_version();
+  basic_data->initialization_time_point = app.time;
+
+  // Run initialization routine
+  return methods_.on_initialize(data_, reinterpret_cast<void*>(&resources), reinterpret_cast<const void*>(&app));
+}
+
+bool NativeScriptInstance::load(IArchive& iar) const
+{
+  SDE_ASSERT_NE(data_, nullptr);
+  SDE_ASSERT_TRUE(methods_.on_load);
+
+  // Load script header first
+  {
+    auto& header = *reinterpret_cast<native_script_header*>(data_);
+    iar >> ::sde::serial::named{"__header__", header};
+  }
+
+  // If version matches, load script data
+  if (const auto current_version = methods_.on_get_version() != header.version)
+  {
+    SDE_LOG_WARN() << "Not loading script data because version has changed from " << SDE_OSNV(header.version) << " to "
+                   << SDE_OSNV(current_version);
+    return true;
+  }
+  return methods_.on_load(data_, reinterpret_cast<void*>(&iar));
+}
+
+bool NativeScriptInstance::save(OArchive& oar) const
+{
+  SDE_ASSERT_NE(data_, nullptr);
+  SDE_ASSERT_TRUE(methods_.on_save);
+
+  // Save script header first
+  {
+    const auto& header = *reinterpret_cast<const native_script_header*>(data_);
+    oar << ::sde::serial::named{"__header__", header};
+  }
+
+  // Save actual script data
+  return methods_.on_save(data_, reinterpret_cast<void*>(&oar));
+}
+
+NativeScriptRef NativeScriptInstance::get() const
+{
+  SDE_ASSERT_NE(data_, nullptr);
+  SDE_ASSERT_TRUE(methods_.on_update);
+  return {methods_.on_update, data_};
+}
+
+asset::path NativeScriptInstance::path() const
+{
+  return {sde::format("%s_%lu.bin", methods_.on_get_name(), methods_.on_get_version())};
+}
+
+NativeScriptInstanceHandle NativeScriptInstanceCache::to_handle(const LibraryHandle& library) const
+{
+  const auto itr = library_to_native_script_lookup_.find(library);
+  if (itr == std::end(library_to_native_script_lookup_))
+  {
+    return NativeScriptInstanceHandle::null();
+  }
+  return itr->second;
+}
+
+void NativeScriptInstanceCache::when_created(
+  [[maybe_unused]] dependencies deps,
+  NativeScriptInstanceHandle handle,
+  const NativeScriptInstanceData* data)
+{
+  const auto [itr, added] = name_to_instance_lookup_.emplace(data->name, handle);
+  SDE_ASSERT_TRUE(added) << "Script " << data->name << " was already added as " << itr->first;
+}
+
+void NativeScriptInstanceCache::when_removed(
+  [[maybe_unused]] dependencies deps,
+  NativeScriptInstanceHandle handle,
+  NativeScriptInstanceData* data)
+{
+  name_to_instance_lookup_.erase(data->name);
+}
+
+expected<void, NativeScriptInstanceError>
+NativeScriptInstanceCache::load(NativeScriptInstanceHandle handle, const asset::path& script_data_path)
+{
+  // Get script data by handle
+  auto itr = handle_to_value_cache_.find(handle);
+  if (itr == std::end(handle_to_value_cache_))
+  {
+    return make_unexpected(NativeScriptInstanceError::kInvalidHandle);
+  }
+
+  auto& script = itr->second.value;
+
+  // Set instance data path if not already set
+  if (!script.instance_data_path.has_value())
+  {
+    asset::path path = script_data_path / script.instance.path();
+    SDE_LOG_WARN() << "No previous save data for: " << SDE_OSNV(script.name)
+                   << ". Data will be saved to: " << SDE_OSNV(path);
+    script.instance_data_path.emplace(std::move(path));
+    return make_unexpected(NativeScriptInstanceError::kInstanceLoadNotPossible);
+  }
+
+  // Open script instance data file
+  auto ifs_or_error = serial::file_istream::create(*script.instance_data_path);
+  if (!ifs_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(*script.instance_data_path) << " " << ifs_or_error.error();
+    return make_unexpected(NativeScriptInstanceError::kInstanceLoadFailed);
+  }
+
+  // Load data for this instance
+  if (IArchive iar{*ifs_or_error}; !script.instance.load(iar))
+  {
+    return make_unexpected(NativeScriptInstanceError::kInstanceLoadFailed);
+  }
+
+  return {};
+}
+
+expected<void, NativeScriptInstanceError>
+NativeScriptInstanceCache::save(NativeScriptInstanceHandle handle, const asset::path& script_data_path) const
+{
+  // Get script data by handle
+  auto itr = handle_to_value_cache_.find(handle);
+  if (itr == std::end(handle_to_value_cache_))
+  {
+    return make_unexpected(NativeScriptInstanceError::kInvalidHandle);
+  }
+
+  auto& script = itr->second.value;
+
+  SDE_ASSERT_TRUE(script.instance_data_path.has_value())
+    << "NativeScriptInstanceCache::load(" << SDE_OSNV(handle) << ", " << SDE_OSNV(script_data_path)
+    << ") must be called first";
+
+  // Open script instance data file
+  auto ofs_or_error = serial::file_ostream::create(*script.instance_data_path);
+  if (!ofs_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(*script.instance_data_path) << " " << ofs_or_error.error();
+    return make_unexpected(NativeScriptInstanceError::kInstanceSaveFailed);
+  }
+
+  // Load data for this instance
+  if (OArchive oar{*ofs_or_error}; !script.instance.save(oar))
+  {
+    return make_unexpected(NativeScriptInstanceError::kInstanceSaveFailed);
+  }
+
+  return {};
+}
+
+expected<void, NativeScriptInstanceError>
+NativeScriptInstanceCache::reload(dependencies deps, NativeScriptInstanceData& script)
+{
+  // Get source script to instance
+  auto native_script_or_error = deps.get<NativeScriptCache>().find(instance_parent);
+  if (!native_script_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << native_script_or_error.error();
+    return make_unexpected(NativeScriptInstanceError::kNativeScriptInvalid);
+  }
+
+  // Create an instance of source script
+  script.instance.reset(native_script_or_error->methods);
+
+  // Load script data if it was previously saved
+  if (!script.instance_data_path.has_value())
+  {
+    asset::path path = script_data_path / script.instance.path();
+    SDE_LOG_WARN() << "No previous save data for: " << SDE_OSNV(script.name)
+                   << ". Data will be saved to: " << SDE_OSNV(path);
+    script.instance_data_path.emplace(std::move(path));
+    return {};
+  }
+
+  // Open script instance data file
+  auto ifs_or_error = serial::file_istream::create(data_file_path);
+  if (!ifs_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(*script.instance_data_path) << " " << ifs_or_error.error();
+    return make_unexpected(NativeScriptInstanceError::kInstanceDataInvalid);
+  }
+  else
+  {
+    IArchive iar{*ifs_or_error};
+    script.instance.load(iar);
+  }
+  return {};
+}
+
+expected<void, NativeScriptInstanceError>
+NativeScriptInstanceCache::unload(dependencies deps, NativeScriptInstanceData& script)
+{
+  if (script.instance.isValid())
+  {
+    script.instance.reset();
+    SDE_LOG_INFO() << SDE_OSNV(script.name) << " (instance of " << SDE_OSNV(script.instance_parent) << ") was reset";
+  }
+  else
+  {
+    SDE_LOG_WARN() << SDE_OSNV(script.name) << " (instance of " << SDE_OSNV(script.instance_parent) << ") not active";
+  }
+  return {};
+}
+
+expected<NativeScriptInstanceData, NativeScriptInstanceError>
+NativeScriptInstanceCache::generate(dependencies deps, sde::string name, const NativeScriptHandle& instance_parent)
+{
+  NativeScriptInstanceData data;
+  {
+    data.name = std::move(name);
+    data.instance_parent = instance_parent;
+  }
+
+  if (auto ok_or_error = reload(deps, data); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << ok_or_error.error();
+    return make_unexpected(ok_or_error.error());
+  }
+
+  return {std::move(data)};
+}
+
+}  // namespace sde::game

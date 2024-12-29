@@ -60,7 +60,7 @@ public:
   GameResources(const GameResources& other) = delete;
   GameResources& operator=(const GameResources& other) = delete;
 
-  explicit GameResources(asset::path root) : root_{std::move(root)} {}
+  explicit GameResources(asset::path root);
 
   const asset::path& root() const { return root_; }
 

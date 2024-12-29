@@ -305,6 +305,7 @@ expected<void, SceneGraphError> SceneGraph::tick(GameResources& resources, const
 
 expected<SceneGraph, SceneGraphErrorCode> SceneGraph::create(GameResources& resources, const SceneManifest& manifest)
 {
+
   SceneGraph graph;
 
   sde::unordered_map<sde::string, SceneHandle> name_to_handle;

@@ -88,6 +88,7 @@ private:
   visit_scene(GameResources& resources, SceneHandle scene_handle, OnVisitSceneT on_visit_scene) const;
 
   SceneHandle root_;
+  script_id_t next_script_id_;
 
   auto field_list() { return FieldList(Field{"root", root_}); }
 };

@@ -76,6 +76,10 @@ public:
   using value_type = typename type_info::value_type;
   using version_type = Hash;
 
+  static_assert(std::is_enum_v<error_type>, "'error_type' must be an enum type");
+  static_assert(is_resource_handle_v<handle_type>, "'handle_type' must be a ResourceHandle<...> type");
+  static_assert(is_resource_v<value_type>, "'value_type' must be a Resource<...> type");
+
   struct element_ref
   {
     ResourceStatus status;
