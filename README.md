@@ -60,11 +60,11 @@ sudo apt install           \
 ## Running Todo
 
 - [x] Update script version computation to be based on IO fields
-- [ ] Move script instance data from manifest to a new NativeScriptInstance cache
-- [ ] Change the nature of the scene graph manifest
+- [x] Move script instance data from manifest to a new NativeScriptInstance cache
+- [x] Change the nature of the scene graph manifest
     + do not save manifest on game dump (all of this should be in resource caches)
     + save version and binary data location here
 - [ ] Implement a resource "borrow" system for tracking (add borrow counters to base cace)
 - [ ] Update component version computation to be based on IO fields (similar to scripts, since components list thier fields)
-- [ ] Remove entities from registry when removed from cache
+- [x] Remove entities from registry when removed from cache
 - [ ] Labels for asset browsers (tilesets, sounds, etc.)
