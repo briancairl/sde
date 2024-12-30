@@ -145,6 +145,14 @@ cc_binary(
   visibility=["//visibility:public"]
 )
 
+cc_binary(
+  name="logging",
+  srcs=["src/logging.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
 
 cc_library(
   name="builtin_native_scripts",
@@ -158,6 +166,7 @@ cc_library(
     ":renderer",
     ":imgui_start",
     ":imgui_end",
+    ":logging",
     ":library_browser",
     ":script_browser",
     ":scene_tree",

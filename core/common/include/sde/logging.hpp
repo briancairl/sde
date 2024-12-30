@@ -23,7 +23,8 @@ enum class LogSeverity
   kInfo,
   kWarn,
   kError,
-  kFatal
+  kFatal,
+  _kN
 };
 
 std::ostream& operator<<(std::ostream& os, LogSeverity severity);
@@ -40,12 +41,17 @@ struct LogFileInfo
 
 std::ostream& operator<<(std::ostream& os, const LogFileInfo& info);
 
+void setLogStream(std::ostream* os);
+
+void setLogStream(LogSeverity severity, std::ostream* os);
+
+std::ostream* getLogStream(LogSeverity severity);
+
 class Log
 {
 public:
   ~Log();
 
-  Log();
   explicit Log(std::ostream* target);
 
   Log(Log&& other);
@@ -105,7 +111,8 @@ private:
 #include <cstdlib>
 #include <iosfwd>
 
-#define SDE_LOG(severity) sde::Log{} << "[SDE LOG] (" << SDE_LOG_GENERATE_FILE_INFO(severity) << ") "
+#define SDE_LOG(severity)                                                                                              \
+  sde::Log{sde::getLogStream(severity)} << "[SDE LOG] (" << SDE_LOG_GENERATE_FILE_INFO(severity) << ") "
 #define SDE_LOG_FMT(severity, fmt, ...) SDE_LOG(severity) << sde::format<1024UL>(fmt, __VA_ARGS__)
 
 #endif  // SDE_LOGGING_DISABLED
@@ -121,7 +128,7 @@ private:
   if constexpr (false)                                                                                                 \
     sde::Log {}
 #else
-#define SDE_LOG_DEBUG() sde::Log{} << SDE_LOG_GENERATE_FILE_INFO(::sde::LogSeverity::kDebug) << ' '
+#define SDE_LOG_DEBUG() SDE_LOG(::sde::LogSeverity::kDebug)
 #endif
 
 #define SDE_LOG_INFO() SDE_LOG(::sde::LogSeverity::kInfo)

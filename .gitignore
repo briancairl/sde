@@ -19,3 +19,4 @@ MODULE*
 *.pyc
 *.bin
 *.ini
+*.log

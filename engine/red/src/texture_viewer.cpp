@@ -45,7 +45,7 @@ bool update(texture_viewer* self, sde::game::GameResources& resources, const sde
     return true;
   }
 
-  ImGui::Begin("textures");
+  ImGui::Begin(self->guid());
   for (const auto& [handle, element] : resources.get<graphics::TextureCache>())
   {
     if (element->source_image.isNull())

@@ -53,7 +53,7 @@ bool update(audio_manager* self, sde::game::GameResources& resources, const sde:
   {
     return true;
   }
-  ImGui::Begin("sounds");
+  ImGui::Begin(self->guid());
   for (const auto& [handle, sound] : resources.get<audio::SoundCache>())
   {
     ImGui::PushID(handle.id());

@@ -7,6 +7,63 @@
 
 namespace sde
 {
+namespace
+{
+
+std::ostream* __log_stream_defaults[static_cast<std::size_t>(LogSeverity::_kN)] = {
+  std::addressof(std::cout),
+  std::addressof(std::cout),
+  std::addressof(std::cout),
+  std::addressof(std::cerr),
+  std::addressof(std::cerr)};
+
+std::ostream* __log_streams[static_cast<std::size_t>(LogSeverity::_kN)] = {
+  std::addressof(std::cout),
+  std::addressof(std::cout),
+  std::addressof(std::cout),
+  std::addressof(std::cerr),
+  std::addressof(std::cerr)};
+
+}  // namespace
+
+void setLogStream(LogSeverity severity, std::ostream* os)
+{
+  SDE_ASSERT_NE(severity, LogSeverity::_kN);
+  const auto i = static_cast<std::size_t>(severity);
+  if (os == nullptr)
+  {
+    __log_streams[i] = __log_stream_defaults[i];
+  }
+  else
+  {
+    __log_streams[i] = os;
+  }
+}
+
+void setLogStream(std::ostream* os)
+{
+  if (os == nullptr)
+  {
+    for (std::size_t i = 0; i < static_cast<std::size_t>(LogSeverity::_kN); ++i)
+    {
+      __log_streams[i] = __log_stream_defaults[i];
+    }
+  }
+  else
+  {
+    for (std::size_t i = 0; i < static_cast<std::size_t>(LogSeverity::_kN); ++i)
+    {
+      __log_streams[i] = os;
+    }
+  }
+}
+
+std::ostream* getLogStream(LogSeverity severity)
+{
+  SDE_ASSERT_NE(severity, LogSeverity::_kN);
+  const auto i = static_cast<std::size_t>(severity);
+  return __log_streams[i];
+}
 
 std::ostream& operator<<(std::ostream& os, LogSeverity severity)
 {
@@ -22,6 +79,8 @@ std::ostream& operator<<(std::ostream& os, LogSeverity severity)
     return os << "Error";
   case LogSeverity::kFatal:
     return os << "Fatal";
+  case LogSeverity::_kN:
+    SDE_FAIL();
   }
   return os;
 }
@@ -40,8 +99,6 @@ Log::~Log()
 }
 
 Log::Log(std::ostream* target) : os_{target} {}
-
-Log::Log() : Log{std::addressof(std::cout)} {}
 
 Log::Log(Log&& other) { this->swap(other); }
 
@@ -76,6 +133,6 @@ Abort::Abort(std::ostream* target) : Log{target}
 
 Abort::Abort() : Abort{std::addressof(std::cerr)} {}
 
-Abort::Abort(Abort&& other) { this->swap(other); }
+Abort::Abort(Abort&& other) : Abort{nullptr} { this->swap(other); }
 
 }  // namespace sde

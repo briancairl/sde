@@ -31,6 +31,7 @@
         "ImguiEnd"          : "engine/red/libimgui_end.so",
         "ImguiStart"        : "engine/red/libimgui_start.so",
         "LibraryBrowser"    : "engine/red/liblibrary_browser.so",
+        "Logging"           : "engine/red/liblogging.so",
         "Physics"           : "engine/red/libphysics.so",
         "PlayerCharacter"   : "engine/red/libplayer_character.so",
         "Renderer"          : "engine/red/librenderer.so",
@@ -46,6 +47,10 @@
             {
                 "script" : "ImguiStart",
                 "name"   : null
+            },
+            {
+                "script" : "Logging",
+                "name"   : "Logging"
             },
             "ui",
             "game",
