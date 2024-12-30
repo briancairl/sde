@@ -25,6 +25,51 @@ namespace sde::game
 namespace
 {
 
+[[nodiscard]] bool save_entities(GameResources& resources, const asset::path& entity_data_path)
+{
+  SDE_LOG_INFO() << "Saving:" << SDE_OSNV(entity_data_path);
+  auto ofs_or_error = serial::file_ostream::create(entity_data_path);
+  if (!ofs_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << ofs_or_error.error() << " " << SDE_OSNV(entity_data_path);
+    return false;
+  }
+
+  OArchive oar{*ofs_or_error};
+  if (auto ok_or_error = resources.get<EntityCache>().save(resources.all(), oar); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << "Failed to save entity data: " << ok_or_error.error();
+    return false;
+  }
+  return true;
+}
+
+
+[[nodiscard]] bool load_entities(GameResources& resources, const asset::path& entity_data_path)
+{
+  SDE_LOG_INFO() << "Loading:" << SDE_OSNV(entity_data_path);
+  if (resources.get<EntityCache>().empty())
+  {
+    return true;
+  }
+
+  auto ifs_or_error = serial::file_istream::create(entity_data_path);
+  if (!ifs_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(entity_data_path);
+    return false;
+  }
+
+  IArchive iar{*ifs_or_error};
+  if (auto ok_or_error = resources.get<EntityCache>().load(resources.all(), iar); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << "Failed to load entity data: " << ok_or_error.error();
+    return false;
+  }
+  return true;
+}
+
+
 [[nodiscard]] bool save_resources(const GameResources& resources, const asset::path& resources_path)
 {
   SDE_LOG_INFO() << "Saving:" << SDE_OSNV(resources_path);
@@ -57,6 +102,13 @@ namespace
   else
   {
     SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(resources_path);
+    return false;
+  }
+
+  // Reload resources
+  if (auto ok_or_error = resources.refresh(); !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << "Failed to refresh resources: " << ok_or_error.error();
     return false;
   }
   return true;
@@ -119,27 +171,44 @@ namespace
     const sde::string scene_name{scene_key_json};
     if (auto scene_or_error = resources.find_or_create<SceneCache>(scene_name, scene_name); !scene_or_error.has_value())
     {
-      SDE_LOG_ERROR() << "scene[" << scene_name << "] : creation failed with error: " << scene_or_error.error();
+      SDE_LOG_ERROR() << "Scene: " << SDE_OSNV(scene_name)
+                      << " : creation failed with error: " << scene_or_error.error();
       return false;
+    }
+    else if (scene_or_error->status == ResourceStatus::kCreated)
+    {
+      SDE_LOG_INFO() << "Scene: " << SDE_OSNV(scene_name) << " added";
+    }
+    else
+    {
+      SDE_LOG_INFO() << "Scene: " << SDE_OSNV(scene_name) << " found";
     }
   }
 
   for (const auto& [scene_key_json, scene_nodes_json] : scenes_json.items())
   {
     const sde::string scene_name{scene_key_json};
+
+    // Remove previous nodes
+    resources.get<SceneCache>().update_if_exists(scene_name, [](auto& scene) { scene.nodes.clear(); });
+
+    // Update topology from manifest
     for (const auto& node_json : scene_nodes_json)
     {
       if (node_json.is_string())
       {
         const sde::string child_scene_name{node_json};
-        const auto scene_handle = resources.get<SceneCache>().to_handle(child_scene_name);
-        if (!scene_handle)
+        const auto child_scene_handle = resources.get<SceneCache>().to_handle(child_scene_name);
+        if (!child_scene_handle)
         {
-          SDE_LOG_ERROR() << "scene[" << scene_name << "] : invalid child scene " << SDE_OSNV(child_scene_name);
+          SDE_LOG_ERROR() << "Scene: " << scene_name << " : invalid child scene " << SDE_OSNV(child_scene_name);
           return false;
         }
-        resources.get<SceneCache>().update_if_exists(
-          scene_name, [scene_handle](auto& scene) { scene.nodes.push_back({.child = scene_handle}); });
+        else
+        {
+          resources.get<SceneCache>().update_if_exists(
+            scene_name, [child_scene_handle](auto& scene) { scene.nodes.push_back({.child = child_scene_handle}); });
+        }
       }
       else if (node_json.is_object())
       {
@@ -149,7 +218,7 @@ namespace
 
         if (!script)
         {
-          SDE_LOG_ERROR() << "scene[" << scene_name << "] : failed to retrieve script: " << SDE_OSNV(script_type);
+          SDE_LOG_ERROR() << "Scene: " << scene_name << " : failed to retrieve script: " << SDE_OSNV(script_type);
           return false;
         }
 
@@ -166,7 +235,7 @@ namespace
         }
         else
         {
-          SDE_LOG_ERROR() << "scene[" << scene_name << "] : failed to instance script: " << SDE_OSNV(script_name)
+          SDE_LOG_ERROR() << "Scene: " << scene_name << " : failed to instance script: " << SDE_OSNV(script_name)
                           << " from " << SDE_OSNV(script_type) << " with error: " << instance_or_error.error();
           return false;
         }
@@ -195,6 +264,8 @@ std::ostream& operator<<(std::ostream& os, GameError error)
     SDE_OS_ENUM_CASE(GameError::kInvalidRootDirectory)
     SDE_OS_ENUM_CASE(GameError::kInvalidManifest)
     SDE_OS_ENUM_CASE(GameError::kMissingManifest)
+    SDE_OS_ENUM_CASE(GameError::kEntityLoadError)
+    SDE_OS_ENUM_CASE(GameError::kEntitySaveError)
   }
   return os;
 }
@@ -220,7 +291,7 @@ void Game::spin(App& app)
         config_.cursor_icon_path, resources_.all(), config_.cursor_icon_path);
       image_or_error.has_value())
   {
-    app.window().setWindowIcon(image_or_error->value->ref());
+    app.window().setCursorIcon(image_or_error->value->ref());
     SDE_LOG_INFO() << "Set cursor icon: " << SDE_OSNV(config_.cursor_icon_path);
   }
   else
@@ -234,24 +305,21 @@ void Game::spin(App& app)
     [this](const auto& app_properties) {
       if (const auto next_scene = resources_.scene(); active_scene_ != next_scene)
       {
-        // Resolve directory for script data
-        const auto scripts_directory = resources_.directory("data/scripts");
-
         // Get handle to script instances
         auto& scripts = resources_.get<NativeScriptInstanceCache>();
 
         // Save previous scene data
         for (const auto& node : active_scene_sequence_)
         {
-          if (auto ok_or_error = scripts.save(node.handle, scripts_directory); ok_or_error.has_value())
+          if (auto ok_or_error = scripts.save(node.handle, config_.script_data_path); ok_or_error.has_value())
           {
             SDE_LOG_DEBUG() << "Saved data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " to "
-                            << SDE_OSNV(scripts_directory);
+                            << SDE_OSNV(config_.script_data_path);
           }
           else
           {
             SDE_LOG_ERROR() << "Saving data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " to "
-                            << SDE_OSNV(scripts_directory) << " failed with error: " << ok_or_error.error();
+                            << SDE_OSNV(config_.script_data_path) << " failed with error: " << ok_or_error.error();
           }
         }
 
@@ -273,20 +341,20 @@ void Game::spin(App& app)
         // Load current scene data
         for (const auto& node : active_scene_sequence_)
         {
-          if (auto ok_or_error = scripts.load(node.handle, scripts_directory); ok_or_error.has_value())
+          if (auto ok_or_error = scripts.load(node.handle, config_.script_data_path); ok_or_error.has_value())
           {
             SDE_LOG_DEBUG() << "Loaded data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " from "
-                            << SDE_OSNV(scripts_directory);
+                            << SDE_OSNV(config_.script_data_path);
           }
           else if (ok_or_error.error() == NativeScriptInstanceError::kInstanceDataUnavailable)
           {
             SDE_LOG_WARN() << "No previous save for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " in "
-                           << SDE_OSNV(scripts_directory);
+                           << SDE_OSNV(config_.script_data_path);
           }
           else
           {
             SDE_LOG_ERROR() << "Loading data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " from "
-                            << SDE_OSNV(scripts_directory) << " failed with error: " << ok_or_error.error();
+                            << SDE_OSNV(config_.script_data_path) << " failed with error: " << ok_or_error.error();
           }
         }
       }
@@ -358,7 +426,8 @@ expected<Game, GameError> Game::create(const asset::path& path)
     {
       auto config_json = manifest_json["config"];
       config.rate = Rate::fromHertz(static_cast<float>(config_json["rate"]));
-      config.resources_path = resources.path(asset::path{config_json["resources_path"]});
+      config.assets_data_path = resources.path(asset::path{config_json["assets_data_path"]});
+      config.entity_data_path = resources.path(asset::path{config_json["entity_data_path"]});
       config.script_data_path = resources.path(asset::path{config_json["script_data_path"]});
       config.window_icon_path = resources.path(asset::path{config_json["window_icon_path"]});
       config.cursor_icon_path = resources.path(asset::path{config_json["cursor_icon_path"]});
@@ -368,7 +437,7 @@ expected<Game, GameError> Game::create(const asset::path& path)
   // Load game assets
   SDE_ASSERT_NO_EXCEPT(
     {
-      if (!load_resources(resources, config.resources_path))
+      if (!load_resources(resources, config.assets_data_path))
       {
         SDE_LOG_ERROR() << "failed to load resources";
         return make_unexpected(GameError::kResourceLoadError);
@@ -377,6 +446,7 @@ expected<Game, GameError> Game::create(const asset::path& path)
     std::exception);
 
   // Load components from manifest
+  SDE_LOG_INFO() << "Loading components from manifest...";
   SDE_ASSERT_NO_EXCEPT(
     {
       if (!load_components(resources, manifest_json["components"]))
@@ -388,6 +458,7 @@ expected<Game, GameError> Game::create(const asset::path& path)
     std::exception);
 
   // Load scripts from manifest
+  SDE_LOG_INFO() << "Loading scripts from manifest...";
   SDE_ASSERT_NO_EXCEPT(
     {
       if (!load_scripts(resources, manifest_json["scripts"]))
@@ -399,12 +470,25 @@ expected<Game, GameError> Game::create(const asset::path& path)
     std::exception);
 
   // Load scenes from manifest
+  SDE_LOG_INFO() << "Loading scenes from manifest...";
   SDE_ASSERT_NO_EXCEPT(
     {
       if (!load_scenes(resources, manifest_json["scenes"]))
       {
         SDE_LOG_ERROR() << "failed to load scenes";
         return make_unexpected(GameError::kSceneLoadError);
+      }
+    },
+    std::exception);
+
+  // Load game entities
+  SDE_LOG_INFO() << "Loading components from manifest...";
+  SDE_ASSERT_NO_EXCEPT(
+    {
+      if (!load_entities(resources, config.entity_data_path))
+      {
+        SDE_LOG_ERROR() << "failed to load components";
+        return make_unexpected(GameError::kEntityLoadError);
       }
     },
     std::exception);
@@ -434,12 +518,13 @@ expected<Game, GameError> Game::create(const asset::path& path)
 expected<void, GameError> Game::dump()
 {
   // Resolve directory for script data
-  const auto scripts_directory = resources_.directory("data/scripts");
+  const auto scripts_directory = resources_.directory(config_.script_data_path);
 
   // Get handle to script instances
   auto& scripts = resources_.get<NativeScriptInstanceCache>();
 
   // Save scene data
+  SDE_LOG_INFO() << "Saving script data...";
   for (const auto& node : active_scene_sequence_)
   {
     if (auto ok_or_error = scripts.save(node.handle, scripts_directory); ok_or_error.has_value())
@@ -454,10 +539,23 @@ expected<void, GameError> Game::dump()
     }
   }
 
-  // Save resources
+  // Save game entities
+  SDE_LOG_INFO() << "Saving entity data...";
   SDE_ASSERT_NO_EXCEPT(
     {
-      if (!save_resources(resources_, config_.resources_path))
+      if (!save_entities(resources_, config_.entity_data_path))
+      {
+        SDE_LOG_ERROR() << "failed to load components";
+        return make_unexpected(GameError::kEntityLoadError);
+      }
+    },
+    std::exception);
+
+  // Save resources
+  SDE_LOG_INFO() << "Saving resource data...";
+  SDE_ASSERT_NO_EXCEPT(
+    {
+      if (!save_resources(resources_, config_.assets_data_path))
       {
         SDE_LOG_ERROR() << "failed to save resources";
         return make_unexpected(GameError::kResourceSaveError);

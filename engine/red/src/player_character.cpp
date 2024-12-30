@@ -57,6 +57,7 @@ struct player_character : native_script_data
 template <typename ArchiveT> bool serialize(player_character* self, ArchiveT& ar)
 {
   using namespace sde::serial;
+  SDE_LOG_ERROR() << sde::type_name<ArchiveT>();
   ar& Field{"entity", self->entity};
   ar& Field{"idle_frames", self->idle_frames};
   ar& Field{"walk_frames", self->walk_frames};
@@ -84,7 +85,7 @@ bool initialize(player_character* self, sde::game::GameResources& resources, con
   else
   {
     self->entity = entity_or_error->handle;
-    SDE_LOG_INFO() << self->entity << " created";
+    SDE_LOG_INFO() << self->entity << " created as: " << static_cast<int>(entity_or_error->value->id);
   }
   return true;
 }
@@ -103,7 +104,9 @@ void edit(player_character* self, sde::game::GameResources& resources, const sde
     return;
   }
 
-  ImGui::Begin(sde::format("%s-%lu", self->name().data(), self->uid()));
+  SDE_ASSERT_TRUE((resources.get<Registry>().all_of<Size, Position, graphics::AnimatedSprite>(entity->id)));
+
+  ImGui::Begin(self->guid());
   auto [size, position, sprite] = resources.get<Registry>().get<Size, Position, graphics::AnimatedSprite>(entity->id);
 
   ImGui::InputFloat2("size", size.extent.data());

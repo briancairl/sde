@@ -45,7 +45,7 @@ struct NativeScriptData : Resource<NativeScriptData>
   /// Script methods loaded from library
   NativeScriptMethods methods = {};
 
-  auto field_list() { return FieldList(Field{"library", library}, Field{"methods", methods}); }
+  auto field_list() { return FieldList(Field{"name", name}, Field{"library", library}, Field{"methods", methods}); }
 };
 
 class NativeScriptCache : public ResourceCache<NativeScriptCache>

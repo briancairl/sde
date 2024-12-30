@@ -100,7 +100,6 @@ bool NativeScriptInstance::initialize(
                     << SDE_OSNV(basic_data->version);
   }
 
-
   SDE_ASSERT_TRUE(methods_.on_initialize);
   return methods_.on_initialize(
     data_, reinterpret_cast<void*>(&resources), reinterpret_cast<const void*>(&app_properties));

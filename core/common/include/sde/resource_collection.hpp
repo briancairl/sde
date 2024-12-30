@@ -131,6 +131,14 @@ public:
     return cache.create(this->all(), std::forward<CreateArgTs>(args)...);
   }
 
+  template <typename CacheT, typename HandleT, typename... CreateArgTs>
+  [[nodiscard]] auto find_and_replace_or_create(HandleT&& handle, CreateArgTs&&... args)
+  {
+    auto& cache = this->template get<CacheT>();
+    return cache.find_and_replace_or_create(
+      std::forward<HandleT>(handle), this->all(), std::forward<CreateArgTs>(args)...);
+  }
+
   template <typename HandleT, typename... CreateArgTs>
   [[nodiscard]] auto find_or_replace(HandleT&& handle, CreateArgTs&&... args)
   {

@@ -30,6 +30,8 @@ enum class GameError
   kSceneEntryPointInvalid,
   kResourceLoadError,
   kResourceSaveError,
+  kEntityLoadError,
+  kEntitySaveError,
 };
 
 std::ostream& operator<<(std::ostream& os, GameError error);
@@ -37,7 +39,8 @@ std::ostream& operator<<(std::ostream& os, GameError error);
 struct GameConfig : Resource<GameConfig>
 {
   Rate rate = {};
-  asset::path resources_path = {};
+  asset::path assets_data_path = {};
+  asset::path entity_data_path = {};
   asset::path script_data_path = {};
   asset::path window_icon_path = {};
   asset::path cursor_icon_path = {};
@@ -46,7 +49,8 @@ struct GameConfig : Resource<GameConfig>
   {
     return FieldList(
       Field{"rate", rate},
-      Field{"resources_path", resources_path},
+      Field{"assets_data_path", assets_data_path},
+      Field{"entity_data_path", entity_data_path},
       Field{"script_data_path", script_data_path},
       Field{"window_icon_path", window_icon_path},
       Field{"cursor_icon_path", cursor_icon_path});

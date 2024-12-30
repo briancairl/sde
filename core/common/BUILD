@@ -96,6 +96,7 @@ cc_library(
     "include/sde/string.hpp",
     "include/sde/vector.hpp",
     "include/sde/unordered_map.hpp",
+    "include/sde/unordered_set.hpp",
   ],
   strip_include_prefix="include",
   deps=[":memory"],

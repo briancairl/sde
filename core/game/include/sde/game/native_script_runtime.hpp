@@ -13,6 +13,7 @@
 #include "sde/app_properties.hpp"
 #include "sde/dl/export.hpp"
 #include "sde/expected.hpp"
+#include "sde/format.hpp"
 #include "sde/game/archive.hpp"
 #include "sde/game/entity.hpp"
 #include "sde/game/game_resources.hpp"
@@ -41,6 +42,7 @@ struct native_script_data : private sde::game::native_script_header
   constexpr std::string_view name() const { return sde::game::native_script_header::name; }
   constexpr script_id_t uid() const { return sde::game::native_script_header::uid; }
   constexpr script_version_t version() const { return sde::game::native_script_header::version; }
+  const char* guid() const { return sde::format("%s-%lu", name().data(), uid()); }
 };
 
 

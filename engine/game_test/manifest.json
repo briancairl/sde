@@ -2,8 +2,9 @@
     "config" :
     {
         "rate"              : 60.0,
-        "resources_path"    : "data/resources.bin",
         "script_data_path"  : "data/scripts",
+        "entity_data_path"  : "data/entities.bin",
+        "assets_data_path"  : "data/resources.bin",
         "window_icon_path"  : "/home/brian/dev/assets/icons/red.png",
         "cursor_icon_path"  : "/home/brian/dev/assets/icons/sword.png"
     },
@@ -34,6 +35,7 @@
         "PlayerCharacter"   : "engine/red/libplayer_character.so",
         "Renderer"          : "engine/red/librenderer.so",
         "ScriptBrowser"     : "engine/red/libscript_browser.so",
+        "SceneTree"         : "engine/red/libscene_tree.so",
         "TextureViewer"     : "engine/red/libtexture_viewer.so",
         "TileSetEditor"     : "engine/red/libtile_set_editor.so"
     },
@@ -76,6 +78,10 @@
             },
             {
                 "script" : "LibraryBrowser",
+                "name"   : null
+            },
+            {
+                "script" : "SceneTree",
                 "name"   : null
             },
             {

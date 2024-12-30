@@ -146,23 +146,42 @@ public:
 
   template <typename HandleT, typename... CreateArgTs>
   [[nodiscard]] expected<element_ref, error_type>
+  find_and_replace_or_create(HandleT&& handle_or, dependencies deps, CreateArgTs&&... args)
+  {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
+    if (handle.isNull())
+    {
+      return create(deps, std::forward<CreateArgTs>(args)...);
+    }
+
+    const auto itr = handle_to_value_cache_.find(handle);
+    if (itr == handle_to_value_cache_.end())
+    {
+      return create_at_handle(handle, deps, std::forward<CreateArgTs>(args)...);
+    }
+    this->derived().when_removed(deps, itr->first, std::addressof(itr->second.value));
+    return replace_at_position(itr, deps, std::forward<CreateArgTs>(args)...);
+  }
+
+  template <typename HandleT, typename... CreateArgTs>
+  [[nodiscard]] expected<element_ref, error_type>
   find_or_replace(HandleT&& handle_or, dependencies deps, CreateArgTs&&... args)
   {
     const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
 
-    const auto current_itr = handle_to_value_cache_.find(handle);
+    const auto itr = handle_to_value_cache_.find(handle);
 
-    if (current_itr == handle_to_value_cache_.end())
+    if (itr == handle_to_value_cache_.end())
     {
       return create_at_handle(handle, deps, std::forward<CreateArgTs>(args)...);
     }
 
-    if (const auto current_version = ComputeHash(args...); current_version == current_itr->second.version)
+    if (const auto current_version = ComputeHash(args...); current_version == itr->second.version)
     {
-      return element_ref{ResourceStatus::kExisted, handle, std::addressof(current_itr->second.value)};
+      return element_ref{ResourceStatus::kExisted, handle, std::addressof(itr->second.value)};
     }
 
-    return replace_at_position(current_itr, deps, std::forward<CreateArgTs>(args)...);
+    return replace_at_position(itr, deps, std::forward<CreateArgTs>(args)...);
   }
 
   template <typename HandleT, typename... CreateArgTs>
@@ -242,6 +261,8 @@ public:
     const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
     return handle_to_value_cache_.count(handle) != 0;
   }
+
+  [[nodiscard]] bool empty() const { return handle_to_value_cache_.empty(); }
 
   [[nodiscard]] const auto& cache() const { return handle_to_value_cache_; }
 
@@ -332,6 +353,10 @@ private:
   [[nodiscard]] expected<element_ref, error_type>
   create_at_handle(handle_type handle, dependencies deps, CreateArgTs&&... args)
   {
+    if (handle.isNull())
+    {
+      return make_unexpected(error_type::kInvalidHandle);
+    }
     const auto current_version = ComputeHash(args...);
 
     // Create a new element
