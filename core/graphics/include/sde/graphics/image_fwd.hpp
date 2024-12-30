@@ -33,5 +33,4 @@ template <> struct ResourceHandleToCache<graphics::ImageHandle>
 {
   using type = graphics::ImageCache;
 };
-
 }  // namespace sde

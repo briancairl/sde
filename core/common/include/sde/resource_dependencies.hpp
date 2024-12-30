@@ -31,6 +31,18 @@ public:
 
   template <typename T> const auto& get() const { return *std::template get<std::add_pointer_t<T>>(tup_); }
 
+  template <typename HandleT> decltype(auto) borrow(const HandleT& handle)
+  {
+    static_assert(is_resource_handle_v<HandleT>);
+    return this->template get<resource_handle_to_cache_t<HandleT>>().borrow(handle);
+  }
+
+  template <typename HandleT> decltype(auto) restore(const HandleT& handle)
+  {
+    static_assert(is_resource_handle_v<HandleT>);
+    return this->template get<resource_handle_to_cache_t<HandleT>>().restore(handle);
+  }
+
   template <typename HandleT> decltype(auto) operator()(const HandleT& handle)
   {
     static_assert(is_resource_handle_v<HandleT>);

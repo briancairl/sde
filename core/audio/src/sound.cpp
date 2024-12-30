@@ -45,11 +45,10 @@ std::ostream& operator<<(std::ostream& os, SoundError error)
 {
   switch (error)
   {
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(SoundError)
     SDE_OS_ENUM_CASE(SoundError::kAssetNotFound)
     SDE_OS_ENUM_CASE(SoundError::kAssetLoadingFailed)
-    SDE_OS_ENUM_CASE(SoundError::kInvalidHandle)
     SDE_OS_ENUM_CASE(SoundError::kInvalidSoundData)
-    SDE_OS_ENUM_CASE(SoundError::kElementAlreadyExists)
     SDE_OS_ENUM_CASE(SoundError::kBackendBufferCreationFailure)
     SDE_OS_ENUM_CASE(SoundError::kBackendBufferTransferFailure)
   }

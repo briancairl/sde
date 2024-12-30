@@ -130,10 +130,9 @@ bool operator==(const Texture& lhs, const Texture& rhs);
 
 enum class TextureError
 {
-  kElementAlreadyExists,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kTextureNotFound,
   kInvalidSourceImage,
-  kInvalidHandle,
   kInvalidDimensions,
   kInvalidDataValue,
   kInvalidDataLength,

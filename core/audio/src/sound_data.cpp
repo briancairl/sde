@@ -45,11 +45,10 @@ std::ostream& operator<<(std::ostream& os, SoundDataError count)
   // clang-format off
   switch (count)
   {
-  case SoundDataError::kSoundDataNotFound: return os << "SoundDataNotFound";
-  case SoundDataError::kMissingSoundFile: return os << "MissingSoundFile";
-  case SoundDataError::kInvalidSoundFile: return os << "InvalidSoundFile";
-  case SoundDataError::kInvalidHandle: return os << "InvalidHandle";
-  case SoundDataError::kElementAlreadyExists: return os << "ElementAlreadyExists";
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(SoundDataError)
+    SDE_OS_ENUM_CASE(SoundDataError::kSoundDataNotFound)
+    SDE_OS_ENUM_CASE(SoundDataError::kMissingSoundFile)
+    SDE_OS_ENUM_CASE(SoundDataError::kInvalidSoundFile)
   }
   // clang-format on
   return os;

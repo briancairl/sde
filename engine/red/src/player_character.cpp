@@ -57,7 +57,6 @@ struct player_character : native_script_data
 template <typename ArchiveT> bool serialize(player_character* self, ArchiveT& ar)
 {
   using namespace sde::serial;
-  SDE_LOG_ERROR() << sde::type_name<ArchiveT>();
   ar& Field{"entity", self->entity};
   ar& Field{"idle_frames", self->idle_frames};
   ar& Field{"walk_frames", self->walk_frames};

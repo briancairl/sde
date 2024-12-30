@@ -25,4 +25,9 @@ template <> struct ResourceCacheTraits<graphics::FontCache>
   using value_type = graphics::Font;
   using dependencies = no_dependencies;
 };
+
+template <> struct ResourceHandleToCache<graphics::FontHandle>
+{
+  using type = graphics::FontCache;
+};
 }  // namespace sde

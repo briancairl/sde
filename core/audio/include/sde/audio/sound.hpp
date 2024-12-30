@@ -27,11 +27,10 @@ namespace sde::audio
 
 enum struct SoundError
 {
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kAssetNotFound,
   kAssetLoadingFailed,
-  kInvalidHandle,
   kInvalidSoundData,
-  kElementAlreadyExists,
   kBackendBufferCreationFailure,
   kBackendBufferTransferFailure,
 };

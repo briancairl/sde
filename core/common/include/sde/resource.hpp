@@ -58,14 +58,19 @@ template <typename T> struct _Stub : BasicField<T>
   constexpr _Stub(const char* _name, T& _value) : BasicField<T>{_name, std::addressof(_value)} {}
 };
 
-template <typename F> struct is_field : std::false_type
+template <typename F> struct IsField : std::false_type
 {};
 
-template <typename T> struct is_field<Field<T>> : std::true_type
+template <typename T> struct IsField<BasicField<T>> : std::true_type
 {};
 
-template <typename T> struct is_field<_Stub<T>> : std::true_type
+template <typename T> struct IsField<Field<T>> : std::true_type
 {};
+
+template <typename T> struct IsField<_Stub<T>> : std::true_type
+{};
+
+template <typename T> constexpr bool is_field_v = IsField<T>::value;
 
 template <typename T> auto to_const(Field<T> field) { return Field<const T>{field.name, field.get()}; }
 
@@ -174,7 +179,7 @@ template <typename T> struct Hasher<_Stub<T>>
 
 template <typename... FieldTs> auto FieldList(FieldTs&&... fields)
 {
-  static_assert((is_field<std::remove_reference_t<FieldTs>>() and ...), "Invalid FieldList");
+  static_assert((is_field_v<std::remove_reference_t<FieldTs>> and ...), "Invalid FieldList");
   return std::make_tuple(std::forward<FieldTs>(fields)...);
 }
 

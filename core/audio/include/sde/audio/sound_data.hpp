@@ -26,10 +26,9 @@ namespace sde::audio
  */
 enum class SoundDataError
 {
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kSoundDataNotFound,
   kMissingSoundFile,
-  kElementAlreadyExists,
-  kInvalidHandle,
   kInvalidSoundFile,
 };
 

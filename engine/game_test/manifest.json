@@ -91,6 +91,10 @@
             {
                 "script" : "TileSetEditor",
                 "name"   : null
+            },
+            {
+                "script" : "DragAndDrop",
+                "name"   : null
             }
         ]
     }
