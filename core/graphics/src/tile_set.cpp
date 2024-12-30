@@ -17,39 +17,32 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 {
   switch (error)
   {
-  case TileSetError::kElementAlreadyExists:
-    return os << "ElementAlreadyExists";
-  case TileSetError::kInvalidHandle:
-    return os << "InvalidHandle";
-  case TileSetError::kAssetNotFound:
-    return os << "AssetNotFound";
-  case TileSetError::kInvalidAtlasTexture:
-    return os << "InvalidAtlasTexture";
-  case TileSetError::kInvalidTileSize:
-    return os << "InvalidTileSize";
-  case TileSetError::kInvalidSlicingBounds:
-    return os << "InvalidSlicingBounds";
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(TileSetError)
+    SDE_OS_ENUM_CASE(TileSetError::kAssetNotFound)
+    SDE_OS_ENUM_CASE(TileSetError::kInvalidAtlasTexture)
+    SDE_OS_ENUM_CASE(TileSetError::kInvalidTileSize)
+    SDE_OS_ENUM_CASE(TileSetError::kInvalidSlicingBounds)
   }
   return os;
 }
 
-TileSetCache::TileSetCache(TextureCache& textures) : textures_{std::addressof(textures)} {}
-
-expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& texture, std::vector<Rect2f>&& tile_bounds)
+expected<TileSet, TileSetError>
+TileSetCache::generate(dependencies deps, const TextureHandle& texture, sde::vector<Rect2f>&& tile_bounds)
 {
-  if (!textures_->exists(texture))
+  if (!deps.get<TextureCache>().exists(texture))
   {
     return make_unexpected(TileSetError::kInvalidAtlasTexture);
   }
   return TileSet{.tile_atlas = texture, .tile_bounds = std::move(tile_bounds)};
 }
 
-expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& texture, const TileSetSliceUniform& slice)
+expected<TileSet, TileSetError>
+TileSetCache::generate(dependencies deps, const TextureHandle& texture, const TileSetSliceUniform& slice)
 {
-  const auto* texture_info = textures_->get_if(texture);
+  const auto* texture_info = deps.get<TextureCache>().get_if(texture);
   if (texture_info == nullptr)
   {
-    SDE_LOG_DEBUG("InvalidAtlasTexture");
+    SDE_LOG_ERROR() << "InvalidAtlasTexture: " << SDE_OSNV(texture);
     return make_unexpected(TileSetError::kInvalidAtlasTexture);
   }
 
@@ -107,7 +100,7 @@ expected<TileSet, TileSetError> TileSetCache::generate(const TextureHandle& text
 
   std::size_t skip_countdown = slice.start_offset;
 
-  std::vector<Rect2f> tile_bounds;
+  sde::vector<Rect2f> tile_bounds;
   tile_bounds.reserve(tile_count_max);
   if (slice.direction == TileSliceDirection::kColWise)
   {

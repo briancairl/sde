@@ -7,7 +7,6 @@
 
 // C++ Standard Library
 #include <iosfwd>
-#include <vector>
 
 // SDE
 #include "sde/expected.hpp"
@@ -20,16 +19,16 @@
 #include "sde/graphics/tile_set_handle.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
+#include "sde/vector.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
 {
 
-enum TileSetError
+enum class TileSetError
 {
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kAssetNotFound,
-  kElementAlreadyExists,
   kInvalidAtlasTexture,
   kInvalidTileSize,
   kInvalidSlicingBounds,
@@ -40,7 +39,7 @@ std::ostream& operator<<(std::ostream& os, TileSetError tile_set_error);
 struct TileSet : Resource<TileSet>
 {
   TextureHandle tile_atlas;
-  std::vector<Rect2f> tile_bounds;
+  sde::vector<Rect2f> tile_bounds;
 
   auto field_list() { return FieldList((Field{"tile_atlas", tile_atlas}), (Field{"tile_bounds", tile_bounds})); }
 
@@ -86,42 +85,24 @@ struct TileSetSliceUniform : Resource<TileSetSliceUniform>
   }
 };
 
+class TileSetCache : public ResourceCache<TileSetCache>
+{
+  friend fundemental_type;
+
+private:
+  expected<TileSet, TileSetError>
+  generate(dependencies deps, const TextureHandle& texture, const TileSetSliceUniform& slice);
+  expected<TileSet, TileSetError>
+  generate(dependencies deps, const TextureHandle& texture, sde::vector<Rect2f>&& tile_bounds);
+};
+
 }  // namespace sde::graphics
 
 namespace sde
 {
-
 template <> struct Hasher<graphics::TileSetSliceUniform> : ResourceHasher
 {};
 
 template <> struct Hasher<graphics::TileSet> : ResourceHasher
 {};
-
-template <> struct ResourceCacheTypes<graphics::TileSetCache>
-{
-  using error_type = graphics::TileSetError;
-  using handle_type = graphics::TileSetHandle;
-  using value_type = graphics::TileSet;
-};
-
 }  // namespace sde
-
-namespace sde::graphics
-{
-
-class TileSetCache : public ResourceCache<TileSetCache>
-{
-  friend fundemental_type;
-
-public:
-  explicit TileSetCache(TextureCache& textures);
-
-private:
-  TextureCache* textures_;
-
-  expected<TileSet, TileSetError> generate(const TextureHandle& texture, const TileSetSliceUniform& slice);
-
-  expected<TileSet, TileSetError> generate(const TextureHandle& texture, std::vector<Rect2f>&& tile_bounds);
-};
-
-}  // namespace sde::graphics

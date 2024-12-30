@@ -9,9 +9,9 @@ gtest(
 )
 
 gtest(
-  name="json_archive",
+  name="hash_archive",
   timeout = "short",
-  srcs=["json_archive.cpp"],
-  deps=["//core/serialization/archive:json_archive", "//core/serialization/stream:file_stream", "//core/serialization/primitives", ],
+  srcs=["hash_archive.cpp"],
+  deps=["//core/serialization/archive:hash_archive" ],
   visibility=["//visibility:public"],
 )

@@ -130,21 +130,24 @@ private:
       auto [tm, tm_pos] = assets.registry.get<TileMap, Position>(*tile_map_active_);
       const auto ti = tm.getTileIndex(pick_pos - tm_pos.center);
 
-      if (app.keys.isPressed(KeyCode::kA))
+      if (ImGui::IsPopupOpen("tile-map-edit"))
       {
-        tm_pos.center.x() -= tile_map_active_options_.tile_size.x();
-      }
-      if (app.keys.isPressed(KeyCode::kD))
-      {
-        tm_pos.center.x() += tile_map_active_options_.tile_size.x();
-      }
-      if (app.keys.isPressed(KeyCode::kW))
-      {
-        tm_pos.center.y() += tile_map_active_options_.tile_size.y();
-      }
-      if (app.keys.isPressed(KeyCode::kS))
-      {
-        tm_pos.center.y() -= tile_map_active_options_.tile_size.y();
+        if (app.keys.isPressed(KeyCode::kA))
+        {
+          tm_pos.center.x() -= tile_map_active_options_.tile_size.x();
+        }
+        if (app.keys.isPressed(KeyCode::kD))
+        {
+          tm_pos.center.x() += tile_map_active_options_.tile_size.x();
+        }
+        if (app.keys.isPressed(KeyCode::kW))
+        {
+          tm_pos.center.y() += tile_map_active_options_.tile_size.y();
+        }
+        if (app.keys.isPressed(KeyCode::kS))
+        {
+          tm_pos.center.y() -= tile_map_active_options_.tile_size.y();
+        }
       }
 
       if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))

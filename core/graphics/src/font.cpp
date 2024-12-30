@@ -34,17 +34,29 @@ UniqueResource<FT_Library, FreeTypeRelease> FreeType{[] {
 
 }  // namespace
 
+std::ostream& operator<<(std::ostream& os, FontError error)
+{
+  switch (error)
+  {
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(FontError)
+    SDE_OS_ENUM_CASE(FontError::kAssetNotFound)
+    SDE_OS_ENUM_CASE(FontError::kAssetInvalid)
+    SDE_OS_ENUM_CASE(FontError::kFontNotFound)
+  }
+  return os;
+}
+
 void FontNativeDeleter::operator()(void* font) const
 {
-  SDE_LOG_DEBUG_FMT("FontNativeDeleter(%p)", font);
+  SDE_LOG_DEBUG() << "FontNativeDeleter(" << font << ')';
   FT_Done_Face(reinterpret_cast<FT_Face>(font));
 }
 
-expected<void, FontError> FontCache::reload(Font& font)
+expected<void, FontError> FontCache::reload([[maybe_unused]] dependencies deps, Font& font)
 {
   if (!asset::exists(font.path))
   {
-    SDE_LOG_DEBUG("AssetNotFound");
+    SDE_LOG_DEBUG() << "AssetNotFound";
     return make_unexpected(FontError::kAssetNotFound);
   }
 
@@ -55,25 +67,25 @@ expected<void, FontError> FontCache::reload(Font& font)
   static constexpr FT_Long kFontIndex = 0;
   if (FT_New_Face(FreeType, font.path.string().c_str(), kFontIndex, &face) != kFreeTypeSuccess)
   {
-    SDE_LOG_DEBUG("AssetInvalid");
+    SDE_LOG_DEBUG() << "AssetInvalid";
     return make_unexpected(FontError::kAssetInvalid);
   }
 
   font.native_id = FontNativeID{reinterpret_cast<void*>(face)};
-  SDE_LOG_DEBUG_FMT("Font(%p) %s", font.native_id.value(), font.path.string().c_str());
+  SDE_LOG_DEBUG() << "Font(" << font.native_id << ") " << font.path;
   return {};
 }
 
-expected<void, FontError> FontCache::unload(Font& font)
+expected<void, FontError> FontCache::unload([[maybe_unused]] dependencies deps, Font& font)
 {
   font.native_id = FontNativeID{nullptr};
   return {};
 }
 
-expected<Font, FontError> FontCache::generate(const asset::path& font_path)
+expected<Font, FontError> FontCache::generate(dependencies deps, const asset::path& font_path)
 {
   Font font{.path = font_path, .native_id = FontNativeID{nullptr}};
-  if (auto ok_or_error = reload(font); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, font); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }

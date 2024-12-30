@@ -7,7 +7,8 @@ cc_library(
     "include/sde/serial/std/string.hpp",
     "include/sde/serial/std/tuple.hpp",
     "include/sde/serial/std/utility.hpp",
-    "include/sde/serial/std/vector.hpp"
+    "include/sde/serial/std/vector.hpp",
+    "include/sde/serial/std/unordered_map.hpp"
   ],
   strip_include_prefix="include",
   deps=[

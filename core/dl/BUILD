@@ -1,0 +1,25 @@
+cc_library(
+  name="export",
+  hdrs=[
+    "include/sde/dl/export.hpp",
+  ],
+  strip_include_prefix="include",
+  visibility=["//visibility:public"]
+)
+
+cc_library(
+  name="library",
+  hdrs=[
+    "include/sde/dl/library.hpp",
+  ],
+  srcs=[
+    "src/library.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    "//core/common:core",
+    "//core/common:resource",
+    "@libdl//:libdl",
+  ],
+  visibility=["//visibility:public"]
+)

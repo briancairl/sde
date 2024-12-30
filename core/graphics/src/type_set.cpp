@@ -4,7 +4,6 @@
 #include <numeric>
 #include <ostream>
 #include <type_traits>
-#include <vector>
 
 // FreeType
 #include <ft2build.h>
@@ -44,11 +43,11 @@ const auto kDefaultGlyphs{[] {
   return glyphs;
 }()};
 
-expected<void, TypeSetError> loadGlyphsFromFont(std::vector<Glyph>& glyph_lut, const Font& font, int glyph_height)
+expected<void, TypeSetError> loadGlyphsFromFont(sde::vector<Glyph>& glyph_lut, const Font& font, int glyph_height)
 {
   if (glyph_height == 0)
   {
-    SDE_LOG_DEBUG("GlyphSizeInvalid");
+    SDE_LOG_ERROR() << "GlyphSizeInvalid: " << SDE_OSNV(glyph_height);
     return make_unexpected(TypeSetError::kGlyphSizeInvalid);
   }
 
@@ -66,7 +65,7 @@ expected<void, TypeSetError> loadGlyphsFromFont(std::vector<Glyph>& glyph_lut, c
   {
     if (FT_Load_Char(face, kDefaultGlyphs[char_index], FT_LOAD_RENDER) != kFreeTypeSuccess)
     {
-      SDE_LOG_DEBUG("GlyphMissing");
+      SDE_LOG_DEBUG() << "GlyphMissing: " << SDE_OSNV(char_index);
       return make_unexpected(TypeSetError::kGlyphDataMissing);
     }
     else
@@ -84,9 +83,9 @@ expected<void, TypeSetError> loadGlyphsFromFont(std::vector<Glyph>& glyph_lut, c
 }
 
 expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
-  TextureCache& texture_cache,
+  TypeSetCache::dependencies deps,
   TextureHandle glyph_atlas,
-  std::vector<Glyph>& glyph_lut,
+  sde::vector<Glyph>& glyph_lut,
   const Font& font,
   const TypeSetOptions& options)
 {
@@ -100,14 +99,15 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
 
   if (texture_dimensions.prod() == 0)
   {
-    SDE_LOG_DEBUG("GlyphAtlasTextureCreationFailed");
+    SDE_LOG_ERROR() << "GlyphAtlasTextureCreationFailed : " << SDE_OSNV(texture_dimensions);
     return make_unexpected(TypeSetError::kGlyphAtlasTextureCreationFailed);
   }
 
   // clang-format off
   auto glyph_atlas_or_error = 
-    texture_cache.find_or_create(
+    deps.get<TextureCache>().find_or_create(
       glyph_atlas,
+      deps,
       TypeCode::kUInt8,
       TextureShape{.value=texture_dimensions},
       TextureLayout::kR,
@@ -139,7 +139,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
     // TODO(bcairl) is there anyway to prevent rendering twice?
     if (FT_Load_Char(face, g.character, FT_LOAD_RENDER) != kFreeTypeSuccess)
     {
-      SDE_LOG_DEBUG("GlyphMissing");
+      SDE_LOG_ERROR() << "GlyphMissing: " << SDE_OSNV(g.character);
       return make_unexpected(TypeSetError::kGlyphDataMissing);
     }
 
@@ -156,7 +156,7 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
           Bounds2i{tex_coord_min_px, tex_coord_max_px});
         !ok_or_error.has_value())
     {
-      SDE_LOG_DEBUG("GlyphRenderingFailure");
+      SDE_LOG_ERROR() << "GlyphRenderingFailure: " << ok_or_error.error();
       return make_unexpected(TypeSetError::kGlyphRenderingFailure);
     }
 
@@ -173,9 +173,20 @@ expected<TextureHandle, TypeSetError> sendGlyphsToTexture(
 
 }  // namespace
 
-TypeSetCache::TypeSetCache(TextureCache& textures, FontCache& fonts) :
-    textures_{std::addressof(textures)}, fonts_{std::addressof(fonts)}
-{}
+
+std::ostream& operator<<(std::ostream& os, TypeSetError error)
+{
+  switch (error)
+  {
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(TypeSetError)
+    SDE_OS_ENUM_CASE(TypeSetError::kInvalidFont)
+    SDE_OS_ENUM_CASE(TypeSetError::kGlyphSizeInvalid)
+    SDE_OS_ENUM_CASE(TypeSetError::kGlyphDataMissing)
+    SDE_OS_ENUM_CASE(TypeSetError::kGlyphRenderingFailure)
+    SDE_OS_ENUM_CASE(TypeSetError::kGlyphAtlasTextureCreationFailed)
+  }
+  return os;
+}
 
 const Bounds2i TypeSet::getTextBounds(std::string_view text) const
 {
@@ -196,9 +207,10 @@ const Bounds2i TypeSet::getTextBounds(std::string_view text) const
   return text_bounds;
 }
 
-expected<void, TypeSetError> TypeSetCache::reload(TypeSet& type_set)
+expected<void, TypeSetError> TypeSetCache::reload(dependencies deps, TypeSet& type_set)
 {
-  const auto* font = fonts_->get_if(type_set.font);
+  const auto& fonts = deps.get<FontCache>();
+  const auto* font = fonts.get_if(type_set.font);
 
   if (font == nullptr)
   {
@@ -210,7 +222,7 @@ expected<void, TypeSetError> TypeSetCache::reload(TypeSet& type_set)
     type_set.font.id(),
     font->native_id.value(),
     font->path.string().c_str(),
-    fonts_->size());
+    fonts.size());
 
   if (auto ok_or_error = loadGlyphsFromFont(type_set.glyphs, *font, static_cast<int>(type_set.options.height_px));
       !ok_or_error.has_value())
@@ -218,11 +230,10 @@ expected<void, TypeSetError> TypeSetCache::reload(TypeSet& type_set)
     return make_unexpected(ok_or_error.error());
   }
 
-  auto glyph_atlas_or_error =
-    sendGlyphsToTexture(*textures_, type_set.glyph_atlas, type_set.glyphs, *font, type_set.options);
+  auto glyph_atlas_or_error = sendGlyphsToTexture(deps, type_set.glyph_atlas, type_set.glyphs, *font, type_set.options);
   if (!glyph_atlas_or_error.has_value())
   {
-    SDE_LOG_DEBUG("GlyphTextureInvalid");
+    SDE_LOG_ERROR() << glyph_atlas_or_error.error();
     return make_unexpected(glyph_atlas_or_error.error());
   }
   type_set.glyph_atlas = (*glyph_atlas_or_error);
@@ -230,18 +241,20 @@ expected<void, TypeSetError> TypeSetCache::reload(TypeSet& type_set)
   return {};
 }
 
-expected<void, TypeSetError> TypeSetCache::unload(TypeSet& type_set)
+expected<void, TypeSetError> TypeSetCache::unload(dependencies deps, TypeSet& type_set)
 {
-  textures_->remove(type_set.glyph_atlas);
+  deps.get<TextureCache>().remove(type_set.glyph_atlas, deps);
   type_set.glyphs.clear();
   return {};
 }
 
-expected<TypeSet, TypeSetError> TypeSetCache::generate(FontHandle font, const TypeSetOptions& options)
+expected<TypeSet, TypeSetError>
+TypeSetCache::generate(dependencies deps, FontHandle font, const TypeSetOptions& options)
 {
   TypeSet type_set{.options = options, .font = font, .glyph_atlas = TextureHandle::null(), .glyphs = {}};
-  if (auto ok_or_error = reload(type_set); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, type_set); !ok_or_error.has_value())
   {
+    SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(ok_or_error.error());
   }
   return type_set;

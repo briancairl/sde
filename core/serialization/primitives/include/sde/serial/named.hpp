@@ -65,7 +65,7 @@ template <typename OArchive, typename ValueT> struct save<OArchive, named<ValueT
 {
   void operator()(OArchive& ar, const named<ValueT>& obj)
   {
-    ar << label{obj.name};
+    ar << label<ValueT>{obj.name};
     ar << obj.value;
   }
 };
@@ -77,7 +77,7 @@ template <typename IArchive, typename ValueT> struct load<IArchive, named<ValueT
 {
   void operator()(IArchive& ar, named<ValueT> obj)
   {
-    ar >> label{obj.name};
+    ar >> label<ValueT>{obj.name};
     ar >> obj.value;
   }
 };

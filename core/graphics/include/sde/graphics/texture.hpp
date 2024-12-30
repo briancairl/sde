@@ -23,8 +23,8 @@
 #include "sde/graphics/typedef.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
-#include "sde/resource_wrapper.hpp"
 #include "sde/type.hpp"
+#include "sde/unique_resource.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
@@ -130,10 +130,9 @@ bool operator==(const Texture& lhs, const Texture& rhs);
 
 enum class TextureError
 {
-  kElementAlreadyExists,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kTextureNotFound,
   kInvalidSourceImage,
-  kInvalidHandle,
   kInvalidDimensions,
   kInvalidDataValue,
   kInvalidDataLength,
@@ -145,32 +144,6 @@ enum class TextureError
 };
 
 std::ostream& operator<<(std::ostream& os, TextureError error);
-
-}  // namespace sde::graphics
-
-namespace sde
-{
-
-template <> struct Hasher<graphics::TextureOptions> : ResourceHasher
-{};
-
-template <> struct Hasher<graphics::TextureShape> : ResourceHasher
-{};
-
-template <> struct Hasher<graphics::Texture> : ResourceHasher
-{};
-
-template <> struct ResourceCacheTypes<graphics::TextureCache>
-{
-  using error_type = graphics::TextureError;
-  using handle_type = graphics::TextureHandle;
-  using value_type = graphics::Texture;
-};
-
-}  // namespace sde
-
-namespace sde::graphics
-{
 
 template <typename DataT>
 expected<void, TextureError> replace(const Texture& texture_info, View<const DataT> data, const Bounds2i& area);
@@ -184,25 +157,42 @@ class TextureCache : public ResourceCache<TextureCache>
 {
   friend fundemental_type;
 
-public:
-  explicit TextureCache(ImageCache& images);
-
 private:
-  ImageCache* images_;
+  expected<void, TextureError> reload(dependencies deps, Texture& texture);
+  static expected<void, TextureError> unload(dependencies deps, Texture& texture);
 
-  expected<void, TextureError> reload(Texture& texture);
-  static expected<void, TextureError> unload(Texture& texture);
+  expected<Texture, TextureError>
+  generate(dependencies deps, const asset::path& image_path, const TextureOptions& options = {});
 
-  expected<Texture, TextureError> generate(const asset::path& image_path, const TextureOptions& options = {});
-
-  expected<Texture, TextureError> generate(const ImageHandle& image, const TextureOptions& options = {});
+  expected<Texture, TextureError>
+  generate(dependencies deps, const ImageHandle& image, const TextureOptions& options = {});
 
   template <typename DataT>
-  expected<Texture, TextureError>
-  generate(View<const DataT> data, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
+  expected<Texture, TextureError> generate(
+    dependencies deps,
+    View<const DataT> data,
+    const TextureShape& shape,
+    TextureLayout layout,
+    const TextureOptions& options = {});
 
-  expected<Texture, TextureError>
-  generate(TypeCode type, const TextureShape& shape, TextureLayout layout, const TextureOptions& options = {});
+  expected<Texture, TextureError> generate(
+    dependencies deps,
+    TypeCode type,
+    const TextureShape& shape,
+    TextureLayout layout,
+    const TextureOptions& options = {});
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct Hasher<graphics::TextureOptions> : ResourceHasher
+{};
+
+template <> struct Hasher<graphics::TextureShape> : ResourceHasher
+{};
+
+template <> struct Hasher<graphics::Texture> : ResourceHasher
+{};
+}  // namespace sde

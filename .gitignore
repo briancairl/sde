@@ -17,3 +17,5 @@ MODULE*
 # Other files
 *.swp
 *.pyc
+*.bin
+*.ini

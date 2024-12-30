@@ -11,6 +11,7 @@
 
 // SDE
 #include "sde/app.hpp"
+#include "sde/audio/sound_device.hpp"
 #include "sde/graphics/window.hpp"
 #include "sde/logging.hpp"
 
@@ -95,34 +96,71 @@ void glfwImplDropCallback(GLFWwindow* glfw_window, int path_count, const char* p
 
 }  // namespace
 
-expected<App, AppError> App::create(Window&& window)
+std::ostream& operator<<(std::ostream& os, AppDirective directive)
+{
+  switch (directive)
+  {
+    SDE_OS_ENUM_CASE(AppDirective::kContinue)
+    SDE_OS_ENUM_CASE(AppDirective::kReset)
+    SDE_OS_ENUM_CASE(AppDirective::kClose)
+  }
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, AppError error)
+{
+  switch (error)
+  {
+    SDE_OS_ENUM_CASE(AppError::kWindowInvalid)
+    SDE_OS_ENUM_CASE(AppError::kWindowCreationFailure)
+    SDE_OS_ENUM_CASE(AppError::kSoundDeviceInvalid)
+    SDE_OS_ENUM_CASE(AppError::kSoundDeviceCreationFailure)
+  }
+  return os;
+}
+
+expected<App, AppError> App::create(Window&& window, SoundDevice&& sound_device)
 {
   if (window.isNull())
   {
-    SDE_LOG_DEBUG("WindowInvalid");
+    SDE_LOG_DEBUG() << "WindowInvalid: " << window;
     return make_unexpected(AppError::kWindowInvalid);
   }
-  return App{std::move(window)};
+  return App{std::move(window), std::move(sound_device)};
 }
 
 expected<App, AppError> App::create(const WindowOptions& options)
 {
-  auto window_or_error = Window::create(options);
+  auto window_or_error = graphics::Window::create(options);
   if (!window_or_error.has_value())
   {
-    SDE_LOG_DEBUG("WindowCreationFailure");
+    SDE_LOG_DEBUG() << "WindowCreationFailure: " << window_or_error.error();
     return make_unexpected(AppError::kWindowCreationFailure);
   }
-  return App{std::move(window_or_error).value()};
+
+  auto audio_or_error = audio::SoundDevice::create();
+  if (!audio_or_error.has_value())
+  {
+    SDE_LOG_DEBUG() << "SoundDeviceCreationFailure: " << audio_or_error.error();
+    return make_unexpected(AppError::kSoundDeviceCreationFailure);
+  }
+
+  return App{std::move(window_or_error).value(), std::move(audio_or_error).value()};
 }
 
-App::App(Window&& window) : window_{std::move(window)} {}
+App::App(Window&& window, SoundDevice&& sound_device) :
+    window_{std::move(window)}, sound_device_{std::move(sound_device)}
+{}
 
-void App::spin(OnUpdate on_update, const Rate spin_rate)
+void App::spin(OnReset on_reset, OnUpdate on_update, OnClose on_close, const Rate spin_rate)
 {
-  AppState app_state;
+  SDE_ASSERT_NE(on_reset, nullptr);
+  SDE_ASSERT_NE(on_update, nullptr);
+  SDE_ASSERT_NE(on_close, nullptr);
+
   AppProperties app_properties;
   app_properties.window = window_.value();
+  app_properties.sound_device = sound_device_.handle();
 
   auto* glfw_window = reinterpret_cast<GLFWwindow*>(window_.value());
 
@@ -134,6 +172,7 @@ void App::spin(OnUpdate on_update, const Rate spin_rate)
   auto previous_scroll_callback = glfwSetScrollCallback(glfw_window, glfwImplScrollEventHandler);
   auto previous_drop_callback = glfwSetDropCallback(glfw_window, glfwImplDropCallback);
 
+  AppDirective next_directive = AppDirective::kReset;
   while (!glfwWindowShouldClose(glfw_window))
   {
     glfwGetFramebufferSize(
@@ -146,13 +185,15 @@ void App::spin(OnUpdate on_update, const Rate spin_rate)
 
     glfwImplScanKeyStates(glfw_window, app_properties.keys);
 
-    switch (on_update(app_state, app_properties))
+    switch (next_directive)
     {
     case AppDirective::kContinue:
+      next_directive = on_update(app_properties);
       break;
     case AppDirective::kReset:
       t_start = Clock::now();
       t_prev = t_start;
+      next_directive = on_reset(app_properties);
       break;
     case AppDirective::kClose:
       return;
@@ -163,7 +204,8 @@ void App::spin(OnUpdate on_update, const Rate spin_rate)
     const auto t_now = Clock::now();
     if (t_now > t_next)
     {
-      SDE_LOG_WARN_FMT("loop rate %e Hz not met (behind by %e s)", toHertz(spin_rate), toSeconds(t_now - t_next));
+      SDE_LOG_WARN() << "loop rate " << toHertz(spin_rate) << " Hz not met (behind by " << toSeconds(t_now - t_next)
+                     << " s)";
       t_next = t_now + spin_rate.period();
     }
     else
@@ -178,6 +220,9 @@ void App::spin(OnUpdate on_update, const Rate spin_rate)
     app_properties.time_delta = (t_now - t_prev);
     t_prev = t_now;
   }
+
+  on_close(app_properties);
+
   glfwSetDropCallback(glfw_window, previous_drop_callback);
   glfwSetScrollCallback(glfw_window, previous_scroll_callback);
   glfwSetWindowUserPointer(glfw_window, nullptr);

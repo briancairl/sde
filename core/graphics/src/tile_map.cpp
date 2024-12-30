@@ -4,11 +4,11 @@
 
 // SDE
 #include "sde/geometry_utils.hpp"
-#include "sde/graphics/assets.hpp"
 #include "sde/graphics/render_buffer.hpp"
 #include "sde/graphics/renderer.hpp"
 #include "sde/graphics/shapes.hpp"
 #include "sde/graphics/tile_map.hpp"
+#include "sde/graphics/tile_set.hpp"
 
 namespace sde::graphics
 {
@@ -38,7 +38,7 @@ void TileMap::setup(const TileMapOptions& options)
   }
 }
 
-void TileMap::draw(RenderPass& rp, const Vec2f& origin) const
+void TileMap::draw(RenderPass& rp, const dependencies& deps, const Vec2f& origin) const
 {
   const Bounds2f aabb_clipped{rp.getViewportInWorldBounds() & Bounds2f{origin, origin + options_.mapSize()}};
   if (aabb_clipped.volume() == 0)
@@ -46,7 +46,7 @@ void TileMap::draw(RenderPass& rp, const Vec2f& origin) const
     return;
   }
 
-  const auto tile_set = rp.assets().tile_sets(options_.tile_set);
+  const auto tile_set = deps(options_.tile_set);
   if (!tile_set)
   {
     return;

@@ -23,3 +23,14 @@ gtest(
   deps=["//core/graphics"],
   visibility=["//visibility:public"],
 )
+
+cc_binary(
+    name="playground",
+    srcs=["playground.cpp"],
+    deps=[
+        "//core/graphics:graphics",
+        "//core/graphics:window"
+    ],
+    visibility=["//visibility:public"],
+    data=[]
+)

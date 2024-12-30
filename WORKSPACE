@@ -4,14 +4,21 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_r
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # Boost
-git_repository(
-    name="com_github_nelhage_rules_boost",
-    commit="d104cb7beba996d67ae5826be07aab2d9ca0ee38",
-    remote="https://github.com/nelhage/rules_boost",
-    shallow_since="1637888414 -0800",
+# git_repository(
+#     name="com_github_nelhage_rules_boost",
+#     commit="d104cb7beba996d67ae5826be07aab2d9ca0ee38",
+#     remote="https://github.com/nelhage/rules_boost",
+#     shallow_since="1637888414 -0800",
+# )
+# load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
+# boost_deps()
+
+# LibDL
+new_local_repository(
+    name="libdl",
+    build_file="@//external:libdl.BUILD",
+    path="/usr/",
 )
-load("@com_github_nelhage_rules_boost//:boost/boost.bzl", "boost_deps")
-boost_deps()
 
 # Eigen
 http_archive(
@@ -26,8 +33,8 @@ http_archive(
 git_repository(
   name="entt",
   remote="https://github.com/skypjack/entt.git",
-  commit="85ca2f356234de3c945667d12857dea2a26c214d",
-  shallow_since="1659518663 +0200"
+  commit="4a2d1a8541228a90e02a873dba6a980506c42c03",
+  shallow_since="1729235740 +0200"
 )
 
 # ImGui
@@ -95,6 +102,16 @@ new_git_repository(
   shallow_since="1720340537 +0200",
   build_file="@//external:nlohmann.BUILD",
 )
+
+# DONT
+new_git_repository(
+  name="dont",
+  remote="git@github.com:briancairl/dont.git",
+  commit="5c4e3396aa8e597212a80e203a54fc1c52994850",
+  shallow_since="1734653584 -0500",
+  build_file="@//external:dont.BUILD",
+)
+
 
 # GTest/GMock
 http_archive(

@@ -37,7 +37,7 @@ template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kFloat64>()
 template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kSInt32>() { return 4UL; }
 template <> [[nodiscard]] constexpr std::size_t byte_count<TypeCode::kUInt32>() { return 4UL; }
 
-inline std::size_t byte_count(TypeCode code)
+constexpr std::size_t byte_count(TypeCode code)
 {
   switch (code)
   {

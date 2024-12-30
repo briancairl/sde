@@ -1,39 +1,169 @@
 cc_library(
-  name="red",
+  name="red_common",
   hdrs=[
     "include/red/components.hpp",
-    #"include/red/background_music.hpp",
-    "include/red/player_character.hpp",
-    "include/red/renderer.hpp",
-    "include/red/drag_and_drop_asset_loader.hpp",
-    #"include/red/weather.hpp",
-    #"include/red/world.hpp",
     "include/red/imgui_common.hpp",
-    "include/red/imgui_start.hpp",
-    "include/red/imgui_end.hpp",
-    "include/red/tile_map_editor.hpp",
-    "include/red/tile_set_editor.hpp",
-    "include/red/texture_viewer.hpp",
   ],
   srcs=[
-    "src/components.cpp",
-    #"src/background_music.cpp",
-    "src/player_character.cpp",
-    "src/drag_and_drop_asset_loader.cpp",
-    "src/renderer.cpp",
-    #"src/weather.cpp",
-    #"src/world.cpp",
     "src/imgui_common.cpp",
-    "src/imgui_start.cpp",
-    "src/imgui_end.cpp",
-    "src/tile_map_editor.cpp",
-    "src/tile_set_editor.cpp",
-    "src/texture_viewer.cpp",
   ],
   strip_include_prefix="include",
   deps=[
     "//core/game",
     "@imgui//:imgui"
+  ],
+  visibility=["//visibility:private"]
+)
+
+cc_library(
+  name="components_hdrs",
+  hdrs=["include/red/components.hpp"],
+  strip_include_prefix="include",
+  deps=[
+    "//core/game",
+  ],
+  visibility=["//visibility:private"]
+)
+
+cc_binary(
+  name="components",
+  srcs=["src/components.cpp"],
+  linkshared=True,
+  deps=[":components_hdrs",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="drag_and_drop_loader",
+  srcs=["src/drag_and_drop_loader.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="entity_browser",
+  srcs=["src/entity_browser.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="renderer",
+  srcs=["src/renderer.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="imgui_start",
+  srcs=["src/imgui_start.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="imgui_end",
+  srcs=["src/imgui_end.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="library_browser",
+  srcs=["src/library_browser.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="script_browser",
+  srcs=["src/script_browser.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="scene_tree",
+  srcs=["src/scene_tree.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="texture_viewer",
+  srcs=["src/texture_viewer.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="tile_set_editor",
+  srcs=["src/tile_set_editor.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="audio_manager",
+  srcs=["src/audio_manager.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="player_character",
+  srcs=["src/player_character.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="physics",
+  srcs=["src/physics.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+cc_binary(
+  name="resource_browser",
+  srcs=["src/resource_browser.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+
+cc_library(
+  name="builtin_native_scripts",
+  deps=[
+    ":audio_manager",
+    ":components",
+    ":entity_browser",
+    ":player_character",
+    ":physics",
+    ":drag_and_drop_loader",
+    ":renderer",
+    ":imgui_start",
+    ":imgui_end",
+    ":library_browser",
+    ":script_browser",
+    ":scene_tree",
+    ":texture_viewer",
+    ":tile_set_editor",
+    ":resource_browser",
   ],
   visibility=["//visibility:public"]
 )

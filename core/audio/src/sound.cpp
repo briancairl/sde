@@ -41,16 +41,28 @@ inline ALenum toALChannelFormat(const SoundChannelFormat& format)
 
 }  // namespace anonymous
 
+std::ostream& operator<<(std::ostream& os, SoundError error)
+{
+  switch (error)
+  {
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(SoundError)
+    SDE_OS_ENUM_CASE(SoundError::kAssetNotFound)
+    SDE_OS_ENUM_CASE(SoundError::kAssetLoadingFailed)
+    SDE_OS_ENUM_CASE(SoundError::kInvalidSoundData)
+    SDE_OS_ENUM_CASE(SoundError::kBackendBufferCreationFailure)
+    SDE_OS_ENUM_CASE(SoundError::kBackendBufferTransferFailure)
+  }
+  return os;
+}
+
 void NativeSoundBufferDeleter::operator()(buffer_handle_t id) const { alDeleteBuffers(1, &id); }
 
-SoundCache::SoundCache(SoundDataCache& sound_data) : sound_data_{std::addressof(sound_data)} {}
-
-expected<void, SoundError> SoundCache::reload(Sound& sound)
+expected<void, SoundError> SoundCache::reload(dependencies deps, Sound& sound)
 {
-  const auto* sound_data = sound_data_->get_if(sound.sound_data);
+  const auto* sound_data = deps.get<SoundDataCache>().get_if(sound.sound_data);
   if (sound_data == nullptr)
   {
-    SDE_LOG_DEBUG("InvalidSoundData");
+    SDE_LOG_ERROR() << "InvalidSoundData: " << SDE_OSNV(sound.sound_data);
     return make_unexpected(SoundError::kInvalidSoundData);
   }
 
@@ -59,7 +71,7 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
-    SDE_LOG_DEBUG("BackendBufferCreationFailure");
+    SDE_LOG_ERROR() << "BackendBufferCreationFailure: " << SDE_OSNV(al_error_to_str(error));
     return make_unexpected(SoundError::kBackendBufferCreationFailure);
   }
 
@@ -73,7 +85,7 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
 
   if (const auto error = alGetError(); error != AL_NO_ERROR)
   {
-    SDE_LOG_DEBUG("BackendBufferTransferFailure");
+    SDE_LOG_ERROR() << "BackendBufferTransferFailure: " << SDE_OSNV(al_error_to_str(error));
     return make_unexpected(SoundError::kBackendBufferTransferFailure);
   }
 
@@ -83,27 +95,27 @@ expected<void, SoundError> SoundCache::reload(Sound& sound)
   return {};
 }
 
-expected<void, SoundError> SoundCache::unload(Sound& sound)
+expected<void, SoundError> SoundCache::unload(dependencies deps, Sound& sound)
 {
   sound.native_id = NativeSoundBufferID{0};
   return {};
 }
 
-expected<Sound, SoundError> SoundCache::generate(const asset::path& sound_data_path)
+expected<Sound, SoundError> SoundCache::generate(dependencies deps, const asset::path& sound_data_path)
 {
-  auto sound_data_or_error = sound_data_->create(sound_data_path);
+  auto sound_data_or_error = deps.get<SoundDataCache>().find_or_create(sound_data_path, deps, sound_data_path);
   if (!sound_data_or_error.has_value())
   {
-    SDE_LOG_DEBUG("InvalidSoundData");
+    SDE_LOG_ERROR() << "InvalidSoundData: " << sound_data_or_error.error();
     return make_unexpected(SoundError::kInvalidSoundData);
   }
-  return generate(sound_data_or_error->handle);
+  return generate(deps, sound_data_or_error->handle);
 }
 
-expected<Sound, SoundError> SoundCache::generate(SoundDataHandle sound_data)
+expected<Sound, SoundError> SoundCache::generate(dependencies deps, SoundDataHandle sound_data)
 {
   Sound sound{.sound_data = sound_data, .channel_format = {}, .buffer_length = 0, .native_id = NativeSoundBufferID{0}};
-  if (auto ok_or_error = reload(sound); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, sound); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }

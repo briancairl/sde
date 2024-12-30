@@ -16,21 +16,20 @@
 #include "sde/expected.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
+#include "sde/unordered_map.hpp"
 #include "sde/view.hpp"
 
 namespace sde::audio
 {
-
 /**
  * @brief Error codes pertaining to sound data creation and loading
  */
 enum class SoundDataError
 {
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kSoundDataNotFound,
   kMissingSoundFile,
-  kElementAlreadyExists,
-  kInvalidHandle,
   kInvalidSoundFile,
 };
 
@@ -78,31 +77,24 @@ struct SoundData : Resource<SoundData>
   }
 };
 
-}  // namespace sde::audio
-
-namespace sde
-{
-
-template <> struct ResourceCacheTypes<audio::SoundDataCache>
-{
-  using error_type = audio::SoundDataError;
-  using handle_type = audio::SoundDataHandle;
-  using value_type = audio::SoundData;
-};
-
-}  // namespace sde
-
-namespace sde::audio
-{
-
 class SoundDataCache : public ResourceCache<SoundDataCache>
 {
   friend fundemental_type;
 
+public:
+  using fundemental_type::to_handle;
+  SoundDataHandle to_handle(const asset::path& path) const;
+
 private:
-  static expected<void, SoundDataError> reload(SoundData& sound);
-  static expected<void, SoundDataError> unload(SoundData& sound);
-  expected<SoundData, SoundDataError> generate(const asset::path& sound_path);
+  sde::unordered_map<asset::path, SoundDataHandle> path_to_sound_data_handle_;
+
+  static expected<void, SoundDataError> reload(dependencies deps, SoundData& sound);
+  static expected<void, SoundDataError> unload(dependencies deps, SoundData& sound);
+
+  expected<SoundData, SoundDataError> generate(dependencies deps, const asset::path& sound_path);
+
+  void when_created(dependencies deps, SoundDataHandle handle, const SoundData* sound);
+  void when_removed(dependencies deps, SoundDataHandle handle, const SoundData* sound);
 };
 
 }  // namespace sde::audio

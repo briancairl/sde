@@ -45,9 +45,17 @@ constexpr bool operator==(Hash lhs, std::size_t rhs_value) { return lhs.value ==
 
 constexpr bool operator!=(Hash lhs, std::size_t rhs_value) { return lhs.value != rhs_value; }
 
+template <typename T, bool U = T::kDoNotHash> constexpr bool has_do_not_hash_tag(T*) { return U; }
+
+constexpr bool has_do_not_hash_tag(...) { return false; }
+
+template <typename T> constexpr bool do_not_hash_v = has_do_not_hash_tag(static_cast<T*>(nullptr));
+
 template <typename T> struct Hasher
 {
-  constexpr Hash operator()(const T& v) const
+  template <bool U = do_not_hash_v<T>> constexpr std::enable_if_t<U, Hash> operator()(const T& v) const { return {0}; }
+
+  template <bool U = do_not_hash_v<T>> constexpr std::enable_if_t<!U, Hash> operator()(const T& v) const
   {
     static_assert(has_std_hash_specialization<T>() or is_iterable<T>());
     if constexpr (has_std_hash_specialization<T>())
@@ -64,6 +72,16 @@ template <typename T> struct Hasher
   }
 };
 
+template <typename F, typename S> struct Hasher<std::pair<F, S>>
+{
+  constexpr Hash operator()(const std::pair<F, S>& v) const
+  {
+    Hash h;
+    h += Hasher<F>{}(std::get<0>(v));
+    h += Hasher<S>{}(std::get<1>(v));
+    return h;
+  }
+};
 
 template <typename T> using hashable_t = std::remove_const_t<std::remove_reference_t<T>>;
 

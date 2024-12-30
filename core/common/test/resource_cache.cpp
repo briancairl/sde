@@ -30,9 +30,8 @@ struct SimpleResource : Resource<SimpleResource>
 
 enum class SimpleResourceError
 {
-  kFailure,
-  kInvalidHandle,
-  kElementAlreadyExists
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
+  kFailure
 };
 
 struct SimpleResourceCache;
@@ -43,11 +42,12 @@ struct SimpleResourceHandle : ResourceHandle<SimpleResourceHandle>
   explicit SimpleResourceHandle(id_type id) : ResourceHandle<SimpleResourceHandle>{id} {}
 };
 
-template <> struct ResourceCacheTypes<SimpleResourceCache>
+template <> struct ResourceCacheTraits<SimpleResourceCache>
 {
   using error_type = SimpleResourceError;
   using handle_type = SimpleResourceHandle;
   using value_type = SimpleResource;
+  using dependencies = no_dependencies;
 };
 
 struct SimpleResourceCache : ResourceCache<SimpleResourceCache>

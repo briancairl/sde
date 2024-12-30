@@ -1,15 +1,33 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file glyph_set_fwd.hpp
+ * @file type_set_fwd.hpp
  */
 #pragma once
 
 namespace sde::graphics
 {
+enum class TypeSetError;
 struct Glyph;
 struct TypeSetOptions;
 struct TypeSetHandle;
 struct TypeSet;
 class TypeSetCache;
+class FontCache;
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct ResourceCacheTraits<graphics::TypeSetCache>
+{
+  using error_type = graphics::TypeSetError;
+  using handle_type = graphics::TypeSetHandle;
+  using value_type = graphics::TypeSet;
+  using dependencies = ResourceDependencies<graphics::TextureCache, graphics::FontCache>;
+};
+
+template <> struct ResourceHandleToCache<graphics::TypeSetHandle>
+{
+  using type = graphics::TypeSetCache;
+};
+}  // namespace sde

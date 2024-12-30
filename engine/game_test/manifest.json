@@ -1,0 +1,106 @@
+{
+    "config" :
+    {
+        "rate"              : 60.0,
+        "script_data_path"  : "data/scripts",
+        "entity_data_path"  : "data/entities.bin",
+        "assets_data_path"  : "data/resources.bin",
+        "window_icon_path"  : "/home/brian/dev/assets/icons/red.png",
+        "cursor_icon_path"  : "/home/brian/dev/assets/icons/sword.png"
+    },
+    "components" :
+    {
+        "AnimatedSprite"    : "engine/red/libcomponents.so",
+        "Background"        : "engine/red/libcomponents.so",
+        "DebugWireFrame"    : "engine/red/libcomponents.so",
+        "Dynamics"          : "engine/red/libcomponents.so",
+        "Focused"           : "engine/red/libcomponents.so",
+        "Foreground"        : "engine/red/libcomponents.so",
+        "Info"              : "engine/red/libcomponents.so",
+        "Midground"         : "engine/red/libcomponents.so",
+        "Position"          : "engine/red/libcomponents.so",
+        "Size"              : "engine/red/libcomponents.so",
+        "Sprite"            : "engine/red/libcomponents.so",
+        "TileMap"           : "engine/red/libcomponents.so",
+        "TransformQuery"    : "engine/red/libcomponents.so"
+    },
+    "scripts" : {
+        "AudioManager"      : "engine/red/libaudio_manager.so",
+        "DragAndDrop"       : "engine/red/libdrag_and_drop_loader.so",
+        "EntityBrowser"     : "engine/red/libentity_browser.so",
+        "ImguiEnd"          : "engine/red/libimgui_end.so",
+        "ImguiStart"        : "engine/red/libimgui_start.so",
+        "LibraryBrowser"    : "engine/red/liblibrary_browser.so",
+        "Physics"           : "engine/red/libphysics.so",
+        "PlayerCharacter"   : "engine/red/libplayer_character.so",
+        "Renderer"          : "engine/red/librenderer.so",
+        "ResourceBrowser"   : "engine/red/libresource_browser.so",
+        "ScriptBrowser"     : "engine/red/libscript_browser.so",
+        "SceneTree"         : "engine/red/libscene_tree.so",
+        "TextureViewer"     : "engine/red/libtexture_viewer.so",
+        "TileSetEditor"     : "engine/red/libtile_set_editor.so"
+    },
+    "entry"  : "root",
+    "scenes" : {
+        "root" : [
+            {
+                "script" : "ImguiStart",
+                "name"   : null
+            },
+            "ui",
+            "game",
+            {
+                "script" : "ImguiEnd",
+                "name"   : null
+            }
+        ],
+        "game" : [
+            {
+                "script" : "PlayerCharacter",
+                "name"   : "player-1"
+            },
+            {
+                "script" : "Physics",
+                "name"   : null
+            },
+            {
+                "script" : "Renderer",
+                "name"   : null
+            }
+        ],
+        "ui" : [
+            {
+                "script" : "AudioManager",
+                "name"   : null
+            },
+            {
+                "script" : "EntityBrowser",
+                "name"   : null
+            },
+            {
+                "script" : "LibraryBrowser",
+                "name"   : null
+            },
+            {
+                "script" : "SceneTree",
+                "name"   : null
+            },
+            {
+                "script" : "TextureViewer",
+                "name"   : null
+            },
+            {
+                "script" : "TileSetEditor",
+                "name"   : null
+            },
+            {
+                "script" : "DragAndDrop",
+                "name"   : null
+            },
+            {
+                "script" : "ResourceBrowser",
+                "name"   : null
+            }
+        ]
+    }
+}

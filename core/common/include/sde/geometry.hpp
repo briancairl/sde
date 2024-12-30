@@ -108,6 +108,8 @@ template <typename CornerT> struct Rect
   }
 };
 
+template <typename CornerT> std::ostream& operator<<(std::ostream& os, const Rect<CornerT>& rect);
+
 using Rect2i = Rect<Vec2i>;
 using Rect2f = Rect<Vec2f>;
 
@@ -122,5 +124,7 @@ namespace Eigen
 {
 
 template <typename T, int Dim> std::ostream& operator<<(std::ostream& os, const AlignedBox<T, Dim>& bounds);
+
+template <typename T, int Dim> std::ostream& operator<<(std::ostream& os, const Matrix<T, Dim, 1>& vec);
 
 }  // namespace Eigen

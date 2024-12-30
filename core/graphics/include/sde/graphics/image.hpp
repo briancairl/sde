@@ -19,7 +19,8 @@
 #include "sde/graphics/typecode.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
+#include "sde/unordered_map.hpp"
 #include "sde/view.hpp"
 
 namespace sde::graphics
@@ -30,7 +31,7 @@ std::ostream& operator<<(std::ostream& os, ImageChannels channels);
 /**
  * @brief Returns number of channels associated with a particular channel layout
  */
-inline std::size_t to_channel_count(ImageChannels channels)
+constexpr std::size_t to_channel_count(ImageChannels channels)
 {
   switch (channels)
   {
@@ -104,8 +105,7 @@ struct ImageShape : Resource<ImageShape>
  */
 enum class ImageError
 {
-  kElementAlreadyExists,
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kAssetNotFound,
   kAssetInvalid,
   kImageNotFound,
@@ -141,20 +141,17 @@ struct Image : Resource<Image>
   /**
    * @brief Returns image channel count
    */
-  [[nodiscard]] constexpr std::size_t getChannelCount() const { return to_channel_count(options.channels); }
+  [[nodiscard]] std::size_t getChannelCount() const { return to_channel_count(options.channels); }
 
   /**
    * @brief Returns size of single pixel, in bytes
    */
-  [[nodiscard]] constexpr std::size_t getPixelSizeInBytes() const
-  {
-    return getChannelCount() * byte_count(options.element_type);
-  }
+  [[nodiscard]] std::size_t getPixelSizeInBytes() const { return getChannelCount() * byte_count(options.element_type); }
 
   /**
    * @brief Returns total size of image in bytes
    */
-  [[nodiscard]] constexpr std::size_t getTotalSizeInBytes() const { return shape.pixels() * getPixelSizeInBytes(); }
+  [[nodiscard]] std::size_t getTotalSizeInBytes() const { return shape.pixels() * getPixelSizeInBytes(); }
 
   /**
    * @brief Returns pointer to image data
@@ -178,6 +175,27 @@ struct Image : Resource<Image>
   }
 };
 
+class ImageCache : public ResourceCache<ImageCache>
+{
+  friend fundemental_type;
+
+public:
+  using fundemental_type::to_handle;
+  ImageHandle to_handle(const asset::path& path) const;
+
+private:
+  sde::unordered_map<asset::path, ImageHandle> path_to_image_handle_;
+
+  static expected<void, ImageError> reload(dependencies deps, Image& image);
+  static expected<void, ImageError> unload(dependencies deps, Image& image);
+
+  expected<Image, ImageError>
+  generate(dependencies deps, const asset::path& image_path, const ImageOptions& options = {});
+
+  void when_created(dependencies deps, ImageHandle handle, const Image* image);
+  void when_removed(dependencies deps, ImageHandle handle, const Image* image);
+};
+
 }  // namespace sde::graphics
 
 namespace sde
@@ -188,27 +206,4 @@ template <> struct Hasher<graphics::ImageOptions> : ResourceHasher
 
 template <> struct Hasher<graphics::Image> : ResourceHasher
 {};
-
-template <> struct ResourceCacheTypes<graphics::ImageCache>
-{
-  using error_type = graphics::ImageError;
-  using handle_type = graphics::ImageHandle;
-  using value_type = graphics::Image;
-};
-
 }  // namespace sde
-
-namespace sde::graphics
-{
-
-class ImageCache : public ResourceCache<ImageCache>
-{
-  friend fundemental_type;
-
-private:
-  static expected<void, ImageError> reload(Image& image);
-  static expected<void, ImageError> unload(Image& image);
-  expected<Image, ImageError> generate(const asset::path& image_path, const ImageOptions& options = {});
-};
-
-}  // namespace sde::graphics

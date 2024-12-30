@@ -1,12 +1,12 @@
 /**
  * @copyright 2024-present Brian Cairl
  *
- * @file glyph_set.hpp
+ * @file type_set.hpp
  */
 #pragma once
 
 // C++ Standard Library
-#include <vector>
+#include <iosfwd>
 
 // SDE
 #include "sde/asset.hpp"
@@ -20,6 +20,7 @@
 #include "sde/graphics/type_set_handle.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::graphics
 {
@@ -45,7 +46,7 @@ struct TypeSet : Resource<TypeSet>
   TypeSetOptions options;
   FontHandle font;
   TextureHandle glyph_atlas;
-  std::vector<Glyph> glyphs;
+  sde::vector<Glyph> glyphs;
 
   auto field_list()
   {
@@ -64,8 +65,7 @@ struct TypeSet : Resource<TypeSet>
 
 enum class TypeSetError
 {
-  kElementAlreadyExists,
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kInvalidFont,
   kGlyphSizeInvalid,
   kGlyphDataMissing,
@@ -73,43 +73,25 @@ enum class TypeSetError
   kGlyphAtlasTextureCreationFailed,
 };
 
-}  // namespace sde::graphics
-
-namespace sde
-{
-
-template <> struct Hasher<graphics::TypeSetOptions> : ResourceHasher
-{};
-
-template <> struct Hasher<graphics::TypeSet> : ResourceHasher
-{};
-
-template <> struct ResourceCacheTypes<graphics::TypeSetCache>
-{
-  using error_type = graphics::TypeSetError;
-  using handle_type = graphics::TypeSetHandle;
-  using value_type = graphics::TypeSet;
-};
-
-}  // namespace sde
-
-namespace sde::graphics
-{
+std::ostream& operator<<(std::ostream& os, TypeSetError error);
 
 class TypeSetCache : public ResourceCache<TypeSetCache>
 {
   friend fundemental_type;
 
-public:
-  TypeSetCache(TextureCache& texture, FontCache& fonts);
-
 private:
-  TextureCache* textures_;
-  FontCache* fonts_;
-
-  expected<void, TypeSetError> reload(TypeSet& type_set);
-  expected<void, TypeSetError> unload(TypeSet& type_set);
-  expected<TypeSet, TypeSetError> generate(FontHandle font, const TypeSetOptions& options = {});
+  expected<void, TypeSetError> reload(dependencies deps, TypeSet& type_set);
+  expected<void, TypeSetError> unload(dependencies deps, TypeSet& type_set);
+  expected<TypeSet, TypeSetError> generate(dependencies deps, FontHandle font, const TypeSetOptions& options = {});
 };
 
 }  // namespace sde::graphics
+
+namespace sde
+{
+template <> struct Hasher<graphics::TypeSetOptions> : ResourceHasher
+{};
+
+template <> struct Hasher<graphics::TypeSet> : ResourceHasher
+{};
+}  // namespace sde

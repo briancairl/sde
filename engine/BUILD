@@ -26,7 +26,10 @@ MODE_LINKOPTS = select({
 cc_binary(
     name="engine",
     srcs=["main.cpp"],
-    deps=["//core/game", "//engine/red"],
+    deps=[
+        "//core/game",
+        "//engine/red:builtin_native_scripts",
+    ],
     visibility=["//visibility:public"],
     linkopts=MODE_LINKOPTS,
     copts=MODE_COPTS,

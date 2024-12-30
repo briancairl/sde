@@ -6,34 +6,22 @@
 #pragma once
 
 // C++ Standard Library
-#include <string>
-#include <vector>
+#include <iosfwd>
 
 // SDE
+#include "sde/audio/sound_device.hpp"
 #include "sde/audio/sound_fwd.hpp"
 #include "sde/audio/typedef.hpp"
 #include "sde/expected.hpp"
 #include "sde/geometry.hpp"
 #include "sde/resource.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
+#include "sde/vector.hpp"
 #include "sde/view.hpp"
 
 namespace sde::audio
 {
 
-struct NativeDeviceDeleter
-{
-  void operator()(device_handle_t id) const;
-};
-
-using NativeDevice = UniqueResource<device_handle_t, NativeDeviceDeleter>;
-
-struct NativeContextDeleter
-{
-  void operator()(context_handle_t id) const;
-};
-
-using NativeContext = UniqueResource<context_handle_t, NativeContextDeleter>;
 
 struct NativeSourceDeleter
 {
@@ -81,9 +69,10 @@ public:
   bool stopped() const;
   bool playing() const;
   float progress() const;
+  void jump(float p) const;
 
   TrackPlayback set(const Sound& sound, const TrackOptions& track_options);
-  void pop(std::vector<source_handle_t>& target);
+  void pop(sde::vector<source_handle_t>& target);
 
   const NativeSource& source() const { return source_; }
   const std::size_t instance() const { return instance_counter_; }
@@ -110,6 +99,8 @@ public:
   bool pause() const;
   bool stop();
 
+  const Track* track() const { return track_; }
+
 private:
   std::size_t instance_id_ = 0;
   const Track* track_ = nullptr;
@@ -120,6 +111,8 @@ enum class ListenerError
   kBackendContextCreationFailure,
   kBackendTrackCreationFailure,
 };
+
+std::ostream& operator<<(std::ostream& os, ListenerError error);
 
 struct ListenerState : Resource<ListenerState>
 {
@@ -160,7 +153,7 @@ class Listener
 
 public:
   [[nodiscard]] static expected<Listener, ListenerError>
-  create(const NativeDevice& device, const ListenerOptions& options);
+  create(NativeSoundDeviceHandle device, const ListenerOptions& options);
 
   void set(const ListenerState& state) const;
   expected<TrackPlayback, TrackPlaybackError> set(const Sound& sound, const TrackOptions& options);
@@ -168,11 +161,11 @@ public:
   void stop();
 
 private:
-  Listener(NativeContext&& context, std::vector<Track>&& tracks);
+  Listener(NativeContext&& context, sde::vector<Track>&& tracks);
 
   NativeContext context_;
-  std::vector<Track> tracks_;
-  std::vector<source_handle_t> source_buffer_;
+  sde::vector<Track> tracks_;
+  sde::vector<source_handle_t> source_buffer_;
 };
 
 class Mixer;
@@ -184,6 +177,7 @@ enum class ListenerTargetError
   kBackendListenerContextSwitch,
 };
 
+std::ostream& operator<<(std::ostream& os, ListenerTargetError error);
 
 class ListenerTarget
 {
@@ -214,15 +208,11 @@ private:
 
 struct MixerOptions : Resource<MixerOptions>
 {
-  std::string device_name = {};
-  std::vector<ListenerOptions> listener_options = {
+  sde::vector<ListenerOptions> listener_options = {
     ListenerOptions{.track_count = 2},
     ListenerOptions{.track_count = 16}};
 
-  auto field_list()
-  {
-    return FieldList(Field{"device_name", device_name}, Field{"listener_options", listener_options});
-  }
+  auto field_list() { return FieldList(Field{"listener_options", listener_options}); }
 };
 
 enum class MixerError
@@ -231,6 +221,8 @@ enum class MixerError
   kListenerConfigInvalid,
   kListenerCreationFailure,
 };
+
+std::ostream& operator<<(std::ostream& os, MixerError error);
 
 /**
  * @brief High-level interface for sound playback
@@ -243,17 +235,19 @@ public:
   ~Mixer() = default;
   Mixer(Mixer&& other) = default;
 
-  [[nodiscard]] static expected<Mixer, MixerError> create(const MixerOptions& options = {});
+  [[nodiscard]] static expected<Mixer, MixerError> create(const SoundDevice& device, const MixerOptions& options = {});
+
+  [[nodiscard]] static expected<Mixer, MixerError>
+  create(NativeSoundDeviceHandle device, const MixerOptions& options = {});
 
   std::size_t size() const { return listeners_.size(); }
 
 private:
-  Mixer(NativeDevice&& device, std::vector<Listener>&& listener);
+  explicit Mixer(sde::vector<Listener>&& listener);
   Mixer() = delete;
   Mixer(const Mixer&) = delete;
 
-  NativeDevice device_;
-  std::vector<Listener> listeners_;
+  sde::vector<Listener> listeners_;
   Listener* listener_active_ = nullptr;
 };
 

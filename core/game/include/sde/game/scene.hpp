@@ -6,107 +6,97 @@
 #pragma once
 
 // C++ Standard Library
-#include <functional>
-#include <string>
-#include <type_traits>
-#include <unordered_map>
+#include <iosfwd>
+#include <string_view>
 
 // SDE
 #include "sde/app_fwd.hpp"
+#include "sde/expected.hpp"
 #include "sde/format.hpp"
 #include "sde/game/archive_fwd.hpp"
-#include "sde/game/assets.hpp"
-#include "sde/game/script_runtime_fwd.hpp"
-#include "sde/game/systems_fwd.hpp"
+#include "sde/game/native_script_instance.hpp"
+#include "sde/game/native_script_instance_handle.hpp"
+#include "sde/game/scene_fwd.hpp"
+#include "sde/game/scene_handle.hpp"
 #include "sde/resource.hpp"
+#include "sde/resource_cache.hpp"
+#include "sde/string.hpp"
 #include "sde/type_name.hpp"
+#include "sde/unordered_map.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::game
 {
 
-/**
- * @brief Loaded game script data
- */
-struct ScriptData : public Resource<ScriptData>
-{
-  std::string name;
-  ScriptRuntimeUPtr script;
-
-  ScriptData(std::string&& _name, ScriptRuntimeUPtr _script);
-
-  auto field_list() { return FieldList(Field{"name", name}, _Stub{"script", script}); }
-};
-
-struct ComponentData
-{
-  std::function<void(IArchive&, entt::entity, entt::registry&)> load;
-  std::function<void(OArchive&, entt::entity, const entt::registry&)> save;
-};
-
 enum class SceneError
 {
-  kPathInvalid,
-  kPathMissingFiles,
-  kPathFailedToCreate,
-  kFailedToSave,
-  kFailedToLoad,
-  kScriptAlreadyAdded,
-  kComponentAlreadyAdded,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
+  kInvalidScript,
+};
+
+std::ostream& operator<<(std::ostream& os, SceneError error);
+
+struct SceneNodeFlattened : Resource<SceneNodeFlattened>
+{
+  /// Instance name
+  std::string_view name;
+
+  /// Instance handle
+  NativeScriptInstanceHandle handle = NativeScriptInstanceHandle::null();
+
+  /// Instance
+  NativeScriptInstance instance = {};
+
+  auto field_list() { return FieldList(Field{"handle", handle}, _Stub{"instance", instance}); }
+};
+
+struct SceneNode : Resource<SceneNode>
+{
+  /// Handle to another scene
+  SceneHandle child = SceneHandle::null();
+
+  /// Handle to script instance data
+  NativeScriptInstanceHandle script = NativeScriptInstanceHandle::null();
+
+  auto field_list() { return FieldList(Field{"child", child}, Field{"script", script}); }
+};
+
+struct SceneData : Resource<SceneData>
+{
+  /// Name associated with this scene
+  sde::string name;
+
+  /// Scripts associated with this scene (run-ordered)
+  sde::vector<SceneNode> nodes;
+
+  auto field_list() { return FieldList(Field{"name", name}, Field{"nodes", nodes}); }
 };
 
 /**
  * @brief All active game data
  */
-class Scene : public Resource<Scene>
+class SceneCache : public ResourceCache<SceneCache>
 {
   friend fundemental_type;
 
 public:
-  expected<void, SceneError> save(const asset::path& path) const;
+  using fundemental_type::to_handle;
 
-  expected<void, SceneError> load(const asset::path& path);
+  SceneHandle to_handle(const sde::string& name) const;
 
-  expected<void, SceneError> addScript(std::string name, ScriptRuntimeUPtr script);
-
-  void removeScript(const std::string& name);
-
-  expected<void, SceneError> addComponent(std::string name, ComponentData component);
-
-  template <typename ComponentT> expected<void, SceneError> addComponent()
-  {
-    ComponentData data{
-      .load =
-        [](IArchive& ar, entt::entity e, entt::registry& registry) {
-          if constexpr (std::is_void_v<decltype(registry.template emplace<ComponentT>(e))>)
-          {
-            registry.template emplace<ComponentT>(e);
-          }
-          else
-          {
-            ar >> registry.template emplace<ComponentT>(e);
-          }
-        },
-      .save =
-        [](OArchive& ar, entt::entity e, const entt::registry& registry) {
-          if constexpr (!std::is_void_v<decltype(registry.template get<ComponentT>(e))>)
-          {
-            ar << registry.template get<ComponentT>(e);
-          }
-        }};
-    return this->addComponent(std::string{type_name<ComponentT>()}, std::move(data));
-  }
-
-  void removeComponent(const std::string& name);
-
-  bool tick(AppState& state, const AppProperties& properties);
+  expected<sde::vector<SceneNodeFlattened>, SceneError> expand(SceneHandle root, dependencies deps) const;
 
 private:
-  Assets assets_;
-
-  std::vector<ScriptData> scripts_;
-  std::unordered_map<std::string, ComponentData> components_;
-
-  auto field_list() { return FieldList(Field{"assets", assets_}, _Stub{"scripts", scripts_}); }
+  sde::unordered_map<sde::string, SceneHandle> name_to_scene_lookup_;
+  expected<SceneData, SceneError> generate(dependencies deps, sde::string name, sde::vector<SceneNode> nodes = {});
+  void when_created(dependencies deps, SceneHandle handle, const SceneData* data);
+  void when_removed(dependencies deps, SceneHandle handle, SceneData* data);
 };
 
 }  // namespace sde::game
+
+namespace sde
+{
+template <> struct Hasher<game::SceneNode> : ResourceHasher
+{};
+}  // namespace sde

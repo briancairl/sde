@@ -6,148 +6,132 @@
 #pragma once
 
 // C++ Standard Library
+#include <iosfwd>
 #include <string>
-#include <vector>
 
 // EnTT
-#include <entt/entity/entity.hpp>
 #include <entt/fwd.hpp>
 
 // SDE
+#include "sde/game/archive_fwd.hpp"
+#include "sde/game/component.hpp"
+#include "sde/game/component_decl.hpp"
+#include "sde/game/component_handle.hpp"
 #include "sde/game/entity_fwd.hpp"
 #include "sde/game/entity_handle.hpp"
+#include "sde/game/registry.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
-#include "sde/type_name.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::game
 {
-
 enum class EntityError
 {
-  kElementAlreadyExists,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kComponentAlreadyAttached,
-  kInvalidHandle,
+  kComponentNotRegistered,
+  kComponentDumpFailure,
+  kComponentLoadFailure,
   kCreationFailure,
 };
 
-struct Component : Resource<Component>
-{
-  std::string type;
-  auto field_list() { return FieldList(Field{"type", type}); }
-};
+std::ostream& operator<<(std::ostream& os, EntityError error);
 
-struct Entity : Resource<Entity>
+struct EntityData : Resource<EntityData>
 {
-  entt::entity id;
-  std::vector<Component> components;
+  EntityID id;
+  sde::vector<ComponentHandle> components;
   auto field_list() { return FieldList(_Stub{"id", id}, Field{"components", components}); }
 };
 
-}  // namespace sde::game
-
-namespace sde
+class EntityCreator
 {
+public:
+  EntityCreator(ComponentCache& components, Registry& reg, EntityData& entity) :
+      components_{std::addressof(components)}, reg_{std::addressof(reg)}, entity_{std::addressof(entity)}
+  {}
 
-template <> struct Hasher<entt::entity>
-{
-  Hash operator()(const entt::entity& e) const { return {static_cast<std::size_t>(e)}; }
+  /**
+   * @brief Attach a component to an existing entity
+   */
+  template <typename ComponentT, typename... CTorArgs> expected<ComponentT*, EntityError> attach(CTorArgs&&... args)
+  {
+    if (reg_->template all_of<ComponentT>(entity_->id))
+    {
+      return make_unexpected(EntityError::kComponentAlreadyAttached);
+    }
+    else if (auto component = components_->to_handle(sde::string{ComponentName<ComponentT>::value}); !component)
+    {
+      return make_unexpected(EntityError::kComponentNotRegistered);
+    }
+    else if (!components_->borrow(component))
+    {
+      return make_unexpected(EntityError::kInvalidHandle);
+    }
+    else
+    {
+      entity_->components.push_back(component);
+    }
+
+    using ReturnT = decltype(reg_->template emplace<ComponentT>(entity_->id, std::forward<CTorArgs>(args)...));
+    if constexpr (std::is_void_v<ReturnT>)
+    {
+      reg_->template emplace<ComponentT>(entity_->id, std::forward<CTorArgs>(args)...);
+      return nullptr;
+    }
+    else
+    {
+      auto& c = reg_->template emplace<ComponentT>(entity_->id, std::forward<CTorArgs>(args)...);
+      return std::addressof(c);
+    }
+  }
+
+public:
+  ComponentCache* components_;
+  Registry* reg_;
+  EntityData* entity_;
 };
-
-template <> struct ResourceCacheTypes<game::EntityCache>
-{
-  using error_type = game::EntityError;
-  using handle_type = game::EntityHandle;
-  using value_type = game::Entity;
-};
-
-}  // namespace sde
-
-namespace sde::game
-{
 
 class EntityCache : public ResourceCache<EntityCache>
 {
   friend fundemental_type;
 
 public:
-  explicit EntityCache(entt::registry& registry);
-
   /**
    * @brief Creates a new entity and adds components
    */
-  template <typename AttachComponentsT> decltype(auto) make_entity(AttachComponentsT attach_components)
+  template <typename AttachComponentsT>
+  decltype(auto) instance(EntityHandle& entity, dependencies deps, AttachComponentsT attach_components)
   {
-    auto value_or_error = this->create();
-    if (value_or_error.has_value())
+    auto value_or_error = this->find_or_create(entity, deps);
+    if (value_or_error.has_value() and (value_or_error->status == ResourceStatus::kCreated))
     {
       auto entity_itr = handle_to_value_cache_.find(value_or_error->handle);
-      attach_components(*this, entity_itr->second.value);
+      EntityCreator entity_creation{deps.get<ComponentCache>(), deps.get<Registry>(), entity_itr->second.value};
+      attach_components(entity_creation);
     }
     return value_or_error;
   }
 
-  /**
-   * @brief Attach a component to an existing entity
-   */
-  template <typename ComponentT, typename... CTorArgs>
-  expected<ComponentT*, EntityError> attach(EntityHandle handle, CTorArgs&&... args)
-  {
-    auto entity_itr = handle_to_value_cache_.find(handle);
-    if (entity_itr == handle_to_value_cache_.end())
-    {
-      return make_unexpected(EntityError::kInvalidHandle);
-    }
-    return attach(entity_itr->second, std::forward<CTorArgs>(args)...);
-  }
-
-  /**
-   * @brief Attach a component to an existing entity
-   */
-  template <typename ComponentT, typename... CTorArgs>
-  expected<ComponentT*, EntityError> attach(Entity& entity, CTorArgs&&... args)
-  {
-    if (registry_->template all_of<ComponentT>(entity.id))
-    {
-      return make_unexpected(EntityError::kComponentAlreadyAttached);
-    }
-
-    entity.components.push_back(Component{.type = std::string{type_name<ComponentT>()}});
-    using ReturnT = decltype(registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...));
-    if constexpr (std::is_void_v<ReturnT>)
-    {
-      registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...);
-      return nullptr;
-    }
-    else
-    {
-      auto& c = registry_->template emplace<ComponentT>(entity.id, std::forward<CTorArgs>(args)...);
-      return std::addressof(c);
-    }
-  }
-
-  /**
-   * @brief Removes an entity by its native ID
-   */
-  void remove(entt::entity e)
-  {
-    for (const auto& [handle, value] : handle_to_value_cache_)
-    {
-      if (value->id == e)
-      {
-        handle_to_value_cache_.erase(handle);
-        registry_->destroy(e);
-        return;
-      }
-    }
-  }
+  expected<void, EntityError> load(dependencies deps, IArchive& archive);
+  expected<void, EntityError> save(dependencies deps, OArchive& archive) const;
 
 private:
-  entt::registry* registry_;
+  expected<void, EntityError> reload(dependencies deps, EntityData& entity);
+  expected<void, EntityError> unload(dependencies deps, const EntityData& entity);
 
-  expected<void, EntityError> reload(Entity& entity);
-  expected<void, EntityError> unload(const Entity& entity);
-  expected<Entity, EntityError> generate();
+  expected<EntityData, EntityError> generate(dependencies deps);
+
+  void when_removed(dependencies deps, EntityHandle handle, const EntityData* data);
 };
 
 }  // namespace sde::game
+
+namespace sde
+{
+template <> struct Hasher<entt::entity>
+{
+  Hash operator()(const entt::entity& e) const { return {static_cast<std::size_t>(e)}; }
+};
+}  // namespace sde

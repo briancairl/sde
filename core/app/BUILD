@@ -10,8 +10,11 @@ cc_library(
   strip_include_prefix="include",
   deps=[
     "//core/common:expected",
+    "//core/common:stl",
+    "//core/audio",
     "//core/graphics:graphics",
     "//core/graphics:window",
+    "//platform/glad:glad",
     "@glfw//:glfw",
   ],
   visibility=["//visibility:public"]

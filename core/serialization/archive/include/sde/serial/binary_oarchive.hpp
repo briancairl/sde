@@ -29,8 +29,10 @@ public:
   using oarchive_base::operator<<;
   using oarchive_base::operator&;
 
+  const OStreamT* operator->() const { return os_; }
+
 private:
-  static constexpr void write_impl(const label& _)
+  template <typename ValueT> static constexpr void write_impl(const label<ValueT> _)
   { /* labels are ignored */
   }
 
@@ -75,7 +77,7 @@ private:
 
 template <typename OStreamT> binary_oarchive(ostream<OStreamT>& os) -> binary_oarchive<OStreamT>;
 
-struct save_trivial
+struct save_trivial_binary_oarchive
 {
   template <typename OStreamT, typename ValueT> void operator()(binary_oarchive<OStreamT>& ar, const ValueT& value)
   {
@@ -88,7 +90,7 @@ struct save_impl<binary_oarchive<OStreamT>, ValueT>
     : std::conditional_t<
         (is_trivially_serializable_v<binary_oarchive<OStreamT>, ValueT> and
          !save_is_implemented_v<binary_oarchive<OStreamT>, ValueT>),
-        save_trivial,
+        save_trivial_binary_oarchive,
         save<binary_oarchive<OStreamT>, ValueT>>
 {};
 

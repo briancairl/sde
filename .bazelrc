@@ -2,11 +2,12 @@
 # https://chromium.googlesource.com/external/github.com/grpc/grpc/+/HEAD/tools/bazel.rc
 
 # Common
-build --cxxopt='-std=c++17'
+build --cxxopt='-std=c++20'
 build --cxxopt='-Wall'
-build --host_cxxopt='-std=c++17'
+build --host_cxxopt='-std=c++20'
 build --host_cxxopt='-Wall'
-build --repo_env=CC=clang
+build --repo_env=CC=g++
+build --dynamic_mode=fully
 
 # Address sanitizer
 build:asan --strip=never

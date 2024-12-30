@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <iosfwd>
 #include <tuple>
 
 // SDE
@@ -19,21 +20,22 @@
 #include "sde/expected.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
 
 namespace sde::audio
 {
 
 enum struct SoundError
 {
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kAssetNotFound,
   kAssetLoadingFailed,
-  kInvalidHandle,
   kInvalidSoundData,
-  kElementAlreadyExists,
   kBackendBufferCreationFailure,
   kBackendBufferTransferFailure,
 };
+
+std::ostream& operator<<(std::ostream& os, SoundError error);
 
 struct NativeSoundBufferDeleter
 {
@@ -59,36 +61,15 @@ struct Sound : Resource<Sound>
   }
 };
 
-}  // namespace sde::audio
-
-namespace sde
-{
-
-template <> struct ResourceCacheTypes<audio::SoundCache>
-{
-  using error_type = audio::SoundError;
-  using handle_type = audio::SoundHandle;
-  using value_type = audio::Sound;
-};
-
-}  // namespace sde
-
-namespace sde::audio
-{
-
 class SoundCache : public ResourceCache<SoundCache>
 {
   friend fundemental_type;
 
-public:
-  explicit SoundCache(SoundDataCache& sound_data);
-
 private:
-  SoundDataCache* sound_data_ = nullptr;
-  expected<void, SoundError> reload(Sound& sound);
-  expected<void, SoundError> unload(Sound& sound);
-  expected<Sound, SoundError> generate(const asset::path& sound_data_path);
-  expected<Sound, SoundError> generate(SoundDataHandle sound_data);
+  expected<void, SoundError> reload(dependencies deps, Sound& sound);
+  expected<void, SoundError> unload(dependencies deps, Sound& sound);
+  expected<Sound, SoundError> generate(dependencies deps, const asset::path& sound_data_path);
+  expected<Sound, SoundError> generate(dependencies deps, SoundDataHandle sound_data);
 };
 
 }  // namespace sde::audio

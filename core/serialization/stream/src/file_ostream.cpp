@@ -1,6 +1,7 @@
 // SDE
 #include "sde/serial/file_ostream.hpp"
 
+#include <iostream>
 namespace sde::serial
 {
 namespace  // anonymous

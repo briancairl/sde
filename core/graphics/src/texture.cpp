@@ -12,7 +12,7 @@
 #include "sde/graphics/image.hpp"
 #include "sde/graphics/texture.hpp"
 #include "sde/logging.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
 
 namespace sde::graphics
 {
@@ -148,24 +148,25 @@ expected<NativeTextureID, TextureError> create_native_texture_2D(
 {
   auto texture_id = allocate_texture_2D_and_bind(shape, layout, options, type);
 
-  if (has_active_error())
+  if (const auto gl_error = has_active_error())
   {
-    SDE_LOG_DEBUG("BackendCreationFailure");
+    SDE_LOG_ERROR() << "BackendCreationFailure: GL_ERROR=" << gl_error;
     return make_unexpected(TextureError::kBackendCreationFailure);
   }
 
   if (const auto ok_or_error = upload_texture_2D(data, layout, type, Vec2i::Zero(), shape.value);
       !ok_or_error.has_value())
   {
+    SDE_LOG_ERROR() << ok_or_error.error();
     return make_unexpected(ok_or_error.error());
   }
 
   if (options.generate_mip_map)
   {
     glGenerateMipmap(GL_TEXTURE_2D);
-    if (has_active_error())
+    if (const auto gl_error = has_active_error())
     {
-      SDE_LOG_DEBUG("BackendMipMapGenerationFailure");
+      SDE_LOG_ERROR() << "BackendMipMapGenerationFailure: GL_ERROR=" << gl_error;
       return make_unexpected(TextureError::kBackendMipMapGenerationFailure);
     }
   }
@@ -215,9 +216,9 @@ create_texture_impl(TypeCode type, const TextureShape& shape, TextureLayout layo
 {
   auto texture_id = allocate_texture_2D_and_bind(shape, layout, options, type);
 
-  if (has_active_error())
+  if (const auto gl_error = has_active_error())
   {
-    SDE_LOG_DEBUG("BackendCreationFailure");
+    SDE_LOG_ERROR() << "BackendCreationFailure: GL_ERROR=" << gl_error;
     return make_unexpected(TextureError::kBackendCreationFailure);
   }
 
@@ -230,12 +231,12 @@ create_texture_impl(View<DataT> data, const TextureShape& shape, TextureLayout l
 {
   if (!data)
   {
-    SDE_LOG_DEBUG("InvalidDataValue");
+    SDE_LOG_ERROR() << "InvalidDataValue";
     return make_unexpected(TextureError::kInvalidDataValue);
   }
   else if (shape.height() == 0 or shape.width() == 0)
   {
-    SDE_LOG_DEBUG("InvalidDimensions");
+    SDE_LOG_ERROR() << "InvalidDimensions: " << SDE_OSNV(shape.height()) << ", " << SDE_OSNV(shape.width());
     return make_unexpected(TextureError::kInvalidDimensions);
   }
 
@@ -269,12 +270,9 @@ std::ostream& operator<<(std::ostream& os, TextureWrapping wrapping)
 {
   switch (wrapping)
   {
-  case TextureWrapping::kClampToBorder:
-    return os << "ClampToBorder";
-  case TextureWrapping::kClampToEdge:
-    return os << "ClampToEdge";
-  case TextureWrapping::kRepeat:
-    return os << "Repeat";
+    SDE_OS_ENUM_CASE(TextureWrapping::kClampToBorder)
+    SDE_OS_ENUM_CASE(TextureWrapping::kClampToEdge)
+    SDE_OS_ENUM_CASE(TextureWrapping::kRepeat)
   }
   return os;
 }
@@ -283,10 +281,8 @@ std::ostream& operator<<(std::ostream& os, TextureSampling sampling)
 {
   switch (sampling)
   {
-  case TextureSampling::kLinear:
-    return os << "Linear";
-  case TextureSampling::kNearest:
-    return os << "Nearest";
+    SDE_OS_ENUM_CASE(TextureSampling::kLinear)
+    SDE_OS_ENUM_CASE(TextureSampling::kNearest)
   }
   return os;
 }
@@ -295,14 +291,10 @@ std::ostream& operator<<(std::ostream& os, TextureLayout layout)
 {
   switch (layout)
   {
-  case TextureLayout::kR:
-    return os << "R";
-  case TextureLayout::kRG:
-    return os << "RG";
-  case TextureLayout::kRGB:
-    return os << "RGB";
-  case TextureLayout::kRGBA:
-    return os << "RGBA";
+    SDE_OS_ENUM_CASE(TextureLayout::kR)
+    SDE_OS_ENUM_CASE(TextureLayout::kRG)
+    SDE_OS_ENUM_CASE(TextureLayout::kRGB)
+    SDE_OS_ENUM_CASE(TextureLayout::kRGBA)
   }
   return os;
 }
@@ -311,31 +303,19 @@ std::ostream& operator<<(std::ostream& os, TextureError error)
 {
   switch (error)
   {
-  case TextureError::kTextureNotFound:
-    return os << "TextureNotFound";
-  case TextureError::kElementAlreadyExists:
-    return os << "ElementAlreadyExists";
-  case TextureError::kInvalidHandle:
-    return os << "InvalidHandle";
-  case TextureError::kInvalidSourceImage:
-    return os << "InvalidSourceImage";
-  case TextureError::kInvalidDimensions:
-    return os << "InvalidDimensions";
-  case TextureError::kInvalidDataValue:
-    return os << "InvalidDataValue";
-  case TextureError::kInvalidDataLength:
-    return os << "InvalidDataLength";
-  case TextureError::kBackendCreationFailure:
-    return os << "BackendCreationFailure";
-  case TextureError::kBackendTransferFailure:
-    return os << "BackendTransferFailure";
-  case TextureError::kBackendMipMapGenerationFailure:
-    return os << "BackendMipMapGenerationFailure";
-  case TextureError::kReplaceAreaEmpty:
-    return os << "ReplaceAreaEmpty";
-  case TextureError::kReplaceAreaOutOfBounds:
-    return os << "ReplaceAreaOutOfBounds";
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(TextureError)
+    SDE_OS_ENUM_CASE(TextureError::kTextureNotFound)
+    SDE_OS_ENUM_CASE(TextureError::kInvalidSourceImage)
+    SDE_OS_ENUM_CASE(TextureError::kInvalidDimensions)
+    SDE_OS_ENUM_CASE(TextureError::kInvalidDataValue)
+    SDE_OS_ENUM_CASE(TextureError::kInvalidDataLength)
+    SDE_OS_ENUM_CASE(TextureError::kBackendCreationFailure)
+    SDE_OS_ENUM_CASE(TextureError::kBackendTransferFailure)
+    SDE_OS_ENUM_CASE(TextureError::kBackendMipMapGenerationFailure)
+    SDE_OS_ENUM_CASE(TextureError::kReplaceAreaEmpty)
+    SDE_OS_ENUM_CASE(TextureError::kReplaceAreaOutOfBounds)
   }
+  return os;
 }
 
 template <typename DataT>
@@ -343,7 +323,7 @@ expected<void, TextureError> replace(const Texture& texture, View<const DataT> d
 {
   if (area.isEmpty())
   {
-    SDE_LOG_DEBUG("ReplaceAreaEmpty");
+    SDE_LOG_ERROR() << "ReplaceAreaEmpty: " << SDE_OSNV(area);
     return make_unexpected(TextureError::kReplaceAreaEmpty);
   }
 
@@ -351,7 +331,7 @@ expected<void, TextureError> replace(const Texture& texture, View<const DataT> d
   const std::size_t actual_size = sizeof(DataT) * data.size();
   if (actual_size != required_size)
   {
-    SDE_LOG_DEBUG("InvalidDataLength");
+    SDE_LOG_ERROR() << "InvalidDataLength: " << SDE_OSNV(actual_size) << ", " << SDE_OSNV(required_size);
     return make_unexpected(TextureError::kInvalidDataLength);
   }
 
@@ -361,7 +341,7 @@ expected<void, TextureError> replace(const Texture& texture, View<const DataT> d
     return upload_texture_2D(data.data(), texture.layout, typecode<DataT>(), area.min(), area.max() - area.min());
   }
 
-  SDE_LOG_DEBUG("ReplaceAreaOutOfBounds");
+  SDE_LOG_ERROR() << "ReplaceAreaOutOfBounds";
   return make_unexpected(TextureError::kReplaceAreaOutOfBounds);
 }
 
@@ -376,10 +356,9 @@ replace(const Texture& texture, View<const std::uint32_t> data, const Bounds2i& 
 
 template expected<void, TextureError> replace(const Texture& texture, View<const float> data, const Bounds2i& area);
 
-TextureCache::TextureCache(ImageCache& images) : images_{std::addressof(images)} {}
-
 template <typename DataT>
 expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
   View<const DataT> data,
   const TextureShape& shape,
   const TextureLayout layout,
@@ -400,46 +379,53 @@ expected<Texture, TextureError> TextureCache::generate(
 }
 
 template expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
   View<const std::uint8_t> data,
   const TextureShape& shape,
   const TextureLayout layout,
   const TextureOptions& options);
 
 template expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
   View<const std::uint16_t> data,
   const TextureShape& shape,
   const TextureLayout layout,
   const TextureOptions& options);
 
 template expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
   View<const std::uint32_t> data,
   const TextureShape& shape,
   const TextureLayout layout,
   const TextureOptions& options);
 
 template expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
   View<const float> data,
   const TextureShape& shape,
   const TextureLayout layout,
   const TextureOptions& options);
 
-expected<Texture, TextureError> TextureCache::generate(const asset::path& image_path, const TextureOptions& options)
+expected<Texture, TextureError>
+TextureCache::generate(dependencies deps, const asset::path& image_path, const TextureOptions& options)
 {
-  auto image_or_error = images_->create(image_path, ImageOptions{.flip_vertically = false});
+  auto image_or_error =
+    deps.get<ImageCache>().find_or_create(image_path, deps, image_path, ImageOptions{.flip_vertically = false});
   if (!image_or_error.has_value())
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
   }
-  return generate(image_or_error->handle, options);
+  return generate(deps, image_or_error->handle, options);
 }
 
-expected<Texture, TextureError> TextureCache::generate(const ImageHandle& image, const TextureOptions& options)
+expected<Texture, TextureError>
+TextureCache::generate(dependencies deps, const ImageHandle& image, const TextureOptions& options)
 {
   if (image.isNull())
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
   }
-  auto image_info = images_->get_if(image);
+  auto image_info = deps.get<ImageCache>().get_if(image);
   if (image_info == nullptr)
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
@@ -451,6 +437,7 @@ expected<Texture, TextureError> TextureCache::generate(const ImageHandle& image,
     image_info->shape.value.y(),
     image_info->getTotalSizeInBytes());
   auto texture_or_error = TextureCache::generate(
+    deps,
     image_info->data(),
     TextureShape{.value = image_info->shape.value},
     layout_from_channel_count(image_info->getChannelCount()),
@@ -462,8 +449,12 @@ expected<Texture, TextureError> TextureCache::generate(const ImageHandle& image,
   return texture_or_error;
 }
 
-expected<Texture, TextureError>
-TextureCache::generate(TypeCode type, const TextureShape& shape, TextureLayout layout, const TextureOptions& options)
+expected<Texture, TextureError> TextureCache::generate(
+  dependencies deps,
+  TypeCode type,
+  const TextureShape& shape,
+  TextureLayout layout,
+  const TextureOptions& options)
 {
   Texture texture{
     .source_image = ImageHandle::null(),
@@ -472,14 +463,14 @@ TextureCache::generate(TypeCode type, const TextureShape& shape, TextureLayout l
     .shape = shape,
     .options = options,
     .native_id = NativeTextureID{0}};
-  if (auto ok_or_error = reload(texture); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, texture); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }
   return texture;
 }
 
-expected<void, TextureError> TextureCache::reload(Texture& texture)
+expected<void, TextureError> TextureCache::reload(dependencies deps, Texture& texture)
 {
   auto native_texture_or_error =
     create_texture_impl(texture.element_type, texture.shape, texture.layout, texture.options);
@@ -495,7 +486,7 @@ expected<void, TextureError> TextureCache::reload(Texture& texture)
     return {};
   }
 
-  auto image = images_->get_if(texture.source_image);
+  auto image = deps.get<ImageCache>().get_if(texture.source_image);
   if (image == nullptr)
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
@@ -512,7 +503,7 @@ expected<void, TextureError> TextureCache::reload(Texture& texture)
 }
 
 
-expected<void, TextureError> TextureCache::unload(Texture& texture)
+expected<void, TextureError> TextureCache::unload(dependencies deps, Texture& texture)
 {
   texture.native_id = NativeTextureID{0};
   return {};

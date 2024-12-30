@@ -21,7 +21,7 @@ namespace sde::graphics
 {
 namespace
 {
-std::atomic_flag STATIC__glfw_is_initialized = {false};
+std::atomic_bool glfw_is_initialized = {false};
 
 #if defined(SDE_GLFW_DEBUG) && SDE_GLFW_DEBUG
 void glfwErrorCallback(int error, const char* description)
@@ -32,9 +32,9 @@ void glfwErrorCallback(int error, const char* description)
 
 bool glfwTryFirstInit()
 {
-  if (STATIC__glfw_is_initialized.test_and_set())
+  if (glfw_is_initialized.exchange(true))
   {
-    SDE_LOG_DEBUG("GLFW previously initialized");
+    SDE_LOG_DEBUG() << "GLFW previously initialized";
     return false;
   }
 
@@ -42,9 +42,9 @@ bool glfwTryFirstInit()
   glfwSetErrorCallback(glfwErrorCallback);
 #endif  // SDE_GLFW_DEBUG
 
-  SDE_LOG_INFO("Initializing GLFW...");
-  SDE_ASSERT(glfwInit(), "Failed to initialize GLFW ");
-  SDE_LOG_INFO("Initialized GLFW");
+  SDE_LOG_DEBUG() << "Initializing GLFW...";
+  SDE_ASSERT(glfwInit()) << "Failed to initialize GLFW";
+  SDE_LOG_DEBUG() << "Initialized GLFW";
 
   // Decide GL+GLSL versions
 #if __APPLE__
@@ -60,21 +60,54 @@ bool glfwTryFirstInit()
   // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
   // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
-  SDE_LOG_DEBUG("Set window hints");
+  SDE_LOG_DEBUG() << "Set window hints";
   return true;
 }
 
 }  // namespace
 
+std::ostream& operator<<(std::ostream& os, WindowError error)
+{
+  switch (error)
+  {
+    SDE_OS_ENUM_CASE(WindowError::kWindowCreationFailed);
+    SDE_OS_ENUM_CASE(WindowError::kWindowIconInvalidPixelFormat);
+    SDE_OS_ENUM_CASE(WindowError::kWindowIconInvalidSize);
+    SDE_OS_ENUM_CASE(WindowError::kWindowCursorInvalidPixelFormat);
+    SDE_OS_ENUM_CASE(WindowError::kWindowCursorInvalidSize);
+  }
+  return os;
+}
+
 void WindowDeleter::operator()(NativeWindowHandle native_handle) const
 {
-  SDE_LOG_DEBUG("glfwDestroyWindow");
+  SDE_LOG_DEBUG() << "glfwDestroyWindow";
   glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(native_handle));
 }
 
 Window::Window(NativeWindowHandle native_handle) : UniqueResource<NativeWindowHandle, WindowDeleter>{native_handle} {}
 
 void Window::activate() const { glfwMakeContextCurrent(reinterpret_cast<GLFWwindow*>(value())); }
+
+bool Window::poll() const
+{
+  auto* w = reinterpret_cast<GLFWwindow*>(value());
+  glfwSwapBuffers(w);
+  glfwPollEvents();
+  return !glfwWindowShouldClose(w);
+}
+
+Vec2i Window::size() const
+{
+  auto* w = reinterpret_cast<GLFWwindow*>(value());
+  Vec2i size;
+  glfwGetFramebufferSize(w, (size.data() + 0), (size.data() + 1));
+  return size;
+}
+
+bool Window::backend_initialized() { return glfw_is_initialized.load(); }
+
+bool Window::try_backend_initialization() { return gladLoadGLLoader((GLADloadproc)glfwGetProcAddress); }
 
 expected<Window, WindowError> Window::create(const WindowOptions& options)
 {
@@ -92,17 +125,17 @@ expected<Window, WindowError> Window::create(const WindowOptions& options)
   // Wrap GLFW window in resource wrapper for auto-cleanup on failure
   Window window{reinterpret_cast<NativeWindowHandle>(glfw_window)};
 
-  SDE_LOG_INFO("Created GLFW window");
+  SDE_LOG_INFO() << "Created GLFW window";
   glfwMakeContextCurrent(glfw_window);
 
   if (glfw_initialized_on_this_call)
   {
-    SDE_ASSERT(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "Failed to load OpenGL (via glad)");
-    SDE_LOG_INFO("Loaded OpenGL (via glad)");
+    SDE_ASSERT(Window::try_backend_initialization()) << "Failed to load OpenGL (via glad)";
+    SDE_LOG_INFO() << "Loaded OpenGL (via glad)";
   }
   else
   {
-    SDE_LOG_DEBUG("Previously loaded OpenGL (via glad)");
+    SDE_LOG_DEBUG() << "Previously loaded OpenGL (via glad)";
   }
 
   window.activate();
@@ -122,25 +155,25 @@ expected<Window, WindowError> Window::create(const WindowOptions& options)
   return window;
 }
 
-expected<void, WindowError> Window::setIcon(ImageRef icon) const
+expected<void, WindowError> Window::setWindowIcon(ImageRef icon) const
 {
   auto* glfw_window = reinterpret_cast<GLFWwindow*>(this->value());
 
   // Handle window icon setting
   if (!icon.isValid())
   {
-    SDE_LOG_DEBUG("No icon set to window");
+    SDE_LOG_ERROR() << "No icon set to window";
     glfwSetWindowIcon(glfw_window, 0, nullptr);
     return {};
   }
   else if (icon.channels != ImageChannels::kRGBA)
   {
-    SDE_LOG_DEBUG("WindowIconInvalidPixelFormat");
+    SDE_LOG_ERROR() << "WindowIconInvalidPixelFormat";
     return make_unexpected(WindowError::kWindowIconInvalidPixelFormat);
   }
   else if (icon.pixels() == 0)
   {
-    SDE_LOG_DEBUG("WindowIconInvalidSize");
+    SDE_LOG_ERROR() << "WindowIconInvalidSize";
     return make_unexpected(WindowError::kWindowIconInvalidSize);
   }
 
@@ -152,30 +185,30 @@ expected<void, WindowError> Window::setIcon(ImageRef icon) const
   return {};
 }
 
-expected<void, WindowError> Window::setCursor(ImageRef cursor) const
+expected<void, WindowError> Window::setCursorIcon(ImageRef icon) const
 {
   auto* glfw_window = reinterpret_cast<GLFWwindow*>(this->value());
 
-  // Handle window cursor setting
-  if (!cursor.isValid())
+  // Handle window icon setting
+  if (!icon.isValid())
   {
-    SDE_LOG_DEBUG("No cursor set to window");
+    SDE_LOG_ERROR() << "No icon set to window";
     glfwSetCursor(glfw_window, glfwCreateStandardCursor(GLFW_ARROW_CURSOR));
     return {};
   }
-  else if (cursor.channels != ImageChannels::kRGBA)
+  else if (icon.channels != ImageChannels::kRGBA)
   {
-    SDE_LOG_DEBUG("WindowCursorInvalidPixelFormat");
+    SDE_LOG_ERROR() << "WindowCursorInvalidPixelFormat";
     return make_unexpected(WindowError::kWindowCursorInvalidPixelFormat);
   }
-  else if (cursor.pixels() == 0)
+  else if (icon.pixels() == 0)
   {
-    SDE_LOG_DEBUG("WindowCursorInvalidSize");
+    SDE_LOG_ERROR() << "WindowCursorInvalidSize";
     return make_unexpected(WindowError::kWindowCursorInvalidSize);
   }
 
   const GLFWimage glfw_image{
-    .width = cursor.width, .height = cursor.height, .pixels = reinterpret_cast<std::uint8_t*>(cursor.data)};
+    .width = icon.width, .height = icon.height, .pixels = reinterpret_cast<std::uint8_t*>(icon.data)};
 
   glfwSetCursor(glfw_window, glfwCreateCursor(&glfw_image, 0, 0));
 

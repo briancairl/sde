@@ -10,21 +10,30 @@ const char* flags_to_read_mode_str(file_istream::flags fileopt) { return fileopt
 
 }  // namespace anonymous
 
-file_handle_istream::file_handle_istream(file_handle_istream&& other) :
-    file_bytes_remaining_{other.file_bytes_remaining_}, file_handle_{other.file_handle_}
+file_handle_istream::file_handle_istream(file_handle_istream&& other) { this->swap(other); }
+
+file_handle_istream& file_handle_istream::operator=(file_handle_istream&& other)
 {
-  other.file_handle_ = nullptr;
-  other.file_bytes_remaining_ = 0;
+  this->swap(other);
+  return *this;
 }
 
 file_handle_istream::file_handle_istream(std::FILE* file_handle) : file_bytes_remaining_{0}, file_handle_{file_handle}
 {
   file_bytes_remaining_ = [file = file_handle_] {
+    std::fpos_t previous_pos;
+    std::fgetpos(file, &previous_pos);
     std::fseek(file, 0, SEEK_END);
     const auto size = std::ftell(file);
-    std::fseek(file, 0, SEEK_SET);
+    std::fsetpos(file, &previous_pos);
     return size;
   }();
+}
+
+void file_handle_istream::swap(file_handle_istream& other)
+{
+  std::swap(this->file_handle_, other.file_handle_);
+  std::swap(this->file_bytes_remaining_, other.file_bytes_remaining_);
 }
 
 expected<file_istream, FileStreamError> file_istream::create(const std::filesystem::path& path, const flags fileopt)

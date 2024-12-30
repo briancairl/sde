@@ -12,6 +12,7 @@
 #include "sde/crtp.hpp"
 #include "sde/hash.hpp"
 #include "sde/traits.hpp"
+#include "sde/type_name.hpp"
 
 namespace sde
 {
@@ -57,14 +58,19 @@ template <typename T> struct _Stub : BasicField<T>
   constexpr _Stub(const char* _name, T& _value) : BasicField<T>{_name, std::addressof(_value)} {}
 };
 
-template <typename F> struct is_field : std::false_type
+template <typename F> struct IsField : std::false_type
 {};
 
-template <typename T> struct is_field<Field<T>> : std::true_type
+template <typename T> struct IsField<BasicField<T>> : std::true_type
 {};
 
-template <typename T> struct is_field<_Stub<T>> : std::true_type
+template <typename T> struct IsField<Field<T>> : std::true_type
 {};
+
+template <typename T> struct IsField<_Stub<T>> : std::true_type
+{};
+
+template <typename T> constexpr bool is_field_v = IsField<T>::value;
 
 template <typename T> auto to_const(Field<T> field) { return Field<const T>{field.name, field.get()}; }
 
@@ -75,8 +81,17 @@ template <typename... FieldTs> auto to_const(const std::tuple<FieldTs...>& field
   return std::apply([](auto&... field) { return std::make_tuple(to_const(field)...); }, fields);
 }
 
-template <typename ResourceT> struct Resource : crtp_base<Resource<ResourceT>>
+template <typename ResourceT> class Resource : public crtp_base<Resource<ResourceT>>
 {
+public:
+  Resource() = default;
+
+  Resource(Resource&& other) = default;
+  Resource& operator=(Resource&& other) = default;
+
+  Resource(const Resource& other) = default;
+  Resource& operator=(const Resource& other) = default;
+
   constexpr decltype(auto) fields() { return this->derived().field_list(); }
 
   constexpr decltype(auto) fields() const { return to_const(const_cast<Resource*>(this)->derived().field_list()); }
@@ -164,7 +179,7 @@ template <typename T> struct Hasher<_Stub<T>>
 
 template <typename... FieldTs> auto FieldList(FieldTs&&... fields)
 {
-  static_assert((is_field<std::remove_reference_t<FieldTs>>() and ...), "Invalid FieldList");
+  static_assert((is_field_v<std::remove_reference_t<FieldTs>> and ...), "Invalid FieldList");
   return std::make_tuple(std::forward<FieldTs>(fields)...);
 }
 
@@ -205,12 +220,12 @@ template <typename ResourceT> std::size_t TotalFields(const Resource<ResourceT>&
 template <typename ResourceT, typename VisitorT>
 bool IterateUntil(const Resource<ResourceT>& resource, VisitorT visitor)
 {
-  return std::apply([&](const auto&... fields) { return (visitor(fields) + ...); }, resource.fields());
+  return std::apply([&](const auto&... fields) { return (visitor(fields) and ...); }, resource.fields());
 }
 
 template <typename ResourceT, typename VisitorT> bool IterateUntil(Resource<ResourceT>& resource, VisitorT visitor)
 {
-  return std::apply([&](auto&&... fields) { return (visitor(fields) + ...); }, resource.fields());
+  return std::apply([&](auto&&... fields) { return (visitor(fields) and ...); }, resource.fields());
 }
 
 template <typename T> std::ostream& operator<<(std::ostream& os, const Field<T>& field)
@@ -237,31 +252,29 @@ template <typename T> std::ostream& operator<<(std::ostream& os, const _Stub<T>&
   }
 }
 
-
 template <typename ResourceT> std::ostream& operator<<(std::ostream& os, const Resource<ResourceT>& resource)
 {
+  os << '[' << type_name<ResourceT>() << "] : { ";
   Visit(resource, [&os](std::size_t depth, const auto& field) -> bool {
-    for (std::size_t c = 0; c < depth; ++c)
-    {
-      os << ' ';
-      os << ' ';
-    }
+    os << '{';
     using FieldType = std::remove_reference_t<decltype(field)>;
     using ValueType = std::remove_const_t<typename FieldType::value_type>;
     if constexpr (is_resource_v<ValueType>)
     {
-      os << field.name << ": {...}\n";
+      os << field.name << ": {...}";
     }
     else if constexpr (has_std_ostream_overload<ValueType>())
     {
-      os << field.name << ": " << field.get() << '\n';
+      os << field.name << ": " << field.get();
     }
     else if constexpr (has_std_ostream_overload<ValueType>())
     {
-      os << field.name << ": ? \n";
+      os << field.name << ": ?";
     }
+    os << "} ";
     return true;
   });
+  os << '}';
   return os;
 }
 

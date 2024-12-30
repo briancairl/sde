@@ -45,16 +45,11 @@ std::ostream& operator<<(std::ostream& os, ImageChannels channels)
 {
   switch (channels)
   {
-  case ImageChannels::kDefault:
-    return os << "Default";
-  case ImageChannels::kGrey:
-    return os << "Grey";
-  case ImageChannels::kGreyA:
-    return os << "GreyA";
-  case ImageChannels::kRGB:
-    return os << "RGB";
-  case ImageChannels::kRGBA:
-    return os << "RGBA";
+    SDE_OS_ENUM_CASE(ImageChannels::kDefault)
+    SDE_OS_ENUM_CASE(ImageChannels::kGrey)
+    SDE_OS_ENUM_CASE(ImageChannels::kGreyA)
+    SDE_OS_ENUM_CASE(ImageChannels::kRGB)
+    SDE_OS_ENUM_CASE(ImageChannels::kRGBA)
   }
   return os;
 }
@@ -68,25 +63,39 @@ std::ostream& operator<<(std::ostream& os, ImageError error)
 {
   switch (error)
   {
-  case ImageError::kElementAlreadyExists:
-    return os << "ElementAlreadyExists";
-  case ImageError::kInvalidHandle:
-    return os << "InvalidHandle";
-  case ImageError::kAssetNotFound:
-    return os << "AssetNotFound";
-  case ImageError::kAssetInvalid:
-    return os << "AssetInvalid";
-  case ImageError::kImageNotFound:
-    return os << "ImageNotFound";
-  case ImageError::kUnsupportedBitDepth:
-    return os << "UnsupportedBitDepth";
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(ImageError)
+    SDE_OS_ENUM_CASE(ImageError::kAssetNotFound)
+    SDE_OS_ENUM_CASE(ImageError::kAssetInvalid)
+    SDE_OS_ENUM_CASE(ImageError::kImageNotFound)
+    SDE_OS_ENUM_CASE(ImageError::kUnsupportedBitDepth)
   }
   return os;
 }
 
 void ImageDataBufferDeleter::operator()(void* data) const { stbi_image_free(data); }
 
-expected<void, ImageError> ImageCache::reload(Image& image)
+ImageHandle ImageCache::to_handle(const asset::path& path) const
+{
+  const auto itr = path_to_image_handle_.find(path);
+  if (itr == std::end(path_to_image_handle_))
+  {
+    return ImageHandle::null();
+  }
+  return itr->second;
+}
+
+void ImageCache::when_created(dependencies deps, ImageHandle handle, const Image* image)
+{
+  const auto [itr, added] = path_to_image_handle_.emplace(image->path, handle);
+  SDE_ASSERT_TRUE(added) << "Image " << SDE_OSNV(image->path) << " was already added as " << itr->first;
+}
+
+void ImageCache::when_removed(dependencies deps, ImageHandle handle, const Image* image)
+{
+  path_to_image_handle_.erase(image->path);
+}
+
+expected<void, ImageError> ImageCache::reload([[maybe_unused]] dependencies deps, Image& image)
 {
   // Already loaded
   if (image.data_buffer.isValid())
@@ -97,7 +106,7 @@ expected<void, ImageError> ImageCache::reload(Image& image)
   // Check if image point is valid
   if (!asset::exists(image.path))
   {
-    SDE_LOG_DEBUG("AssetNotFound");
+    SDE_LOG_ERROR() << "AssetNotFound: " << SDE_OSNV(image.path);
     return make_unexpected(ImageError::kAssetNotFound);
   }
 
@@ -125,7 +134,7 @@ expected<void, ImageError> ImageCache::reload(Image& image)
     break;
   }
   default: {
-    SDE_LOG_DEBUG("UnsupportedBitDepth");
+    SDE_LOG_ERROR() << "UnsupportedBitDepth: " << SDE_OSNV(image.options.element_type);
     return make_unexpected(ImageError::kUnsupportedBitDepth);
   }
   }
@@ -133,11 +142,12 @@ expected<void, ImageError> ImageCache::reload(Image& image)
   // Check if image point is valid
   if (image_data_ptr == nullptr)
   {
-    SDE_LOG_DEBUG("AssetInvalid");
+    SDE_LOG_ERROR() << "AssetInvalid: " << SDE_OSNV(image.path);
     return make_unexpected(ImageError::kAssetInvalid);
   }
 
-  SDE_LOG_DEBUG_FMT("Loaded image: %s (%d x %d)", image.path.string().c_str(), height_on_load, width_on_load);
+  SDE_LOG_DEBUG() << "Loaded image: " << SDE_OSNV(image.path) << ", " << SDE_OSNV(height_on_load) << ", "
+                  << SDE_OSNV(width_on_load);
 
   // Set loaded image image
   image.options.channels = from_channel_count(channel_count_on_load);
@@ -147,18 +157,19 @@ expected<void, ImageError> ImageCache::reload(Image& image)
   return {};
 }
 
-expected<void, ImageError> ImageCache::unload(Image& image)
+expected<void, ImageError> ImageCache::unload([[maybe_unused]] dependencies deps, Image& image)
 {
   image.data_buffer = ImageDataBuffer{nullptr};
   image.shape.value.setZero();
   return {};
 }
 
-expected<Image, ImageError> ImageCache::generate(const asset::path& image_path, const ImageOptions& options)
+expected<Image, ImageError>
+ImageCache::generate([[maybe_unused]] dependencies deps, const asset::path& image_path, const ImageOptions& options)
 {
   Image info{
     .path = image_path, .options = options, .shape = {.value = {0, 0}}, .data_buffer = ImageDataBuffer{nullptr}};
-  if (auto ok_or_error = reload(info); !ok_or_error.has_value())
+  if (auto ok_or_error = reload(deps, info); !ok_or_error.has_value())
   {
     return make_unexpected(ok_or_error.error());
   }

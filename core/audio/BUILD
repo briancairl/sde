@@ -3,16 +3,16 @@
 cc_library(
   name="audio_hdrs",
   hdrs=[
-    "include/sde/audio/assets.hpp",
-    "include/sde/audio/assets_fwd.hpp",
     "include/sde/audio/mixer.hpp",
     "include/sde/audio/mixer_fwd.hpp",
+    "include/sde/audio/sound.hpp",
     "include/sde/audio/sound_channel_format.hpp",
     "include/sde/audio/sound_data.hpp",
     "include/sde/audio/sound_data_fwd.hpp",
     "include/sde/audio/sound_data_handle.hpp",
+    "include/sde/audio/sound_device.hpp",
+    "include/sde/audio/sound_device_fwd.hpp",
     "include/sde/audio/sound_fwd.hpp",
-    "include/sde/audio/sound.hpp",
     "include/sde/audio/sound_handle.hpp",
   ],
   strip_include_prefix="include",
@@ -35,6 +35,7 @@ cc_library(
   deps=[
     "//core/common:core",
     "//core/common:expected",
+    "//core/common:stl",
     ":audio_impl__openal_user_types",
   ],
   visibility=["//visibility:private"]
@@ -43,11 +44,11 @@ cc_library(
 cc_library(
   name="audio",
   srcs=[
-    "src/assets.cpp",
     "src/mixer.cpp",
     "src/sound.cpp",
     "src/sound_channel_format.cpp",
     "src/sound_data.cpp",
+    "src/sound_device.cpp",
   ],
   deps=[
     "@openal//:openal",

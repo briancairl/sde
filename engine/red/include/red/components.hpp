@@ -1,18 +1,19 @@
 #pragma once
 
-// C++ Standard Library
-#include <string>
-
 // SDE
+#include "sde/game/component_decl.hpp"
 #include "sde/game/scene_fwd.hpp"
 #include "sde/geometry.hpp"
+#include "sde/graphics/sprite_fwd.hpp"
+#include "sde/graphics/tile_map_fwd.hpp"
 #include "sde/resource.hpp"
+#include "sde/string.hpp"
 
 using namespace sde;
 
 struct Info : Resource<Info>
 {
-  std::string name;
+  sde::string name;
 
   auto field_list() { return FieldList(Field{"name", name}); }
 };
@@ -66,5 +67,6 @@ struct Foreground
 static constexpr std::size_t kGlobalListener = 0;
 static constexpr std::size_t kPlayerListener = 1;
 
-
-void addComponentsToScene(sde::game::Scene& scene);
+SDE_COMPONENT_RENAME(sde::graphics::TileMap, "TileMap");
+SDE_COMPONENT_RENAME(sde::graphics::Sprite, "Sprite");
+SDE_COMPONENT_RENAME(sde::graphics::AnimatedSprite, "AnimatedSprite");

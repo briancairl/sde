@@ -48,7 +48,7 @@ public:
     return this->derived();
   }
 
-  IArchiveT& operator>>(label l)
+  template <typename ValueT> IArchiveT& operator>>(label<ValueT> l)
   {
     this->derived().read_impl(l);
     return this->derived();
@@ -71,7 +71,7 @@ public:
 private:
   iarchive(const iarchive&) = default;
 
-  static constexpr void read_impl(label _) {}
+  template <typename ValueT> static constexpr void read_impl(label<ValueT> _) {}
 };
 
 }  // namespace sde::serial

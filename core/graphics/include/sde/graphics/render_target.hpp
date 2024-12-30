@@ -17,7 +17,7 @@
 #include "sde/graphics/typedef.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
 
 namespace sde::graphics
 {
@@ -42,46 +42,22 @@ struct RenderTarget : Resource<RenderTarget>
 
 enum class RenderTargetError
 {
-  kElementAlreadyExists,
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kInvalidColorAttachment,
 };
 
 std::ostream& operator<<(std::ostream& os, RenderTargetError error);
 
-
-}  // namespace sde::graphics
-
-
-namespace sde
-{
-
-template <> struct ResourceCacheTypes<graphics::RenderTargetCache>
-{
-  using error_type = graphics::RenderTargetError;
-  using handle_type = graphics::RenderTargetHandle;
-  using value_type = graphics::RenderTarget;
-};
-
-}  // namespace sde
-
-namespace sde::graphics
-{
-
 class RenderTargetCache : public ResourceCache<RenderTargetCache>
 {
   friend fundemental_type;
 
-public:
-  explicit RenderTargetCache(TextureCache& textures);
-
 private:
-  TextureCache* textures_;
+  expected<void, RenderTargetError> reload(dependencies deps, RenderTarget& render_target);
+  expected<void, RenderTargetError> unload(dependencies deps, RenderTarget& render_target);
 
-  expected<void, RenderTargetError> reload(RenderTarget& render_target);
-  expected<void, RenderTargetError> unload(RenderTarget& render_target);
-
-  expected<RenderTarget, RenderTargetError> generate(TextureHandle color_attachment = TextureHandle::null());
+  expected<RenderTarget, RenderTargetError>
+  generate(dependencies deps, TextureHandle color_attachment = TextureHandle::null());
 };
 
 }  // namespace sde::graphics

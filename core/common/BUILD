@@ -36,7 +36,13 @@ cc_library(
 
 cc_library(
   name="logging",
-  hdrs=["include/sde/logging.hpp"],
+  hdrs=[
+    "include/sde/format.hpp",
+    "include/sde/logging.hpp"
+  ],
+  srcs=[
+    "src/logging.cpp",
+  ],
   strip_include_prefix="include",
   deps=[":build"],
   visibility=["//visibility:public"]
@@ -51,22 +57,49 @@ cc_library(
 )
 
 cc_library(
+  name="memory",
+  hdrs=["include/sde/memory.hpp"],
+  strip_include_prefix="include",
+  deps=[],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
   name="resource",
   hdrs=[
     "include/sde/resource.hpp",
     "include/sde/resource_io.hpp",
     "include/sde/resource_cache.hpp",
     "include/sde/resource_cache_io.hpp",
+    "include/sde/resource_cache_traits.hpp",
+    "include/sde/resource_collection.hpp",
+    "include/sde/resource_dependencies.hpp",
     "include/sde/resource_handle.hpp",
     "include/sde/resource_handle_io.hpp",
-    "include/sde/resource_wrapper.hpp",
   ],
   strip_include_prefix="include",
   deps=[
+    "@dont//:core",
+    "@dont//:stl",
     "//core/serialization",
-    ":core",
     ":asset",
+    ":core",
+    ":memory",
+    ":stl"
   ],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
+  name="stl",
+  hdrs=[
+    "include/sde/string.hpp",
+    "include/sde/vector.hpp",
+    "include/sde/unordered_map.hpp",
+    "include/sde/unordered_set.hpp",
+  ],
+  strip_include_prefix="include",
+  deps=[":memory"],
   visibility=["//visibility:public"]
 )
 
@@ -74,7 +107,6 @@ cc_library(
   name="core",
   hdrs=[
     "include/sde/crtp.hpp",
-    "include/sde/format.hpp",
     "include/sde/overloaded.hpp",
     "include/sde/hash.hpp",
     "include/sde/hash_io.hpp",
@@ -85,6 +117,7 @@ cc_library(
     "include/sde/type_name.hpp",
     "include/sde/traits.hpp",
     "include/sde/view.hpp",
+    "include/sde/unique_resource.hpp",
   ],
   strip_include_prefix="include",
   deps=[":build", ":logging"],

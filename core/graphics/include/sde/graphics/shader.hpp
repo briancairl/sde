@@ -11,7 +11,6 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
 
 // SDE
 #include "sde/asset.hpp"
@@ -21,7 +20,8 @@
 #include "sde/graphics/typedef.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
-#include "sde/resource_wrapper.hpp"
+#include "sde/unique_resource.hpp"
+#include "sde/vector.hpp"
 
 namespace sde::graphics
 {
@@ -62,8 +62,7 @@ std::ostream& operator<<(std::ostream& os, const ShaderVariable& value);
  */
 enum class ShaderError
 {
-  kElementAlreadyExists,
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kAssetNotFound,
   kLinkageFailure,
   kVertShaderCompilationFailure,
@@ -90,8 +89,8 @@ std::ostream& operator<<(std::ostream& os, ShaderComponents components);
 
 struct ShaderVariables
 {
-  std::vector<ShaderVariable> layout;
-  std::vector<ShaderVariable> uniforms;
+  sde::vector<ShaderVariable> layout;
+  sde::vector<ShaderVariable> uniforms;
 };
 
 std::ostream& operator<<(std::ostream& os, const ShaderVariables& variables);
@@ -130,31 +129,15 @@ struct Shader : Resource<Shader>
 
 [[nodiscard]] bool hasUniform(const Shader& info, std::string_view key, ShaderVariableType type);
 
-}  // namespace sde::graphics
-
-namespace sde
-{
-
-template <> struct ResourceCacheTypes<graphics::ShaderCache>
-{
-  using error_type = graphics::ShaderError;
-  using handle_type = graphics::ShaderHandle;
-  using value_type = graphics::Shader;
-};
-
-}  // namespace sde
-
-namespace sde::graphics
-{
-
 class ShaderCache : public ResourceCache<ShaderCache>
 {
   friend fundemental_type;
 
 private:
-  static expected<void, ShaderError> reload(Shader& shader);
-  static expected<void, ShaderError> unload(Shader& shader);
-  expected<Shader, ShaderError> generate(const asset::path& path);
+  static expected<void, ShaderError> reload(dependencies deps, Shader& shader);
+  static expected<void, ShaderError> unload(dependencies deps, Shader& shader);
+
+  expected<Shader, ShaderError> generate(dependencies deps, const asset::path& path);
 };
 
 }  // namespace sde::graphics
