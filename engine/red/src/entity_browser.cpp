@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "entity_browser"
+#define SDE_SCRIPT_TYPE_NAME "entity_browser"
 
 // ImGui
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -29,6 +29,8 @@ bool initialize(entity_browser* self, sde::game::GameResources& resources, const
 {
   return true;
 }
+
+bool shutdown(entity_browser* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 
 bool update(entity_browser* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

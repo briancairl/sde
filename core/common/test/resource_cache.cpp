@@ -30,9 +30,8 @@ struct SimpleResource : Resource<SimpleResource>
 
 enum class SimpleResourceError
 {
-  kFailure,
-  kInvalidHandle,
-  kElementAlreadyExists
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
+  kFailure
 };
 
 struct SimpleResourceCache;

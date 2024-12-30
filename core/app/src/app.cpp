@@ -152,8 +152,12 @@ App::App(Window&& window, SoundDevice&& sound_device) :
     window_{std::move(window)}, sound_device_{std::move(sound_device)}
 {}
 
-void App::spin(OnStart on_start, OnUpdate on_update, const Rate spin_rate)
+void App::spin(OnReset on_reset, OnUpdate on_update, OnClose on_close, const Rate spin_rate)
 {
+  SDE_ASSERT_NE(on_reset, nullptr);
+  SDE_ASSERT_NE(on_update, nullptr);
+  SDE_ASSERT_NE(on_close, nullptr);
+
   AppProperties app_properties;
   app_properties.window = window_.value();
   app_properties.sound_device = sound_device_.handle();
@@ -189,7 +193,7 @@ void App::spin(OnStart on_start, OnUpdate on_update, const Rate spin_rate)
     case AppDirective::kReset:
       t_start = Clock::now();
       t_prev = t_start;
-      next_directive = on_start(app_properties);
+      next_directive = on_reset(app_properties);
       break;
     case AppDirective::kClose:
       return;
@@ -216,6 +220,9 @@ void App::spin(OnStart on_start, OnUpdate on_update, const Rate spin_rate)
     app_properties.time_delta = (t_now - t_prev);
     t_prev = t_now;
   }
+
+  on_close(app_properties);
+
   glfwSetDropCallback(glfw_window, previous_drop_callback);
   glfwSetScrollCallback(glfw_window, previous_scroll_callback);
   glfwSetWindowUserPointer(glfw_window, nullptr);

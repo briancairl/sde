@@ -451,8 +451,7 @@ std::ostream& operator<<(std::ostream& os, ShaderError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(ShaderError::kElementAlreadyExists)
-    SDE_OS_ENUM_CASE(ShaderError::kInvalidHandle)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(ShaderError)
     SDE_OS_ENUM_CASE(ShaderError::kAssetNotFound)
     SDE_OS_ENUM_CASE(ShaderError::kLinkageFailure)
     SDE_OS_ENUM_CASE(ShaderError::kVertShaderCompilationFailure)

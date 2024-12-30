@@ -38,8 +38,7 @@ std::ostream& operator<<(std::ostream& os, FontError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(FontError::kElementAlreadyExists)
-    SDE_OS_ENUM_CASE(FontError::kInvalidHandle)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(FontError)
     SDE_OS_ENUM_CASE(FontError::kAssetNotFound)
     SDE_OS_ENUM_CASE(FontError::kAssetInvalid)
     SDE_OS_ENUM_CASE(FontError::kFontNotFound)

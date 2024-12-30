@@ -51,6 +51,6 @@ template <> struct ResourceHandleToCache<game::EntityID>
   using type = game::Registry;
 };
 
-template <> struct IsResourceCache<game::Registry> : std::true_type
+template <> struct IsResourceCacheLike<game::Registry> : std::true_type
 {};
 }  // namespace sde

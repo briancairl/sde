@@ -270,34 +270,32 @@ public:
     return handle_to_value_cache_.count(handle) != 0;
   }
 
-  template <typename HandleT> [[nodiscard]] bool borrow(HandleT&& handle_or)
+  template <typename HandleT> [[nodiscard]] expected<void, error_type> borrow(HandleT&& handle_or)
   {
     const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
     const auto itr = handle_to_value_cache_.find(handle);
     if (itr == std::end(handle_to_value_cache_))
     {
-      return false;
+      return make_unexpected(error_type::kInvalidHandle);
     }
-    else
-    {
-      ++itr->second.usage_count;
-      return true;
-    }
+    ++itr->second.usage_count;
+    return {};
   }
 
-  template <typename HandleT> [[nodiscard]] bool restore(HandleT&& handle_or)
+  template <typename HandleT> [[nodiscard]] expected<void, error_type> restore(HandleT&& handle_or)
   {
     const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
     const auto itr = handle_to_value_cache_.find(handle);
-    if (itr == std::end(handle_to_value_cache_) or (itr->second.usage_count == 0))
+    if (itr == std::end(handle_to_value_cache_))
     {
-      return false;
+      return make_unexpected(error_type::kInvalidHandle);
     }
-    else
+    else if (itr->second.usage_count == 0)
     {
-      --itr->second.usage_count;
-      return true;
+      return make_unexpected(error_type::kElementNotInUse);
     }
+    --itr->second.usage_count;
+    return {};
   }
 
   [[nodiscard]] bool empty() const { return handle_to_value_cache_.empty(); }
@@ -330,13 +328,13 @@ public:
   {
     for (auto& [handle, element] : handle_to_value_cache_)
     {
-      if (auto ok_or_error = this->derived().unload(deps, element.value); !ok_or_error.has_value())
-      {
-        return ok_or_error;
-      }
       if (!on_removal(deps, handle, std::addressof(element.value)))
       {
         return make_unexpected(error_type::kElementRemovalFailure);
+      }
+      if (auto ok_or_error = this->derived().unload(deps, element.value); !ok_or_error.has_value())
+      {
+        return ok_or_error;
       }
     }
     return {};
@@ -523,7 +521,7 @@ private:
         {
           if (field.value->isValid())
           {
-            return deps.borrow(field.get());
+            return deps.borrow(field.get()).has_value();
           }
         }
       }
@@ -543,7 +541,7 @@ private:
         {
           if (field.value->isValid())
           {
-            return deps.restore(field.get());
+            return deps.restore(field.get()).has_value();
           }
         }
       }
@@ -569,14 +567,21 @@ template <typename T> struct IsResourceCache : std::is_base_of<ResourceCache<T>,
 
 template <typename R> constexpr bool is_resource_cache_v = IsResourceCache<std::remove_const_t<R>>::value;
 
+template <typename T> struct IsResourceCacheLike : IsResourceCache<T>
+{};
+
+template <typename R> constexpr bool is_resource_cache_like_v = IsResourceCacheLike<std::remove_const_t<R>>::value;
+
 }  // namespace sde
 
 #define SDE_RESOURCE_CACHE_ERROR_ENUMS                                                                                 \
-  kInvalidHandle, kElementInUse, kElementAlreadyExists, kElementCreationFailure, kElementRemovalFailure
+  kInvalidHandle, kElementInUse, kElementAlreadyExists, kElementCreationFailure, kElementRemovalFailure,               \
+    kElementNotInUse
 
 #define SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(error_type)                                                        \
   SDE_OS_ENUM_CASE(error_type::kInvalidHandle)                                                                         \
   SDE_OS_ENUM_CASE(error_type::kElementInUse)                                                                          \
   SDE_OS_ENUM_CASE(error_type::kElementAlreadyExists)                                                                  \
   SDE_OS_ENUM_CASE(error_type::kElementCreationFailure)                                                                \
-  SDE_OS_ENUM_CASE(error_type::kElementRemovalFailure)
+  SDE_OS_ENUM_CASE(error_type::kElementRemovalFailure)                                                                 \
+  SDE_OS_ENUM_CASE(error_type::kElementNotInUse)

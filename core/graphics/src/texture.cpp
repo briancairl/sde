@@ -303,9 +303,8 @@ std::ostream& operator<<(std::ostream& os, TextureError error)
 {
   switch (error)
   {
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(TextureError)
     SDE_OS_ENUM_CASE(TextureError::kTextureNotFound)
-    SDE_OS_ENUM_CASE(TextureError::kElementAlreadyExists)
-    SDE_OS_ENUM_CASE(TextureError::kInvalidHandle)
     SDE_OS_ENUM_CASE(TextureError::kInvalidSourceImage)
     SDE_OS_ENUM_CASE(TextureError::kInvalidDimensions)
     SDE_OS_ENUM_CASE(TextureError::kInvalidDataValue)
@@ -410,7 +409,8 @@ template expected<Texture, TextureError> TextureCache::generate(
 expected<Texture, TextureError>
 TextureCache::generate(dependencies deps, const asset::path& image_path, const TextureOptions& options)
 {
-  auto image_or_error = deps.get<ImageCache>().create(deps, image_path, ImageOptions{.flip_vertically = false});
+  auto image_or_error =
+    deps.get<ImageCache>().find_or_create(image_path, deps, image_path, ImageOptions{.flip_vertically = false});
   if (!image_or_error.has_value())
   {
     return make_unexpected(TextureError::kInvalidSourceImage);

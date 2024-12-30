@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "renderer"
+#define SDE_SCRIPT_TYPE_NAME "renderer"
 
 // C++ Standard Library
 #include <optional>
@@ -120,6 +120,8 @@ bool initialize(renderer_state* self, sde::game::GameResources& resources, const
   return true;
 }
 
+bool shutdown(renderer_state* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
+
 bool update(renderer_state* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   using namespace sde::graphics;
@@ -166,8 +168,6 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
       render_pass_or_error.has_value())
   {
     render_pass_or_error->clear(Black());
-
-    self->render_buffer.quads.push_back({.rect = Rect2f{{-1.0f, -1.0f}, {+1.0f, +1.0f}}, .color = Vec4f::Ones()});
 
     registry.view<TransformQuery>().each(
       [&rp = *render_pass_or_error](auto& query) { query.world_from_viewport = rp.getWorldFromViewportMatrix(); });

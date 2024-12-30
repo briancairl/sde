@@ -137,6 +137,15 @@ cc_binary(
   visibility=["//visibility:public"]
 )
 
+cc_binary(
+  name="resource_browser",
+  srcs=["src/resource_browser.cpp"],
+  linkshared=True,
+  deps=[":red_common",],
+  visibility=["//visibility:public"]
+)
+
+
 cc_library(
   name="builtin_native_scripts",
   deps=[
@@ -154,6 +163,7 @@ cc_library(
     ":scene_tree",
     ":texture_viewer",
     ":tile_set_editor",
+    ":resource_browser",
   ],
   visibility=["//visibility:public"]
 )

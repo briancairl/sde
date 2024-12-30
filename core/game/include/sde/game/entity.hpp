@@ -28,12 +28,11 @@ namespace sde::game
 {
 enum class EntityError
 {
-  kElementAlreadyExists,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kComponentAlreadyAttached,
   kComponentNotRegistered,
   kComponentDumpFailure,
   kComponentLoadFailure,
-  kInvalidHandle,
   kCreationFailure,
 };
 
@@ -62,13 +61,17 @@ public:
     {
       return make_unexpected(EntityError::kComponentAlreadyAttached);
     }
-    else if (auto component = components_->to_handle(sde::string{ComponentName<ComponentT>::value}))
+    else if (auto component = components_->to_handle(sde::string{ComponentName<ComponentT>::value}); !component)
     {
-      entity_->components.push_back(component);
+      return make_unexpected(EntityError::kComponentNotRegistered);
+    }
+    else if (!components_->borrow(component))
+    {
+      return make_unexpected(EntityError::kInvalidHandle);
     }
     else
     {
-      return make_unexpected(EntityError::kComponentNotRegistered);
+      entity_->components.push_back(component);
     }
 
     using ReturnT = decltype(reg_->template emplace<ComponentT>(entity_->id, std::forward<CTorArgs>(args)...));
@@ -117,7 +120,9 @@ public:
 private:
   expected<void, EntityError> reload(dependencies deps, EntityData& entity);
   expected<void, EntityError> unload(dependencies deps, const EntityData& entity);
+
   expected<EntityData, EntityError> generate(dependencies deps);
+
   void when_removed(dependencies deps, EntityHandle handle, const EntityData* data);
 };
 

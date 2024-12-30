@@ -18,8 +18,7 @@ std::ostream& operator<<(std::ostream& os, ComponentError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(ComponentError::kInvalidHandle)
-    SDE_OS_ENUM_CASE(ComponentError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(ComponentError)
     SDE_OS_ENUM_CASE(ComponentError::kComponentLibraryInvalid)
     SDE_OS_ENUM_CASE(ComponentError::kComponentLibraryMissingFunction)
     SDE_OS_ENUM_CASE(ComponentError::kComponentAlreadyLoaded)

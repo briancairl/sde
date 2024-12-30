@@ -105,8 +105,7 @@ struct ImageShape : Resource<ImageShape>
  */
 enum class ImageError
 {
-  kElementAlreadyExists,
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kAssetNotFound,
   kAssetInvalid,
   kImageNotFound,
@@ -186,10 +185,13 @@ public:
 
 private:
   sde::unordered_map<asset::path, ImageHandle> path_to_image_handle_;
+
   static expected<void, ImageError> reload(dependencies deps, Image& image);
   static expected<void, ImageError> unload(dependencies deps, Image& image);
+
   expected<Image, ImageError>
   generate(dependencies deps, const asset::path& image_path, const ImageOptions& options = {});
+
   void when_created(dependencies deps, ImageHandle handle, const Image* image);
   void when_removed(dependencies deps, ImageHandle handle, const Image* image);
 };

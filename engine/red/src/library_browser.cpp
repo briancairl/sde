@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "library_browser"
+#define SDE_SCRIPT_TYPE_NAME "library_browser"
 
 // C++ Standard Library
 #include <ostream>
@@ -52,6 +52,10 @@ bool initialize(library_browser* self, sde::game::GameResources& resources, cons
   return true;
 }
 
+bool shutdown(library_browser* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+{
+  return true;
+}
 
 bool update(library_browser* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

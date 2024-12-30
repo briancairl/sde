@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "tile_set_editor"
+#define SDE_SCRIPT_TYPE_NAME "tile_set_editor"
 
 // C++ Standard Library
 #include <ostream>
@@ -306,6 +306,11 @@ template <typename ArchiveT> bool serialize(tile_set_editor* self, ArchiveT& ar)
 }
 
 bool initialize(tile_set_editor* self, GameResources& resources, const AppProperties& app) { return true; }
+
+bool shutdown(tile_set_editor* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+{
+  return true;
+}
 
 bool update(tile_set_editor* self, GameResources& resources, const AppProperties& app)
 {

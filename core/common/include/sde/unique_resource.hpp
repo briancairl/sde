@@ -68,7 +68,7 @@ private:
   UniqueResource& operator=(const UniqueResource&) = delete;
 
   T value_ = kNullValue;
-  DeleterT deleter_;
+  DeleterT deleter_ = {};
 };
 
 template <typename T, typename DeleterT, T kNullValue>

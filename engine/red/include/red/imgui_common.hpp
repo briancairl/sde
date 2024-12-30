@@ -1,6 +1,3 @@
-// C++ Standard Library
-#include <vector>
-
 // ImGui
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
@@ -13,6 +10,8 @@
 #include "sde/graphics/tile_set_fwd.hpp"
 #include "sde/resource.hpp"
 #include "sde/resource_handle.hpp"
+#include "sde/string.hpp"
+#include "sde/vector.hpp"
 
 
 inline ImVec2 toImVec2(const sde::Vec2f& v) { return {v.x(), v.y()}; }
@@ -22,13 +21,17 @@ struct ImGuiFieldFormatter
   template <typename T> bool operator()(std::size_t depth, const sde::BasicField<T>& field)
   {
     using U = std::remove_const_t<T>;
-    if (!sde::is_iterable_v<U> and depth > 0)
+    if ((!sde::is_iterable_v<U> or std::is_same_v<U, sde::asset::path> or std::is_same_v<U, sde::string>)and depth > 0)
     {
       ImGui::Dummy(ImVec2(depth * 10, 0.0));
       ImGui::SameLine();
     }
 
-    if constexpr (std::is_same_v<U, sde::asset::path>)
+    if constexpr (std::is_same_v<U, sde::string>)
+    {
+      ImGui::Text("%s : %s", field.name, field->c_str());
+    }
+    else if constexpr (std::is_same_v<U, sde::asset::path>)
     {
       ImGui::Text("%s : %s", field.name, field->string().c_str());
     }
@@ -71,6 +74,16 @@ struct ImGuiFieldFormatter
     else if constexpr (sde::is_resource_handle_v<T>)
     {
       ImGui::Text("%s : %d", field.name, static_cast<int>(field.get().id()));
+    }
+    else if constexpr (sde::is_resource_cache_v<T>)
+    {
+      if (ImGui::CollapsingHeader(sde::format("%s : ...", field.name)))
+      {
+        for (const auto& [handle, element] : field.get())
+        {
+          sde::Visit(sde::Field{sde::format("[%lu]", handle.id()), element}, ImGuiFieldFormatter{}, depth + 1);
+        }
+      }
     }
     else if constexpr (sde::is_resource_v<T>)
     {

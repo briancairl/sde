@@ -95,8 +95,8 @@ class ResourceCollection : public Resource<ResourceCollection<ResourceCollection
     "ResourceCollectionEntryTs must be a ResourceCollectionEntry<LABLE, CACHE>");
 
   static_assert(
-    (is_resource_cache_v<typename ResourceCollectionEntryTs::type> and ...),
-    "ResourceCacheTs must be a ResourceCache<T>");
+    (is_resource_cache_like_v<typename ResourceCollectionEntryTs::type> and ...),
+    "ResourceCacheTs must be a ResourceCache<T> (or have compatible API)");
 
 public:
   using handle_to_cache_map = dont::Map<dont::KeyValue<

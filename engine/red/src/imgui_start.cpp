@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "imgui_start"
+#define SDE_SCRIPT_TYPE_NAME "imgui_start"
 
 // C++ Standard Library
 #include <ostream>
@@ -37,13 +37,17 @@ template <typename ArchiveT> bool serialize(imgui_start* self, ArchiveT& ar)
 {
   using namespace sde::serial;
   ar& named{"imgui_ini_path", self->imgui_ini_path};
+  return true;
+}
 
-  if constexpr (std::is_same_v<sde::game::OArchive, ArchiveT>)
+bool shutdown(imgui_start* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+{
+  if (self->imgui_context)
   {
-    if (self->imgui_context)
-    {
-      ImGui::SaveIniSettingsToDisk(self->imgui_ini_path.string().c_str());
-    }
+    ImGui::SaveIniSettingsToDisk(self->imgui_ini_path.string().c_str());
+    ImGui::DestroyContext(self->imgui_context);
+    ImGui::SetCurrentContext(nullptr);
+    self->imgui_context = nullptr;
   }
   return true;
 }

@@ -73,6 +73,8 @@ private:
   Game(const Game& other) = delete;
   Game& operator=(const Game& other) = delete;
 
+  bool setActiveScene(SceneHandle scene, const AppProperties& app_properties);
+
   GameResources resources_;
 
   GameConfig config_;

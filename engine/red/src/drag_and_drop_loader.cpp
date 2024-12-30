@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "drag_and_drop_loader"
+#define SDE_SCRIPT_TYPE_NAME "drag_and_drop_loader"
 
 // C++ Standard Library
 #include <ostream>
@@ -16,6 +16,11 @@ struct drag_and_drop_loader : native_script_data
 template <typename ArchiveT> bool serialize(drag_and_drop_loader* self, ArchiveT& ar) { return true; }
 
 bool initialize(drag_and_drop_loader* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+{
+  return true;
+}
+
+bool shutdown(drag_and_drop_loader* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   return true;
 }

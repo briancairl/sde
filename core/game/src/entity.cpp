@@ -17,12 +17,11 @@ std::ostream& operator<<(std::ostream& os, EntityError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(EntityError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(EntityError)
     SDE_OS_ENUM_CASE(EntityError::kComponentAlreadyAttached)
     SDE_OS_ENUM_CASE(EntityError::kComponentNotRegistered)
     SDE_OS_ENUM_CASE(EntityError::kComponentDumpFailure)
     SDE_OS_ENUM_CASE(EntityError::kComponentLoadFailure)
-    SDE_OS_ENUM_CASE(EntityError::kInvalidHandle)
     SDE_OS_ENUM_CASE(EntityError::kCreationFailure)
   }
   return os;
@@ -43,6 +42,10 @@ expected<void, EntityError> EntityCache::unload(dependencies deps, const EntityD
 
 void EntityCache::when_removed(dependencies deps, EntityHandle handle, const EntityData* data)
 {
+  for (const auto& component : data->components)
+  {
+    deps.restore(component);
+  }
   if (auto& registry = deps.get<Registry>(); registry.valid(data->id))
   {
     registry.destroy(data->id);

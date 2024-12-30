@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "audio_manager"
+#define SDE_SCRIPT_TYPE_NAME "audio_manager"
 
 // C++ Standard Library
 #include <ostream>
@@ -44,6 +44,8 @@ bool initialize(audio_manager* self, sde::game::GameResources& resources, const 
     return true;
   }
 }
+
+bool shutdown(audio_manager* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 
 bool update(audio_manager* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

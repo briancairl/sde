@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "player_character"
+#define SDE_SCRIPT_TYPE_NAME "player_character"
 
 // C++ Standard Library
 #include <array>
@@ -89,6 +89,10 @@ bool initialize(player_character* self, sde::game::GameResources& resources, con
   return true;
 }
 
+bool shutdown(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+{
+  return true;
+}
 
 void edit(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
@@ -102,8 +106,6 @@ void edit(player_character* self, sde::game::GameResources& resources, const sde
   {
     return;
   }
-
-  SDE_ASSERT_TRUE((resources.get<Registry>().all_of<Size, Position, graphics::AnimatedSprite>(entity->id)));
 
   ImGui::Begin(self->guid());
   auto [size, position, sprite] = resources.get<Registry>().get<Size, Position, graphics::AnimatedSprite>(entity->id);
@@ -194,8 +196,6 @@ bool update(player_character* self, sde::game::GameResources& resources, const s
   {
     state.velocity.y() = +next_speed;
   }
-
-  TileSetHandle frames;
 
   // Handle next animation
   if ((state.velocity.x() > 0) and (state.velocity.y() > 0))

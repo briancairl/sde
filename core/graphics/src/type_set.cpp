@@ -178,8 +178,7 @@ std::ostream& operator<<(std::ostream& os, TypeSetError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(TypeSetError::kElementAlreadyExists)
-    SDE_OS_ENUM_CASE(TypeSetError::kInvalidHandle)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(TypeSetError)
     SDE_OS_ENUM_CASE(TypeSetError::kInvalidFont)
     SDE_OS_ENUM_CASE(TypeSetError::kGlyphSizeInvalid)
     SDE_OS_ENUM_CASE(TypeSetError::kGlyphDataMissing)

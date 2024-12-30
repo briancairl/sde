@@ -27,9 +27,8 @@ namespace sde::graphics
 
 enum class TileSetError
 {
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kAssetNotFound,
-  kElementAlreadyExists,
   kInvalidAtlasTexture,
   kInvalidTileSize,
   kInvalidSlicingBounds,

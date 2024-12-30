@@ -34,6 +34,7 @@
         "Physics"           : "engine/red/libphysics.so",
         "PlayerCharacter"   : "engine/red/libplayer_character.so",
         "Renderer"          : "engine/red/librenderer.so",
+        "ResourceBrowser"   : "engine/red/libresource_browser.so",
         "ScriptBrowser"     : "engine/red/libscript_browser.so",
         "SceneTree"         : "engine/red/libscene_tree.so",
         "TextureViewer"     : "engine/red/libtexture_viewer.so",
@@ -94,6 +95,10 @@
             },
             {
                 "script" : "DragAndDrop",
+                "name"   : null
+            },
+            {
+                "script" : "ResourceBrowser",
                 "name"   : null
             }
         ]

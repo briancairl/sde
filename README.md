@@ -64,7 +64,7 @@ sudo apt install           \
 - [x] Change the nature of the scene graph manifest
     + do not save manifest on game dump (all of this should be in resource caches)
     + save version and binary data location here
-- [ ] Implement a resource "borrow" system for tracking (add borrow counters to base cace)
+- [x] Implement a resource "borrow" system for tracking (add borrow counters to base cace)
 - [ ] Update component version computation to be based on IO fields (similar to scripts, since components list thier fields)
 - [x] Remove entities from registry when removed from cache
 - [ ] Labels for asset browsers (tilesets, sounds, etc.)

@@ -55,7 +55,7 @@ public:
 
   bool save(OArchive& oar) const;
 
-  std::string_view name() const { return methods_.on_get_name(); }
+  std::string_view type() const { return methods_.on_get_type_name(); }
 
   script_version_t version() const { return methods_.on_get_version(); }
 
@@ -66,6 +66,8 @@ public:
     const AppProperties& app_properties) const;
 
   bool update(GameResources& resources, const AppProperties& app_properties) const;
+
+  bool shutdown(GameResources& resources, const AppProperties& app_properties) const;
 
 private:
   void reset();
@@ -107,8 +109,7 @@ struct NativeScriptInstanceData : Resource<NativeScriptInstanceData>
 
 enum class NativeScriptInstanceError
 {
-  kInvalidHandle,
-  kElementAlreadyExists,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kNativeScriptInvalid,
   kInstanceDataUnavailable,
   kInstanceLoadFailed,

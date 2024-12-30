@@ -17,6 +17,10 @@ expected<void, SceneError> expand_recursive(
   SceneCache::dependencies deps,
   SceneHandle root)
 {
+  if (!root)
+  {
+    return {};
+  }
   auto scene = scenes(root);
   if (!scene)
   {
@@ -57,9 +61,8 @@ std::ostream& operator<<(std::ostream& os, SceneError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(SceneError::kInvalidHandle)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(SceneError)
     SDE_OS_ENUM_CASE(SceneError::kInvalidScript)
-    SDE_OS_ENUM_CASE(SceneError::kElementAlreadyExists)
   }
   return os;
 }

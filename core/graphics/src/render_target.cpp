@@ -16,9 +16,8 @@ std::ostream& operator<<(std::ostream& os, RenderTargetError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(RenderTargetError::kInvalidHandle)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(RenderTargetError)
     SDE_OS_ENUM_CASE(RenderTargetError::kInvalidColorAttachment)
-    SDE_OS_ENUM_CASE(RenderTargetError::kElementAlreadyExists)
   }
   return os;
 }

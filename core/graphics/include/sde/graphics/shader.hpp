@@ -62,8 +62,7 @@ std::ostream& operator<<(std::ostream& os, const ShaderVariable& value);
  */
 enum class ShaderError
 {
-  kElementAlreadyExists,
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kAssetNotFound,
   kLinkageFailure,
   kVertShaderCompilationFailure,
@@ -137,6 +136,7 @@ class ShaderCache : public ResourceCache<ShaderCache>
 private:
   static expected<void, ShaderError> reload(dependencies deps, Shader& shader);
   static expected<void, ShaderError> unload(dependencies deps, Shader& shader);
+
   expected<Shader, ShaderError> generate(dependencies deps, const asset::path& path);
 };
 

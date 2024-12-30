@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "physics"
+#define SDE_SCRIPT_TYPE_NAME "physics"
 
 // SDE
 #include "sde/game/native_script_runtime.hpp"
@@ -21,6 +21,8 @@ template <typename ArchiveT> bool serialize(physics* self, ArchiveT& ar)
 }
 
 bool initialize(physics* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
+
+bool shutdown(physics* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 
 bool update(physics* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

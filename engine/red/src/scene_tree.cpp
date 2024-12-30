@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "scene_tree"
+#define SDE_SCRIPT_TYPE_NAME "scene_tree"
 
 // C++ Standard Library
 #include <ostream>
@@ -24,6 +24,9 @@ template <typename ArchiveT> bool serialize(scene_viewer* self, ArchiveT& ar)
 }
 
 bool initialize(scene_viewer* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
+
+
+bool shutdown(scene_viewer* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 
 void scene_hierarchy(SceneHandle handle, sde::game::GameResources& resources)
 {
@@ -79,7 +82,7 @@ void scene_hierarchy(SceneHandle handle, sde::game::GameResources& resources)
         else if (const auto script = resources(node.script))
         {
           ImGui::Text(
-            "%s (type:%s, ver:%lu)", script->name.c_str(), script->instance.name().data(), script->instance.version());
+            "%s (type:%s, ver:%lu)", script->name.c_str(), script->instance.type().data(), script->instance.version());
         }
       }
       ImGui::TreePop();
@@ -99,10 +102,10 @@ bool update(scene_viewer* self, sde::game::GameResources& resources, const sde::
   ImGui::Begin("scenes");
   if (ImGui::SmallButton("new scene"))
   {
-    if (const auto ok_or_error = resources.create<SceneCache>(sde::string{"unamed"}); !ok_or_error.has_value())
-    {
-      SDE_LOG_ERROR() << "Failed to create new scene: " << ok_or_error.error();
-    }
+    // if (const auto ok_or_error = resources.create<SceneCache>(sde::string{"unamed"}); !ok_or_error.has_value())
+    // {
+    //   SDE_LOG_ERROR() << "Failed to create new scene: " << ok_or_error.error();
+    // }
   }
   for (const auto& [handle, scene] : resources.get<SceneCache>())
   {

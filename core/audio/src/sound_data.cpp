@@ -56,6 +56,27 @@ std::ostream& operator<<(std::ostream& os, SoundDataError count)
 
 void SoundDataBufferDeleter::operator()(void* data) const { std::free(data); }
 
+SoundDataHandle SoundDataCache::to_handle(const asset::path& path) const
+{
+  const auto itr = path_to_sound_data_handle_.find(path);
+  if (itr == std::end(path_to_sound_data_handle_))
+  {
+    return SoundDataHandle::null();
+  }
+  return itr->second;
+}
+
+void SoundDataCache::when_created(dependencies deps, SoundDataHandle handle, const SoundData* sound)
+{
+  const auto [itr, added] = path_to_sound_data_handle_.emplace(sound->path, handle);
+  SDE_ASSERT_TRUE(added) << "Sound " << SDE_OSNV(sound->path) << " was already added as " << itr->first;
+}
+
+void SoundDataCache::when_removed(dependencies deps, SoundDataHandle handle, const SoundData* sound)
+{
+  path_to_sound_data_handle_.erase(sound->path);
+}
+
 expected<void, SoundDataError> SoundDataCache::unload([[maybe_unused]] dependencies deps, SoundData& sound)
 {
   sound.buffered_samples = SoundDataBuffer{nullptr};

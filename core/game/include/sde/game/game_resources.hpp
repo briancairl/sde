@@ -70,7 +70,7 @@ public:
 
   asset::path path(const asset::path& original_path) const;
 
-  const SceneHandle& scene() const { return next_scene_; }
+  SceneHandle getNextScene() const { return next_scene_; }
 
   bool setNextScene(SceneHandle scene);
 

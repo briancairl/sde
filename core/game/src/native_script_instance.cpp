@@ -17,7 +17,7 @@ namespace
 asset::path
 getPath(const NativeScriptInstanceHandle handle, const sde::string& name, const NativeScriptInstance& instance)
 {
-  return {sde::format("%s_%lu_%s_%lu.bin", name.c_str(), handle.id(), instance.name().data(), instance.version())};
+  return {sde::format("%s_%lu_%s_%lu.bin", name.c_str(), handle.id(), instance.type().data(), instance.version())};
 }
 
 }  // namespace
@@ -26,8 +26,7 @@ std::ostream& operator<<(std::ostream& os, NativeScriptInstanceError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(NativeScriptInstanceError::kInvalidHandle)
-    SDE_OS_ENUM_CASE(NativeScriptInstanceError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(NativeScriptInstanceError)
     SDE_OS_ENUM_CASE(NativeScriptInstanceError::kNativeScriptInvalid)
     SDE_OS_ENUM_CASE(NativeScriptInstanceError::kInstanceDataUnavailable)
     SDE_OS_ENUM_CASE(NativeScriptInstanceError::kInstanceLoadFailed)
@@ -112,6 +111,25 @@ bool NativeScriptInstance::update(GameResources& resources, const AppProperties&
   SDE_ASSERT_FALSE(reinterpret_cast<native_script_header*>(data_)->name.empty()) << "script not initialized";
   return methods_.on_update(data_, reinterpret_cast<void*>(&resources), reinterpret_cast<const void*>(&app_properties));
 }
+
+bool NativeScriptInstance::shutdown(GameResources& resources, const AppProperties& app_properties) const
+{
+  SDE_ASSERT_NE(data_, nullptr);
+  SDE_ASSERT_TRUE(methods_.on_shutdown);
+
+  auto* basic_data = reinterpret_cast<native_script_header*>(data_);
+  SDE_ASSERT_FALSE(basic_data->name.empty()) << "script not initialized";
+
+  if (methods_.on_shutdown(data_, reinterpret_cast<void*>(&resources), reinterpret_cast<const void*>(&app_properties)))
+  {
+    basic_data->uid = 0;
+    basic_data->name = {};
+    basic_data->version = 0;
+    return true;
+  }
+  return false;
+}
+
 
 bool NativeScriptInstance::load(IArchive& iar) const
 {

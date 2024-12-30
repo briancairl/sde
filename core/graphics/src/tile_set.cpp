@@ -17,8 +17,7 @@ std::ostream& operator<<(std::ostream& os, TileSetError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(TileSetError::kElementAlreadyExists)
-    SDE_OS_ENUM_CASE(TileSetError::kInvalidHandle)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(TileSetError)
     SDE_OS_ENUM_CASE(TileSetError::kAssetNotFound)
     SDE_OS_ENUM_CASE(TileSetError::kInvalidAtlasTexture)
     SDE_OS_ENUM_CASE(TileSetError::kInvalidTileSize)

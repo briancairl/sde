@@ -22,8 +22,7 @@ namespace sde::graphics
 
 enum class FontError
 {
-  kElementAlreadyExists,
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kAssetNotFound,
   kAssetInvalid,
   kFontNotFound,

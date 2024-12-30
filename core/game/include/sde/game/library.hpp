@@ -22,8 +22,7 @@ namespace sde::game
 
 enum class LibraryError
 {
-  kInvalidHandle,
-  kElementAlreadyExists,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kLibraryMissing,
   kLibraryAlreadyLoaded,
 };

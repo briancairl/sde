@@ -65,8 +65,7 @@ struct TypeSet : Resource<TypeSet>
 
 enum class TypeSetError
 {
-  kElementAlreadyExists,
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kInvalidFont,
   kGlyphSizeInvalid,
   kGlyphDataMissing,

@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "texture_viewer"
+#define SDE_SCRIPT_TYPE_NAME "texture_viewer"
 
 // C++ Standard Library
 #include <ostream>
@@ -33,6 +33,8 @@ bool initialize(texture_viewer* self, sde::game::GameResources& resources, const
 {
   return true;
 }
+
+bool shutdown(texture_viewer* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 
 bool update(texture_viewer* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

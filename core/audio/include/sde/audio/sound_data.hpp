@@ -17,6 +17,7 @@
 #include "sde/resource.hpp"
 #include "sde/resource_cache.hpp"
 #include "sde/unique_resource.hpp"
+#include "sde/unordered_map.hpp"
 #include "sde/view.hpp"
 
 namespace sde::audio
@@ -80,10 +81,20 @@ class SoundDataCache : public ResourceCache<SoundDataCache>
 {
   friend fundemental_type;
 
+public:
+  using fundemental_type::to_handle;
+  SoundDataHandle to_handle(const asset::path& path) const;
+
 private:
+  sde::unordered_map<asset::path, SoundDataHandle> path_to_sound_data_handle_;
+
   static expected<void, SoundDataError> reload(dependencies deps, SoundData& sound);
   static expected<void, SoundDataError> unload(dependencies deps, SoundData& sound);
+
   expected<SoundData, SoundDataError> generate(dependencies deps, const asset::path& sound_path);
+
+  void when_created(dependencies deps, SoundDataHandle handle, const SoundData* sound);
+  void when_removed(dependencies deps, SoundDataHandle handle, const SoundData* sound);
 };
 
 }  // namespace sde::audio

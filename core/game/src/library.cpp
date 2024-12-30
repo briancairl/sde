@@ -12,8 +12,7 @@ std::ostream& operator<<(std::ostream& os, LibraryError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(LibraryError::kInvalidHandle)
-    SDE_OS_ENUM_CASE(LibraryError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(LibraryError)
     SDE_OS_ENUM_CASE(LibraryError::kLibraryMissing)
     SDE_OS_ENUM_CASE(LibraryError::kLibraryAlreadyLoaded)
   }

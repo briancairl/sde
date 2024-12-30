@@ -42,8 +42,7 @@ struct RenderTarget : Resource<RenderTarget>
 
 enum class RenderTargetError
 {
-  kElementAlreadyExists,
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kInvalidColorAttachment,
 };
 
@@ -56,6 +55,7 @@ class RenderTargetCache : public ResourceCache<RenderTargetCache>
 private:
   expected<void, RenderTargetError> reload(dependencies deps, RenderTarget& render_target);
   expected<void, RenderTargetError> unload(dependencies deps, RenderTarget& render_target);
+
   expected<RenderTarget, RenderTargetError>
   generate(dependencies deps, TextureHandle color_attachment = TextureHandle::null());
 };

@@ -30,9 +30,8 @@ namespace sde::game
 
 enum class SceneError
 {
-  kInvalidHandle,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kInvalidScript,
-  kElementAlreadyExists,
 };
 
 std::ostream& operator<<(std::ostream& os, SceneError error);
@@ -82,7 +81,9 @@ class SceneCache : public ResourceCache<SceneCache>
 
 public:
   using fundemental_type::to_handle;
+
   SceneHandle to_handle(const sde::string& name) const;
+
   expected<sde::vector<SceneNodeFlattened>, SceneError> expand(SceneHandle root, dependencies deps) const;
 
 private:

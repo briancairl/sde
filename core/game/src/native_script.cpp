@@ -13,8 +13,7 @@ std::ostream& operator<<(std::ostream& os, NativeScriptError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(NativeScriptError::kInvalidHandle)
-    SDE_OS_ENUM_CASE(NativeScriptError::kElementAlreadyExists)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(NativeScriptError)
     SDE_OS_ENUM_CASE(NativeScriptError::kScriptLibraryInvalid)
     SDE_OS_ENUM_CASE(NativeScriptError::kScriptLibraryMissingFunction)
   }
@@ -50,7 +49,7 @@ void NativeScriptCache::when_created(
 {
   if (script->name.empty())
   {
-    script->name = script->methods.on_get_name();
+    script->name = script->methods.on_get_type_name();
     SDE_LOG_ERROR() << "NativeScript alias not set. Using default alias: " << SDE_OSNV(script->name);
   }
 

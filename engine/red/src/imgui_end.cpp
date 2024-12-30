@@ -1,4 +1,4 @@
-#define SDE_SCRIPT_NAME "imgui_end"
+#define SDE_SCRIPT_TYPE_NAME "imgui_end"
 
 // C++ Standard Library
 #include <ostream>
@@ -24,6 +24,8 @@ struct imgui_end : native_script_data
 template <typename ArchiveT> bool serialize(imgui_end* self, ArchiveT& ar) { return true; }
 
 bool initialize(imgui_end* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
+
+bool shutdown(imgui_end* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 
 bool update(imgui_end* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {

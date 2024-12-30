@@ -63,8 +63,7 @@ std::ostream& operator<<(std::ostream& os, ImageError error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(ImageError::kElementAlreadyExists)
-    SDE_OS_ENUM_CASE(ImageError::kInvalidHandle)
+    SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(ImageError)
     SDE_OS_ENUM_CASE(ImageError::kAssetNotFound)
     SDE_OS_ENUM_CASE(ImageError::kAssetInvalid)
     SDE_OS_ENUM_CASE(ImageError::kImageNotFound)

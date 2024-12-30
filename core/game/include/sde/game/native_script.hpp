@@ -26,8 +26,7 @@ namespace sde::game
 
 enum class NativeScriptError
 {
-  kInvalidHandle,
-  kElementAlreadyExists,
+  SDE_RESOURCE_CACHE_ERROR_ENUMS,
   kScriptLibraryInvalid,
   kScriptLibraryMissingFunction,
 };
