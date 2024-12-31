@@ -26,6 +26,19 @@ template <typename IStreamT> class binary_iarchive : public iarchive<binary_iarc
 public:
   explicit binary_iarchive(istream<IStreamT>& is) : is_{static_cast<IStreamT*>(std::addressof(is))} {}
 
+  binary_iarchive(const binary_iarchive& other) = delete;
+  binary_iarchive& operator=(const binary_iarchive& other) = delete;
+
+  binary_iarchive(binary_iarchive&& other) { this->swap(other); }
+
+  binary_iarchive& operator=(binary_iarchive&& other)
+  {
+    this->swap(other);
+    return *this;
+  }
+
+  void swap(binary_iarchive& other) { std::swap(this->is_, other.is_); }
+
   using iarchive_base::operator>>;
   using iarchive_base::operator&;
 
@@ -71,7 +84,7 @@ private:
     }
   }
 
-  IStreamT* is_;
+  IStreamT* is_ = nullptr;
 };
 
 template <typename IStreamT> binary_iarchive(istream<IStreamT>& is) -> binary_iarchive<IStreamT>;

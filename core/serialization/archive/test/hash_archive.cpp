@@ -75,7 +75,7 @@ TEST(HashOArchive, PrimitiveValue)
 
   float primitive = 123.f;
   ASSERT_NO_THROW(oar << primitive);
-  ASSERT_NE(oar.digest().value, 0) << oar.digest();
+  ASSERT_NE(oar.digest().value, 0UL) << oar.digest();
 }
 
 TEST(HashOArchive, TrivialValue)
@@ -84,7 +84,7 @@ TEST(HashOArchive, TrivialValue)
 
   TrivialStruct trivial_value;
   ASSERT_NO_THROW(oar << trivial_value);
-  ASSERT_NE(oar.digest().value, 0) << oar.digest();
+  ASSERT_NE(oar.digest().value, 0UL) << oar.digest();
 }
 
 TEST(HashOArchive, NonTrivialStruct)
@@ -93,5 +93,5 @@ TEST(HashOArchive, NonTrivialStruct)
 
   NonTrivialStruct non_trivial_value;
   ASSERT_NO_THROW(oar << non_trivial_value);
-  ASSERT_NE(oar.digest().value, 0) << oar.digest();
+  ASSERT_NE(oar.digest().value, 0UL) << oar.digest();
 }

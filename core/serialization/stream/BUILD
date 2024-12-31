@@ -36,6 +36,6 @@ cc_library(
     "src/mem_ostream.cpp"
   ],
   strip_include_prefix="include",
-  deps=[":stream"],
+  deps=[":stream", "//core/common:memory"],
   visibility=["//visibility:public"]
 )

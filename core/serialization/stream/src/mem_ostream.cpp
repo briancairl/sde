@@ -13,10 +13,6 @@
 namespace sde::serial
 {
 
-mem_ostream::mem_ostream(const std::size_t initial_capacity) { buffer_.reserve(initial_capacity); }
-
-mem_ostream::mem_ostream(mem_ostream&& other) : buffer_{std::move(other.buffer_)} {}
-
-mem_ostream::~mem_ostream() = default;
+template class mem_ostream<>;
 
 }  // namespace sde::serial

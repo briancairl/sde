@@ -14,12 +14,6 @@
 namespace sde::serial
 {
 
-mem_istream::mem_istream(std::vector<std::uint8_t>&& buffer) : buffer_{std::move(buffer)}, pos_{0} {}
-
-mem_istream::mem_istream(mem_istream&& other) : buffer_{std::move(other.buffer_)}, pos_{0} {}
-
-mem_istream::mem_istream(mem_ostream&& other) : buffer_{std::move(other.buffer_)}, pos_{0} {}
-
-mem_istream::~mem_istream() = default;
+template class mem_istream<>;
 
 }  // namespace sde::serial

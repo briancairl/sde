@@ -26,6 +26,19 @@ template <typename OStreamT> class binary_oarchive : public oarchive<binary_oarc
 public:
   explicit binary_oarchive(ostream<OStreamT>& os) : os_{static_cast<OStreamT*>(std::addressof(os))} {}
 
+  binary_oarchive(const binary_oarchive& other) = delete;
+  binary_oarchive& operator=(const binary_oarchive& other) = delete;
+
+  binary_oarchive(binary_oarchive&& other) { this->swap(other); }
+
+  binary_oarchive& operator=(binary_oarchive&& other)
+  {
+    this->swap(other);
+    return *this;
+  }
+
+  void swap(binary_oarchive& other) { std::swap(this->os_, other.os_); }
+
   using oarchive_base::operator<<;
   using oarchive_base::operator&;
 
