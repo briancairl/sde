@@ -11,13 +11,17 @@
 #include <imgui_internal.h>
 
 // SDE
+#include "sde/audio/sound_handle.hpp"
 #include "sde/game/native_script_runtime.hpp"
 #include "sde/graphics/sprite.hpp"
+#include "sde/graphics/tile_set.hpp"
 
 // RED
-#include "red/components.hpp"
+#include "red/components/audio.hpp"
+#include "red/components/common.hpp"
 
 using namespace sde;
+using namespace sde::audio;
 using namespace sde::game;
 using namespace sde::graphics;
 
@@ -52,6 +56,9 @@ struct player_character : native_script_data
   TileSetHandle idle_frames[8UL];
   TileSetHandle walk_frames[8UL];
   TileSetHandle run_frames[8UL];
+  SoundHandle idle_sound = SoundHandle::null();
+  SoundHandle walk_sound = SoundHandle::null();
+  SoundHandle run_sound = SoundHandle::null();
 };
 
 template <typename ArchiveT> bool serialize(player_character* self, ArchiveT& ar)
@@ -61,6 +68,9 @@ template <typename ArchiveT> bool serialize(player_character* self, ArchiveT& ar
   ar& Field{"idle_frames", self->idle_frames};
   ar& Field{"walk_frames", self->walk_frames};
   ar& Field{"run_frames", self->run_frames};
+  ar& Field{"idle_sound", self->idle_sound};
+  ar& Field{"walk_sound", self->walk_sound};
+  ar& Field{"run_sound", self->run_sound};
   return true;
 }
 
@@ -75,17 +85,19 @@ bool initialize(player_character* self, sde::game::GameResources& resources, con
     new_entity.attach<Foreground>();
     new_entity.attach<DebugWireFrame>();
     new_entity.attach<Focused>();
+    new_entity.attach<SFXPlayback>();
   });
-  if (!entity_or_error.has_value())
-  {
-    SDE_LOG_ERROR() << entity_or_error.error();
-    return false;
-  }
-  else
+  if (entity_or_error.has_value())
   {
     self->entity = entity_or_error->handle;
     SDE_LOG_INFO() << self->entity << " created as: " << static_cast<int>(entity_or_error->value->id);
   }
+  else
+  {
+    SDE_LOG_ERROR() << entity_or_error.error();
+    return false;
+  }
+
   return true;
 }
 
@@ -94,7 +106,7 @@ bool shutdown(player_character* self, sde::game::GameResources& resources, const
   return true;
 }
 
-void edit(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+void ui(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   if (ImGui::GetCurrentContext() == nullptr)
   {
@@ -108,10 +120,41 @@ void edit(player_character* self, sde::game::GameResources& resources, const sde
   }
 
   ImGui::Begin(self->guid());
+
   auto [size, position, sprite] = resources.get<Registry>().get<Size, Position, graphics::AnimatedSprite>(entity->id);
 
   ImGui::InputFloat2("size", size.extent.data());
   ImGui::InputFloat2("position", position.center.data());
+
+  std::array sounds = {
+    std::make_pair("idle", &self->idle_sound),
+    std::make_pair("walk", &self->walk_sound),
+    std::make_pair("run", &self->run_sound),
+  };
+
+  for (auto& [sound_label, sound_p] : sounds)
+  {
+    ImGui::PushID(sound_label);
+    ImGui::Text("%s : %lu", sound_label, sound_p->id());
+    if (ImGui::BeginDragDropTarget())
+    {
+      if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SDE_SOUND_ASSET"))
+      {
+        SDE_ASSERT_EQ(payload->DataSize, sizeof(SoundHandle));
+        if (const auto h = *reinterpret_cast<const SoundHandle*>(payload->Data); resources.exists(h))
+        {
+          *sound_p = h;
+        }
+      }
+      ImGui::EndDragDropTarget();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("remove"))
+    {
+      sound_p->reset();
+    }
+    ImGui::PopID();
+  }
 
   std::array frames = {
     std::make_pair("idle", self->idle_frames),
@@ -159,7 +202,7 @@ void edit(player_character* self, sde::game::GameResources& resources, const sde
 
 bool update(player_character* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
-  edit(self, resources, app);
+  ui(self, resources, app);
 
   auto entity = resources(self->entity);
   if (!entity)
@@ -167,14 +210,15 @@ bool update(player_character* self, sde::game::GameResources& resources, const s
     return true;
   }
 
-  auto [size, position, state, sprite] =
-    resources.get<Registry>().get<Size, Position, Dynamics, graphics::AnimatedSprite>(entity->id);
+  auto [size, position, state, sprite, sfx] =
+    resources.get<Registry>().get<Size, Position, Dynamics, graphics::AnimatedSprite, SFXPlayback>(entity->id);
 
   static constexpr float kSpeedWalking = 0.5;
   static constexpr float kSpeedRunning = 1.0;
 
   // Handle character speed
-  const float next_speed = app.keys.isDown(KeyCode::kLShift) ? kSpeedRunning : kSpeedWalking;
+  const bool is_running = app.keys.isDown(KeyCode::kLShift);
+  const float next_speed = is_running ? kSpeedRunning : kSpeedWalking;
 
   state.velocity.setZero();
   sprite.setMode(graphics::AnimatedSprite::Mode::kLooped);
@@ -268,22 +312,13 @@ bool update(player_character* self, sde::game::GameResources& resources, const s
   {
     state.looking = state.velocity;
     sprite.setFrameRate(Hertz(next_speed * 15.0F));
+    sfx.setSound(is_running ? self->run_sound : self->walk_sound, 0UL);
   }
   else
   {
     sprite.setFrameRate(Hertz(kSpeedWalking * 15.0F));
+    sfx.setSound(self->idle_sound, 0UL);
   }
-
-  // if (auto listener_or_err = audio::ListenerTarget::create(systems.mixer, kPlayerListener);
-  //     listener_or_err.has_value())
-  // {
-  //   listener_or_err->set(audio::ListenerState{
-  //     .position = Vec3f{position.center.x(), position.center.y(), 1.0F},
-  //     .velocity = Vec3f{state.velocity.x(), state.velocity.y(), 0.0F},
-  //     .orientation_at = Vec3f::UnitY(),
-  //     .orientation_up = Vec3f::UnitZ(),
-  //   });
-  // }
 
   return true;
 }

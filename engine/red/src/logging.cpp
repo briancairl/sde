@@ -13,7 +13,7 @@
 #include "sde/game/native_script_runtime.hpp"
 
 // RED
-#include "red/components.hpp"
+#include "red/components/common.hpp"
 
 
 using namespace sde;
@@ -65,7 +65,7 @@ bool shutdown(logging* self, sde::game::GameResources& resources, const sde::App
   sde::setLogStream(nullptr);
   return true;
 }
-#include <iostream>
+
 bool update(logging* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   if (ImGui::GetCurrentContext() == nullptr)

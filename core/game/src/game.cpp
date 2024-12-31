@@ -120,14 +120,15 @@ namespace
   {
     const sde::string component_name{component_key_json};
     const asset::path component_path{component_lib_path_json};
-    if (auto ok_or_error = resources.find_or_create<ComponentCache>(component_name, component_name, component_path);
-        !ok_or_error.has_value())
+    if (auto component_or_error =
+          resources.find_or_create<ComponentCache>(component_name, component_name, component_path);
+        !component_or_error.has_value())
     {
       SDE_LOG_ERROR() << "Failed to load component: " << SDE_OSNV(component_name) << " from "
-                      << SDE_OSNV(component_path) << " with error: " << ok_or_error.error();
+                      << SDE_OSNV(component_path) << " with error: " << component_or_error.error();
       return false;
     }
-    else if (ok_or_error->status == ResourceStatus::kCreated)
+    else if (component_or_error->status == ResourceStatus::kCreated)
     {
       SDE_LOG_INFO() << "Component loaded: " << SDE_OSNV(component_name) << " from " << SDE_OSNV(component_path);
     }

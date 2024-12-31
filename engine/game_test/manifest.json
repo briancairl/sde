@@ -10,19 +10,20 @@
     },
     "components" :
     {
-        "AnimatedSprite"    : "engine/red/libcomponents.so",
-        "Background"        : "engine/red/libcomponents.so",
-        "DebugWireFrame"    : "engine/red/libcomponents.so",
-        "Dynamics"          : "engine/red/libcomponents.so",
-        "Focused"           : "engine/red/libcomponents.so",
-        "Foreground"        : "engine/red/libcomponents.so",
-        "Info"              : "engine/red/libcomponents.so",
-        "Midground"         : "engine/red/libcomponents.so",
-        "Position"          : "engine/red/libcomponents.so",
-        "Size"              : "engine/red/libcomponents.so",
-        "Sprite"            : "engine/red/libcomponents.so",
-        "TileMap"           : "engine/red/libcomponents.so",
-        "TransformQuery"    : "engine/red/libcomponents.so"
+        "AnimatedSprite"    : "engine/red/libcomponents_common.so",
+        "Background"        : "engine/red/libcomponents_common.so",
+        "DebugWireFrame"    : "engine/red/libcomponents_common.so",
+        "Dynamics"          : "engine/red/libcomponents_common.so",
+        "Focused"           : "engine/red/libcomponents_common.so",
+        "Foreground"        : "engine/red/libcomponents_common.so",
+        "Info"              : "engine/red/libcomponents_common.so",
+        "Midground"         : "engine/red/libcomponents_common.so",
+        "Position"          : "engine/red/libcomponents_common.so",
+        "Size"              : "engine/red/libcomponents_common.so",
+        "Sprite"            : "engine/red/libcomponents_common.so",
+        "TileMap"           : "engine/red/libcomponents_common.so",
+        "TransformQuery"    : "engine/red/libcomponents_common.so",
+        "SFXPlayback"       : "engine/red/libcomponents_audio.so"
     },
     "scripts" : {
         "AudioManager"      : "engine/red/libaudio_manager.so",

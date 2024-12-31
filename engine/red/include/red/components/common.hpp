@@ -1,6 +1,8 @@
 #pragma once
 
 // SDE
+#include "sde/audio/sound.hpp"
+#include "sde/audio/track.hpp"
 #include "sde/game/component_decl.hpp"
 #include "sde/game/scene_fwd.hpp"
 #include "sde/geometry.hpp"
@@ -63,9 +65,6 @@ struct Midground
 
 struct Foreground
 {};
-
-static constexpr std::size_t kGlobalListener = 0;
-static constexpr std::size_t kPlayerListener = 1;
 
 SDE_COMPONENT_RENAME(sde::graphics::TileMap, "TileMap");
 SDE_COMPONENT_RENAME(sde::graphics::Sprite, "Sprite");

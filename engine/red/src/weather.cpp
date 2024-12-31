@@ -14,7 +14,7 @@
 #include "sde/logging.hpp"
 
 // RED
-#include "red/components.hpp"
+#include "red/components/common.hpp"
 #include "red/weather.hpp"
 
 using namespace sde;

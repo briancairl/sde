@@ -68,4 +68,5 @@ sudo apt install           \
 - [ ] Update component version computation to be based on IO fields (similar to scripts, since components list thier fields)
 - [x] Remove entities from registry when removed from cache
 - [ ] Labels for asset browsers (tilesets, sounds, etc.)
+- [ ] Key/value like wrapper for binary archives
 - [ ] Data migration for scripts and components

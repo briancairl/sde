@@ -9,7 +9,7 @@
 
 
 // RED
-#include "red/components.hpp"
+#include "red/components/common.hpp"
 
 
 using namespace sde;

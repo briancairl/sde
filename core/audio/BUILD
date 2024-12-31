@@ -14,6 +14,7 @@ cc_library(
     "include/sde/audio/sound_device_fwd.hpp",
     "include/sde/audio/sound_fwd.hpp",
     "include/sde/audio/sound_handle.hpp",
+    "include/sde/audio/track.hpp",
   ],
   strip_include_prefix="include",
   visibility=["//visibility:private"]
@@ -49,6 +50,7 @@ cc_library(
     "src/sound_channel_format.cpp",
     "src/sound_data.cpp",
     "src/sound_device.cpp",
+    "src/track.cpp",
   ],
   deps=[
     "@openal//:openal",

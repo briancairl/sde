@@ -14,7 +14,7 @@
 #include "sde/logging.hpp"
 
 // RED
-#include "red/components.hpp"
+#include "red/components/common.hpp"
 #include "red/imgui_common.hpp"
 #include "red/tile_map_editor.hpp"
 

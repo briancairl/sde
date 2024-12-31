@@ -11,6 +11,10 @@
 #include "sde/audio/mixer.hpp"
 #include "sde/game/native_script_runtime.hpp"
 
+// RED
+#include "red/components/audio.hpp"
+#include "red/components/common.hpp"
+
 using namespace sde;
 using namespace sde::game;
 using namespace sde::audio;
@@ -47,17 +51,32 @@ bool initialize(audio_manager* self, sde::game::GameResources& resources, const 
 
 bool shutdown(audio_manager* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 
-bool update(audio_manager* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+void ui(audio_manager* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   if (ImGui::GetCurrentContext() == nullptr)
   {
-    return true;
+    return;
   }
   ImGui::Begin(self->guid());
   for (const auto& [handle, sound] : resources.get<audio::SoundCache>())
   {
+    auto sound_data = resources(sound->sound_data);
+
+    SDE_ASSERT_TRUE(sound_data);
+
     ImGui::PushID(handle.id());
-    ImGui::Text("sound[%lu]", handle.id());
+    ImGui::Text("Sound[%lu] : %s", handle.id(), sound_data->path.c_str());
+
+    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+    {
+      const ImVec4 tint =
+        ImGui::SetDragDropPayload("SDE_SOUND_ASSET", std::addressof(handle), sizeof(handle), /*cond = */ 0)
+        ? ImVec4{0, 1, 0, 1}
+        : ImVec4{1, 1, 1, 1};
+      ImGui::TextColored(tint, "Sound[%lu] : %s", handle.id(), sound_data->path.c_str());
+      ImGui::EndDragDropSource();
+    }
+
     if (auto itr = self->sound_playing.find(handle); itr != std::end(self->sound_playing))
     {
       if (ImGui::Button("stop") or !itr->second.isValid())
@@ -87,6 +106,60 @@ bool update(audio_manager* self, sde::game::GameResources& resources, const sde:
     ImGui::PopID();
   }
   ImGui::End();
+}
+
+bool update(audio_manager* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+{
+  ui(self, resources, app);
+
+  auto& reg = resources.get<Registry>();
+  if (auto target_or_error = ListenerTarget::create(*self->mixer, kPlayerListener))
+  {
+    reg.view<Position, Dynamics, SFXPlayback, Focused>().each(
+      [&target = *target_or_error, &reg](const Position& position, const Dynamics& dynamics, SFXPlayback& playback) {
+        target.set(ListenerState{
+          .gain = 1.0F,
+          .position = Vec3f{position.center.x(), position.center.y(), 1.0F},
+          .velocity = Vec3f{dynamics.velocity.x(), dynamics.velocity.y(), 0.0F},
+          .orientation_at = Vec3f::UnitY(),
+          .orientation_up = Vec3f::UnitZ()});
+      });
+
+    reg.view<Position, SFXPlayback>().each(
+      [&target = *target_or_error, &reg, &resources](const Position& position, SFXPlayback& playback) {
+        if (!playback.state.has_value())
+        {
+          if (playback.repeat == 0)
+          {
+            return;
+          }
+          else
+          {
+            --playback.repeat;
+          }
+
+          if (auto sound = resources(playback.sound); !sound)
+          {
+            return;
+          }
+          else if (auto playback_or_error = target.set(sound.get()))
+          {
+            playback_or_error->setVolume(playback.volume);
+            playback_or_error->setLooped(playback.looped);
+            playback.state.emplace(std::move(playback_or_error).value());
+          }
+          else
+          {
+            SDE_LOG_WARN() << playback_or_error.error();
+          }
+        }
+        else if (!playback.state->isValid() or playback.state->track()->stopped())
+        {
+          playback.reset();
+        }
+      });
+  }
+
   return true;
 }
 

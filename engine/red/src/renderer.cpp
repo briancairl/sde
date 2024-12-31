@@ -21,7 +21,7 @@
 #include <imgui.h>
 
 // RED
-#include "red/components.hpp"
+#include "red/components/common.hpp"
 
 
 using namespace sde;
@@ -122,26 +122,16 @@ bool initialize(renderer_state* self, sde::game::GameResources& resources, const
 
 bool shutdown(renderer_state* self, sde::game::GameResources& resources, const sde::AppProperties& app) { return true; }
 
-bool update(renderer_state* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+void ui(renderer_state* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
-  using namespace sde::graphics;
-
-  RenderResources render_resources;
-  render_resources.target = self->render_target;
-  render_resources.shader = self->sprite_shader;
-  render_resources.buffer = 0;
-
-  RenderUniforms uniforms;
-  uniforms.scaling = self->scaling;
-  uniforms.time = app.time;
-  uniforms.time_delta = app.time_delta;
-
-  if (ImGui::GetCurrentContext() != nullptr)
+  if (ImGui::GetCurrentContext() == nullptr)
   {
-    ImGui::Begin("renderer");
-    ImGui::SliderFloat("scaling", &self->scaling, 0.0F, 1e0F);
-    ImGui::End();
+    return;
   }
+
+  ImGui::Begin("renderer");
+  ImGui::SliderFloat("scaling", &self->scaling, 0.0F, 1e0F);
+  ImGui::End();
 
   // Handle screen zoom
   if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
@@ -157,6 +147,23 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
       self->scaling = std::min(1e+3F, self->scaling + scroll_sensitivity * kScaleRate * sde::toSeconds(app.time_delta));
     }
   }
+}
+
+bool update(renderer_state* self, sde::game::GameResources& resources, const sde::AppProperties& app)
+{
+  ui(self, resources, app);
+
+  using namespace sde::graphics;
+
+  RenderResources render_resources;
+  render_resources.target = self->render_target;
+  render_resources.shader = self->sprite_shader;
+  render_resources.buffer = 0;
+
+  RenderUniforms uniforms;
+  uniforms.scaling = self->scaling;
+  uniforms.time = app.time;
+  uniforms.time_delta = app.time_delta;
 
   auto& registry = resources.get<Registry>();
 

@@ -8,7 +8,7 @@
 #include "sde/logging.hpp"
 
 // RED
-#include "red/components.hpp"
+#include "red/components/common.hpp"
 #include "red/world.hpp"
 
 using namespace sde;

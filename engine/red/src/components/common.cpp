@@ -4,7 +4,7 @@
 #include "sde/graphics/tile_map.hpp"
 
 // RED
-#include "red/components.hpp"
+#include "red/components/common.hpp"
 
 
 SDE_COMPONENT__REGISTER(Info, Info);

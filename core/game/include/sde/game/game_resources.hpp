@@ -81,6 +81,20 @@ public:
     return this->template get<EntityCache>().instance(h, this->all(), std::forward<CreateT>(create));
   }
 
+  template <typename... ComponentTs, typename UpdateT> bool update(EntityHandle h, UpdateT update)
+  {
+    auto entity = (*this)(h);
+    if (!entity)
+    {
+      return false;
+    }
+    else
+    {
+      std::apply(std::forward<UpdateT>(update), this->template get<Registry>().get<ComponentTs...>(entity->id));
+    }
+    return true;
+  }
+
 private:
   asset::path root_path_;
   SceneHandle next_scene_ = SceneHandle::null();
