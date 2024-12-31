@@ -59,8 +59,8 @@ void NativeSoundBufferDeleter::operator()(buffer_handle_t id) const { alDeleteBu
 
 expected<void, SoundError> SoundCache::reload(dependencies deps, Sound& sound)
 {
-  const auto* sound_data = deps.get<SoundDataCache>().get_if(sound.sound_data);
-  if (sound_data == nullptr)
+  const auto sound_data = deps(sound.sound_data);
+  if (!sound_data)
   {
     SDE_LOG_ERROR() << "InvalidSoundData: " << SDE_OSNV(sound.sound_data);
     return make_unexpected(SoundError::kInvalidSoundData);

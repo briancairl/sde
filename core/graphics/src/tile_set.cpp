@@ -39,8 +39,8 @@ TileSetCache::generate(dependencies deps, const TextureHandle& texture, sde::vec
 expected<TileSet, TileSetError>
 TileSetCache::generate(dependencies deps, const TextureHandle& texture, const TileSetSliceUniform& slice)
 {
-  const auto* texture_info = deps.get<TextureCache>().get_if(texture);
-  if (texture_info == nullptr)
+  const auto texture_info = deps(texture);
+  if (!texture_info)
   {
     SDE_LOG_ERROR() << "InvalidAtlasTexture: " << SDE_OSNV(texture);
     return make_unexpected(TileSetError::kInvalidAtlasTexture);

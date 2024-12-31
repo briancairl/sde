@@ -119,7 +119,7 @@ void on_create_pressed(tile_set_editor* self, GameResources& resources, const Te
 void update_selector(tile_set_editor* self, GameResources& resources, const AppProperties& app)
 {
   ImGui::Begin("tile-set-selector");
-  if (const auto texture = resources.get_if(self->atlas_texture_selected))
+  if (const auto texture = resources(self->atlas_texture_selected))
   {
     if (self->atlas_tile_selected.size() == 0)
     {

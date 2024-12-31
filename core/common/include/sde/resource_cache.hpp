@@ -238,16 +238,6 @@ public:
     return make_unexpected(error_type::kElementAlreadyExists);
   }
 
-  template <typename HandleT> [[nodiscard]] const value_type* get_if(HandleT&& handle_or) const
-  {
-    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
-    if (auto itr = handle_to_value_cache_.find(handle); itr != std::end(handle_to_value_cache_))
-    {
-      return std::addressof(itr->second.value);
-    }
-    return nullptr;
-  }
-
   template <typename HandleT> [[nodiscard]] element_ref operator()(HandleT&& handle_or) const
   {
     return find(std::forward<HandleT>(handle_or));
@@ -393,6 +383,16 @@ protected:
 private:
   ResourceCache(const ResourceCache&) = delete;
   ResourceCache& operator=(const ResourceCache&) = delete;
+
+  template <typename HandleT> [[nodiscard]] const value_type* get_if(HandleT&& handle_or) const
+  {
+    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
+    if (auto itr = handle_to_value_cache_.find(handle); itr != std::end(handle_to_value_cache_))
+    {
+      return std::addressof(itr->second.value);
+    }
+    return nullptr;
+  }
 
   template <typename... CreateArgTs>
   [[nodiscard]] expected<element_ref, error_type>

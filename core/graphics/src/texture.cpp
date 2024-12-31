@@ -421,26 +421,22 @@ TextureCache::generate(dependencies deps, const asset::path& image_path, const T
 expected<Texture, TextureError>
 TextureCache::generate(dependencies deps, const ImageHandle& image, const TextureOptions& options)
 {
-  if (image.isNull())
-  {
-    return make_unexpected(TextureError::kInvalidSourceImage);
-  }
-  auto image_info = deps.get<ImageCache>().get_if(image);
-  if (image_info == nullptr)
+  auto image_data = deps(image);
+  if (!image_data)
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
   }
   SDE_LOG_DEBUG_FMT(
     "Creating texture from image: %s (%d x %d) (%lu bytes)",
-    image_info->path.string().c_str(),
-    image_info->shape.value.x(),
-    image_info->shape.value.y(),
-    image_info->getTotalSizeInBytes());
+    image_data->path.string().c_str(),
+    image_data->shape.value.x(),
+    image_data->shape.value.y(),
+    image_data->getTotalSizeInBytes());
   auto texture_or_error = TextureCache::generate(
     deps,
-    image_info->data(),
-    TextureShape{.value = image_info->shape.value},
-    layout_from_channel_count(image_info->getChannelCount()),
+    image_data->data(),
+    TextureShape{.value = image_data->shape.value},
+    layout_from_channel_count(image_data->getChannelCount()),
     options);
   if (texture_or_error.has_value())
   {
@@ -486,8 +482,8 @@ expected<void, TextureError> TextureCache::reload(dependencies deps, Texture& te
     return {};
   }
 
-  auto image = deps.get<ImageCache>().get_if(texture.source_image);
-  if (image == nullptr)
+  auto image = deps(texture.source_image);
+  if (!image)
   {
     return make_unexpected(TextureError::kInvalidSourceImage);
   }

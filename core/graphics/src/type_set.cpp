@@ -209,20 +209,14 @@ const Bounds2i TypeSet::getTextBounds(std::string_view text) const
 
 expected<void, TypeSetError> TypeSetCache::reload(dependencies deps, TypeSet& type_set)
 {
-  const auto& fonts = deps.get<FontCache>();
-  const auto* font = fonts.get_if(type_set.font);
-
-  if (font == nullptr)
+  auto font = deps(type_set.font);
+  if (!font)
   {
     return make_unexpected(TypeSetError::kInvalidFont);
   }
 
   SDE_LOG_DEBUG_FMT(
-    "TypeSet from Font(%lu:%p) %s (of %lu available)",
-    type_set.font.id(),
-    font->native_id.value(),
-    font->path.string().c_str(),
-    fonts.size());
+    "TypeSet from Font(%lu:%p) %s", type_set.font.id(), font->native_id.value(), font->path.string().c_str());
 
   if (auto ok_or_error = loadGlyphsFromFont(type_set.glyphs, *font, static_cast<int>(type_set.options.height_px));
       !ok_or_error.has_value())

@@ -75,17 +75,17 @@ void NativeScriptCache::when_removed(
 
 expected<void, NativeScriptError> NativeScriptCache::reload(dependencies deps, NativeScriptData& script)
 {
-  const auto* library_ptr = deps.get<LibraryCache>().get_if(script.library);
+  const auto library = deps(script.library);
 
-  if (library_ptr == nullptr)
+  if (!library)
   {
     SDE_LOG_ERROR() << "ScriptLibraryInvalid: " << SDE_OSNV(script.library);
     return make_unexpected(NativeScriptError::kScriptLibraryInvalid);
   }
 
-  if (!script.methods.reset(library_ptr->lib))
+  if (!script.methods.reset(library->lib))
   {
-    SDE_LOG_ERROR() << "ScriptLibraryMissingFunction: " << SDE_OSNV(library_ptr->lib);
+    SDE_LOG_ERROR() << "ScriptLibraryMissingFunction: " << SDE_OSNV(library->lib);
     return make_unexpected(NativeScriptError::kScriptLibraryMissingFunction);
   }
 

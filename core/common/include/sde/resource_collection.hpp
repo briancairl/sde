@@ -184,12 +184,6 @@ public:
     return status_or_error;
   }
 
-  template <typename HandleT> [[nodiscard]] auto get_if(HandleT&& handle) const
-  {
-    using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;
-    return this->template get<CacheType>().get_if(std::forward<HandleT>(handle));
-  }
-
   template <typename HandleT> [[nodiscard]] auto operator()(HandleT&& handle) const
   {
     using CacheType = dont::map_lookup_t<handle_to_cache_map, std::remove_const_t<std::remove_reference_t<HandleT>>>;

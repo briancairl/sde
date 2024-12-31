@@ -83,17 +83,17 @@ void ComponentIO::save(OArchive& ar, EntityID id, const Registry& registry) cons
 
 expected<void, ComponentError> ComponentCache::reload(dependencies deps, ComponentData& component)
 {
-  auto library_ptr = deps.get<LibraryCache>().get_if(component.library);
-  if (library_ptr == nullptr)
+  auto library = deps(component.library);
+  if (!library)
   {
     SDE_LOG_ERROR() << "ComponentLibraryInvalid: " << SDE_OSNV(component.library);
     return make_unexpected(ComponentError::kComponentLibraryInvalid);
   }
 
-  if (!component.io.reset(component.name, library_ptr->lib))
+  if (!component.io.reset(component.name, library->lib))
   {
     SDE_LOG_ERROR() << "ComponentLibraryMissingFunction: " << SDE_OSNV(component.library) << " "
-                    << SDE_OSNV(library_ptr->path);
+                    << SDE_OSNV(library->path);
     return make_unexpected(ComponentError::kComponentLibraryMissingFunction);
   }
 

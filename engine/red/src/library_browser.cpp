@@ -93,7 +93,7 @@ bool update(library_browser* self, sde::game::GameResources& resources, const sd
         }
         else
         {
-          const auto lib = libraries.get_if(handle);
+          const auto lib = libraries(handle);
           ImGui::TableNextColumn();
           ImGui::TextColored(ImVec4{0.0F, 0.8F, 0.0F, 1.0F}, "%s", path.string().c_str());
 

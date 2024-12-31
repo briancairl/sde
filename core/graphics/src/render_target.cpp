@@ -32,8 +32,8 @@ expected<void, RenderTargetError> RenderTargetCache::reload(dependencies deps, R
     render_target.native_id = NativeFrameBufferID{0};
     return {};
   }
-  const auto* color_attachment = deps.get<TextureCache>().get_if(render_target.color_attachment);
-  if (color_attachment == nullptr)
+  auto color_attachment = deps(render_target.color_attachment);
+  if (!color_attachment)
   {
     SDE_LOG_ERROR() << "InvalidColorAttachment: " << SDE_OSNV(render_target.color_attachment);
     return make_unexpected(RenderTargetError::kInvalidColorAttachment);
