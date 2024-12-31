@@ -42,10 +42,6 @@ expected<void, EntityError> EntityCache::unload(dependencies deps, const EntityD
 
 void EntityCache::when_removed(dependencies deps, EntityHandle handle, const EntityData* data)
 {
-  for (const auto& component : data->components)
-  {
-    deps.restore(component);
-  }
   if (auto& registry = deps.get<Registry>(); registry.valid(data->id))
   {
     registry.destroy(data->id);

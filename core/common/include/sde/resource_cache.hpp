@@ -97,7 +97,6 @@ public:
   public:
     version_type version;
     value_type value;
-    std::size_t usage_count = 0UL;
 
     const value_type& get() const { return value; }
     const value_type& operator*() const { return get(); }
@@ -111,10 +110,7 @@ public:
         version{_version}, value{std::forward<ValueArgTs>(args)...}
     {}
 
-    auto field_list()
-    {
-      return FieldList(Field{"version", version}, Field{"value", value}, _Stub{"usage_count", usage_count});
-    }
+    auto field_list() { return FieldList(Field{"version", version}, Field{"value", value}); }
 
   private:
     element_storage(const element_storage& other) = delete;
@@ -270,34 +266,6 @@ public:
     return handle_to_value_cache_.count(handle) != 0;
   }
 
-  template <typename HandleT> [[nodiscard]] expected<void, error_type> borrow(HandleT&& handle_or)
-  {
-    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
-    const auto itr = handle_to_value_cache_.find(handle);
-    if (itr == std::end(handle_to_value_cache_))
-    {
-      return make_unexpected(error_type::kInvalidHandle);
-    }
-    ++itr->second.usage_count;
-    return {};
-  }
-
-  template <typename HandleT> [[nodiscard]] expected<void, error_type> restore(HandleT&& handle_or)
-  {
-    const auto handle = this->derived().to_handle(std::forward<HandleT>(handle_or));
-    const auto itr = handle_to_value_cache_.find(handle);
-    if (itr == std::end(handle_to_value_cache_))
-    {
-      return make_unexpected(error_type::kInvalidHandle);
-    }
-    else if (itr->second.usage_count == 0)
-    {
-      return make_unexpected(error_type::kElementNotInUse);
-    }
-    --itr->second.usage_count;
-    return {};
-  }
-
   [[nodiscard]] bool empty() const { return handle_to_value_cache_.empty(); }
 
   [[nodiscard]] const auto& cache() const { return handle_to_value_cache_; }
@@ -363,10 +331,6 @@ public:
     if (itr == std::end(handle_to_value_cache_))
     {
       return make_unexpected(error_type::kInvalidHandle);
-    }
-    if (itr->second.usage_count > 0)
-    {
-      return make_unexpected(error_type::kElementInUse);
     }
     if (!on_removal(deps, itr->first, std::addressof(itr->second.value)))
     {
@@ -512,41 +476,13 @@ private:
   bool on_creation(dependencies deps, handle_type h, value_type* value)
   {
     this->derived().when_created(deps, h, value);
-    return Visit(*value, [&deps](std::size_t depth, auto& field) {
-      using FieldType = std::remove_const_t<std::remove_reference_t<decltype(field)>>;
-      if constexpr (is_field_v<FieldType>)
-      {
-        using ValueType = std::remove_const_t<typename FieldType::value_type>;
-        if constexpr (is_resource_handle_v<ValueType> and !std::is_same_v<ValueType, handle_type>)
-        {
-          if (field.value->isValid())
-          {
-            return deps.borrow(field.get()).has_value();
-          }
-        }
-      }
-      return true;
-    });
+    return true;
   }
 
   bool on_removal(dependencies deps, handle_type h, value_type* value)
   {
     this->derived().when_removed(deps, h, value);
-    return Visit(*value, [&deps](std::size_t depth, auto& field) {
-      using FieldType = std::remove_const_t<std::remove_reference_t<decltype(field)>>;
-      if constexpr (is_field_v<FieldType>)
-      {
-        using ValueType = std::remove_const_t<typename FieldType::value_type>;
-        if constexpr (is_resource_handle_v<ValueType> and !std::is_same_v<ValueType, handle_type>)
-        {
-          if (field.value->isValid())
-          {
-            return deps.restore(field.get()).has_value();
-          }
-        }
-      }
-      return true;
-    });
+    return true;
   }
 
   static void when_created(
@@ -575,12 +511,10 @@ template <typename R> constexpr bool is_resource_cache_like_v = IsResourceCacheL
 }  // namespace sde
 
 #define SDE_RESOURCE_CACHE_ERROR_ENUMS                                                                                 \
-  kInvalidHandle, kElementInUse, kElementAlreadyExists, kElementCreationFailure, kElementRemovalFailure,               \
-    kElementNotInUse
+  kInvalidHandle, kElementAlreadyExists, kElementCreationFailure, kElementRemovalFailure, kElementNotInUse
 
 #define SDE_OS_ENUM_CASES_FOR_RESOURCE_CACHE_ERRORS(error_type)                                                        \
   SDE_OS_ENUM_CASE(error_type::kInvalidHandle)                                                                         \
-  SDE_OS_ENUM_CASE(error_type::kElementInUse)                                                                          \
   SDE_OS_ENUM_CASE(error_type::kElementAlreadyExists)                                                                  \
   SDE_OS_ENUM_CASE(error_type::kElementCreationFailure)                                                                \
   SDE_OS_ENUM_CASE(error_type::kElementRemovalFailure)                                                                 \

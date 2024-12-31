@@ -44,67 +44,6 @@ struct native_script_data : private sde::game::native_script_header
   const char* guid() const { return sde::format("%s-%lu", name().data(), uid()); }
 };
 
-namespace sde::detail
-{
-
-template <typename InspectFn> struct inspect_via_serialize
-{
-public:
-  explicit inspect_via_serialize(
-    const char* inspect_object_name,
-    const char* inspect_method_name,
-    InspectFn inspect_fn) :
-      valid_{true},
-      inspect_object_name_{inspect_object_name},
-      inspect_method_name_{inspect_method_name},
-      inspect_fn_{std::move(inspect_fn)}
-  {}
-
-  operator bool() const { return valid_; }
-
-  template <typename T> void operator&(const T& v)
-  {
-    if constexpr (sde::is_field_v<T>)
-    {
-      this->operator&(v.get());
-    }
-    else if constexpr (std::is_array_v<T> or sde::is_iterable_v<T>)
-    {
-      for (auto& element : v)
-      {
-        this->operator&(element);
-      }
-    }
-    else if constexpr (sde::is_resource_handle_v<T>)
-    {
-      if (v.isNull())
-      {
-        return;
-      }
-      else if (auto ok_or_error = inspect_fn_(v); ok_or_error.has_value())
-      {
-        SDE_LOG_DEBUG() << inspect_object_name_ << "->" << inspect_method_name_ << '(' << sde::type_name<T>() << '='
-                        << v << ')';
-      }
-      else
-      {
-        SDE_LOG_ERROR() << inspect_object_name_ << "->" << inspect_method_name_ << '(' << sde::type_name<T>() << '='
-                        << v << ") failed with error: " << ok_or_error.error();
-        valid_ = false;
-      }
-    }
-  }
-
-private:
-  bool valid_ = true;
-  const char* inspect_object_name_;
-  const char* inspect_method_name_;
-  InspectFn inspect_fn_;
-};
-
-}  // namespace sde::detail
-
-
 #define SDE_NATIVE_SCRIPT__REGISTER_CREATE(ScriptDataT)                                                                \
   SDE_EXPORT void* on_create(ScriptInstanceAllocator allocator)                                                        \
   {                                                                                                                    \
@@ -177,15 +116,7 @@ private:
     static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
     auto* _data = reinterpret_cast<ScriptDataT*>(self);                                                                \
     auto& _resources = *reinterpret_cast<::sde::game::GameResources*>(resources);                                      \
-    if (f(_data, _resources, *reinterpret_cast<const ::sde::AppProperties*>(app_properties)))                          \
-    {                                                                                                                  \
-      sde::detail::inspect_via_serialize ar{                                                                           \
-        __SDE_STR_EXPR(ScriptDataT), "borrowing", [r = _resources.all()](const auto& handle) mutable {                 \
-          return r.borrow(handle);                                                                                     \
-        }};                                                                                                            \
-      return inspect(_data, ar) and ar;                                                                                \
-    }                                                                                                                  \
-    return false;                                                                                                      \
+    return f(_data, _resources, *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                       \
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_SHUTDOWN(ScriptDataT, f, inspect)                                                  \
@@ -194,15 +125,7 @@ private:
     static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
     auto* _data = reinterpret_cast<ScriptDataT*>(self);                                                                \
     auto& _resources = *reinterpret_cast<::sde::game::GameResources*>(resources);                                      \
-    if (f(_data, _resources, *reinterpret_cast<const ::sde::AppProperties*>(app_properties)))                          \
-    {                                                                                                                  \
-      sde::detail::inspect_via_serialize ar{                                                                           \
-        __SDE_STR_EXPR(ScriptDataT), "restoring", [r = _resources.all()](const auto& handle) mutable {                 \
-          return r.restore(handle);                                                                                    \
-        }};                                                                                                            \
-      return inspect(_data, ar) and ar;                                                                                \
-    }                                                                                                                  \
-    return false;                                                                                                      \
+    return f(_data, _resources, *reinterpret_cast<const ::sde::AppProperties*>(app_properties));                       \
   }
 
 #define SDE_NATIVE_SCRIPT__REGISTER_UPDATE(ScriptDataT, f)                                                             \

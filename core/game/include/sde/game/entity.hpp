@@ -65,10 +65,6 @@ public:
     {
       return make_unexpected(EntityError::kComponentNotRegistered);
     }
-    else if (!components_->borrow(component))
-    {
-      return make_unexpected(EntityError::kInvalidHandle);
-    }
     else
     {
       entity_->components.push_back(component);
