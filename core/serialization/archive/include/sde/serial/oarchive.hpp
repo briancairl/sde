@@ -11,6 +11,7 @@
 
 // SDE
 #include "sde/crtp.hpp"
+#include "sde/expected.hpp"
 #include "sde/serial/carray.hpp"
 #include "sde/serial/named.hpp"
 #include "sde/serial/object.hpp"
@@ -19,6 +20,18 @@
 
 namespace sde::serial
 {
+
+enum class oarchive_error
+{
+  kWriteFailure,
+  kKeyRepeated,
+  kStreamError
+};
+
+template <typename OArchiveT> struct oarchive_traits
+{
+  using stream_type = void;
+};
 
 template <typename OArchiveT, typename ValueT> struct save_impl;
 
@@ -29,43 +42,50 @@ template <typename OArchiveT> class oarchive : public crtp_base<oarchive<OArchiv
 
 public:
   template <typename ValueT>
-  std::enable_if_t<!is_primitive<std::remove_const_t<std::remove_reference_t<ValueT>>>, OArchiveT&>
+  std::enable_if_t<!is_primitive<std::remove_const_t<std::remove_reference_t<ValueT>>>, expected<void, oarchive_error>>
   operator<<(const ValueT& value)
   {
     using CleanT = std::remove_const_t<std::remove_reference_t<ValueT>>;
-    save_impl<OArchiveT, CleanT>{}(this->derived(), value);
-    return this->derived();
+    using SaveT = save_impl<OArchiveT, CleanT>;
+    if constexpr (std::is_void_v<decltype(std::declval<SaveT&>()(this->derived(), value))>)
+    {
+      SaveT{}(this->derived(), value);
+      return {};
+    }
+    else
+    {
+      return SaveT{}(this->derived(), value);
+    }
   }
 
-  template <typename IteratorT> OArchiveT& operator<<(const sequence<IteratorT>& sequence)
+  template <typename IteratorT> expected<void, oarchive_error> operator<<(const sequence<IteratorT>& sequence)
   {
-    this->derived().write_impl(sequence);
-    return this->derived();
+    return this->derived().write_impl(sequence);
   }
 
-  template <typename ValueT> OArchiveT& operator<<(const named<ValueT>& named_value)
+  template <typename ValueT> expected<void, oarchive_error> operator<<(const named<ValueT>& named_value)
   {
-    this->derived().write_impl(named_value);
-    return this->derived();
+    return this->derived().write_impl(named_value);
   }
 
-  template <typename PointerT> OArchiveT& operator<<(const basic_packet<PointerT>& packet)
+  template <typename PointerT> expected<void, oarchive_error> operator<<(const basic_packet<PointerT>& packet)
   {
-    this->derived().write_impl(packet);
-    return this->derived();
+    return this->derived().write_impl(packet);
   }
 
   template <typename PointerT, std::size_t Len>
-  OArchiveT& operator<<(const basic_packet_fixed_size<PointerT, Len>& packet)
+  expected<void, oarchive_error> operator<<(const basic_packet_fixed_size<PointerT, Len>& packet)
   {
-    this->derived().write_impl(packet);
-    return this->derived();
+    return this->derived().write_impl(packet);
   }
 
-  template <typename ValueT> OArchiveT& operator&(ValueT&& value)
+  template <typename ValueT> expected<void, oarchive_error> operator&(ValueT&& value)
   {
     return this->operator<<(std::forward<ValueT>(value));
   }
+
+  constexpr decltype(auto) stream() { return this->derived().stream_impl(); }
+  constexpr decltype(auto) stream() const { return this->derived().stream_impl(); }
 
   oarchive() = default;
 

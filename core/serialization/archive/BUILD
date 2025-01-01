@@ -6,7 +6,7 @@ cc_library(
     "include/sde/serial/oarchive.hpp"
   ],
   strip_include_prefix="include",
-  deps=["//core/serialization/primitives", "//core/serialization/object"],
+  deps=["//core/serialization/primitives", "//core/serialization/object", "//core/common:expected"],
   visibility=["//visibility:public"]
 )
 
@@ -22,12 +22,22 @@ cc_library(
   visibility=["//visibility:public"]
 )
 
-
 cc_library(
   name="hash_archive",
   hdrs=[
     "include/sde/serial/hash_archive.hpp",
-    "include/sde/serial/hash_oarchive.hpp"
+  ],
+  strip_include_prefix="include",
+  deps=[":archive", "//core/serialization/stream"],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
+  name="associative_archive",
+  hdrs=[
+    "include/sde/serial/associative_archive.hpp",
+    "include/sde/serial/associative_iarchive.hpp",
+    "include/sde/serial/associative_oarchive.hpp",
   ],
   strip_include_prefix="include",
   deps=[":archive", "//core/serialization/stream"],

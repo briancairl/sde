@@ -14,9 +14,13 @@
 namespace sde::serial
 {
 
+template <typename OStreamT> struct ostream_traits;
+
 template <typename OStreamT> class ostream : public crtp_base<ostream<OStreamT>>
 {
 public:
+  using pos_type = typename ostream_traits<OStreamT>::pos_type;
+
   /**
    * @brief Writes bytes to the stream
    */
@@ -36,10 +40,21 @@ public:
    */
   constexpr void flush() { return this->derived().flush_impl(); }
 
+  /**
+   * @brief Gets current stream position
+   */
+  constexpr bool get_position(pos_type& pos) const { return this->derived().get_position_impl(pos); }
+
+  /**
+   * @brief Sets current stream position
+   */
+  constexpr bool set_position(const pos_type& pos) { return this->derived().set_position_impl(pos); }
+
   ostream() = default;
 
 private:
-  ostream(const ostream&) = default;
+  ostream(const ostream&) = delete;
+  ostream& operator=(const ostream&) = delete;
 
   static constexpr void flush_impl()
   { /*default*/

@@ -5,13 +5,13 @@
  */
 #pragma once
 
-#include "sde/serial/hash_oarchive.hpp"
+#include "sde/serial/hash_archive.hpp"
 #include "sde/serialization_binary_file.hpp"
 
 namespace sde::game
 {
 
-using VArchive = serial::hash_oarchive;
+using VArchive = serial::hash_archive;
 using OArchive = serial::binary_ofarchive;
 using IArchive = serial::binary_ifarchive;
 

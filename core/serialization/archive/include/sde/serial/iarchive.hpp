@@ -11,6 +11,7 @@
 
 // SDE
 #include "sde/crtp.hpp"
+#include "sde/expected.hpp"
 #include "sde/serial/carray.hpp"
 #include "sde/serial/named.hpp"
 #include "sde/serial/object.hpp"
@@ -19,6 +20,18 @@
 
 namespace sde::serial
 {
+
+enum class iarchive_error
+{
+  kReadFailure,
+  kKeyMissing,
+  kStreamError
+};
+
+template <typename OArchiveT> struct iarchive_traits
+{
+  using stream_type = void;
+};
 
 template <typename IArchiveT, typename ValueT> struct load_impl;
 
@@ -29,42 +42,50 @@ template <typename IArchiveT> class iarchive : public crtp_base<iarchive<IArchiv
 
 public:
   template <typename ValueT>
-  std::enable_if_t<!is_primitive<std::remove_const_t<std::remove_reference_t<ValueT>>>, IArchiveT&>
+  std::enable_if_t<!is_primitive<std::remove_const_t<std::remove_reference_t<ValueT>>>, expected<void, iarchive_error>>
   operator>>(ValueT&& value)
   {
     using CleanT = std::remove_const_t<std::remove_reference_t<ValueT>>;
-    load_impl<IArchiveT, CleanT>{}(this->derived(), std::forward<ValueT>(value));
-    return this->derived();
+    using LoadT = load_impl<IArchiveT, CleanT>;
+    if constexpr (std::is_void_v<decltype(std::declval<LoadT&>()(this->derived(), std::forward<ValueT>(value)))>)
+    {
+      LoadT{}(this->derived(), std::forward<ValueT>(value));
+      return {};
+    }
+    else
+    {
+      return LoadT{}(this->derived(), std::forward<ValueT>(value));
+    }
   }
 
-  template <typename IteratorT> IArchiveT& operator>>(sequence<IteratorT> sequence)
+  template <typename IteratorT> expected<void, iarchive_error> operator>>(sequence<IteratorT> sequence)
   {
-    this->derived().read_impl(sequence);
-    return this->derived();
+    return this->derived().read_impl(sequence);
   }
 
-  template <typename ValueT> IArchiveT& operator>>(named<ValueT> named_value)
+  template <typename ValueT> expected<void, iarchive_error> operator>>(named<ValueT> named_value)
   {
-    this->derived().read_impl(named_value);
-    return this->derived();
+    return this->derived().read_impl(named_value);
   }
 
-  template <typename PointerT> IArchiveT& operator>>(basic_packet<PointerT> packet)
+  template <typename PointerT> expected<void, iarchive_error> operator>>(basic_packet<PointerT> packet)
   {
-    this->derived().read_impl(packet);
-    return this->derived();
+    return this->derived().read_impl(packet);
   }
 
-  template <typename PointerT, std::size_t Len> IArchiveT& operator>>(basic_packet_fixed_size<PointerT, Len> packet)
+  template <typename PointerT, std::size_t Len>
+  expected<void, iarchive_error> operator>>(basic_packet_fixed_size<PointerT, Len> packet)
   {
-    this->derived().read_impl(packet);
-    return this->derived();
+    return this->derived().read_impl(packet);
   }
 
-  template <typename ValueT> IArchiveT& operator&(ValueT&& value)
+  template <typename ValueT> expected<void, iarchive_error> operator&(ValueT&& value)
   {
     return this->operator>>(std::forward<ValueT>(value));
   }
+
+  constexpr decltype(auto) stream() { return this->derived().stream_impl(); }
+  constexpr decltype(auto) stream() const { return this->derived().stream_impl(); }
 
   iarchive() = default;
 

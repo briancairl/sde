@@ -15,3 +15,11 @@ gtest(
   deps=["//core/serialization/archive:hash_archive" ],
   visibility=["//visibility:public"],
 )
+
+gtest(
+  name="associative_archive",
+  timeout = "short",
+  srcs=["associative_archive.cpp"],
+  deps=["//core/serialization/archive:binary_archive", "//core/serialization/stream:file_stream", "//core/serialization/archive:associative_archive" ],
+  visibility=["//visibility:public"],
+)

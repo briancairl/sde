@@ -11,7 +11,7 @@
 #include <gtest/gtest.h>
 
 // SDE
-#include "sde/serial/hash_oarchive.hpp"
+#include "sde/serial/hash_archive.hpp"
 
 using namespace sde::serial;
 
@@ -71,7 +71,7 @@ template <typename IArchive> struct load<IArchive, ::NonTrivialStruct>
 
 TEST(HashOArchive, PrimitiveValue)
 {
-  hash_oarchive oar;
+  hash_archive oar;
 
   float primitive = 123.f;
   ASSERT_NO_THROW(oar << primitive);
@@ -80,7 +80,7 @@ TEST(HashOArchive, PrimitiveValue)
 
 TEST(HashOArchive, TrivialValue)
 {
-  hash_oarchive oar;
+  hash_archive oar;
 
   TrivialStruct trivial_value;
   ASSERT_NO_THROW(oar << trivial_value);
@@ -89,7 +89,7 @@ TEST(HashOArchive, TrivialValue)
 
 TEST(HashOArchive, NonTrivialStruct)
 {
-  hash_oarchive oar;
+  hash_archive oar;
 
   NonTrivialStruct non_trivial_value;
   ASSERT_NO_THROW(oar << non_trivial_value);

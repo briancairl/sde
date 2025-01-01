@@ -19,6 +19,13 @@
 namespace sde::serial
 {
 
+class file_handle_ostream;
+
+template <> struct ostream_traits<file_handle_ostream>
+{
+  using pos_type = std::fpos_t;
+};
+
 class file_handle_ostream : public ostream<file_handle_ostream>
 {
   friend class ostream<file_handle_ostream>;
@@ -42,11 +49,25 @@ private:
    */
   void flush_impl() { std::fflush(file_handle_); }
 
+  /**
+   * @copydoc istream<file_istream>::get_position
+   */
+  bool get_position_impl(std::fpos_t& pos) const { return std::fgetpos(file_handle_, &pos) == 0; }
+
+  /**
+   * @copydoc istream<file_istream>::set_position
+   */
+  bool set_position_impl(const std::fpos_t& pos) { return std::fsetpos(file_handle_, &pos) == 0; }
+
 protected:
   /// Native file handle
   std::FILE* file_handle_ = nullptr;
 };
 
+class file_ostream;
+
+template <> struct ostream_traits<file_ostream> : ostream_traits<file_handle_ostream>
+{};
 
 class file_ostream final : public file_handle_ostream
 {

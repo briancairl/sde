@@ -14,9 +14,13 @@
 namespace sde::serial
 {
 
+template <typename IStreamT> struct istream_traits;
+
 template <typename IStreamT> class istream : public crtp_base<istream<IStreamT>>
 {
 public:
+  using pos_type = typename istream_traits<IStreamT>::pos_type;
+
   /**
    * @brief Reads bytes from the stream
    */
@@ -31,19 +35,25 @@ public:
   }
 
   /**
-   * @brief Checks the next byte in the stream without changing the state of the stream
-   */
-  constexpr decltype(auto) peek() { return this->derived().peek_impl(); }
-
-  /**
    * @brief Returns number of available bytes left in the stream
    */
   constexpr std::size_t available() const { return this->derived().available_impl(); }
 
+  /**
+   * @brief Gets current stream position
+   */
+  constexpr bool get_position(pos_type& pos) const { return this->derived().get_position_impl(pos); }
+
+  /**
+   * @brief Sets current stream position
+   */
+  constexpr bool set_position(const pos_type& pos) { return this->derived().set_position_impl(pos); }
+
   istream() = default;
 
 private:
-  istream(const istream&) = default;
+  istream(const istream&) = delete;
+  istream& operator=(const istream&) = delete;
 
   static constexpr void flush_impl()
   { /*default*/

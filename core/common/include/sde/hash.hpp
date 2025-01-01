@@ -92,7 +92,7 @@ template <typename T> constexpr std::size_t ComputeTypeHashValue()
 
 template <typename T> constexpr Hash ComputeTypeHash()
 {
-  return {ComputeTypeHashValue<std::remove_reference_t<std::remove_const_t<T>>>()};
+  return Hash{ComputeTypeHashValue<std::remove_reference_t<std::remove_const_t<T>>>()} + Hash{sizeof(T)};
 }
 
 constexpr Hash ComputeHash() { return {}; }
@@ -105,3 +105,13 @@ template <typename FirstT, typename... OtherTs> constexpr Hash ComputeHash(const
 inline std::ostream& operator<<(std::ostream& os, const Hash& hash) { return os << "{ hash: " << hash.value << " }"; }
 
 }  // namespace sde
+
+namespace std
+{
+
+template <> struct hash<::sde::Hash>
+{
+  constexpr std::size_t operator()(const ::sde::Hash& hash) const { return hash.value; }
+};
+
+}  // namespace std

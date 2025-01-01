@@ -19,6 +19,13 @@ namespace sde::serial
 
 template <typename ChunkT, typename AllocatorT> class mem_ostream;
 
+template <typename ChunkT, typename AllocatorT> class mem_istream;
+
+template <typename ChunkT, typename AllocatorT> struct istream_traits<mem_istream<ChunkT, AllocatorT>>
+{
+  using pos_type = std::size_t;
+};
+
 template <typename ChunkT = std::uint8_t, typename AllocatorT = allocator<ChunkT>>
 class mem_istream final : public istream<mem_istream<ChunkT, AllocatorT>>
 {
@@ -61,19 +68,36 @@ private:
   }
 
   /**
-   * @copydoc istream<mem_istream>::peek
-   */
-  ChunkT peek_impl() { return buffer_[pos_]; }
-
-  /**
    * @copydoc istream<mem_istream>::available
    */
   std::size_t available_impl() const { return buffer_.size() - pos_; }
 
+  /**
+   * @copydoc ostream<mem_ostream>::get_position
+   */
+  bool get_position_impl(std::size_t& pos) const
+  {
+    pos = pos_;
+    return !buffer_.empty();
+  }
+
+  /**
+   * @copydoc ostream<mem_ostream>::set_position
+   */
+  bool set_position_impl(const std::size_t& pos)
+  {
+    if (pos < buffer_.size())
+    {
+      pos_ = pos;
+      return true;
+    }
+    return false;
+  }
+
   /// Byte stream buffer
   std::vector<ChunkT, AllocatorT> buffer_ = {};
 
-  /// Current read-byte position
+  /// Current read position
   std::size_t pos_ = 0;
 };
 

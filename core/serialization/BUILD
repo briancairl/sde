@@ -12,6 +12,7 @@ cc_library(
   include_prefix="sde",
   deps=[
     "//core/serialization/archive",
+    "//core/serialization/archive:associative_archive",
     "//core/serialization/archive:binary_archive",
     "//core/serialization/archive:hash_archive",
     "//core/serialization/stream",

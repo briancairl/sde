@@ -9,13 +9,13 @@
 
 namespace sde::serial
 {
-class hash_oarchive;
+class hash_archive;
 }  // namespace sde::serial;
 
 namespace sde::game
 {
 
-using VArchive = serial::hash_oarchive;
+using VArchive = serial::hash_archive;
 using OArchive = serial::binary_ofarchive;
 using IArchive = serial::binary_ifarchive;
 

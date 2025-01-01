@@ -19,6 +19,13 @@
 namespace sde::serial
 {
 
+class file_handle_istream;
+
+template <> struct istream_traits<file_handle_istream>
+{
+  using pos_type = std::fpos_t;
+};
+
 class file_handle_istream : public istream<file_handle_istream>
 {
   friend class istream<file_handle_istream>;
@@ -45,19 +52,19 @@ private:
   }
 
   /**
-   * @copydoc istream<file_istream>::peek
-   */
-  char peek_impl()
-  {
-    char ch = std::getc(file_handle_);
-    std::ungetc(ch, file_handle_);
-    return ch;
-  }
-
-  /**
    * @copydoc istream<file_istream>::available
    */
   std::size_t available_impl() const { return file_bytes_remaining_; }
+
+  /**
+   * @copydoc istream<file_istream>::get_position
+   */
+  bool get_position_impl(std::fpos_t& pos) const { return std::fgetpos(file_handle_, &pos) == 0; }
+
+  /**
+   * @copydoc istream<file_istream>::set_position
+   */
+  bool set_position_impl(const std::fpos_t& pos) { return std::fsetpos(file_handle_, &pos) == 0; }
 
   /// Number of remaining bytes in file
   std::size_t file_bytes_remaining_ = 0;
@@ -66,6 +73,11 @@ protected:
   /// Native file handle
   std::FILE* file_handle_ = nullptr;
 };
+
+class file_istream;
+
+template <> struct istream_traits<file_istream> : istream_traits<file_handle_istream>
+{};
 
 class file_istream final : public file_handle_istream
 {
