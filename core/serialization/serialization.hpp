@@ -8,7 +8,6 @@
 // This is a meta include for object serialization
 
 // SDE
-#include "sde/serial/label.hpp"
 #include "sde/serial/named.hpp"
 #include "sde/serial/object.hpp"
 #include "sde/serial/packet.hpp"

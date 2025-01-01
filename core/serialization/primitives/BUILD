@@ -3,9 +3,7 @@ cc_library(
   hdrs=[
     "include/sde/serial/carray.hpp",
     "include/sde/serial/packet.hpp",
-    "include/sde/serial/label.hpp",
     "include/sde/serial/named.hpp",
-    "include/sde/serial/named_ignored.hpp",
     "include/sde/serial/sequence.hpp"
   ],
   strip_include_prefix="include",

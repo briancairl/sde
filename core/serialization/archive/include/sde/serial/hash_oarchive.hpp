@@ -6,6 +6,7 @@
 #pragma once
 
 // C++ Standard Library
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -31,9 +32,9 @@ public:
   const Hash& digest() const { return hash_; }
 
 private:
-  template <typename ValueT> void write_impl(const label<ValueT> l)
+  template <typename ValueT> constexpr void write_impl(named<ValueT> named_value)
   {
-    hash_ += ComputeHash(l.value);
+    hash_ += ComputeHash(std::string_view{named_value.name});
     hash_ += ComputeTypeHash<ValueT>();
   }
 

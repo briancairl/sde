@@ -12,7 +12,7 @@
 // SDE
 #include "sde/crtp.hpp"
 #include "sde/serial/carray.hpp"
-#include "sde/serial/label.hpp"
+#include "sde/serial/named.hpp"
 #include "sde/serial/object.hpp"
 #include "sde/serial/packet.hpp"
 #include "sde/serial/sequence.hpp"
@@ -25,17 +25,12 @@ template <typename OArchiveT, typename ValueT> struct save_impl;
 template <typename OArchiveT> class oarchive : public crtp_base<oarchive<OArchiveT>>
 {
   template <typename ValueT>
-  static constexpr bool is_primitive = is_label_v<ValueT> or is_packet_v<ValueT> or is_sequence_v<ValueT>;
+  static constexpr bool is_primitive = is_named_v<ValueT> or is_packet_v<ValueT> or is_sequence_v<ValueT>;
 
 public:
-  template <typename ValueT> OArchiveT& operator&(const ValueT& value)
-  {
-    using CleanT = std::remove_const_t<std::remove_reference_t<ValueT>>;
-    save_impl<OArchiveT, CleanT>{}(this->derived(), value);
-    return this->derived();
-  }
-
-  template <typename ValueT> std::enable_if_t<!is_primitive<ValueT>, OArchiveT&> operator<<(const ValueT& value)
+  template <typename ValueT>
+  std::enable_if_t<!is_primitive<std::remove_const_t<std::remove_reference_t<ValueT>>>, OArchiveT&>
+  operator<<(const ValueT& value)
   {
     using CleanT = std::remove_const_t<std::remove_reference_t<ValueT>>;
     save_impl<OArchiveT, CleanT>{}(this->derived(), value);
@@ -48,9 +43,9 @@ public:
     return this->derived();
   }
 
-  template <typename ValueT> OArchiveT& operator<<(const label<ValueT> l)
+  template <typename ValueT> OArchiveT& operator<<(const named<ValueT>& named_value)
   {
-    this->derived().write_impl(l);
+    this->derived().write_impl(named_value);
     return this->derived();
   }
 
@@ -67,12 +62,15 @@ public:
     return this->derived();
   }
 
+  template <typename ValueT> OArchiveT& operator&(ValueT&& value)
+  {
+    return this->operator<<(std::forward<ValueT>(value));
+  }
+
   oarchive() = default;
 
 private:
   oarchive(const oarchive&) = default;
-
-  template <typename ValueT> static constexpr void write_impl(const label<ValueT> _) {}
 };
 
 }  // namespace sde::serial

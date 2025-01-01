@@ -12,7 +12,7 @@
 // SDE
 #include "sde/crtp.hpp"
 #include "sde/serial/carray.hpp"
-#include "sde/serial/label.hpp"
+#include "sde/serial/named.hpp"
 #include "sde/serial/object.hpp"
 #include "sde/serial/packet.hpp"
 #include "sde/serial/sequence.hpp"
@@ -25,17 +25,12 @@ template <typename IArchiveT, typename ValueT> struct load_impl;
 template <typename IArchiveT> class iarchive : public crtp_base<iarchive<IArchiveT>>
 {
   template <typename ValueT>
-  static constexpr bool is_primitive = is_label_v<ValueT> or is_packet_v<ValueT> or is_sequence_v<ValueT>;
+  static constexpr bool is_primitive = is_named_v<ValueT> or is_packet_v<ValueT> or is_sequence_v<ValueT>;
 
 public:
-  template <typename ValueT> IArchiveT& operator&(ValueT&& value)
-  {
-    using CleanT = std::remove_const_t<std::remove_reference_t<ValueT>>;
-    load_impl<IArchiveT, CleanT>{}(this->derived(), std::forward<ValueT>(value));
-    return this->derived();
-  }
-
-  template <typename ValueT> std::enable_if_t<!is_primitive<ValueT>, IArchiveT&> operator>>(ValueT&& value)
+  template <typename ValueT>
+  std::enable_if_t<!is_primitive<std::remove_const_t<std::remove_reference_t<ValueT>>>, IArchiveT&>
+  operator>>(ValueT&& value)
   {
     using CleanT = std::remove_const_t<std::remove_reference_t<ValueT>>;
     load_impl<IArchiveT, CleanT>{}(this->derived(), std::forward<ValueT>(value));
@@ -48,9 +43,9 @@ public:
     return this->derived();
   }
 
-  template <typename ValueT> IArchiveT& operator>>(label<ValueT> l)
+  template <typename ValueT> IArchiveT& operator>>(named<ValueT> named_value)
   {
-    this->derived().read_impl(l);
+    this->derived().read_impl(named_value);
     return this->derived();
   }
 
@@ -66,12 +61,15 @@ public:
     return this->derived();
   }
 
+  template <typename ValueT> IArchiveT& operator&(ValueT&& value)
+  {
+    return this->operator>>(std::forward<ValueT>(value));
+  }
+
   iarchive() = default;
 
 private:
   iarchive(const iarchive&) = default;
-
-  template <typename ValueT> static constexpr void read_impl(label<ValueT> _) {}
 };
 
 }  // namespace sde::serial

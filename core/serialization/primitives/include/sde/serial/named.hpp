@@ -9,7 +9,6 @@
 #include <type_traits>
 
 // SDE
-#include "sde/serial/label.hpp"
 #include "sde/serial/object.hpp"
 
 namespace sde::serial
@@ -57,29 +56,5 @@ template <typename ValueT> struct is_named<named<ValueT>> : std::true_type
 {};
 
 template <typename T> static constexpr bool is_named_v = is_named<T>::value;
-
-/**
- * @brief Archive-generic <code>named<ValueT></code> save implementation
- */
-template <typename OArchive, typename ValueT> struct save<OArchive, named<ValueT>>
-{
-  void operator()(OArchive& ar, const named<ValueT>& obj)
-  {
-    ar << label<ValueT>{obj.name};
-    ar << obj.value;
-  }
-};
-
-/**
- * @brief Archive-generic <code>named<ValueT></code> load implementation
- */
-template <typename IArchive, typename ValueT> struct load<IArchive, named<ValueT>>
-{
-  void operator()(IArchive& ar, named<ValueT> obj)
-  {
-    ar >> label<ValueT>{obj.name};
-    ar >> obj.value;
-  }
-};
 
 }  // namespace sde::serial

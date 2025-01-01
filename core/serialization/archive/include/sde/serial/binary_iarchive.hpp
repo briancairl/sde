@@ -45,9 +45,7 @@ public:
   const IStreamT* operator->() const { return is_; }
 
 private:
-  template <typename ValueT> static constexpr void read_impl(label<ValueT> _)
-  { /* labels are ignored */
-  }
+  template <typename ValueT> constexpr void read_impl(named<ValueT> named_value) { (*this) >> named_value.value; }
 
   template <typename IteratorT> constexpr void read_impl(sequence<IteratorT> sequence)
   {

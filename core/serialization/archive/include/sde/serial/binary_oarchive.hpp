@@ -45,9 +45,7 @@ public:
   const OStreamT* operator->() const { return os_; }
 
 private:
-  template <typename ValueT> static constexpr void write_impl(const label<ValueT> _)
-  { /* labels are ignored */
-  }
+  template <typename ValueT> constexpr void write_impl(named<ValueT> named_value) { (*this) << named_value.value; }
 
   template <typename IteratorT> constexpr void write_impl(const sequence<IteratorT>& sequence)
   {
