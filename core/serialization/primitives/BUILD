@@ -4,7 +4,8 @@ cc_library(
     "include/sde/serial/carray.hpp",
     "include/sde/serial/packet.hpp",
     "include/sde/serial/named.hpp",
-    "include/sde/serial/sequence.hpp"
+    "include/sde/serial/sequence.hpp",
+    "include/sde/serial/structure.hpp"
   ],
   strip_include_prefix="include",
   deps=[],

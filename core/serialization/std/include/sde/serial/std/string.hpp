@@ -34,7 +34,8 @@ struct load<IArchiveT, std::basic_string<CharT, Traits, Allocator>>
     std::size_t len{0};
     iar >> named{"len", len};
     str.resize(len);
-    iar >> named{"data", make_packet(str.data(), str.size())};
+    auto p = make_packet(str.data(), str.size());
+    iar >> named{"data", p};
   }
 };
 

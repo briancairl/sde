@@ -12,3 +12,4 @@
 #include "sde/serial/object.hpp"
 #include "sde/serial/packet.hpp"
 #include "sde/serial/sequence.hpp"
+#include "sde/serial/structure.hpp"

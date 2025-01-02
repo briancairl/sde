@@ -2,13 +2,13 @@
 #include <ostream>
 
 // SDE
+#include "sde/game/archive.hpp"
 #include "sde/game/component.hpp"
 #include "sde/game/entity.hpp"
 #include "sde/logging.hpp"
 #include "sde/resource_handle_io.hpp"
 #include "sde/resource_io.hpp"
 #include "sde/serialization.hpp"
-#include "sde/serialization_binary_file.hpp"
 
 namespace sde::game
 {

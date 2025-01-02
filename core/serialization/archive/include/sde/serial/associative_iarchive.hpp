@@ -11,6 +11,7 @@
 #include <utility>
 
 // SDE
+#include "sde/format.hpp"
 #include "sde/hash.hpp"
 #include "sde/serial/iarchive.hpp"
 #include "sde/serial/istream.hpp"
@@ -125,7 +126,7 @@ private:
   template <typename ValueT> constexpr expected<void, iarchive_error> read_impl(named<ValueT> named_value)
   {
     const auto name_hash = ComputeHash(std::string_view{named_value.name});
-    const auto type_hash = ComputeTypeHash<ValueT>();
+    const auto type_hash = ComputeHash(sizeof(ValueT));
 
     const auto key = tiered_hash{parent_hash_, name_hash, type_hash};
     const auto offset_itr = offset_table_.find(key);
@@ -147,7 +148,15 @@ private:
 
   template <typename IteratorT> constexpr expected<void, iarchive_error> read_impl(sequence<IteratorT> sequence)
   {
-    return (*iar_) >> sequence;
+    std::size_t index = 0;
+    for (auto& element : sequence)
+    {
+      if (auto ok_or_error = (*this) >> named{format("element[%lu]", index++), element}; !ok_or_error)
+      {
+        return ok_or_error;
+      }
+    }
+    return {};
   }
 
   template <typename PointerT> constexpr expected<void, iarchive_error> read_impl(basic_packet<PointerT> packet)

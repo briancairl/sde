@@ -38,7 +38,8 @@ template <typename IArchiveT, typename FirstT, typename SecondT> struct load<IAr
   {
     if constexpr (is_trivially_serializable_v<IArchiveT, FirstT> and is_trivially_serializable_v<IArchiveT, SecondT>)
     {
-      iar >> named{"data", make_packet(&pair)};
+      auto p = make_packet(&pair);
+      iar >> named{"data", p};
     }
     else
     {

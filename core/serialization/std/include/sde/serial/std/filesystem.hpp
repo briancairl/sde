@@ -35,7 +35,8 @@ template <typename ArchiveT> struct serialize<ArchiveT, std::filesystem::file_ty
 {
   void operator()(ArchiveT& ar, std::filesystem::file_type& file_type)
   {
-    ar& named{"file_type", make_packet(std::addressof(file_type))};
+    auto p = make_packet(std::addressof(file_type));
+    ar& named{"file_type", p};
   }
 };
 

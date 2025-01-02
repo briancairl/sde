@@ -41,7 +41,8 @@ template <typename IArchiveT, typename T> struct load<IArchiveT, std::optional<T
   {
     if constexpr (is_trivially_serializable_v<IArchiveT, T>)
     {
-      iar >> named{"data", make_packet(std::addressof(opt))};
+      auto p = make_packet(std::addressof(opt));
+      iar >> named{"data", p};
     }
     else
     {

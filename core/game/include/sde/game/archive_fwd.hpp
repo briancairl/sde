@@ -5,18 +5,14 @@
  */
 #pragma once
 
+#include "sde/serial/archive_fwd.hpp"
 #include "sde/serialization_binary_file_fwd.hpp"
-
-namespace sde::serial
-{
-class hash_archive;
-}  // namespace sde::serial;
 
 namespace sde::game
 {
 
 using VArchive = serial::hash_archive;
-using OArchive = serial::binary_ofarchive;
-using IArchive = serial::binary_ifarchive;
+using OArchive = serial::associative_oarchive<serial::binary_ofarchive>;
+using IArchive = serial::associative_iarchive<serial::binary_ifarchive>;
 
 }  // namespace sde::game

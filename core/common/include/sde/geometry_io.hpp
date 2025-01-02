@@ -25,7 +25,8 @@ template <typename Archive, typename T, int N, int M> struct save<Archive, Mat<T
     }
     else
     {
-      ar << named{"data", make_packet(mat.data(), mat.size())};
+      auto p = make_packet(mat.data(), mat.size());
+      ar << named{"data", p};
     }
   }
 };
@@ -41,11 +42,13 @@ template <typename Archive, typename T, int N, int M> struct load<Archive, Mat<T
       ar >> named{"rows", rows};
       ar >> named{"cols", cols};
       mat.resize(rows, cols);
-      ar >> named{"data", make_packet(mat.data(), mat.size())};
+      auto p = make_packet(mat.data(), mat.size());
+      ar >> named{"data", p};
     }
     else
     {
-      ar >> named{"data", make_packet(mat.data(), mat.size())};
+      auto p = make_packet(mat.data(), mat.size());
+      ar >> named{"data", p};
     }
   }
 };

@@ -8,12 +8,12 @@
 namespace sde::serial
 {
 
-std::ostream& operator<<(std::ostream& os, FileStreamError error)
+std::ostream& operator<<(std::ostream& os, file_stream_error error)
 {
   switch (error)
   {
-    SDE_OS_ENUM_CASE(FileStreamError::kFileDoesNotExist)
-    SDE_OS_ENUM_CASE(FileStreamError::kFileOpenFailed)
+    SDE_OS_ENUM_CASE(file_stream_error::kFileDoesNotExist)
+    SDE_OS_ENUM_CASE(file_stream_error::kFileOpenFailed)
   }
   return os;
 }

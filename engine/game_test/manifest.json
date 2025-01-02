@@ -3,7 +3,6 @@
     {
         "rate"              : 60.0,
         "script_data_path"  : "data/scripts",
-        "entity_data_path"  : "data/entities.bin",
         "assets_data_path"  : "data/resources.bin",
         "window_icon_path"  : "/home/brian/dev/assets/icons/red.png",
         "cursor_icon_path"  : "/home/brian/dev/assets/icons/sword.png"

@@ -21,12 +21,12 @@ const char* flags_to_write_mode_str(file_ostream::flags fileopt)
 
 }  // namespace anonymous
 
-expected<file_ostream, FileStreamError> file_ostream::create(const std::filesystem::path& path, const flags fileopt)
+expected<file_ostream, file_stream_error> file_ostream::create(const std::filesystem::path& path, const flags fileopt)
 {
   std::FILE* file_handle = std::fopen(path.c_str(), flags_to_write_mode_str(fileopt));
   if (file_handle == nullptr)
   {
-    return make_unexpected(FileStreamError::kFileOpenFailed);
+    return make_unexpected(file_stream_error::kFileOpenFailed);
   }
 
   if (fileopt.nobuf)

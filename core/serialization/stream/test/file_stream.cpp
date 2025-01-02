@@ -19,7 +19,7 @@ TEST(FileInputStream, CannotOpenFile)
 {
   auto ifs_or_error = sde::serial::file_istream::create("not-a-file.bin", {.nobuf = true});
   ASSERT_FALSE(ifs_or_error.has_value());
-  ASSERT_EQ(ifs_or_error.error(), sde::serial::FileStreamError::kFileDoesNotExist);
+  ASSERT_EQ(ifs_or_error.error(), sde::serial::file_stream_error::kFileDoesNotExist);
 }
 
 

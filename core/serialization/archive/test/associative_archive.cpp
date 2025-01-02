@@ -16,6 +16,7 @@
 #include "sde/serial/binary_oarchive.hpp"
 #include "sde/serial/file_istream.hpp"
 #include "sde/serial/file_ostream.hpp"
+#include "sde/serial/std/vector.hpp"
 
 using namespace sde::serial;
 
@@ -162,5 +163,128 @@ TEST(AssociativeIArchive, ReadbackNonTrivialStruct)
     ASSERT_EQ(read_non_trivial_value.b.x, target_non_trivial_value.b.x);
     ASSERT_EQ(read_non_trivial_value.b.y, target_non_trivial_value.b.y);
     ASSERT_EQ(read_non_trivial_value.b.z, target_non_trivial_value.b.z);
+  }
+}
+
+
+TEST(AssociativeIArchive, ReadbackSequenceOfNonTrivialStruct)
+{
+  const NonTrivialStruct target_non_trivial_value[3] = {
+    {TrivialStruct{1, 2, 3}, TrivialStruct{3, 4, 5}},
+    {TrivialStruct{6, 7, 8}, TrivialStruct{9, 8, 7}},
+    {TrivialStruct{6, 5, 4}, TrivialStruct{3, 2, 1}}};
+
+  std::size_t expected_key_count = 0;
+  {
+    auto ofs = file_ostream::create("AssociativeOArchive.ReadbackNonTrivialStruct.bin").value();
+    binary_oarchive oar{ofs};
+    auto assoc_oar_or_error = make_associative(oar);
+    auto& assoc_oar = assoc_oar_or_error.value();
+    ASSERT_TRUE((assoc_oar << named{"target_non_trivial_value_a", target_non_trivial_value}));
+    ASSERT_TRUE((assoc_oar << named{"target_non_trivial_value_b", target_non_trivial_value}));
+    expected_key_count = assoc_oar.key_count();
+  }
+
+  {
+    auto ifs = file_istream::create("AssociativeOArchive.ReadbackNonTrivialStruct.bin").value();
+    binary_iarchive iar{ifs};
+
+    auto assoc_iar_or_error = make_associative(iar);
+    auto& assoc_iar = assoc_iar_or_error.value();
+
+    ASSERT_EQ(expected_key_count, assoc_iar.key_count());
+
+    NonTrivialStruct read_non_trivial_value[3];
+    ASSERT_TRUE((assoc_iar >> named{"target_non_trivial_value_b", read_non_trivial_value}));
+    ASSERT_TRUE((assoc_iar >> named{"target_non_trivial_value_a", read_non_trivial_value}));
+
+    ASSERT_EQ(read_non_trivial_value[1].a.x, target_non_trivial_value[1].a.x);
+    ASSERT_EQ(read_non_trivial_value[1].a.y, target_non_trivial_value[1].a.y);
+    ASSERT_EQ(read_non_trivial_value[1].a.z, target_non_trivial_value[1].a.z);
+    ASSERT_EQ(read_non_trivial_value[0].b.x, target_non_trivial_value[0].b.x);
+    ASSERT_EQ(read_non_trivial_value[0].b.y, target_non_trivial_value[0].b.y);
+    ASSERT_EQ(read_non_trivial_value[0].b.z, target_non_trivial_value[0].b.z);
+  }
+}
+
+
+TEST(AssociativeIArchive, ReadbackVectorOfNonTrivialStruct)
+{
+  const std::vector<NonTrivialStruct> target_non_trivial_value = {
+    {TrivialStruct{1, 2, 3}, TrivialStruct{3, 4, 5}},
+    {TrivialStruct{6, 7, 8}, TrivialStruct{9, 8, 7}},
+    {TrivialStruct{6, 5, 4}, TrivialStruct{3, 2, 1}}};
+
+  std::size_t expected_key_count = 0;
+  {
+    auto ofs = file_ostream::create("AssociativeOArchive.ReadbackNonTrivialStruct.bin").value();
+    binary_oarchive oar{ofs};
+    auto assoc_oar_or_error = make_associative(oar);
+    auto& assoc_oar = assoc_oar_or_error.value();
+    ASSERT_TRUE((assoc_oar << named{"target_non_trivial_value_a", target_non_trivial_value}));
+    ASSERT_TRUE((assoc_oar << named{"target_non_trivial_value_b", target_non_trivial_value}));
+    expected_key_count = assoc_oar.key_count();
+  }
+
+  {
+    auto ifs = file_istream::create("AssociativeOArchive.ReadbackNonTrivialStruct.bin").value();
+    binary_iarchive iar{ifs};
+
+    auto assoc_iar_or_error = make_associative(iar);
+    auto& assoc_iar = assoc_iar_or_error.value();
+
+    ASSERT_EQ(expected_key_count, assoc_iar.key_count());
+
+    std::vector<NonTrivialStruct> read_non_trivial_value;
+    ASSERT_TRUE((assoc_iar >> named{"target_non_trivial_value_b", read_non_trivial_value}));
+    ASSERT_TRUE((assoc_iar >> named{"target_non_trivial_value_a", read_non_trivial_value}));
+
+    ASSERT_EQ(read_non_trivial_value[1].a.x, target_non_trivial_value[1].a.x);
+    ASSERT_EQ(read_non_trivial_value[1].a.y, target_non_trivial_value[1].a.y);
+    ASSERT_EQ(read_non_trivial_value[1].a.z, target_non_trivial_value[1].a.z);
+    ASSERT_EQ(read_non_trivial_value[0].b.x, target_non_trivial_value[0].b.x);
+    ASSERT_EQ(read_non_trivial_value[0].b.y, target_non_trivial_value[0].b.y);
+    ASSERT_EQ(read_non_trivial_value[0].b.z, target_non_trivial_value[0].b.z);
+  }
+}
+
+
+TEST(AssociativeIArchive, SplitUse)
+{
+  const NonTrivialStruct target_value = {TrivialStruct{1, 2, 3}, TrivialStruct{3, 4, 5}};
+
+  std::size_t expected_key_count = 0;
+  {
+    auto ofs = file_ostream::create("AssociativeOArchive.SplitUse.bin").value();
+    binary_oarchive oar{ofs};
+
+    oar << named{"target_value", target_value};
+
+    auto assoc_oar_or_error = make_associative(oar);
+    auto& assoc_oar = assoc_oar_or_error.value();
+    ASSERT_TRUE((assoc_oar << named{"target_value", target_value}));
+    expected_key_count = assoc_oar.key_count();
+  }
+
+  {
+    auto ifs = file_istream::create("AssociativeOArchive.SplitUse.bin").value();
+    binary_iarchive iar{ifs};
+
+    {
+      NonTrivialStruct read_value;
+      iar >> named{"target_value", read_value};
+    }
+
+    auto assoc_iar_or_error = make_associative(iar);
+    auto& assoc_iar = assoc_iar_or_error.value();
+
+    ASSERT_EQ(expected_key_count, assoc_iar.key_count());
+
+    NonTrivialStruct read_value;
+    ASSERT_TRUE((assoc_iar >> named{"target_value", read_value}));
+
+    ASSERT_EQ(read_value.a.x, target_value.a.x);
+    ASSERT_EQ(read_value.a.y, target_value.a.y);
+    ASSERT_EQ(read_value.a.z, target_value.a.z);
   }
 }

@@ -38,11 +38,13 @@ template <typename IArchiveT, typename ValueT, std::size_t N> struct load<IArchi
   {
     if constexpr (is_trivially_serializable_v<IArchiveT, ValueT>)
     {
-      iar >> named{"data", make_packet_fixed_size<N>(array)};
+      auto p = make_packet_fixed_size<N>(array);
+      iar >> named{"data", p};
     }
     else
     {
-      iar >> named{"data", make_sequence(array, array + N)};
+      auto s = make_sequence(array, array + N);
+      iar >> named{"data", s};
     }
   }
 };

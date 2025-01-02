@@ -36,17 +36,17 @@ void file_handle_istream::swap(file_handle_istream& other)
   std::swap(this->file_bytes_remaining_, other.file_bytes_remaining_);
 }
 
-expected<file_istream, FileStreamError> file_istream::create(const std::filesystem::path& path, const flags fileopt)
+expected<file_istream, file_stream_error> file_istream::create(const std::filesystem::path& path, const flags fileopt)
 {
   if (!std::filesystem::exists(path))
   {
-    return make_unexpected(FileStreamError::kFileDoesNotExist);
+    return make_unexpected(file_stream_error::kFileDoesNotExist);
   }
 
   std::FILE* file_handle = std::fopen(path.c_str(), flags_to_read_mode_str(fileopt));
   if (file_handle == nullptr)
   {
-    return make_unexpected(FileStreamError::kFileOpenFailed);
+    return make_unexpected(file_stream_error::kFileOpenFailed);
   }
 
   if (fileopt.nobuf)

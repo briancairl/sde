@@ -8,6 +8,9 @@
 // C++ Standard Library
 #include <type_traits>
 
+// SDE
+#include "sde/serial/object.hpp"
+
 namespace sde::serial
 {
 
@@ -24,6 +27,10 @@ template <typename IteratorT> constexpr sequence<IteratorT> make_sequence(Iterat
 {
   return sequence<IteratorT>{first, last};
 }
+
+template <typename ArchiveT, typename IteratorT>
+struct is_trivially_serializable<ArchiveT, sequence<IteratorT>> : std::false_type
+{};
 
 template <typename T> struct is_sequence : std::false_type
 {};

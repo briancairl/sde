@@ -3,11 +3,11 @@
 
 // SDE
 #include "sde/format.hpp"
+#include "sde/game/archive.hpp"
 #include "sde/game/native_script.hpp"
 #include "sde/game/native_script_header.hpp"
 #include "sde/game/native_script_instance.hpp"
 #include "sde/logging.hpp"
-#include "sde/serialization_binary_file.hpp"
 
 namespace sde::game
 {
@@ -147,7 +147,7 @@ bool NativeScriptInstance::load(IArchive& iar) const
   {
     SDE_LOG_WARN() << "Not loading script data because version has changed from " << SDE_OSNV(header.version) << " to "
                    << SDE_OSNV(current_version);
-    return true;
+    header.version = current_version;
   }
   return methods_.on_load(data_, reinterpret_cast<void*>(&iar));
 }
@@ -222,9 +222,21 @@ NativeScriptInstanceCache::load(NativeScriptInstanceHandle handle, const asset::
     return make_unexpected(NativeScriptInstanceError::kInstanceLoadFailed);
   }
 
-  // Load data for this instance
-  if (IArchive iar{*ifs_or_error}; !script.instance.load(iar))
+  // Wrap file stream in archive interface
+  auto iar_basic = serial::binary_ifarchive{*ifs_or_error};
+
+  // Create associative wrapper for archive
+  auto iar_or_error = serial::make_associative(iar_basic);
+  if (!iar_or_error.has_value())
   {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << iar_or_error.error();
+    return make_unexpected(NativeScriptInstanceError::kInstanceLoadFailed);
+  }
+
+  // Load data for this instance
+  if (!script.instance.load(*iar_or_error))
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << ": load routine failed";
     return make_unexpected(NativeScriptInstanceError::kInstanceLoadFailed);
   }
 
@@ -253,9 +265,21 @@ NativeScriptInstanceCache::save(NativeScriptInstanceHandle handle, const asset::
     return make_unexpected(NativeScriptInstanceError::kInstanceSaveFailed);
   }
 
-  // Load data for this instance
-  if (OArchive oar{*ofs_or_error}; !script.instance.save(oar))
+  // Wrap file stream in archive interface
+  auto oar_basic = serial::binary_ofarchive{*ofs_or_error};
+
+  // Create associative wrapper for archive
+  auto oar_or_error = serial::make_associative(oar_basic);
+  if (!oar_or_error.has_value())
   {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << oar_or_error.error();
+    return make_unexpected(NativeScriptInstanceError::kInstanceSaveFailed);
+  }
+
+  // Write data for this instance
+  if (!script.instance.save(*oar_or_error))
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << ": save routine failed";
     return make_unexpected(NativeScriptInstanceError::kInstanceSaveFailed);
   }
 

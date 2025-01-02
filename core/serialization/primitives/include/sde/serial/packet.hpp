@@ -104,13 +104,18 @@ template <> struct is_packet<packet> : std::true_type
 template <> struct is_packet<const_packet> : std::true_type
 {};
 
+template <typename PointerT> struct is_packet<basic_packet<PointerT>> : std::true_type
+{};
+
+template <typename PointerT, std::size_t Len> struct is_packet<basic_packet_fixed_size<PointerT, Len>> : std::true_type
+{};
+
 template <std::size_t Len> struct is_packet<packet_fixed_size<Len>> : std::true_type
 {};
 
 template <std::size_t Len> struct is_packet<const_packet_fixed_size<Len>> : std::true_type
 {};
 
-template <typename T>
-static constexpr bool is_packet_v = is_packet<std::remove_const_t<std::remove_reference_t<T>>>::value;
+template <typename T> static constexpr bool is_packet_v = is_packet<T>::value;
 
 }  // namespace sde::serial

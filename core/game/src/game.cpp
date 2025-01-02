@@ -7,6 +7,7 @@
 
 // SDE
 #include "sde/app.hpp"
+#include "sde/game/archive.hpp"
 #include "sde/game/game.hpp"
 #include "sde/game/game_resources.hpp"
 #include "sde/geometry_io.hpp"
@@ -17,7 +18,6 @@
 #include "sde/serial/std/filesystem.hpp"
 #include "sde/serial/std/optional.hpp"
 #include "sde/serial/std/vector.hpp"
-#include "sde/serialization_binary_file.hpp"
 
 
 namespace sde::game
@@ -25,85 +25,63 @@ namespace sde::game
 namespace
 {
 
-[[nodiscard]] bool save_entities(GameResources& resources, const asset::path& entity_data_path)
+[[nodiscard]] bool save_game_data(GameResources& resources, const asset::path& path)
 {
-  SDE_LOG_INFO() << "Saving:" << SDE_OSNV(entity_data_path);
-  auto ofs_or_error = serial::file_ostream::create(entity_data_path);
+  SDE_LOG_INFO() << "Saving to: " << SDE_OSNV(path);
+  auto ofs_or_error = serial::file_ostream::create(path);
   if (!ofs_or_error.has_value())
   {
-    SDE_LOG_ERROR() << ofs_or_error.error() << " " << SDE_OSNV(entity_data_path);
+    SDE_LOG_ERROR() << ofs_or_error.error() << " " << SDE_OSNV(path);
     return false;
   }
 
-  OArchive oar{*ofs_or_error};
-  if (auto ok_or_error = resources.get<EntityCache>().save(resources.all(), oar); !ok_or_error.has_value())
+  // Wrap file stream in archive interface
+  auto oar_basic = serial::binary_ofarchive{*ofs_or_error};
+
+  // Create associative wrapper for archive
+  auto oar_or_error = serial::make_associative(oar_basic);
+  if (!oar_or_error.has_value())
   {
-    SDE_LOG_ERROR() << "Failed to save entity data: " << ok_or_error.error();
+    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << oar_or_error.error();
     return false;
   }
+
+  // Save all game resources
+  (*oar_or_error) << serial::named{"resources", resources};
+
+  // Save all entity data
+  // if (auto ok_or_error = resources.get<EntityCache>().save(resources.all(), *oar_or_error); !ok_or_error.has_value())
+  // {
+  //   SDE_LOG_ERROR() << "Failed to save entity data: " << ok_or_error.error();
+  //   return false;
+  // }
   return true;
 }
 
 
-[[nodiscard]] bool load_entities(GameResources& resources, const asset::path& entity_data_path)
+[[nodiscard]] bool load_game_data(GameResources& resources, const asset::path& path)
 {
-  SDE_LOG_INFO() << "Loading:" << SDE_OSNV(entity_data_path);
-  if (resources.get<EntityCache>().empty())
-  {
-    return true;
-  }
-
-  auto ifs_or_error = serial::file_istream::create(entity_data_path);
+  SDE_LOG_INFO() << "Loading from: " << SDE_OSNV(path);
+  auto ifs_or_error = serial::file_istream::create(path);
   if (!ifs_or_error.has_value())
   {
-    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(entity_data_path);
+    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(path);
+    return ifs_or_error.error() == serial::file_stream_error::kFileDoesNotExist;
+  }
+
+  // Wrap file stream in archive interface
+  auto iar_basic = serial::binary_ifarchive{*ifs_or_error};
+
+  // Create associative wrapper for archive
+  auto iar_or_error = serial::make_associative(iar_basic);
+  if (!iar_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << iar_or_error.error();
     return false;
   }
 
-  IArchive iar{*ifs_or_error};
-  if (auto ok_or_error = resources.get<EntityCache>().load(resources.all(), iar); !ok_or_error.has_value())
-  {
-    SDE_LOG_ERROR() << "Failed to load entity data: " << ok_or_error.error();
-    return false;
-  }
-  return true;
-}
-
-
-[[nodiscard]] bool save_resources(const GameResources& resources, const asset::path& resources_path)
-{
-  SDE_LOG_INFO() << "Saving:" << SDE_OSNV(resources_path);
-  if (auto ofs_or_error = serial::file_ostream::create(resources_path); ofs_or_error.has_value())
-  {
-    OArchive oar{*ofs_or_error};
-    oar << Field{"resources", resources};
-  }
-  else
-  {
-    SDE_LOG_ERROR() << ofs_or_error.error() << " " << SDE_OSNV(resources_path);
-    return false;
-  }
-  return true;
-}
-
-
-[[nodiscard]] bool load_resources(GameResources& resources, const asset::path& resources_path)
-{
-  SDE_LOG_INFO() << "Loading:" << SDE_OSNV(resources_path);
-  if (auto ifs_or_error = serial::file_istream::create(resources_path); ifs_or_error.has_value())
-  {
-    IArchive iar{*ifs_or_error};
-    iar >> Field{"resources", resources};
-  }
-  else if (ifs_or_error.error() == serial::FileStreamError::kFileDoesNotExist)
-  {
-    SDE_LOG_WARN() << SDE_OSNV(resources_path);
-  }
-  else
-  {
-    SDE_LOG_ERROR() << ifs_or_error.error() << " " << SDE_OSNV(resources_path);
-    return false;
-  }
+  // Load all game resources
+  (*iar_or_error) >> serial::named{"resources", resources};
 
   // Reload resources
   if (auto ok_or_error = resources.refresh(); !ok_or_error.has_value())
@@ -111,10 +89,17 @@ namespace
     SDE_LOG_ERROR() << "Failed to refresh resources: " << ok_or_error.error();
     return false;
   }
+
+  // Load all entity data
+  // if (auto ok_or_error = resources.get<EntityCache>().load(resources.all(), *iar_or_error); !ok_or_error.has_value())
+  // {
+  //   SDE_LOG_ERROR() << "Failed to load entity data: " << ok_or_error.error();
+  //   return false;
+  // }
   return true;
 }
 
-[[nodiscard]] bool load_components(GameResources& resources, const nlohmann::json& components_json)
+[[nodiscard]] bool load_components_from_manifest(GameResources& resources, const nlohmann::json& components_json)
 {
   for (const auto& [component_key_json, component_lib_path_json] : components_json.items())
   {
@@ -140,7 +125,7 @@ namespace
   return true;
 }
 
-[[nodiscard]] bool load_scripts(GameResources& resources, const nlohmann::json& scripts_json)
+[[nodiscard]] bool load_scripts_from_manifest(GameResources& resources, const nlohmann::json& scripts_json)
 {
   for (const auto& [script_key_json, script_lib_path_json] : scripts_json.items())
   {
@@ -165,7 +150,7 @@ namespace
   return true;
 }
 
-[[nodiscard]] bool load_scenes(GameResources& resources, const nlohmann::json& scenes_json)
+[[nodiscard]] bool load_scenes_from_manifest(GameResources& resources, const nlohmann::json& scenes_json)
 {
   for (const auto& [scene_key_json, scene_nodes_json] : scenes_json.items())
   {
@@ -265,8 +250,6 @@ std::ostream& operator<<(std::ostream& os, GameError error)
     SDE_OS_ENUM_CASE(GameError::kInvalidRootDirectory)
     SDE_OS_ENUM_CASE(GameError::kInvalidManifest)
     SDE_OS_ENUM_CASE(GameError::kMissingManifest)
-    SDE_OS_ENUM_CASE(GameError::kEntityLoadError)
-    SDE_OS_ENUM_CASE(GameError::kEntitySaveError)
   }
   return os;
 }
@@ -454,8 +437,7 @@ expected<Game, GameError> Game::create(const asset::path& path)
       auto config_json = manifest_json["config"];
       config.rate = Rate::fromHertz(static_cast<float>(config_json["rate"]));
       config.assets_data_path = resources.path(asset::path{config_json["assets_data_path"]});
-      config.entity_data_path = resources.path(asset::path{config_json["entity_data_path"]});
-      config.script_data_path = resources.path(asset::path{config_json["script_data_path"]});
+      config.script_data_path = resources.directory(asset::path{config_json["script_data_path"]});
       config.window_icon_path = resources.path(asset::path{config_json["window_icon_path"]});
       config.cursor_icon_path = resources.path(asset::path{config_json["cursor_icon_path"]});
     },
@@ -464,9 +446,9 @@ expected<Game, GameError> Game::create(const asset::path& path)
   // Load game assets
   SDE_ASSERT_NO_EXCEPT(
     {
-      if (!load_resources(resources, config.assets_data_path))
+      if (!load_game_data(resources, config.assets_data_path))
       {
-        SDE_LOG_ERROR() << "failed to load resources";
+        SDE_LOG_ERROR() << "failed to load game data";
         return make_unexpected(GameError::kResourceLoadError);
       }
     },
@@ -476,7 +458,7 @@ expected<Game, GameError> Game::create(const asset::path& path)
   SDE_LOG_INFO() << "Loading components from manifest...";
   SDE_ASSERT_NO_EXCEPT(
     {
-      if (!load_components(resources, manifest_json["components"]))
+      if (!load_components_from_manifest(resources, manifest_json["components"]))
       {
         SDE_LOG_ERROR() << "failed to load components";
         return make_unexpected(GameError::kComponentLoadError);
@@ -488,7 +470,7 @@ expected<Game, GameError> Game::create(const asset::path& path)
   SDE_LOG_INFO() << "Loading scripts from manifest...";
   SDE_ASSERT_NO_EXCEPT(
     {
-      if (!load_scripts(resources, manifest_json["scripts"]))
+      if (!load_scripts_from_manifest(resources, manifest_json["scripts"]))
       {
         SDE_LOG_ERROR() << "failed to load scripts";
         return make_unexpected(GameError::kScriptLoadError);
@@ -500,22 +482,10 @@ expected<Game, GameError> Game::create(const asset::path& path)
   SDE_LOG_INFO() << "Loading scenes from manifest...";
   SDE_ASSERT_NO_EXCEPT(
     {
-      if (!load_scenes(resources, manifest_json["scenes"]))
+      if (!load_scenes_from_manifest(resources, manifest_json["scenes"]))
       {
         SDE_LOG_ERROR() << "failed to load scenes";
         return make_unexpected(GameError::kSceneLoadError);
-      }
-    },
-    std::exception);
-
-  // Load game entities
-  SDE_LOG_INFO() << "Loading components from manifest...";
-  SDE_ASSERT_NO_EXCEPT(
-    {
-      if (!load_entities(resources, config.entity_data_path))
-      {
-        SDE_LOG_ERROR() << "failed to load components";
-        return make_unexpected(GameError::kEntityLoadError);
       }
     },
     std::exception);
@@ -544,33 +514,17 @@ expected<Game, GameError> Game::create(const asset::path& path)
 
 expected<void, GameError> Game::dump()
 {
-  // Resolve directory for script data
-  const auto scripts_directory = resources_.directory(config_.script_data_path);
-
-  // Save game entities
-  SDE_LOG_INFO() << "Saving entity data...";
-  SDE_ASSERT_NO_EXCEPT(
-    {
-      if (!save_entities(resources_, config_.entity_data_path))
-      {
-        SDE_LOG_ERROR() << "failed to load components";
-        return make_unexpected(GameError::kEntityLoadError);
-      }
-    },
-    std::exception);
-
   // Save resources
-  SDE_LOG_INFO() << "Saving resource data...";
+  SDE_LOG_INFO() << "Saving game data...";
   SDE_ASSERT_NO_EXCEPT(
     {
-      if (!save_resources(resources_, config_.assets_data_path))
+      if (!save_game_data(resources_, config_.assets_data_path))
       {
-        SDE_LOG_ERROR() << "failed to save resources";
+        SDE_LOG_ERROR() << "failed to save game data";
         return make_unexpected(GameError::kResourceSaveError);
       }
     },
     std::exception);
-
   return {};
 }
 

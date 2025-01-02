@@ -90,7 +90,7 @@ public:
 
   static constexpr flags default_flags{.nobuf = true, .binary = true};
 
-  static expected<file_istream, FileStreamError>
+  static expected<file_istream, file_stream_error>
   create(const std::filesystem::path& path, const flags fileopt = default_flags);
 
   file_istream(file_istream&& other) = default;

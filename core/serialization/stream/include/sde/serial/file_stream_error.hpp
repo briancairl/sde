@@ -11,12 +11,12 @@
 namespace sde::serial
 {
 
-enum class FileStreamError
+enum class file_stream_error
 {
   kFileDoesNotExist,
   kFileOpenFailed,
 };
 
-std::ostream& operator<<(std::ostream& os, FileStreamError error);
+std::ostream& operator<<(std::ostream& os, file_stream_error error);
 
 }  // namespace sde::serial

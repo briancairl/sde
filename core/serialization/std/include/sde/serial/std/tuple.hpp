@@ -10,30 +10,13 @@
 #include <utility>
 
 // SDE
+#include "sde/format.hpp"
 #include "sde/serial/named.hpp"
 #include "sde/serial/object.hpp"
 #include "sde/serial/packet.hpp"
 
 namespace sde::serial
 {
-namespace detail
-{
-
-constexpr std::tuple kTupleKeys{
-  "el0",
-  "el1",
-  "el2",
-  "el3",
-  "el4",
-  "el5",
-  "el6",
-  "el7",
-  "el8",
-  "el9",
-};
-
-}  // namespace
-
 template <typename OArchiveT, typename... Ts> struct save<OArchiveT, std::tuple<Ts...>>
 {
   void operator()(OArchiveT& oar, const std::tuple<Ts...>& tup)
@@ -52,7 +35,7 @@ private:
   template <typename Tup, std::size_t... Is>
   static int expand(OArchiveT& oar, Tup&& tup, std::integer_sequence<std::size_t, Is...> _)
   {
-    return ((oar << named{std::get<Is>(detail::kTupleKeys), std::get<Is>(std::forward<Tup>(tup))}, 0) + ...);
+    return ((oar << named{sde::format("%lu", Is), std::get<Is>(std::forward<Tup>(tup))}, 0) + ...);
   }
 };
 
@@ -62,7 +45,8 @@ template <typename IArchiveT, typename... Ts> struct load<IArchiveT, std::tuple<
   {
     if constexpr ((is_trivially_serializable_v<IArchiveT, Ts> && ...))
     {
-      iar >> named{"data", make_packet(&tup)};
+      auto p = make_packet(&tup);
+      iar >> named{"data", p};
     }
     else
     {
@@ -74,7 +58,7 @@ private:
   template <typename Tup, std::size_t... Is>
   static int expand(IArchiveT& iar, Tup&& tup, std::integer_sequence<std::size_t, Is...> _)
   {
-    return ((iar >> named{std::get<Is>(detail::kTupleKeys), std::get<Is>(std::forward<Tup>(tup))}, 0) + ...);
+    return ((iar >> named{sde::format("%lu", Is), std::get<Is>(std::forward<Tup>(tup))}, 0) + ...);
   }
 };
 

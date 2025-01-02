@@ -39,8 +39,7 @@ template <typename ValueT> struct named<ValueT, false>
 /**
  * @brief Forwards a value with an explicit name
  */
-template <typename ValueT>
-struct named : detail::named<ValueT, std::is_const_v<ValueT> or std::is_rvalue_reference_v<ValueT>>
+template <typename ValueT> struct named : detail::named<ValueT, std::is_const_v<ValueT>>
 {
   using impl = detail::named<ValueT, std::is_const_v<ValueT>>;
   using impl::impl;
@@ -48,6 +47,9 @@ struct named : detail::named<ValueT, std::is_const_v<ValueT> or std::is_rvalue_r
 
 template <typename ValueT> named(const char* _name, ValueT& _value) -> named<ValueT>;
 template <typename ValueT> named(const char* _name, const ValueT& _value) -> named<const ValueT>;
+
+template <typename ArchiveT, typename T> struct is_trivially_serializable<ArchiveT, named<T>> : std::false_type
+{};
 
 template <typename T> struct is_named : std::false_type
 {};

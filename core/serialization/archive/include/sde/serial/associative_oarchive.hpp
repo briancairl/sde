@@ -11,6 +11,7 @@
 #include <utility>
 
 // SDE
+#include "sde/format.hpp"
 #include "sde/hash.hpp"
 #include "sde/serial/named.hpp"
 #include "sde/serial/oarchive.hpp"
@@ -115,7 +116,7 @@ private:
   template <typename ValueT> constexpr expected<void, oarchive_error> write_impl(const named<ValueT>& named_value)
   {
     const auto name_hash = ComputeHash(std::string_view{named_value.name});
-    const auto type_hash = ComputeTypeHash<ValueT>();
+    const auto type_hash = ComputeHash(sizeof(ValueT));
 
     if (ostream_pos_type offset = {}; !this->stream()->get_position(offset))
     {
@@ -140,7 +141,15 @@ private:
 
   template <typename IteratorT> constexpr expected<void, oarchive_error> write_impl(const sequence<IteratorT>& sequence)
   {
-    return (*oar_) << sequence;
+    std::size_t index = 0;
+    for (const auto& element : sequence)
+    {
+      if (auto ok_or_error = (*this) << named{format("element[%lu]", index++), element}; !ok_or_error)
+      {
+        return ok_or_error;
+      }
+    }
+    return {};
   }
 
   template <typename PointerT> constexpr expected<void, oarchive_error> write_impl(const basic_packet<PointerT>& packet)

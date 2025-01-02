@@ -44,11 +44,13 @@ struct load<IArchiveT, std::vector<ValueT, Allocator>>
     vec.resize(len);
     if constexpr (is_trivially_serializable_v<IArchiveT, ValueT>)
     {
-      iar >> named{"data", make_packet(vec.data(), vec.size())};
+      auto p = make_packet(vec.data(), vec.size());
+      iar >> named{"data", p};
     }
     else
     {
-      iar >> named{"data", make_sequence(vec.begin(), vec.end())};
+      auto s = make_sequence(vec.begin(), vec.end());
+      iar >> named{"data", s};
     }
   }
 };
