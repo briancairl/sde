@@ -10,6 +10,7 @@
 #include "sde/resource_io.hpp"
 #include "sde/serialization.hpp"
 
+
 namespace sde::game
 {
 
@@ -58,7 +59,15 @@ expected<EntityData, EntityError> EntityCache::generate(dependencies deps)
   return make_unexpected(EntityError::kCreationFailure);
 }
 
-expected<void, EntityError> EntityCache::load(dependencies deps, IArchive& archive)
+struct EntityLoadWrapper
+{
+  EntityHandle handle;
+  EntityCache::ElementMap* map;
+  Registry* registry;
+  const ComponentCache* components;
+};
+
+expected<void, EntityError> EntityCache::load(dependencies deps, IArchiveAssociative& archive)
 {
   using namespace sde::serial;
 
@@ -70,36 +79,28 @@ expected<void, EntityError> EntityCache::load(dependencies deps, IArchive& archi
   SDE_LOG_INFO() << "Loading components for " << element_to_load_count << " entities";
   for (std::size_t n = 0; n < element_to_load_count; ++n)
   {
-    // Elements might not be in the same order as they were saved, so we must
-    // load and insert at the absolute handle to this element
-    EntityHandle handle = {};
-    archive >> named{"handle", handle};
-
-    // Access entity
-    const auto entity_itr = handle_to_value_cache_.find(handle);
-    SDE_ASSERT_TRUE(entity_itr != std::end(handle_to_value_cache_)) << "Invalid entity handle: " << handle;
-    auto& entity = entity_itr->second.value;
-
-    // Load its components in order they were saved
-    for (const auto& component_handle : entity.components)
-    {
-      if (const auto c = components(component_handle); c)
-      {
-        c->io.load(archive, entity.id, registry);
-        SDE_LOG_INFO() << handle << ": loaded component: " << c->name;
-      }
-      else
-      {
-        SDE_LOG_ERROR() << handle << ": failed to find component: " << component_handle;
-        return make_unexpected(EntityError::kComponentLoadFailure);
-      }
-    }
+    EntityLoadWrapper io{
+      EntityHandle::null(),
+      std::addressof(handle_to_value_cache_),
+      std::addressof(registry),
+      std::addressof(components)};
+    archive >> serial::named{format("entity-entry[%lu]", n), io};
   }
   return {};
 }
 
-expected<void, EntityError> EntityCache::save(dependencies deps, OArchive& archive) const
+struct EntitySaveWrapper
 {
+  EntityHandle handle;
+  const EntityData* entity;
+  const Registry* registry;
+  const ComponentCache* components;
+};
+
+expected<void, EntityError> EntityCache::save(dependencies deps, OArchiveAssociative& archive) const
+{
+  static_assert(sizeof(EntitySaveWrapper) == sizeof(EntityLoadWrapper));
+
   using namespace sde::serial;
 
   const auto& registry = deps.get<Registry>();
@@ -107,27 +108,78 @@ expected<void, EntityError> EntityCache::save(dependencies deps, OArchive& archi
 
   archive << named{"size", handle_to_value_cache_.size()};
   SDE_LOG_INFO() << "Saving components for " << handle_to_value_cache_.size() << " entities";
+  std::size_t n = 0;
   for (auto& [handle, entity] : handle_to_value_cache_)
   {
-    // Elements might not be in the same order as they were saved, so we must
-    // save the absolute handle to this element
-    archive << named{"handle", handle};
-    for (const auto& component_handle : entity->components)
-    {
-      // Save components in the order they were attached
-      if (const auto c = components(component_handle); c)
-      {
-        c->io.save(archive, entity->id, registry);
-        SDE_LOG_INFO() << handle << ": saved component: " << c->name;
-      }
-      else
-      {
-        SDE_LOG_ERROR() << handle << ": failed to find component: " << component_handle;
-        return make_unexpected(EntityError::kComponentDumpFailure);
-      }
-    }
+    EntitySaveWrapper io{handle, std::addressof(entity.value), std::addressof(registry), std::addressof(components)};
+    archive << serial::named{format("entity-entry[%lu]", n++), io};
   }
   return {};
 }
 
 }  // namespace sde::game
+
+namespace sde::serial
+{
+
+template <typename Archive> struct load<Archive, sde::game::EntityLoadWrapper>
+{
+  expected<void, iarchive_error> operator()(Archive& ar, sde::game::EntityLoadWrapper eio) const
+  {
+    // Elements might not be in the same order as they were saved, so we must
+    // load and insert at the absolute handle to this element
+    ar >> named{"handle", eio.handle};
+
+    // Access entity
+    const auto entity_itr = eio.map->find(eio.handle);
+    if (entity_itr == std::end(*eio.map))
+    {
+      SDE_LOG_ERROR() << eio.handle << "Invalid entity handle: " << eio.handle;
+      return make_unexpected(iarchive_error::kLoadFailure);
+    }
+    auto& entity = entity_itr->second.value;
+
+    // Load its components in order they were saved
+    for (const auto& component_handle : entity.components)
+    {
+      if (const auto c = (*eio.components)(component_handle); c)
+      {
+        c->io.load(ar, entity.id, *eio.registry);
+        SDE_LOG_INFO() << eio.handle << ": loaded component: " << c->name;
+      }
+      else
+      {
+        SDE_LOG_ERROR() << eio.handle << ": failed to find component: " << component_handle;
+        return make_unexpected(iarchive_error::kLoadFailure);
+      }
+    }
+    return {};
+  }
+};
+
+template <typename Archive> struct save<Archive, sde::game::EntitySaveWrapper>
+{
+  expected<void, oarchive_error> operator()(Archive& ar, const sde::game::EntitySaveWrapper eio) const
+  {
+    // Elements might not be in the same order as they were saved, so we must
+    // save the absolute handle to this element
+    ar << named{"handle", eio.handle};
+    for (const auto& component_handle : eio.entity->components)
+    {
+      // Save components in the order they were attached
+      if (const auto c = (*eio.components)(component_handle); c)
+      {
+        c->io.save(ar, eio.entity->id, *eio.registry);
+        SDE_LOG_INFO() << eio.handle << ": saved component: " << c->name;
+      }
+      else
+      {
+        SDE_LOG_ERROR() << eio.handle << ": failed to find component: " << component_handle;
+        return make_unexpected(oarchive_error::kSaveFailure);
+      }
+    }
+    return {};
+  }
+};
+
+}  // namespace sde::serial

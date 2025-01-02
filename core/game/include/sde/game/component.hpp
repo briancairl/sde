@@ -62,8 +62,8 @@ public:
   }
 
   std::string_view name() const { return name_(); }
-  void load(IArchive& ar, EntityID id, Registry& registry) const;
-  void save(OArchive& ar, EntityID id, const Registry& registry) const;
+  void load(IArchiveAssociative& ar, EntityID id, Registry& registry) const;
+  void save(OArchiveAssociative& ar, EntityID id, const Registry& registry) const;
 
 private:
   ComponentIO(const ComponentIO&) = delete;

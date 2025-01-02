@@ -131,7 +131,7 @@ bool NativeScriptInstance::shutdown(GameResources& resources, const AppPropertie
 }
 
 
-bool NativeScriptInstance::load(IArchive& iar) const
+bool NativeScriptInstance::load(IArchiveAssociative& iar) const
 {
   SDE_ASSERT_NE(data_, nullptr);
   SDE_ASSERT_TRUE(methods_.on_load);
@@ -152,7 +152,7 @@ bool NativeScriptInstance::load(IArchive& iar) const
   return methods_.on_load(data_, reinterpret_cast<void*>(&iar));
 }
 
-bool NativeScriptInstance::save(OArchive& oar) const
+bool NativeScriptInstance::save(OArchiveAssociative& oar) const
 {
   SDE_ASSERT_NE(data_, nullptr);
   SDE_ASSERT_TRUE(methods_.on_save);

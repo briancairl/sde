@@ -110,8 +110,8 @@ public:
     return value_or_error;
   }
 
-  expected<void, EntityError> load(dependencies deps, IArchive& archive);
-  expected<void, EntityError> save(dependencies deps, OArchive& archive) const;
+  expected<void, EntityError> load(dependencies deps, IArchiveAssociative& archive);
+  expected<void, EntityError> save(dependencies deps, OArchiveAssociative& archive) const;
 
 private:
   expected<void, EntityError> reload(dependencies deps, EntityData& entity);

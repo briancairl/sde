@@ -12,7 +12,9 @@ namespace sde::game
 {
 
 using VArchive = serial::hash_archive;
-using OArchive = serial::associative_oarchive<serial::binary_ofarchive>;
-using IArchive = serial::associative_iarchive<serial::binary_ifarchive>;
+using OArchive = serial::binary_ofarchive;
+using IArchive = serial::binary_ifarchive;
+using OArchiveAssociative = serial::associative_oarchive<OArchive>;
+using IArchiveAssociative = serial::associative_iarchive<IArchive>;
 
 }  // namespace sde::game

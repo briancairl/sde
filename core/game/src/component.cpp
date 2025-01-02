@@ -69,13 +69,13 @@ bool ComponentIO::reset(const sde::string& name, const dl::Library& library)
   });
 }
 
-void ComponentIO::load(IArchive& ar, EntityID id, Registry& registry) const
+void ComponentIO::load(IArchiveAssociative& ar, EntityID id, Registry& registry) const
 {
   SDE_ASSERT_TRUE(on_load_);
   on_load_(reinterpret_cast<void*>(&ar), reinterpret_cast<void*>(&id), reinterpret_cast<void*>(&registry));
 }
 
-void ComponentIO::save(OArchive& ar, EntityID id, const Registry& registry) const
+void ComponentIO::save(OArchiveAssociative& ar, EntityID id, const Registry& registry) const
 {
   SDE_ASSERT_TRUE(on_save_);
   on_save_(reinterpret_cast<void*>(&ar), reinterpret_cast<void*>(&id), reinterpret_cast<const void*>(&registry));

@@ -51,9 +51,9 @@ public:
 
   void swap(NativeScriptInstance& other);
 
-  bool load(IArchive& iar) const;
+  bool load(IArchiveAssociative& iar) const;
 
-  bool save(OArchive& oar) const;
+  bool save(OArchiveAssociative& oar) const;
 
   std::string_view type() const { return methods_.on_get_type_name(); }
 

@@ -36,25 +36,26 @@ namespace
   }
 
   // Wrap file stream in archive interface
-  auto oar_basic = serial::binary_ofarchive{*ofs_or_error};
+  auto oar = serial::binary_ofarchive{*ofs_or_error};
+
+  // Save all game resources
+  oar << serial::named{"resources", resources};
 
   // Create associative wrapper for archive
-  auto oar_or_error = serial::make_associative(oar_basic);
-  if (!oar_or_error.has_value())
+  auto oar_assoc_or_error = serial::make_associative(oar);
+  if (!oar_assoc_or_error.has_value())
   {
-    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << oar_or_error.error();
+    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << oar_assoc_or_error.error();
     return false;
   }
 
-  // Save all game resources
-  (*oar_or_error) << serial::named{"resources", resources};
-
   // Save all entity data
-  // if (auto ok_or_error = resources.get<EntityCache>().save(resources.all(), *oar_or_error); !ok_or_error.has_value())
-  // {
-  //   SDE_LOG_ERROR() << "Failed to save entity data: " << ok_or_error.error();
-  //   return false;
-  // }
+  if (auto ok_or_error = resources.get<EntityCache>().save(resources.all(), *oar_assoc_or_error);
+      !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << "Failed to save entity data: " << ok_or_error.error();
+    return false;
+  }
   return true;
 }
 
@@ -70,18 +71,10 @@ namespace
   }
 
   // Wrap file stream in archive interface
-  auto iar_basic = serial::binary_ifarchive{*ifs_or_error};
-
-  // Create associative wrapper for archive
-  auto iar_or_error = serial::make_associative(iar_basic);
-  if (!iar_or_error.has_value())
-  {
-    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << iar_or_error.error();
-    return false;
-  }
+  auto iar = serial::binary_ifarchive{*ifs_or_error};
 
   // Load all game resources
-  (*iar_or_error) >> serial::named{"resources", resources};
+  iar >> serial::named{"resources", resources};
 
   // Reload resources
   if (auto ok_or_error = resources.refresh(); !ok_or_error.has_value())
@@ -90,12 +83,21 @@ namespace
     return false;
   }
 
+  // Create associative wrapper for archive
+  auto iar_assoc_or_error = serial::make_associative(iar);
+  if (!iar_assoc_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << iar_assoc_or_error.error();
+    return false;
+  }
+
   // Load all entity data
-  // if (auto ok_or_error = resources.get<EntityCache>().load(resources.all(), *iar_or_error); !ok_or_error.has_value())
-  // {
-  //   SDE_LOG_ERROR() << "Failed to load entity data: " << ok_or_error.error();
-  //   return false;
-  // }
+  if (auto ok_or_error = resources.get<EntityCache>().load(resources.all(), *iar_assoc_or_error);
+      !ok_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << "Failed to load entity data: " << ok_or_error.error();
+    return false;
+  }
   return true;
 }
 

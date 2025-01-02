@@ -98,7 +98,7 @@ struct native_script_data : private sde::game::native_script_header
   SDE_EXPORT bool on_load(void* self, void* iarchive)                                                                  \
   {                                                                                                                    \
     static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
-    auto& iar = *reinterpret_cast<::sde::game::IArchive*>(iarchive);                                                   \
+    auto& iar = *reinterpret_cast<::sde::game::IArchiveAssociative*>(iarchive);                                        \
     return fn(reinterpret_cast<ScriptDataT*>(self), iar);                                                              \
   }
 
@@ -106,7 +106,7 @@ struct native_script_data : private sde::game::native_script_header
   SDE_EXPORT bool on_save(void* self, void* oarchive)                                                                  \
   {                                                                                                                    \
     static_assert(std::is_base_of_v<native_script_data, ScriptDataT>);                                                 \
-    auto& oar = *reinterpret_cast<::sde::game::OArchive*>(oarchive);                                                   \
+    auto& oar = *reinterpret_cast<::sde::game::OArchiveAssociative*>(oarchive);                                        \
     return fn(reinterpret_cast<ScriptDataT*>(self), oar);                                                              \
   }
 
