@@ -69,4 +69,5 @@ sudo apt install           \
 - [x] Remove entities from registry when removed from cache
 - [ ] Labels for asset browsers (tilesets, sounds, etc.)
 - [ ] Key/value like wrapper for binary archives
-- [ ] Data migration for scripts and components
+- [?] Data migration for scripts and components
+- [ ] Make certain scripts (renderer, gui) persitence so that they don't need to be saved/reloaded between scene changes

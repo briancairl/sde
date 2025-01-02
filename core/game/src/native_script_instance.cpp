@@ -89,9 +89,18 @@ bool NativeScriptInstance::initialize(
   SDE_ASSERT_NE(data_, nullptr);
   SDE_ASSERT_TRUE(methods_.on_get_version);
 
+  auto* basic_data = reinterpret_cast<native_script_header*>(data_);
+
+  // Check if already initialized
+  if (!basic_data->name.empty())
+  {
+    SDE_LOG_DEBUG() << "Previously initialized: " << SDE_OSNV(basic_data->uid) << SDE_OSNV(basic_data->name)
+                    << SDE_OSNV(basic_data->version);
+    return true;
+  }
+
   // Set basic info
   {
-    auto* basic_data = reinterpret_cast<native_script_header*>(data_);
     basic_data->uid = handle.id();
     basic_data->name = name;
     basic_data->version = methods_.on_get_version();
@@ -197,6 +206,8 @@ void NativeScriptInstanceCache::when_removed(
 expected<void, NativeScriptInstanceError>
 NativeScriptInstanceCache::load(NativeScriptInstanceHandle handle, const asset::path& script_data_path)
 {
+  // TODO(enhancement) move this to NativeScriptInstance
+
   // Get script data by handle
   auto itr = handle_to_value_cache_.find(handle);
   if (itr == std::end(handle_to_value_cache_))
@@ -246,6 +257,8 @@ NativeScriptInstanceCache::load(NativeScriptInstanceHandle handle, const asset::
 expected<void, NativeScriptInstanceError>
 NativeScriptInstanceCache::save(NativeScriptInstanceHandle handle, const asset::path& script_data_path) const
 {
+  // TODO(enhancement) move this to NativeScriptInstance
+
   // Get script data by handle
   auto itr = handle_to_value_cache_.find(handle);
   if (itr == std::end(handle_to_value_cache_))
