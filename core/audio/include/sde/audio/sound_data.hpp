@@ -93,8 +93,8 @@ private:
 
   expected<SoundData, SoundDataError> generate(dependencies deps, const asset::path& sound_path);
 
-  void when_created(dependencies deps, SoundDataHandle handle, const SoundData* sound);
-  void when_removed(dependencies deps, SoundDataHandle handle, const SoundData* sound);
+  bool when_created(dependencies deps, SoundDataHandle handle, const SoundData* sound);
+  bool when_removed(dependencies deps, SoundDataHandle handle, const SoundData* sound);
 };
 
 }  // namespace sde::audio

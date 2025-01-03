@@ -59,8 +59,8 @@ private:
   expected<void, LibraryError> unload(dependencies deps, LibraryData& library);
   expected<LibraryData, LibraryError>
   generate(dependencies deps, const asset::path& path, const LibraryFlags& flags = {});
-  void when_created(dependencies deps, LibraryHandle handle, const LibraryData* data);
-  void when_removed(dependencies deps, LibraryHandle handle, const LibraryData* data);
+  bool when_created(dependencies deps, LibraryHandle handle, const LibraryData* data);
+  bool when_removed(dependencies deps, LibraryHandle handle, const LibraryData* data);
 };
 
 }  // namespace sde::game

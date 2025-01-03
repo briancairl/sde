@@ -427,7 +427,7 @@ private:
       }
       else
       {
-        return make_unexpected(error_type::kInvalidHandle);
+        return make_unexpected(error_type::kElementCreationFailure);
       }
     }
     return make_unexpected(error_type::kInvalidHandle);
@@ -453,6 +453,10 @@ private:
     if (on_creation(deps, itr->first, std::addressof(itr->second.value)))
     {
       return element_ref{ResourceStatus::kReplaced, itr->first, std::addressof(itr->second.value)};
+    }
+    else
+    {
+      return make_unexpected(error_type::kElementCreationFailure);
     }
     return make_unexpected(error_type::kInvalidHandle);
   }
@@ -485,17 +489,21 @@ private:
     return true;
   }
 
-  static void when_created(
+  static constexpr bool when_created(
     [[maybe_unused]] dependencies deps,
     [[maybe_unused]] handle_type h,
     [[maybe_unused]] const value_type* value)
-  {}
+  {
+    return true;
+  }
 
-  static void when_removed(
+  static constexpr bool when_removed(
     [[maybe_unused]] dependencies deps,
     [[maybe_unused]] handle_type h,
     [[maybe_unused]] const value_type* value)
-  {}
+  {
+    return true;
+  }
 };
 
 template <typename T> struct IsResourceCache : std::is_base_of<ResourceCache<T>, T>

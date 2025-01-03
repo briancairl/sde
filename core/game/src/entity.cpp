@@ -41,12 +41,14 @@ expected<void, EntityError> EntityCache::unload(dependencies deps, const EntityD
   return {};
 }
 
-void EntityCache::when_removed(dependencies deps, EntityHandle handle, const EntityData* data)
+bool EntityCache::when_removed(dependencies deps, EntityHandle handle, const EntityData* data)
 {
   if (auto& registry = deps.get<Registry>(); registry.valid(data->id))
   {
     registry.destroy(data->id);
+    return true;
   }
+  return false;
 }
 
 expected<EntityData, EntityError> EntityCache::generate(dependencies deps)

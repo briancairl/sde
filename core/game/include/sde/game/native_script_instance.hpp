@@ -137,8 +137,8 @@ private:
   expected<void, NativeScriptInstanceError> unload(dependencies deps, NativeScriptInstanceData& library);
   expected<NativeScriptInstanceData, NativeScriptInstanceError>
   generate(dependencies deps, sde::string name, const NativeScriptHandle& parent);
-  void when_created(dependencies deps, NativeScriptInstanceHandle handle, const NativeScriptInstanceData* data);
-  void when_removed(dependencies deps, NativeScriptInstanceHandle handle, NativeScriptInstanceData* data);
+  bool when_created(dependencies deps, NativeScriptInstanceHandle handle, const NativeScriptInstanceData* data);
+  bool when_removed(dependencies deps, NativeScriptInstanceHandle handle, NativeScriptInstanceData* data);
 };
 
 }  // namespace sde::game

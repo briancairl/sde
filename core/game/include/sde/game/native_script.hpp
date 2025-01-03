@@ -66,8 +66,8 @@ private:
   expected<NativeScriptData, NativeScriptError>
   generate(dependencies deps, const sde::string& name, LibraryHandle library);
   expected<NativeScriptData, NativeScriptError> generate(dependencies deps, LibraryHandle library);
-  void when_created(dependencies deps, NativeScriptHandle handle, NativeScriptData* data);
-  void when_removed(dependencies deps, NativeScriptHandle handle, const NativeScriptData* data);
+  bool when_created(dependencies deps, NativeScriptHandle handle, NativeScriptData* data);
+  bool when_removed(dependencies deps, NativeScriptHandle handle, const NativeScriptData* data);
 };
 
 }  // namespace sde::game

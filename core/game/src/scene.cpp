@@ -101,15 +101,21 @@ expected<SceneData, SceneError> SceneCache::generate(dependencies deps, sde::str
   return data;
 }
 
-void SceneCache::when_created([[maybe_unused]] dependencies deps, SceneHandle handle, const SceneData* data)
+bool SceneCache::when_created([[maybe_unused]] dependencies deps, SceneHandle handle, const SceneData* data)
 {
-  const auto [itr, added] = name_to_scene_lookup_.emplace(data->name, handle);
-  SDE_ASSERT_TRUE(added) << "Script " << data->name << " was already added as " << itr->first;
+  if (const auto [itr, added] = name_to_scene_lookup_.emplace(data->name, handle); !added and (itr->second != handle))
+  {
+    SDE_LOG_ERROR() << "Scene " << SDE_OSNV(itr->first) << " was already added as " << SDE_OSNV(itr->second)
+                    << ". Want: " << SDE_OSNV(handle);
+    return false;
+  }
+  return true;
 }
 
-void SceneCache::when_removed([[maybe_unused]] dependencies deps, SceneHandle handle, SceneData* data)
+bool SceneCache::when_removed([[maybe_unused]] dependencies deps, SceneHandle handle, SceneData* data)
 {
   name_to_scene_lookup_.erase(data->name);
+  return true;
 }
 
 Scene::Scene(SceneHandle handle, sde::vector<SceneNodeFlattened> nodes) : handle_{handle}, nodes_{std::move(nodes)} {}

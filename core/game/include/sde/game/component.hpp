@@ -104,8 +104,8 @@ private:
   expected<void, ComponentError> unload(dependencies dep, ComponentData& library);
   expected<ComponentData, ComponentError> generate(dependencies dep, const sde::string& name, const asset::path& path);
   expected<ComponentData, ComponentError> generate(dependencies dep, const sde::string& name, LibraryHandle library);
-  void when_created(dependencies dep, ComponentHandle handle, const ComponentData* data);
-  void when_removed(dependencies dep, ComponentHandle handle, const ComponentData* data);
+  bool when_created(dependencies dep, ComponentHandle handle, const ComponentData* data);
+  bool when_removed(dependencies dep, ComponentHandle handle, const ComponentData* data);
 };
 
 }  // namespace sde::game

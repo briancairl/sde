@@ -66,15 +66,22 @@ SoundDataHandle SoundDataCache::to_handle(const asset::path& path) const
   return itr->second;
 }
 
-void SoundDataCache::when_created(dependencies deps, SoundDataHandle handle, const SoundData* sound)
+bool SoundDataCache::when_created(dependencies deps, SoundDataHandle handle, const SoundData* sound)
 {
-  const auto [itr, added] = path_to_sound_data_handle_.emplace(sound->path, handle);
-  SDE_ASSERT_TRUE(added) << "Sound " << SDE_OSNV(sound->path) << " was already added as " << itr->first;
+  if (const auto [itr, added] = path_to_sound_data_handle_.emplace(sound->path, handle);
+      !added and (itr->second != handle))
+  {
+    SDE_LOG_ERROR() << "Sound " << SDE_OSNV(itr->first) << " was already added as " << SDE_OSNV(itr->second)
+                    << ". Want: " << SDE_OSNV(handle);
+    return false;
+  }
+  return true;
 }
 
-void SoundDataCache::when_removed(dependencies deps, SoundDataHandle handle, const SoundData* sound)
+bool SoundDataCache::when_removed(dependencies deps, SoundDataHandle handle, const SoundData* sound)
 {
   path_to_sound_data_handle_.erase(sound->path);
+  return true;
 }
 
 expected<void, SoundDataError> SoundDataCache::unload([[maybe_unused]] dependencies deps, SoundData& sound)

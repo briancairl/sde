@@ -192,8 +192,8 @@ private:
   expected<Image, ImageError>
   generate(dependencies deps, const asset::path& image_path, const ImageOptions& options = {});
 
-  void when_created(dependencies deps, ImageHandle handle, const Image* image);
-  void when_removed(dependencies deps, ImageHandle handle, const Image* image);
+  bool when_created(dependencies deps, ImageHandle handle, const Image* image);
+  bool when_removed(dependencies deps, ImageHandle handle, const Image* image);
 };
 
 }  // namespace sde::graphics

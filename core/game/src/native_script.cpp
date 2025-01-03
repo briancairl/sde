@@ -41,8 +41,7 @@ NativeScriptHandle NativeScriptCache::to_handle(const sde::string& name) const
   return itr->second;
 }
 
-
-void NativeScriptCache::when_created(
+bool NativeScriptCache::when_created(
   [[maybe_unused]] dependencies deps,
   NativeScriptHandle handle,
   NativeScriptData* script)
@@ -53,24 +52,33 @@ void NativeScriptCache::when_created(
     SDE_LOG_ERROR() << "NativeScript alias not set. Using default alias: " << SDE_OSNV(script->name);
   }
 
+  if (const auto [itr, added] = name_to_native_script_lookup_.emplace(script->name, handle);
+      !added and (itr->second != handle))
   {
-    const auto [itr, added] = name_to_native_script_lookup_.emplace(script->name, handle);
-    SDE_ASSERT_TRUE(added) << itr->first << ": is not a unique script alias for " << SDE_OSNV(handle);
+    SDE_LOG_ERROR() << "Native script " << SDE_OSNV(itr->first) << " was already added as " << SDE_OSNV(itr->second)
+                    << ". Want: " << SDE_OSNV(handle);
+    return false;
   }
 
+  if (const auto [itr, added] = library_to_native_script_lookup_.emplace(script->library, handle);
+      !added and (itr->second != handle))
   {
-    const auto [itr, added] = library_to_native_script_lookup_.emplace(script->library, handle);
-    SDE_ASSERT_TRUE(added) << itr->first << ": is not a unique script library for " << SDE_OSNV(handle);
+    SDE_LOG_ERROR() << "Native script " << SDE_OSNV(itr->first) << " was already added as " << SDE_OSNV(itr->second)
+                    << ". Want: " << SDE_OSNV(handle);
+    return false;
   }
+
+  return true;
 }
 
-void NativeScriptCache::when_removed(
+bool NativeScriptCache::when_removed(
   [[maybe_unused]] dependencies deps,
   NativeScriptHandle handle,
   const NativeScriptData* script)
 {
   name_to_native_script_lookup_.erase(script->name);
   library_to_native_script_lookup_.erase(script->library);
+  return true;
 }
 
 expected<void, NativeScriptError> NativeScriptCache::reload(dependencies deps, NativeScriptData& script)

@@ -119,7 +119,7 @@ private:
 
   expected<EntityData, EntityError> generate(dependencies deps);
 
-  void when_removed(dependencies deps, EntityHandle handle, const EntityData* data);
+  bool when_removed(dependencies deps, EntityHandle handle, const EntityData* data);
 };
 
 }  // namespace sde::game

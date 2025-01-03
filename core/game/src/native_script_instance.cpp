@@ -245,21 +245,28 @@ NativeScriptInstanceHandle NativeScriptInstanceCache::to_handle(const sde::strin
   return itr->second;
 }
 
-void NativeScriptInstanceCache::when_created(
+bool NativeScriptInstanceCache::when_created(
   [[maybe_unused]] dependencies deps,
   NativeScriptInstanceHandle handle,
   const NativeScriptInstanceData* data)
 {
-  const auto [itr, added] = name_to_instance_lookup_.emplace(data->name, handle);
-  SDE_ASSERT_TRUE(added) << "Script " << data->name << " was already added as " << itr->first;
+  if (const auto [itr, added] = name_to_instance_lookup_.emplace(data->name, handle);
+      !added and (itr->second != handle))
+  {
+    SDE_LOG_ERROR() << "NativeScriptInstance " << SDE_OSNV(itr->first) << " was already added as "
+                    << SDE_OSNV(itr->second) << ". Want: " << SDE_OSNV(handle);
+    return false;
+  }
+  return true;
 }
 
-void NativeScriptInstanceCache::when_removed(
+bool NativeScriptInstanceCache::when_removed(
   [[maybe_unused]] dependencies deps,
-  NativeScriptInstanceHandle handle,
+  [[maybe_unused]] NativeScriptInstanceHandle handle,
   NativeScriptInstanceData* data)
 {
   name_to_instance_lookup_.erase(data->name);
+  return true;
 }
 
 expected<void, NativeScriptInstanceError>

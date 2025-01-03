@@ -84,15 +84,24 @@ ImageHandle ImageCache::to_handle(const asset::path& path) const
   return itr->second;
 }
 
-void ImageCache::when_created(dependencies deps, ImageHandle handle, const Image* image)
+bool ImageCache::when_created([[maybe_unused]] dependencies deps, ImageHandle handle, const Image* image)
 {
-  const auto [itr, added] = path_to_image_handle_.emplace(image->path, handle);
-  SDE_ASSERT_TRUE(added) << "Image " << SDE_OSNV(image->path) << " was already added as " << itr->first;
+  if (const auto [itr, added] = path_to_image_handle_.emplace(image->path, handle); !added and (itr->second != handle))
+  {
+    SDE_LOG_ERROR() << "Image " << SDE_OSNV(itr->first) << " was already added as " << SDE_OSNV(itr->second)
+                    << ". Want: " << SDE_OSNV(handle);
+    return true;
+  }
+  return true;
 }
 
-void ImageCache::when_removed(dependencies deps, ImageHandle handle, const Image* image)
+bool ImageCache::when_removed(
+  [[maybe_unused]] dependencies deps,
+  [[maybe_unused]] ImageHandle handle,
+  const Image* image)
 {
   path_to_image_handle_.erase(image->path);
+  return true;
 }
 
 expected<void, ImageError> ImageCache::reload([[maybe_unused]] dependencies deps, Image& image)

@@ -139,14 +139,25 @@ ComponentCache::generate(dependencies deps, const sde::string& name, const asset
   return this->generate(deps, name, library_or_error->handle);
 }
 
-void ComponentCache::when_created([[maybe_unused]] dependencies deps, ComponentHandle handle, const ComponentData* data)
+bool ComponentCache::when_created([[maybe_unused]] dependencies deps, ComponentHandle handle, const ComponentData* data)
 {
-  type_name_to_component_handle_lookup_.emplace(data->name, handle);
+  if (const auto [itr, added] = type_name_to_component_handle_lookup_.emplace(data->name, handle);
+      !added and (itr->second != handle))
+  {
+    SDE_LOG_ERROR() << "Component " << SDE_OSNV(itr->first) << " was already added as " << SDE_OSNV(itr->second)
+                    << ". Want: " << SDE_OSNV(handle);
+    return false;
+  }
+  return true;
 }
 
-void ComponentCache::when_removed([[maybe_unused]] dependencies deps, ComponentHandle handle, const ComponentData* data)
+bool ComponentCache::when_removed(
+  [[maybe_unused]] dependencies deps,
+  [[maybe_unused]] ComponentHandle handle,
+  const ComponentData* data)
 {
   type_name_to_component_handle_lookup_.erase(data->name);
+  return true;
 }
 
 ComponentHandle ComponentCache::to_handle(const sde::string& name) const

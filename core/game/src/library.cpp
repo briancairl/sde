@@ -59,18 +59,25 @@ LibraryCache::generate(dependencies deps, const asset::path& path, const Library
   return data;
 }
 
-void LibraryCache::when_created([[maybe_unused]] dependencies deps, LibraryHandle handle, const LibraryData* data)
+bool LibraryCache::when_created([[maybe_unused]] dependencies deps, LibraryHandle handle, const LibraryData* data)
 {
-  SDE_LOG_INFO() << "New library added: " << SDE_OSNV(handle) << " : " << SDE_OSNV(data->path);
-  asset_path_lookup_.emplace(asset::absolute(data->path), handle);
+  if (const auto [itr, added] = asset_path_lookup_.emplace(asset::absolute(data->path), handle);
+      !added and (itr->second != handle))
+  {
+    SDE_LOG_ERROR() << "Library " << SDE_OSNV(itr->first) << " was already added as " << SDE_OSNV(itr->second)
+                    << ". Want: " << SDE_OSNV(handle);
+    return false;
+  }
+  return true;
 }
 
-void LibraryCache::when_removed(
+bool LibraryCache::when_removed(
   [[maybe_unused]] dependencies deps,
   [[maybe_unused]] LibraryHandle handle,
   const LibraryData* data)
 {
   asset_path_lookup_.erase(asset::absolute(data->path));
+  return true;
 }
 
 LibraryHandle LibraryCache::to_handle(const asset::path& path) const

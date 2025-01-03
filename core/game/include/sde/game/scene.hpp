@@ -89,8 +89,8 @@ public:
 private:
   sde::unordered_map<sde::string, SceneHandle> name_to_scene_lookup_;
   expected<SceneData, SceneError> generate(dependencies deps, sde::string name, sde::vector<SceneNode> nodes = {});
-  void when_created(dependencies deps, SceneHandle handle, const SceneData* data);
-  void when_removed(dependencies deps, SceneHandle handle, SceneData* data);
+  bool when_created(dependencies deps, SceneHandle handle, const SceneData* data);
+  bool when_removed(dependencies deps, SceneHandle handle, SceneData* data);
 };
 
 class Scene
