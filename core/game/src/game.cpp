@@ -240,8 +240,7 @@ namespace
 
 asset::path getPath(const SceneNodeFlattened& node)
 {
-  return {sde::format(
-    "%s_%lu_%s_%lu.bin", node.name.data(), node.handle.id(), node.instance.type().data(), node.instance.version())};
+  return {sde::format("%s_%s_%lu.bin", node.name.data(), node.instance.type().data(), node.handle.id())};
 }
 
 }  // namespace

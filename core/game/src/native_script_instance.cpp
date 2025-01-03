@@ -142,9 +142,9 @@ bool NativeScriptInstance::load(IArchiveAssociative& iar) const
   }
 
   // If version matches, load script data
-  if (const auto current_version = methods_.on_get_version() != header.version)
+  if (const auto current_version = methods_.on_get_version(); current_version != header.version)
   {
-    SDE_LOG_WARN() << "Not loading script data because version has changed from " << SDE_OSNV(header.version) << " to "
+    SDE_LOG_WARN() << "Script version has changed from " << SDE_OSNV(header.version) << " to "
                    << SDE_OSNV(current_version);
     header.version = current_version;
   }
