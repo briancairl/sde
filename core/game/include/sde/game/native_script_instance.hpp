@@ -55,6 +55,10 @@ public:
 
   bool save(OArchiveAssociative& oar) const;
 
+  bool load(const asset::path& path) const;
+
+  bool save(const asset::path& path) const;
+
   std::string_view type() const { return methods_.on_get_type_name(); }
 
   script_version_t version() const { return methods_.on_get_version(); }
@@ -126,18 +130,6 @@ class NativeScriptInstanceCache : public ResourceCache<NativeScriptInstanceCache
 public:
   using fundemental_type::to_handle;
   NativeScriptInstanceHandle to_handle(const sde::string& name) const;
-
-  /**
-   * @brief Loads data for a particular script instance
-   */
-  expected<void, NativeScriptInstanceError>
-  load(NativeScriptInstanceHandle handle, const asset::path& script_data_path);
-
-  /**
-   * @brief Saves data for a particular script instance
-   */
-  expected<void, NativeScriptInstanceError>
-  save(NativeScriptInstanceHandle handle, const asset::path& script_data_path) const;
 
 private:
   sde::unordered_map<sde::string, NativeScriptInstanceHandle> name_to_instance_lookup_;

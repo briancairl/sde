@@ -237,6 +237,13 @@ namespace
   return true;
 }
 
+
+asset::path getPath(const SceneNodeFlattened& node)
+{
+  return {sde::format(
+    "%s_%lu_%s_%lu.bin", node.name.data(), node.handle.id(), node.instance.type().data(), node.instance.version())};
+}
+
 }  // namespace
 
 std::ostream& operator<<(std::ostream& os, GameError error)
@@ -269,7 +276,7 @@ bool Game::setActiveScene(SceneHandle next_scene, const AppProperties& app_prope
   // Save previous scene data
   for (const auto& node : active_scene_sequence_)
   {
-    if (auto ok_or_error = scripts.save(node.handle, config_.script_data_path); ok_or_error.has_value())
+    if (node.instance.save(config_.script_data_path / getPath(node)))
     {
       SDE_LOG_DEBUG() << "Saved data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " to "
                       << SDE_OSNV(config_.script_data_path);
@@ -277,7 +284,7 @@ bool Game::setActiveScene(SceneHandle next_scene, const AppProperties& app_prope
     else
     {
       SDE_LOG_ERROR() << "Saving data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " to "
-                      << SDE_OSNV(config_.script_data_path) << " failed with error: " << ok_or_error.error();
+                      << SDE_OSNV(config_.script_data_path) << " failed";
     }
 
     if (node.instance.shutdown(resources_, app_properties))
@@ -308,20 +315,15 @@ bool Game::setActiveScene(SceneHandle next_scene, const AppProperties& app_prope
   // Load current scene data
   for (const auto& node : active_scene_sequence_)
   {
-    if (auto ok_or_error = scripts.load(node.handle, config_.script_data_path); ok_or_error.has_value())
+    if (node.instance.load(config_.script_data_path / getPath(node)))
     {
       SDE_LOG_DEBUG() << "Loaded data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " from "
                       << SDE_OSNV(config_.script_data_path);
     }
-    else if (ok_or_error.error() == NativeScriptInstanceError::kInstanceDataUnavailable)
-    {
-      SDE_LOG_WARN() << "No previous save for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " in "
-                     << SDE_OSNV(config_.script_data_path);
-    }
     else
     {
       SDE_LOG_ERROR() << "Loading data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " from "
-                      << SDE_OSNV(config_.script_data_path) << " failed with error: " << ok_or_error.error();
+                      << SDE_OSNV(config_.script_data_path) << " failed";
     }
   }
 

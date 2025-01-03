@@ -11,16 +11,6 @@
 
 namespace sde::game
 {
-namespace
-{
-
-asset::path
-getPath(const NativeScriptInstanceHandle handle, const sde::string& name, const NativeScriptInstance& instance)
-{
-  return {sde::format("%s_%lu_%s_%lu.bin", name.c_str(), handle.id(), instance.type().data(), instance.version())};
-}
-
-}  // namespace
 
 std::ostream& operator<<(std::ostream& os, NativeScriptInstanceError error)
 {
@@ -176,6 +166,75 @@ bool NativeScriptInstance::save(OArchiveAssociative& oar) const
   return methods_.on_save(data_, reinterpret_cast<void*>(&oar));
 }
 
+
+bool NativeScriptInstance::load(const asset::path& path) const
+{
+  // Stop here if path does not exist
+  if (!asset::exists(path))
+  {
+    return false;
+  }
+
+  // Open script instance data file
+  auto ifs_or_error = serial::file_istream::create(path);
+  if (!ifs_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << ifs_or_error.error();
+    return false;
+  }
+
+  // Wrap file stream in archive interface
+  auto iar_basic = serial::binary_ifarchive{*ifs_or_error};
+
+  // Create associative wrapper for archive
+  auto iar_or_error = serial::make_associative(iar_basic);
+  if (!iar_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << iar_or_error.error();
+    return false;
+  }
+
+  // Load data for this instance
+  if (!load(*iar_or_error))
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << ": load routine failed";
+    return false;
+  }
+
+  return true;
+}
+
+bool NativeScriptInstance::save(const asset::path& path) const
+{
+  // Open script instance data file
+  auto ofs_or_error = serial::file_ostream::create(path);
+  if (!ofs_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << ofs_or_error.error();
+    return false;
+  }
+
+  // Wrap file stream in archive interface
+  auto oar_basic = serial::binary_ofarchive{*ofs_or_error};
+
+  // Create associative wrapper for archive
+  auto oar_or_error = serial::make_associative(oar_basic);
+  if (!oar_or_error.has_value())
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << oar_or_error.error();
+    return false;
+  }
+
+  // Write data for this instance
+  if (!save(*oar_or_error))
+  {
+    SDE_LOG_ERROR() << SDE_OSNV(path) << ": save routine failed";
+    return false;
+  }
+
+  return true;
+}
+
 NativeScriptInstanceHandle NativeScriptInstanceCache::to_handle(const sde::string& name) const
 {
   const auto itr = name_to_instance_lookup_.find(name);
@@ -201,102 +260,6 @@ void NativeScriptInstanceCache::when_removed(
   NativeScriptInstanceData* data)
 {
   name_to_instance_lookup_.erase(data->name);
-}
-
-expected<void, NativeScriptInstanceError>
-NativeScriptInstanceCache::load(NativeScriptInstanceHandle handle, const asset::path& script_data_path)
-{
-  // TODO(enhancement) move this to NativeScriptInstance
-
-  // Get script data by handle
-  auto itr = handle_to_value_cache_.find(handle);
-  if (itr == std::end(handle_to_value_cache_))
-  {
-    return make_unexpected(NativeScriptInstanceError::kInvalidHandle);
-  }
-
-  auto& script = itr->second.value;
-
-  const asset::path path = script_data_path / getPath(handle, script.name, script.instance);
-
-  // Stop here if path does not exist
-  if (!asset::exists(path))
-  {
-    return make_unexpected(NativeScriptInstanceError::kInstanceDataUnavailable);
-  }
-
-  // Open script instance data file
-  auto ifs_or_error = serial::file_istream::create(path);
-  if (!ifs_or_error.has_value())
-  {
-    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << ifs_or_error.error();
-    return make_unexpected(NativeScriptInstanceError::kInstanceLoadFailed);
-  }
-
-  // Wrap file stream in archive interface
-  auto iar_basic = serial::binary_ifarchive{*ifs_or_error};
-
-  // Create associative wrapper for archive
-  auto iar_or_error = serial::make_associative(iar_basic);
-  if (!iar_or_error.has_value())
-  {
-    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << iar_or_error.error();
-    return make_unexpected(NativeScriptInstanceError::kInstanceLoadFailed);
-  }
-
-  // Load data for this instance
-  if (!script.instance.load(*iar_or_error))
-  {
-    SDE_LOG_ERROR() << SDE_OSNV(path) << ": load routine failed";
-    return make_unexpected(NativeScriptInstanceError::kInstanceLoadFailed);
-  }
-
-  return {};
-}
-
-expected<void, NativeScriptInstanceError>
-NativeScriptInstanceCache::save(NativeScriptInstanceHandle handle, const asset::path& script_data_path) const
-{
-  // TODO(enhancement) move this to NativeScriptInstance
-
-  // Get script data by handle
-  auto itr = handle_to_value_cache_.find(handle);
-  if (itr == std::end(handle_to_value_cache_))
-  {
-    return make_unexpected(NativeScriptInstanceError::kInvalidHandle);
-  }
-
-  auto& script = itr->second.value;
-
-  const asset::path path = script_data_path / getPath(handle, script.name, script.instance);
-
-  // Open script instance data file
-  auto ofs_or_error = serial::file_ostream::create(path);
-  if (!ofs_or_error.has_value())
-  {
-    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << ofs_or_error.error();
-    return make_unexpected(NativeScriptInstanceError::kInstanceSaveFailed);
-  }
-
-  // Wrap file stream in archive interface
-  auto oar_basic = serial::binary_ofarchive{*ofs_or_error};
-
-  // Create associative wrapper for archive
-  auto oar_or_error = serial::make_associative(oar_basic);
-  if (!oar_or_error.has_value())
-  {
-    SDE_LOG_ERROR() << SDE_OSNV(path) << " " << oar_or_error.error();
-    return make_unexpected(NativeScriptInstanceError::kInstanceSaveFailed);
-  }
-
-  // Write data for this instance
-  if (!script.instance.save(*oar_or_error))
-  {
-    SDE_LOG_ERROR() << SDE_OSNV(path) << ": save routine failed";
-    return make_unexpected(NativeScriptInstanceError::kInstanceSaveFailed);
-  }
-
-  return {};
 }
 
 expected<void, NativeScriptInstanceError>
