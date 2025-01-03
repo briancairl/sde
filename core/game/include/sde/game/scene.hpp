@@ -84,13 +84,44 @@ public:
 
   SceneHandle to_handle(const sde::string& name) const;
 
-  expected<sde::vector<SceneNodeFlattened>, SceneError> expand(SceneHandle root, dependencies deps) const;
+  expected<Scene, SceneError> expand(SceneHandle root, dependencies deps) const;
 
 private:
   sde::unordered_map<sde::string, SceneHandle> name_to_scene_lookup_;
   expected<SceneData, SceneError> generate(dependencies deps, sde::string name, sde::vector<SceneNode> nodes = {});
   void when_created(dependencies deps, SceneHandle handle, const SceneData* data);
   void when_removed(dependencies deps, SceneHandle handle, SceneData* data);
+};
+
+class Scene
+{
+public:
+  Scene() = default;
+  Scene(SceneHandle handle, sde::vector<SceneNodeFlattened> nodes);
+
+  Scene(Scene&& other);
+  Scene& operator=(Scene&& other);
+
+  void swap(Scene& other);
+
+  const SceneHandle& handle() const { return handle_; }
+
+  expected<void, NativeScriptInstanceHandle> load(const asset::path& path) const;
+
+  expected<void, NativeScriptInstanceHandle> save(const asset::path& path) const;
+
+  expected<void, NativeScriptInstanceHandle> initialize(GameResources& resources, const AppProperties& app);
+
+  expected<void, NativeScriptInstanceHandle> update(GameResources& resources, const AppProperties& app);
+
+  expected<void, NativeScriptInstanceHandle> shutdown(GameResources& resources, const AppProperties& app);
+
+private:
+  Scene(const Scene& other) = delete;
+  Scene& operator=(const Scene& other) = delete;
+
+  SceneHandle handle_ = SceneHandle::null();
+  sde::vector<SceneNodeFlattened> nodes_ = {};
 };
 
 }  // namespace sde::game

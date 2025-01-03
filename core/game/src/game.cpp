@@ -186,16 +186,16 @@ namespace
       if (node_json.is_string())
       {
         const sde::string child_scene_name{node_json};
-        const auto child_scene_handle = resources.get<SceneCache>().to_handle(child_scene_name);
-        if (!child_scene_handle)
-        {
-          SDE_LOG_ERROR() << "Scene: " << scene_name << " : invalid child scene " << SDE_OSNV(child_scene_name);
-          return false;
-        }
-        else
+
+        if (const auto child_scene_handle = resources.get<SceneCache>().to_handle(child_scene_name); child_scene_handle)
         {
           resources.get<SceneCache>().update_if_exists(
             scene_name, [child_scene_handle](auto& scene) { scene.nodes.push_back({.child = child_scene_handle}); });
+        }
+        else
+        {
+          SDE_LOG_ERROR() << "Scene: " << scene_name << " : invalid child scene " << SDE_OSNV(child_scene_name);
+          return false;
         }
       }
       else if (node_json.is_object())
@@ -237,12 +237,6 @@ namespace
   return true;
 }
 
-
-asset::path getPath(const SceneNodeFlattened& node)
-{
-  return {sde::format("%s_%s_%lu.bin", node.name.data(), node.instance.type().data(), node.handle.id())};
-}
-
 }  // namespace
 
 std::ostream& operator<<(std::ostream& os, GameError error)
@@ -264,67 +258,23 @@ std::ostream& operator<<(std::ostream& os, GameError error)
 
 bool Game::setActiveScene(SceneHandle next_scene, const AppProperties& app_properties)
 {
-  if (active_scene_ == next_scene)
+  if (active_scene_.handle() == next_scene)
   {
     return true;
   }
 
-  // Get handle to script instances
-  auto& scripts = resources_.get<NativeScriptInstanceCache>();
-
-  // Save previous scene data
-  for (const auto& node : active_scene_sequence_)
+  active_scene_.save(config_.script_data_path);
+  active_scene_.shutdown(resources_, app_properties);
+  if (auto scene_or_error = resources_.get<SceneCache>().expand(next_scene, resources_.all()); scene_or_error)
   {
-    if (node.instance.save(config_.script_data_path / getPath(node)))
-    {
-      SDE_LOG_DEBUG() << "Saved data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " to "
-                      << SDE_OSNV(config_.script_data_path);
-    }
-    else
-    {
-      SDE_LOG_ERROR() << "Saving data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " to "
-                      << SDE_OSNV(config_.script_data_path) << " failed";
-    }
-
-    if (node.instance.shutdown(resources_, app_properties))
-    {
-      SDE_LOG_DEBUG() << "Shutdown " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name);
-    }
-    else
-    {
-      SDE_LOG_ERROR() << "Shutdown " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " failed";
-    }
-  }
-
-  // Change scene sequence
-  if (auto sequence_or_error = resources_.get<SceneCache>().expand(next_scene, resources_.all());
-      sequence_or_error.has_value())
-  {
-    SDE_LOG_DEBUG() << "Scene change from: " << SDE_OSNV(active_scene_) << " --> " << SDE_OSNV(next_scene);
-    active_scene_ = next_scene;
-    active_scene_sequence_ = std::move(sequence_or_error).value();
+    active_scene_ = std::move(scene_or_error).value();
   }
   else
   {
-    SDE_LOG_ERROR() << "Scene change from: " << SDE_OSNV(active_scene_) << " --> " << SDE_OSNV(next_scene)
-                    << " failed with error: " << sequence_or_error.error();
+    SDE_LOG_ERROR() << SDE_OSNV(scene_or_error.error());
     return false;
   }
-
-  // Load current scene data
-  for (const auto& node : active_scene_sequence_)
-  {
-    if (node.instance.load(config_.script_data_path / getPath(node)))
-    {
-      SDE_LOG_DEBUG() << "Loaded data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " from "
-                      << SDE_OSNV(config_.script_data_path);
-    }
-    else
-    {
-      SDE_LOG_ERROR() << "Loading data for " << SDE_OSNV(node.handle) << " : " << SDE_OSNV(node.name) << " from "
-                      << SDE_OSNV(config_.script_data_path) << " failed";
-    }
-  }
+  active_scene_.load(config_.script_data_path);
 
   return true;
 }
@@ -367,27 +317,24 @@ void Game::spin(App& app)
         return AppDirective::kClose;
       }
 
-      for (const auto& [script_name, script_handle, script_instance] : active_scene_sequence_)
+      if (auto ok_or_error = active_scene_.initialize(resources_, app_properties); ok_or_error)
       {
-        if (!script_instance.initialize(script_handle, script_name, resources_, app_properties))
-        {
-          SDE_LOG_ERROR() << SDE_OSNV(script_name) << SDE_OSNV(script_handle) << " failed to initialize";
-          return AppDirective::kClose;
-        }
+        return AppDirective::kContinue;
       }
-
-      return AppDirective::kContinue;
+      else
+      {
+        return AppDirective::kClose;
+      }
     },
     [this](const auto& app_properties) {
-      for (const auto& [script_name, script_handle, script_instance] : active_scene_sequence_)
+      if (auto ok_or_error = active_scene_.update(resources_, app_properties); ok_or_error)
       {
-        if (!script_instance.update(resources_, app_properties))
-        {
-          SDE_LOG_ERROR() << SDE_OSNV(script_name) << SDE_OSNV(script_handle) << " failed to update";
-          return AppDirective::kClose;
-        }
+        return (active_scene_.handle() == resources_.getNextScene()) ? AppDirective::kContinue : AppDirective::kReset;
       }
-      return (active_scene_ == resources_.getNextScene()) ? AppDirective::kContinue : AppDirective::kReset;
+      else
+      {
+        return AppDirective::kClose;
+      }
     },
     [this](const auto& app_properties) {
       if (!setActiveScene(SceneHandle::null(), app_properties))
@@ -509,8 +456,6 @@ expected<Game, GameError> Game::create(const asset::path& path)
   {
     game.config_ = std::move(config);
     game.resources_ = std::move(resources);
-    game.active_scene_ = SceneHandle::null();
-    game.active_scene_sequence_.clear();
   }
   return {std::move(game)};
 }

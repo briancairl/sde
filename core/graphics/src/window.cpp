@@ -211,7 +211,6 @@ expected<void, WindowError> Window::setCursorIcon(ImageRef icon) const
     .width = icon.width, .height = icon.height, .pixels = reinterpret_cast<std::uint8_t*>(icon.data)};
 
   glfwSetCursor(glfw_window, glfwCreateCursor(&glfw_image, 0, 0));
-
   return {};
 }
 

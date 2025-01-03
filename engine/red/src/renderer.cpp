@@ -82,7 +82,7 @@ bool initialize(renderer_state* self, sde::game::GameResources& resources, const
   }
   else
   {
-    SDE_LOG_ERROR() << "Failed to create renderer";
+    SDE_LOG_ERROR() << "Failed to create renderer: " << SDE_OSNV(renderer_or_error.error());
     return false;
   }
 

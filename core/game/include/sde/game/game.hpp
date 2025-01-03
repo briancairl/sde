@@ -75,9 +75,7 @@ private:
 
   GameConfig config_;
 
-  SceneHandle active_scene_ = SceneHandle::null();
-
-  sde::vector<SceneNodeFlattened> active_scene_sequence_ = {};
+  Scene active_scene_;
 };
 
 [[nodiscard]] inline expected<Game, GameError> create(const asset::path& path) { return Game::create(path); }
