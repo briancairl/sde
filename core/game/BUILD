@@ -176,14 +176,28 @@ cc_library(
   visibility=["//visibility:public"]
 )
 
-
 cc_library(
-  name="game_manifest",
+  name="game_loop",
   hdrs=[
-    "include/sde/game/game_manifest.hpp",
+    "include/sde/game/game_loop.hpp",
   ],
   srcs = [
-    "src/game_manifest.cpp",
+    "src/game_loop.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    ":game_resources",
+  ],
+  visibility=["//visibility:public"]
+)
+
+cc_library(
+  name="game_configuration",
+  hdrs=[
+    "include/sde/game/game_configuration.hpp",
+  ],
+  srcs = [
+    "src/game_configuration.cpp",
   ],
   strip_include_prefix="include",
   deps=[
@@ -204,8 +218,9 @@ cc_library(
   ],
   strip_include_prefix="include",
   deps=[
+    ":game_loop",
     ":game_resources",
-    ":game_manifest"
+    ":game_configuration"
   ],
   visibility=["//visibility:public"]
 )

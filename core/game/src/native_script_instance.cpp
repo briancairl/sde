@@ -25,6 +25,8 @@ std::ostream& operator<<(std::ostream& os, NativeScriptInstanceError error)
   return os;
 }
 
+NativeScriptInstance::~NativeScriptInstance() { this->reset(); }
+
 NativeScriptInstance::NativeScriptInstance(NativeScriptMethods methods) : methods_{std::move(methods)}, data_{nullptr}
 {}
 

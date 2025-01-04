@@ -6,7 +6,7 @@
 #include <nlohmann/json.hpp>
 
 // SDE
-#include "sde/game/game_manifest.hpp"
+#include "sde/game/game_configuration.hpp"
 #include "sde/game/game_resources.hpp"
 #include "sde/logging.hpp"
 #include "sde/time.hpp"

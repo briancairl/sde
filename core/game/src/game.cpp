@@ -5,6 +5,7 @@
 #include "sde/app.hpp"
 #include "sde/game/archive.hpp"
 #include "sde/game/game.hpp"
+#include "sde/game/game_loop.hpp"
 #include "sde/game/game_resources.hpp"
 #include "sde/geometry_io.hpp"
 #include "sde/logging.hpp"
@@ -119,26 +120,22 @@ void Game::spin(App& app)
                     << " failed with : " << image_or_error.error();
   }
 
-  Scene root_scene;
-  if (auto scene_or_error = resources_.get<SceneCache>().expand(root_, resources_.all()); scene_or_error)
+  auto game_loop_or_error = GameLoop::create(resources_, root_);
+  if (!game_loop_or_error)
   {
-    root_scene = std::move(scene_or_error).value();
-  }
-  else
-  {
-    SDE_LOG_ERROR() << SDE_OSNV(scene_or_error.error());
+    SDE_LOG_ERROR() << SDE_OSNV(game_loop_or_error.error());
     return;
   }
 
   // Run the game, starting from root scene
   app.spin(
-    [this, &root_scene](const auto& app_properties) {
-      if (auto ok_or_error = root_scene.load(configuration_.script_directory); !ok_or_error)
+    [this, &game_loop_or_error](const auto& app_properties) {
+      if (auto ok_or_error = game_loop_or_error->load(resources_, configuration_.script_directory); !ok_or_error)
       {
         SDE_LOG_WARN() << "Failed loading: " << ok_or_error.error();
       }
 
-      if (auto ok_or_error = root_scene.initialize(resources_, app_properties); ok_or_error)
+      if (auto ok_or_error = game_loop_or_error->initialize(resources_, app_properties); ok_or_error)
       {
         return AppDirective::kContinue;
       }
@@ -148,8 +145,8 @@ void Game::spin(App& app)
         return AppDirective::kClose;
       }
     },
-    [this, &root_scene](const auto& app_properties) {
-      if (auto ok_or_error = root_scene.update(resources_, app_properties); ok_or_error)
+    [this, &game_loop_or_error](const auto& app_properties) {
+      if (auto ok_or_error = game_loop_or_error->update(resources_, app_properties); ok_or_error)
       {
         return AppDirective::kContinue;
       }
@@ -158,12 +155,12 @@ void Game::spin(App& app)
         return AppDirective::kClose;
       }
     },
-    [this, &root_scene](const auto& app_properties) {
-      if (auto ok_or_error = root_scene.save(configuration_.script_directory); !ok_or_error)
+    [this, &game_loop_or_error](const auto& app_properties) {
+      if (auto ok_or_error = game_loop_or_error->save(resources_, configuration_.script_directory); !ok_or_error)
       {
         SDE_LOG_ERROR() << "Failed saving: " << ok_or_error.error();
       }
-      if (auto ok_or_error = root_scene.shutdown(resources_, app_properties); !ok_or_error)
+      if (auto ok_or_error = game_loop_or_error->shutdown(resources_, app_properties); !ok_or_error)
       {
         SDE_LOG_ERROR() << "Failed shutting down: " << ok_or_error.error();
       }

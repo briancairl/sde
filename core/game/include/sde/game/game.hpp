@@ -8,7 +8,7 @@
 // SDE
 #include "sde/app_fwd.hpp"
 #include "sde/asset.hpp"
-#include "sde/game/game_manifest.hpp"
+#include "sde/game/game_configuration.hpp"
 #include "sde/game/game_resources.hpp"
 #include "sde/game/scene_handle.hpp"
 

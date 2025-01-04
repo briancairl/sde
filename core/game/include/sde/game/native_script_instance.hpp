@@ -38,14 +38,11 @@ class NativeScriptInstance : public Resource<NativeScriptInstance>
 public:
   explicit NativeScriptInstance(NativeScriptMethods methods);
 
+  ~NativeScriptInstance();
   NativeScriptInstance() = default;
-  ~NativeScriptInstance() = default;
 
   NativeScriptInstance(NativeScriptInstance&& other);
   NativeScriptInstance& operator=(NativeScriptInstance&& other);
-
-  NativeScriptInstance(const NativeScriptInstance& other) = default;
-  NativeScriptInstance& operator=(const NativeScriptInstance& other) = default;
 
   bool isValid() const { return methods_.isValid() and (data_ != nullptr); }
 
@@ -74,6 +71,9 @@ public:
   bool shutdown(GameResources& resources, const AppProperties& app_properties) const;
 
 private:
+  NativeScriptInstance(const NativeScriptInstance& other) = delete;
+  NativeScriptInstance& operator=(const NativeScriptInstance& other) = delete;
+
   void reset();
 
   void reset(NativeScriptMethods methods);

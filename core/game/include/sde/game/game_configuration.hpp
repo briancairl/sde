@@ -1,7 +1,7 @@
 /**
  * @copyright 2025-present Brian Cairl
  *
- * @file game_manifest.hpp
+ * @file game_configuration.hpp
  */
 #pragma once
 
