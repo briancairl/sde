@@ -1,0 +1,8 @@
+{
+    "rate"              : 60.0,
+    "working_directory" : "/home/brian/dev/sde/engine/game_test/",
+    "manifest_path"     : "/home/brian/dev/sde/engine/game_test/manifest.json",
+    "script_directory"  : "/home/brian/dev/sde/engine/game_test/data/",
+    "assets_data_path"  : "/home/brian/dev/sde/engine/game_test/data/assets.bin",
+    "window_icon_path"  : "/home/brian/dev/assets/icons/red.png"
+}

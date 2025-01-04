@@ -155,6 +155,15 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
 
   using namespace sde::graphics;
 
+  if (auto render_target = resources(self->render_target); render_target)
+  {
+    render_target->reset(Black());
+  }
+  else
+  {
+    return false;
+  }
+
   RenderResources render_resources;
   render_resources.target = self->render_target;
   render_resources.shader = self->sprite_shader;
@@ -174,8 +183,6 @@ bool update(renderer_state* self, sde::game::GameResources& resources, const sde
         self->render_buffer, *self->renderer, resources.all(), uniforms, render_resources, app.viewport_size);
       render_pass_or_error.has_value())
   {
-    render_pass_or_error->clear(Black());
-
     registry.view<TransformQuery>().each(
       [&rp = *render_pass_or_error](auto& query) { query.world_from_viewport = rp.getWorldFromViewportMatrix(); });
 

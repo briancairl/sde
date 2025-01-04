@@ -70,12 +70,6 @@ public:
 
   asset::path path(const asset::path& original_path) const;
 
-  SceneHandle getNextScene() const { return next_scene_; }
-
-  bool setNextScene(SceneHandle scene);
-
-  bool setNextScene(const sde::string& scene_name);
-
   template <typename CreateT> decltype(auto) instance(EntityHandle& h, CreateT&& create)
   {
     return this->template get<EntityCache>().instance(h, this->all(), std::forward<CreateT>(create));
@@ -97,7 +91,6 @@ public:
 
 private:
   asset::path root_path_;
-  SceneHandle next_scene_ = SceneHandle::null();
 };
 
 }  // namespace sde::game

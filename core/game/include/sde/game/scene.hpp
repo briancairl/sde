@@ -107,13 +107,9 @@ public:
   const SceneHandle& handle() const { return handle_; }
 
   expected<void, NativeScriptInstanceHandle> load(const asset::path& path) const;
-
   expected<void, NativeScriptInstanceHandle> save(const asset::path& path) const;
-
-  expected<void, NativeScriptInstanceHandle> initialize(GameResources& resources, const AppProperties& app);
-
   expected<void, NativeScriptInstanceHandle> update(GameResources& resources, const AppProperties& app);
-
+  expected<void, NativeScriptInstanceHandle> initialize(GameResources& resources, const AppProperties& app);
   expected<void, NativeScriptInstanceHandle> shutdown(GameResources& resources, const AppProperties& app);
 
 private:

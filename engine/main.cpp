@@ -4,6 +4,7 @@
 #include "sde/logging.hpp"
 
 using namespace sde;
+using namespace sde::game;
 
 int main(int argc, char** argv)
 {
@@ -15,14 +16,7 @@ int main(int argc, char** argv)
   auto app_or_error = App::create({.initial_size = {1000, 500}});
   SDE_ASSERT_OK(app_or_error);
 
-  // Create scene graph from manifest
-  auto game_or_error = game::create(argv[1]);
-  SDE_ASSERT_OK(game_or_error);
-
   // Run game
-  game_or_error->spin(*app_or_error);
-
-  // Save game on close
-  SDE_ASSERT_OK(game::dump(*game_or_error));
+  Game::create(argv[1]).spin(*app_or_error);
   return 0;
 }

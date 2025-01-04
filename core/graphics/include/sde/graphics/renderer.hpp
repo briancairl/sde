@@ -233,7 +233,6 @@ public:
 
   constexpr RenderBuffer* operator->() { return buffer_; }
 
-  void clear(const Vec4f& color = Vec4f::Zero());
   bool visible(const Bounds2f& query_aabb) const { return getViewportInWorldBounds().intersects(query_aabb); }
 
 private:

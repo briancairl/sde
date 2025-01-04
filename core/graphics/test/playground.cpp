@@ -42,15 +42,15 @@ int main(int argc, char** argv)
   graphics::RenderTargetCache render_targets;
   auto deps = ResourceDependencies{images, shaders, textures, render_targets};
 
-  auto icon_or_error = images.create("/home/brian/dev/assets/icons/red.png"_path);
+  auto icon_or_error = images.create(deps, "/home/brian/dev/assets/icons/red.png"_path);
   SDE_ASSERT_OK(icon_or_error);
-  window_or_error->setIcon(icon_or_error->value->ref());
+  window_or_error->setWindowIcon(icon_or_error->value->ref());
 
-  auto cursor_or_error = images.create("/home/brian/dev/assets/icons/sword.png"_path);
+  auto cursor_or_error = images.create(deps, "/home/brian/dev/assets/icons/sword.png"_path);
   SDE_ASSERT_OK(cursor_or_error);
-  window_or_error->setCursor(cursor_or_error->value->ref());
+  window_or_error->setCursorIcon(cursor_or_error->value->ref());
 
-  auto sprite_shader_or_error = shaders.create("/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl"_path);
+  auto sprite_shader_or_error = shaders.create(deps, "/home/brian/dev/assets/shaders/glsl/simple_sprite.glsl"_path);
   SDE_ASSERT_OK(sprite_shader_or_error);
 
   auto texture_or_error = textures.create(deps, cursor_or_error->handle);
@@ -79,12 +79,11 @@ int main(int argc, char** argv)
 
   while (window_or_error->poll() and running)
   {
+    render_target_or_error->value->reset(graphics::Black());
     if (auto render_pass_or_error = graphics::RenderPass::create(
           render_buffer, *renderer_or_error, deps, render_uniforms, render_resources, window_or_error->size());
         render_pass_or_error.has_value())
     {
-      render_pass_or_error->clear(graphics::Black());
-
       render_buffer.quads.push_back({.rect = {{-1.0f, -1.0f}, {+0.0f, +0.0f}}, .color = Vec4f{0.5F, 0.6F, 0.7F, 0.9F}});
 
       render_buffer.quads.push_back({.rect = {{-0.0f, -0.0f}, {+1.0f, +1.0f}}, .color = Vec4f{0.9F, 0.7F, 0.5F, 0.9F}});

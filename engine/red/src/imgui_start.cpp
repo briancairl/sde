@@ -5,6 +5,8 @@
 
 // SDE
 #include "sde/game/native_script_runtime.hpp"
+#include "sde/graphics/colors.hpp"
+#include "sde/graphics/render_target.hpp"
 
 // ImGui
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -15,6 +17,7 @@
 
 using namespace sde;
 using namespace sde::game;
+using namespace sde::graphics;
 
 // Decide GL+GLSL versions
 #if __APPLE__
@@ -28,6 +31,7 @@ constexpr const char* kGLSLVersion{"#version 130"};  // 3.0+ only
 
 struct imgui_start : native_script_data
 {
+  RenderTargetHandle render_target = RenderTargetHandle::null();
   asset::path imgui_ini_path = {};
   ImGuiContext* imgui_context = nullptr;
 };
@@ -36,6 +40,7 @@ struct imgui_start : native_script_data
 template <typename ArchiveT> bool serialize(imgui_start* self, ArchiveT& ar)
 {
   using namespace sde::serial;
+  ar& named{"render_target", self->render_target};
   ar& named{"imgui_ini_path", self->imgui_ini_path};
   return true;
 }
@@ -54,6 +59,12 @@ bool shutdown(imgui_start* self, sde::game::GameResources& resources, const sde:
 
 bool initialize(imgui_start* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
+  if (!resources.assign(self->render_target))
+  {
+    SDE_LOG_ERROR() << "Missing sprite shader";
+    return false;
+  }
+
   IMGUI_CHECKVERSION();
 
   self->imgui_context = ImGui::CreateContext();
@@ -82,6 +93,15 @@ bool initialize(imgui_start* self, sde::game::GameResources& resources, const sd
 bool update(imgui_start* self, sde::game::GameResources& resources, const sde::AppProperties& app)
 {
   if (ImGui::GetCurrentContext() == nullptr)
+  {
+    return false;
+  }
+
+  if (auto render_target = resources(self->render_target); render_target)
+  {
+    render_target->reset(Black());
+  }
+  else
   {
     return false;
   }

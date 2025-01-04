@@ -5,53 +5,15 @@
  */
 #pragma once
 
-// C++ Standard Library
-#include <iosfwd>
-#include <string_view>
-
 // SDE
 #include "sde/app_fwd.hpp"
+#include "sde/asset.hpp"
+#include "sde/game/game_manifest.hpp"
 #include "sde/game/game_resources.hpp"
-#include "sde/game/scene.hpp"
-#include "sde/resource.hpp"
-#include "sde/vector.hpp"
+#include "sde/game/scene_handle.hpp"
 
 namespace sde::game
 {
-
-enum class GameError
-{
-  kInvalidRootDirectory,
-  kInvalidManifest,
-  kMissingManifest,
-  kScriptLoadError,
-  kComponentLoadError,
-  kSceneLoadError,
-  kSceneEntryPointInvalid,
-  kResourceLoadError,
-  kResourceSaveError,
-};
-
-std::ostream& operator<<(std::ostream& os, GameError error);
-
-struct GameConfig : Resource<GameConfig>
-{
-  Rate rate = {};
-  asset::path assets_data_path = {};
-  asset::path script_data_path = {};
-  asset::path window_icon_path = {};
-  asset::path cursor_icon_path = {};
-
-  auto field_list()
-  {
-    return FieldList(
-      Field{"rate", rate},
-      Field{"assets_data_path", assets_data_path},
-      Field{"script_data_path", script_data_path},
-      Field{"window_icon_path", window_icon_path},
-      Field{"cursor_icon_path", cursor_icon_path});
-  }
-};
 
 class Game
 {
@@ -61,26 +23,17 @@ public:
 
   void spin(App& app);
 
-  [[nodiscard]] expected<void, GameError> dump();
-  [[nodiscard]] static expected<Game, GameError> create(const asset::path& path);
+  [[nodiscard]] static Game create(const asset::path& path);
 
 private:
+  Game(GameConfiguration&& configuration, GameResources&& resources, SceneHandle&& root);
   Game() = default;
   Game(const Game& other) = delete;
   Game& operator=(const Game& other) = delete;
 
-  bool setActiveScene(SceneHandle scene, const AppProperties& app_properties);
-
+  GameConfiguration configuration_;
   GameResources resources_;
-
-  GameConfig config_;
-
-  Scene active_scene_;
+  SceneHandle root_;
 };
-
-[[nodiscard]] inline expected<Game, GameError> create(const asset::path& path) { return Game::create(path); }
-
-[[nodiscard]] inline expected<void, GameError> dump(Game& game) { return game.dump(); }
-
 
 }  // namespace sde::game

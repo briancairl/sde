@@ -952,12 +952,6 @@ RenderPass::~RenderPass()
   backend__render_pass_active.clear();
 }
 
-void RenderPass::clear(const Vec4f& color)
-{
-  glClearColor(color[0], color[1], color[2], color[3]);
-  glClear(GL_COLOR_BUFFER_BIT);
-}
-
 bool RenderPass::retarget(Vec2i& viewport_size, RenderTargetHandle render_target, const Renderer2D::dependencies& deps)
 {
   // Pick render target

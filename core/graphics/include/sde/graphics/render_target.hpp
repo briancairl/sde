@@ -10,6 +10,7 @@
 
 // SDE
 #include "sde/expected.hpp"
+#include "sde/geometry.hpp"
 #include "sde/graphics/render_target_fwd.hpp"
 #include "sde/graphics/render_target_handle.hpp"
 #include "sde/graphics/texture_fwd.hpp"
@@ -34,6 +35,8 @@ struct RenderTarget : Resource<RenderTarget>
   TextureHandle color_attachment = TextureHandle::null();
   NativeFrameBufferID native_id = NativeFrameBufferID{0};
 
+  void reset(const Vec4f& color) const;
+
   auto field_list()
   {
     return FieldList((Field{"color_attachment", color_attachment}), (_Stub{"native_id", native_id}));
@@ -51,6 +54,10 @@ std::ostream& operator<<(std::ostream& os, RenderTargetError error);
 class RenderTargetCache : public ResourceCache<RenderTargetCache>
 {
   friend fundemental_type;
+
+public:
+  static void reset(const RenderTarget& render_target, const Vec4f& color);
+  expected<void, RenderTargetError> reset(RenderTargetHandle render_target, const Vec4f& color);
 
 private:
   expected<void, RenderTargetError> reload(dependencies deps, RenderTarget& render_target);

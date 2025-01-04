@@ -1,12 +1,4 @@
 {
-    "config" :
-    {
-        "rate"              : 60.0,
-        "script_data_path"  : "data/scripts",
-        "assets_data_path"  : "data/resources.bin",
-        "window_icon_path"  : "/home/brian/dev/assets/icons/red.png",
-        "cursor_icon_path"  : "/home/brian/dev/assets/icons/sword.png"
-    },
     "components" :
     {
         "AnimatedSprite"    : "engine/red/libcomponents_common.so",
@@ -41,7 +33,7 @@
         "TextureViewer"     : "engine/red/libtexture_viewer.so",
         "TileSetEditor"     : "engine/red/libtile_set_editor.so"
     },
-    "entry"  : "root",
+    "root"  : "root",
     "scenes" : {
         "root" : [
             {
@@ -53,23 +45,8 @@
                 "name"   : "Logging"
             },
             "ui",
-            "game",
             {
                 "script" : "ImguiEnd",
-                "name"   : null
-            }
-        ],
-        "game" : [
-            {
-                "script" : "PlayerCharacter",
-                "name"   : "player-1"
-            },
-            {
-                "script" : "Physics",
-                "name"   : null
-            },
-            {
-                "script" : "Renderer",
                 "name"   : null
             }
         ],

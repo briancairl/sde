@@ -51,7 +51,7 @@ struct load<binary_iarchive<IStreamT>, std::chrono::duration<RepT, PeriodT>>
 {
   void operator()(binary_iarchive<IStreamT>& iar, std::chrono::duration<RepT, PeriodT>& duration)
   {
-    p = make_packet(std::addressof(duration));
+    auto p = make_packet(std::addressof(duration));
     iar >> p;
   }
 };

@@ -24,6 +24,28 @@ std::ostream& operator<<(std::ostream& os, RenderTargetError error)
 
 void NativeFrameBufferDeleter::operator()(native_frame_buffer_id_t id) const { glDeleteFramebuffers(1, &id); }
 
+void RenderTarget::reset(const Vec4f& color) const
+{
+  glBindFramebuffer(GL_FRAMEBUFFER, this->native_id);
+  glClearColor(color[0], color[1], color[2], color[3]);
+  glClear(GL_COLOR_BUFFER_BIT);
+}
+
+expected<void, RenderTargetError> RenderTargetCache::reset(RenderTargetHandle render_target, const Vec4f& color)
+{
+  if (auto itr = handle_to_value_cache_.find(render_target); itr == std::end(handle_to_value_cache_))
+  {
+    return make_unexpected(RenderTargetError::kInvalidHandle);
+  }
+  else
+  {
+    RenderTargetCache::reset(itr->second.get(), color);
+  }
+  return {};
+}
+
+void RenderTargetCache::reset(const RenderTarget& render_target, const Vec4f& color) { render_target.reset(color); }
+
 expected<void, RenderTargetError> RenderTargetCache::reload(dependencies deps, RenderTarget& render_target)
 {
   if (render_target.color_attachment.isNull())

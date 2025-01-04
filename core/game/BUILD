@@ -153,14 +153,12 @@ cc_library(
 
 
 cc_library(
-  name="game",
+  name="game_resources",
   hdrs=[
-    "include/sde/game/game.hpp",
     "include/sde/game/game_resources.hpp",
     "include/sde/game/game_resources_fwd.hpp",
   ],
   srcs = [
-    "src/game.cpp",
     "src/game_resources.cpp",
   ],
   strip_include_prefix="include",
@@ -174,7 +172,40 @@ cc_library(
     "//core/app",
     "//core/audio",
     "//core/serialization",
+  ],
+  visibility=["//visibility:public"]
+)
+
+
+cc_library(
+  name="game_manifest",
+  hdrs=[
+    "include/sde/game/game_manifest.hpp",
+  ],
+  srcs = [
+    "src/game_manifest.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    ":game_resources",
     "@nlohmann//:json",
+  ],
+  visibility=["//visibility:public"]
+)
+
+
+cc_library(
+  name="game",
+  hdrs=[
+    "include/sde/game/game.hpp",
+  ],
+  srcs = [
+    "src/game.cpp",
+  ],
+  strip_include_prefix="include",
+  deps=[
+    ":game_resources",
+    ":game_manifest"
   ],
   visibility=["//visibility:public"]
 )

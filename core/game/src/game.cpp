@@ -1,9 +1,5 @@
 // C++ Standard Library
-#include <fstream>
 #include <ostream>
-
-// JSON
-#include <nlohmann/json.hpp>
 
 // SDE
 #include "sde/app.hpp"
@@ -101,223 +97,59 @@ namespace
   return true;
 }
 
-[[nodiscard]] bool load_components_from_manifest(GameResources& resources, const nlohmann::json& components_json)
-{
-  for (const auto& [component_key_json, component_lib_path_json] : components_json.items())
-  {
-    const sde::string component_name{component_key_json};
-    const asset::path component_path{component_lib_path_json};
-    if (auto component_or_error =
-          resources.find_or_create<ComponentCache>(component_name, component_name, component_path);
-        !component_or_error.has_value())
-    {
-      SDE_LOG_ERROR() << "Failed to load component: " << SDE_OSNV(component_name) << " from "
-                      << SDE_OSNV(component_path) << " with error: " << component_or_error.error();
-      return false;
-    }
-    else if (component_or_error->status == ResourceStatus::kCreated)
-    {
-      SDE_LOG_INFO() << "Component loaded: " << SDE_OSNV(component_name) << " from " << SDE_OSNV(component_path);
-    }
-    else
-    {
-      SDE_LOG_INFO() << "Component found: " << SDE_OSNV(component_name) << " from " << SDE_OSNV(component_path);
-    }
-  }
-  return true;
-}
-
-[[nodiscard]] bool load_scripts_from_manifest(GameResources& resources, const nlohmann::json& scripts_json)
-{
-  for (const auto& [script_key_json, script_lib_path_json] : scripts_json.items())
-  {
-    const sde::string script_name{script_key_json};
-    const asset::path script_path{script_lib_path_json};
-    if (auto ok_or_error = resources.find_or_create<NativeScriptCache>(script_name, script_name, script_path);
-        !ok_or_error.has_value())
-    {
-      SDE_LOG_ERROR() << "Failed to load script: " << SDE_OSNV(script_name) << " from " << SDE_OSNV(script_path)
-                      << " with error: " << ok_or_error.error();
-      return false;
-    }
-    else if (ok_or_error->status == ResourceStatus::kCreated)
-    {
-      SDE_LOG_INFO() << "Script loaded: " << SDE_OSNV(script_name) << " from " << SDE_OSNV(script_path);
-    }
-    else
-    {
-      SDE_LOG_INFO() << "Script found: " << SDE_OSNV(script_name) << " from " << SDE_OSNV(script_path);
-    }
-  }
-  return true;
-}
-
-[[nodiscard]] bool load_scenes_from_manifest(GameResources& resources, const nlohmann::json& scenes_json)
-{
-  for (const auto& [scene_key_json, scene_nodes_json] : scenes_json.items())
-  {
-    const sde::string scene_name{scene_key_json};
-    if (auto scene_or_error = resources.find_or_create<SceneCache>(scene_name, scene_name); !scene_or_error.has_value())
-    {
-      SDE_LOG_ERROR() << "Scene: " << SDE_OSNV(scene_name)
-                      << " : creation failed with error: " << scene_or_error.error();
-      return false;
-    }
-    else if (scene_or_error->status == ResourceStatus::kCreated)
-    {
-      SDE_LOG_INFO() << "Scene: " << SDE_OSNV(scene_name) << " added";
-    }
-    else
-    {
-      SDE_LOG_INFO() << "Scene: " << SDE_OSNV(scene_name) << " found";
-    }
-  }
-
-  for (const auto& [scene_key_json, scene_nodes_json] : scenes_json.items())
-  {
-    const sde::string scene_name{scene_key_json};
-
-    // Remove previous nodes
-    resources.get<SceneCache>().update_if_exists(scene_name, [](auto& scene) { scene.nodes.clear(); });
-
-    // Update topology from manifest
-    for (const auto& node_json : scene_nodes_json)
-    {
-      if (node_json.is_string())
-      {
-        const sde::string child_scene_name{node_json};
-
-        if (const auto child_scene_handle = resources.get<SceneCache>().to_handle(child_scene_name); child_scene_handle)
-        {
-          resources.get<SceneCache>().update_if_exists(
-            scene_name, [child_scene_handle](auto& scene) { scene.nodes.push_back({.child = child_scene_handle}); });
-        }
-        else
-        {
-          SDE_LOG_ERROR() << "Scene: " << scene_name << " : invalid child scene " << SDE_OSNV(child_scene_name);
-          return false;
-        }
-      }
-      else if (node_json.is_object())
-      {
-        const sde::string script_type{node_json["script"]};
-
-        const auto script = resources.get<NativeScriptCache>().find(script_type);
-
-        if (!script)
-        {
-          SDE_LOG_ERROR() << "Scene: " << scene_name << " : failed to retrieve script: " << SDE_OSNV(script_type);
-          return false;
-        }
-
-        const sde::string script_name{node_json["name"].is_null() ? node_json["script"] : node_json["name"]};
-
-        if (auto instance_or_error =
-              resources.find_or_create<NativeScriptInstanceCache>(script_name, script_name, script.handle);
-            instance_or_error.has_value())
-        {
-          resources.get<SceneCache>().update_if_exists(
-            scene_name, [script_handle = instance_or_error->handle](auto& scene) {
-              scene.nodes.push_back({.script = script_handle});
-            });
-        }
-        else
-        {
-          SDE_LOG_ERROR() << "Scene: " << scene_name << " : failed to instance script: " << SDE_OSNV(script_name)
-                          << " from " << SDE_OSNV(script_type) << " with error: " << instance_or_error.error();
-          return false;
-        }
-      }
-      else
-      {
-        SDE_FAIL() << "Invalid scene entry";
-      }
-    }
-  }
-  return true;
-}
-
 }  // namespace
 
-std::ostream& operator<<(std::ostream& os, GameError error)
-{
-  switch (error)
-  {
-    SDE_OS_ENUM_CASE(GameError::kScriptLoadError)
-    SDE_OS_ENUM_CASE(GameError::kComponentLoadError)
-    SDE_OS_ENUM_CASE(GameError::kResourceLoadError)
-    SDE_OS_ENUM_CASE(GameError::kSceneLoadError)
-    SDE_OS_ENUM_CASE(GameError::kSceneEntryPointInvalid)
-    SDE_OS_ENUM_CASE(GameError::kResourceSaveError)
-    SDE_OS_ENUM_CASE(GameError::kInvalidRootDirectory)
-    SDE_OS_ENUM_CASE(GameError::kInvalidManifest)
-    SDE_OS_ENUM_CASE(GameError::kMissingManifest)
-  }
-  return os;
-}
-
-bool Game::setActiveScene(SceneHandle next_scene, const AppProperties& app_properties)
-{
-  if (active_scene_.handle() == next_scene)
-  {
-    return true;
-  }
-
-  active_scene_.save(config_.script_data_path);
-  active_scene_.shutdown(resources_, app_properties);
-  if (auto scene_or_error = resources_.get<SceneCache>().expand(next_scene, resources_.all()); scene_or_error)
-  {
-    active_scene_ = std::move(scene_or_error).value();
-  }
-  else
-  {
-    SDE_LOG_ERROR() << SDE_OSNV(scene_or_error.error());
-    return false;
-  }
-  active_scene_.load(config_.script_data_path);
-
-  return true;
-}
+Game::Game(GameConfiguration&& configuration, GameResources&& resources, SceneHandle&& root) :
+    configuration_{std::move(configuration)}, resources_{std::move(resources)}, root_{std::move(root)}
+{}
 
 void Game::spin(App& app)
 {
   // Set initial window icon
   if (auto image_or_error = resources_.get<graphics::ImageCache>().find_or_create(
-        config_.window_icon_path, resources_.all(), config_.window_icon_path);
+        configuration_.window_icon_path, resources_.all(), configuration_.window_icon_path);
       image_or_error.has_value())
   {
     app.window().setWindowIcon(image_or_error->value->ref());
-    SDE_LOG_INFO() << "Set window icon: " << SDE_OSNV(config_.window_icon_path);
+    SDE_LOG_INFO() << "Set window icon: " << SDE_OSNV(configuration_.window_icon_path);
   }
   else
   {
-    SDE_LOG_ERROR() << "Set window icon: " << SDE_OSNV(config_.window_icon_path)
+    SDE_LOG_ERROR() << "Set window icon: " << SDE_OSNV(configuration_.window_icon_path)
                     << " failed with : " << image_or_error.error();
   }
 
-  // Set initial cursor icon
-  if (auto image_or_error = resources_.get<graphics::ImageCache>().find_or_create(
-        config_.cursor_icon_path, resources_.all(), config_.cursor_icon_path);
-      image_or_error.has_value())
+  Scene root_scene;
+  if (auto scene_or_error = resources_.get<SceneCache>().expand(root_, resources_.all()); scene_or_error)
   {
-    app.window().setCursorIcon(image_or_error->value->ref());
-    SDE_LOG_INFO() << "Set cursor icon: " << SDE_OSNV(config_.cursor_icon_path);
+    root_scene = std::move(scene_or_error).value();
   }
   else
   {
-    SDE_LOG_ERROR() << "Set cursor icon: " << SDE_OSNV(config_.cursor_icon_path)
-                    << " failed with : " << image_or_error.error();
+    SDE_LOG_ERROR() << SDE_OSNV(scene_or_error.error());
+    return;
   }
 
   // Run the game, starting from root scene
   app.spin(
-    [this](const auto& app_properties) {
-      if (!setActiveScene(resources_.getNextScene(), app_properties))
+    [this, &root_scene](const auto& app_properties) {
+      if (auto ok_or_error = root_scene.load(configuration_.script_directory); !ok_or_error)
       {
-        return AppDirective::kClose;
+        SDE_LOG_WARN() << "Failed loading: " << ok_or_error.error();
       }
 
-      if (auto ok_or_error = active_scene_.initialize(resources_, app_properties); ok_or_error)
+      if (auto ok_or_error = root_scene.initialize(resources_, app_properties); ok_or_error)
+      {
+        return AppDirective::kContinue;
+      }
+      else
+      {
+        SDE_LOG_ERROR() << SDE_OSNV(ok_or_error.error());
+        return AppDirective::kClose;
+      }
+    },
+    [this, &root_scene](const auto& app_properties) {
+      if (auto ok_or_error = root_scene.update(resources_, app_properties); ok_or_error)
       {
         return AppDirective::kContinue;
       }
@@ -326,155 +158,36 @@ void Game::spin(App& app)
         return AppDirective::kClose;
       }
     },
-    [this](const auto& app_properties) {
-      if (auto ok_or_error = active_scene_.update(resources_, app_properties); ok_or_error)
+    [this, &root_scene](const auto& app_properties) {
+      if (auto ok_or_error = root_scene.save(configuration_.script_directory); !ok_or_error)
       {
-        return (active_scene_.handle() == resources_.getNextScene()) ? AppDirective::kContinue : AppDirective::kReset;
+        SDE_LOG_ERROR() << "Failed saving: " << ok_or_error.error();
       }
-      else
+      if (auto ok_or_error = root_scene.shutdown(resources_, app_properties); !ok_or_error)
       {
-        return AppDirective::kClose;
+        SDE_LOG_ERROR() << "Failed shutting down: " << ok_or_error.error();
       }
+      SDE_ASSERT_TRUE(save_game_data(resources_, configuration_.assets_data_path)) << " failed to save game";
     },
-    [this](const auto& app_properties) {
-      if (!setActiveScene(SceneHandle::null(), app_properties))
-      {
-        SDE_LOG_WARN() << "Some scene data may have been lost!";
-      }
-    },
-    config_.rate);
+    configuration_.rate);
 }
 
-
-expected<Game, GameError> Game::create(const asset::path& path)
+Game Game::create(const asset::path& path)
 {
-  // Ensure game directory exists
-  if (!asset::exists(path) or !asset::is_directory(path))
-  {
-    SDE_LOG_ERROR() << "Invalid root game directory: " << SDE_OSNV(path);
-    return make_unexpected(GameError::kInvalidRootDirectory);
-  }
+  // Load base configuration
+  auto configuration{GameConfiguration::load(path)};
 
   // Create game resource caches
-  GameResources resources{path};
+  GameResources resources{configuration.working_directory};
+
+  SDE_ASSERT_TRUE(load_game_data(resources, configuration.assets_data_path))
+    << "Failed to load game: " << SDE_OSNV(path);
 
   // Resolve path to game manifest
-  const auto manifest_path = resources.path("manifest.json");
-  if (!asset::exists(manifest_path))
-  {
-    SDE_LOG_ERROR() << "Missing game manifest: " << SDE_OSNV(manifest_path);
-    return make_unexpected(GameError::kMissingManifest);
-  }
-  else if (!asset::is_regular_file(manifest_path))
-  {
-    SDE_LOG_ERROR() << "Invalid game manifest: " << SDE_OSNV(manifest_path) << " (must be regular file)";
-    return make_unexpected(GameError::kInvalidManifest);
-  }
-
-  // Load scene manifest (JSON)
-  nlohmann::json manifest_json;
-  SDE_ASSERT_NO_EXCEPT(
-    {
-      std::ifstream ifs{manifest_path};
-      ifs >> manifest_json;
-    },
-    std::exception);
-
-  // Load basic game configutation
-  GameConfig config;
-  SDE_ASSERT_NO_EXCEPT(
-    {
-      auto config_json = manifest_json["config"];
-      config.rate = Rate::fromHertz(static_cast<float>(config_json["rate"]));
-      config.assets_data_path = resources.path(asset::path{config_json["assets_data_path"]});
-      config.script_data_path = resources.directory(asset::path{config_json["script_data_path"]});
-      config.window_icon_path = resources.path(asset::path{config_json["window_icon_path"]});
-      config.cursor_icon_path = resources.path(asset::path{config_json["cursor_icon_path"]});
-    },
-    std::exception);
-
-  // Load game assets
-  SDE_ASSERT_NO_EXCEPT(
-    {
-      if (!load_game_data(resources, config.assets_data_path))
-      {
-        SDE_LOG_ERROR() << "failed to load game data";
-        return make_unexpected(GameError::kResourceLoadError);
-      }
-    },
-    std::exception);
-
-  // Load components from manifest
-  SDE_LOG_INFO() << "Loading components from manifest...";
-  SDE_ASSERT_NO_EXCEPT(
-    {
-      if (!load_components_from_manifest(resources, manifest_json["components"]))
-      {
-        SDE_LOG_ERROR() << "failed to load components";
-        return make_unexpected(GameError::kComponentLoadError);
-      }
-    },
-    std::exception);
-
-  // Load scripts from manifest
-  SDE_LOG_INFO() << "Loading scripts from manifest...";
-  SDE_ASSERT_NO_EXCEPT(
-    {
-      if (!load_scripts_from_manifest(resources, manifest_json["scripts"]))
-      {
-        SDE_LOG_ERROR() << "failed to load scripts";
-        return make_unexpected(GameError::kScriptLoadError);
-      }
-    },
-    std::exception);
-
-  // Load scenes from manifest
-  SDE_LOG_INFO() << "Loading scenes from manifest...";
-  SDE_ASSERT_NO_EXCEPT(
-    {
-      if (!load_scenes_from_manifest(resources, manifest_json["scenes"]))
-      {
-        SDE_LOG_ERROR() << "failed to load scenes";
-        return make_unexpected(GameError::kSceneLoadError);
-      }
-    },
-    std::exception);
-
-  // Set entry point scene
-  SDE_ASSERT_NO_EXCEPT(
-    {
-      if (!resources.setNextScene(manifest_json["entry"]))
-      {
-        SDE_LOG_ERROR() << "failed to set scene entry point";
-        return make_unexpected(GameError::kSceneEntryPointInvalid);
-      }
-    },
-    std::exception);
+  auto root = load_manifest(resources, configuration);
 
   // Return game object
-  Game game;
-  {
-    game.config_ = std::move(config);
-    game.resources_ = std::move(resources);
-  }
-  return {std::move(game)};
+  return {std::move(configuration), std::move(resources), std::move(root)};
 }
-
-expected<void, GameError> Game::dump()
-{
-  // Save resources
-  SDE_LOG_INFO() << "Saving game data...";
-  SDE_ASSERT_NO_EXCEPT(
-    {
-      if (!save_game_data(resources_, config_.assets_data_path))
-      {
-        SDE_LOG_ERROR() << "failed to save game data";
-        return make_unexpected(GameError::kResourceSaveError);
-      }
-    },
-    std::exception);
-  return {};
-}
-
 
 }  // namespace sde::game

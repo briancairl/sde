@@ -30,20 +30,4 @@ asset::path GameResources::path(const asset::path& original_path) const
   return directory(original_path.parent_path()) / original_path.filename();
 }
 
-bool GameResources::setNextScene(const SceneHandle scene)
-{
-  if (this->get<SceneCache>().exists(scene))
-  {
-    next_scene_ = scene;
-    return true;
-  }
-  return false;
-}
-
-bool GameResources::setNextScene(const sde::string& scene_name)
-{
-  const auto scene = this->get<SceneCache>().to_handle(scene_name);
-  return scene and setNextScene(scene);
-}
-
 }  // namespace sde::game
